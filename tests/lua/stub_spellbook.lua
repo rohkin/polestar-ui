@@ -31,9 +31,23 @@ function C_SpellBook.GetSpellBookSkillLineInfo(i)
 	local l = LINES[i]
 	return l and { name = l[1], iconID = 1, itemIndexOffset = l[2], numSpellBookItems = l[3], shouldHide = false }
 end
-function C_SpellBook.HasPetSpells() return nil end
+-- stub.pet: a pet with a spellbook; Growl autocasts, Claw may, Attack is a command.
+local PET_BOOK = { { "Growl", "Rank 2", 0, 0, false, 1, false, true }, { "Claw", "Rank 1", 0, 0, false, 1, false, false },
+	{ "Attack", "", 0, 0, false, 3 } }
+function PetHasSpellbook() return stub.pet or false end
+function C_SpellBook.HasPetSpells() return stub.pet and #PET_BOOK or nil end
+function C_SpellBook.GetSpellBookItemAutoCast(slot, bank)
+	local s = bank == 1 and PET_BOOK[slot]
+	if not s or s[8] == nil then return false, false end
+	return true, s[8]
+end
+-- Fire Blast is cooling down.
+function C_SpellBook.GetSpellBookItemCooldown(slot, bank)
+	if bank == 0 and slot == 11 then return { startTime = 1, duration = 8, isEnabled = true, modRate = 1 } end
+	return { startTime = 0, duration = 0, isEnabled = false, modRate = 1 }
+end
 function C_SpellBook.GetSpellBookItemInfo(slot, bank)
-	local s = BOOK[slot]
+	local s = (bank == 1 and PET_BOOK or BOOK)[slot]
 	if not s then return end
 	return { actionID = 100 + slot, spellID = 100 + slot, itemType = s[6] or 1, name = s[1], subName = s[2], iconID = 1,
 		isPassive = s[5] or false, isOffSpec = false }

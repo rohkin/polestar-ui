@@ -19,6 +19,13 @@ end
 
 local function bank(name) return Enum.SpellBookSpellBank[name] end
 
+-- A pet spell's autocast: allowed, then on.
+local function autocast(s)
+	if s.bank ~= bank("Pet") then return false, false end
+	local allowed, on = C_SpellBook.GetSpellBookItemAutoCast(s.slot, s.bank)
+	return clean(allowed) or false, clean(on) or false
+end
+
 -- The categories: every shown skill line (General, the class's), then the pet's.
 local function categories()
 	local list = {}
@@ -64,6 +71,8 @@ local function detail(s)
 	end
 	if info.isPassive then return "Passive" end
 	local parts = {}
+	local allowed, on = autocast(s)
+	if allowed then parts[1] = on and "Autocast on" or "Autocast off" end
 	local rank = clean(info.subName)
 	if rank and rank ~= "" then parts[#parts + 1] = rank end
 	local id = info.spellID
@@ -93,8 +102,9 @@ local function rowEnter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	GameTooltip:SetSpellBookItem(r.psSpell.slot, r.psSpell.bank)
 	if r.psSpell.info.itemType ~= Enum.SpellBookItemType.FutureSpell then
-		ns.TooltipHint(castable(r.psSpell) and "Click to cast it. Drag it to an action bar. Shift-click to link it in chat."
-			or "Drag it to an action bar. Shift-click to link it in chat.")
+		local hint = castable(r.psSpell) and "Click to cast it. " or ""
+		if autocast(r.psSpell) then hint = hint .. "Right-click to turn its autocast on or off. " end
+		ns.TooltipHint(hint .. "Drag it to an action bar. Shift-click to link it in chat.")
 	end
 	GameTooltip:Show()
 end
@@ -157,6 +167,10 @@ local function overRow(r)
 	-- The player's spells by ID (that rank exactly); the pet's by name, as a macro casts them.
 	over:SetAttribute("type1", castable(s) and "spell" or nil)
 	over:SetAttribute("spell", s.bank == bank("Pet") and s.info.name or s.info.spellID)
+	-- Autocast is protected too: the game's own slash command, as a macro runs it.
+	local auto = autocast(s)
+	over:SetAttribute("type2", auto and "macro" or nil)
+	over:SetAttribute("macrotext", auto and ((SLASH_PET_AUTOCASTTOGGLE1 or "/petautocasttoggle") .. " " .. s.info.name) or nil)
 	r:LockHighlight()
 	over:Show()
 end
@@ -173,6 +187,9 @@ local function newRow(parent)
 	r.Icon = ns.GameIcon(well)
 	r.Icon:SetPoint("TOPLEFT", 1, -1)
 	r.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	r.Well = well
+	r.Cooldown = CreateFrame("Cooldown", nil, well, "CooldownFrameTemplate")
+	r.Cooldown:SetAllPoints(r.Icon)
 	r.Name = W.Text(r, "label", "text")
 	r.Name:SetPoint("BOTTOMLEFT", well, "RIGHT", 12, 1)
 	r.Name:SetPoint("RIGHT", r, "RIGHT", -8, 0)
@@ -192,6 +209,18 @@ local function newRow(parent)
 	return r
 end
 
+-- The stock book's sweep; the client may hand the times over secret in
+-- combat, which the sweep takes but our code cannot test (docs/CLIENT.md, rule 3).
+local function paintCooldown(r)
+	local s = r.psSpell
+	local cd = s and s.info.itemType ~= Enum.SpellBookItemType.FutureSpell and C_SpellBook.GetSpellBookItemCooldown(s.slot, s.bank)
+	if cd and ((issecretvalue and issecretvalue(cd.isEnabled)) or cd.isEnabled) then
+		r.Cooldown:SetCooldown(cd.startTime, cd.duration, cd.modRate)
+	else
+		r.Cooldown:Clear()
+	end
+end
+
 local function paintRow(r, s)
 	r.psSpell = s
 	local future = s.info.itemType == Enum.SpellBookItemType.FutureSpell
@@ -201,6 +230,15 @@ local function paintRow(r, s)
 	W.Color(r.Name, future and "textMuted" or "text")
 	r.Sub:SetText(detail(s))
 	W.Color(r.Sub, future and "textMuted" or "textDim")
+	-- Autocast on: the well's hairline in the accent.
+	local _, on = autocast(s)
+	if on then
+		local cr, cg, cb = Polestar.Theme.Color("accent")
+		Polestar.Theme.Border(r.Well, cr, cg, cb, 1)
+	else
+		Polestar.Theme.Border(r.Well, Polestar.Theme.Wash("border"))
+	end
+	paintCooldown(r)
 end
 
 -- Two columns of rows, in book order down the left column, then the right.
@@ -368,6 +406,11 @@ function M.Enable()
 	hooksecurefunc(PlayerSpellsUtil, "OpenToSpellBookTabAtSpell", door(false, sectionOf))
 	local function changed() if f and f:IsShown() then refresh() end end
 	Polestar.RegisterEvent("SPELLS_CHANGED", changed)
+	Polestar.RegisterEvent("PET_BAR_UPDATE", changed) -- autocast turned on or off
+	Polestar.RegisterEvent("SPELL_UPDATE_COOLDOWN", function()
+		if not (f and f:IsShown()) then return end
+		for _, row in ipairs(rows) do if row:IsShown() then paintCooldown(row) end end
+	end)
 	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", changed)
 	Polestar.RegisterEvent("UNIT_PET", function(_, unit) if unit == "player" then changed() end end)
 end

@@ -250,6 +250,12 @@ stays the game's.
 - **Click** casts (out of combat: a secure button over the hovered row, as the
   gear slots'); **drag** puts it on a bar; **shift-click** links it. In combat
   the rows still drag and link.
+- **Cooldown:** the game's sweep over the icon (`CooldownFrameTemplate`), as
+  the stock book.
+- **Pet autocast:** "Autocast on" or "off" first on the line, the well's
+  hairline in the accent while on; right-click toggles it (the secure button
+  runs the game's `/petautocasttoggle`). Pet commands (Attack, Follow) only
+  drag: cast by name they would be the player's own.
 
 #### Professions book (`ProfessionsBookFrame`) — Risk: medium
 `TOGGLEPROFESSIONBOOK` → `ToggleProfessionsBook()`.
