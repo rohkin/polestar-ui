@@ -9,3 +9,4 @@
 ## SavedVariables: PolestarUIDB
 
 Core.lua
+Modules\Character.lua
