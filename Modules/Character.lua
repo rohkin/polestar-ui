@@ -91,8 +91,27 @@ local function paintSlotText(s, icon, q)
 	s.psStats:SetText(link and itemStats(link) or "")
 end
 
-local function paintSlot(s)
+-- The slots an item in the bags would upgrade, by Polestar's own bag verdict
+-- (its settings, Pawn hand-off included) and the slot its advice compares
+-- against. Read once per paint.
+local function upgradeSlots()
+	local up, Gear = {}, Polestar.Gear
+	if not (Gear and Gear.Bags and Gear.Bags.IsOn() and C_Container) then return up end
+	for bag = 0, NUM_BAG_SLOTS or 4 do
+		for i = 1, C_Container.GetContainerNumSlots(bag) do
+			local link = C_Container.GetContainerItemLink(bag, i)
+			if link and Gear.Bags.IsUpgrade(link) then
+				local r = Gear.CompareToEquipped(link)
+				if r and r.slot then up[r.slot] = true end
+			end
+		end
+	end
+	return up
+end
+
+local function paintSlot(s, up)
 	local id = s:GetID()
+	s.psUp:SetShown(up and up[id] or false)
 	local icon = GetInventoryItemTexture("player", id)
 	s.Icon:SetTexture(icon or s.psEmpty)
 	s.Icon:SetDesaturated(not icon)
@@ -102,7 +121,10 @@ local function paintSlot(s)
 	local cur, max = GetInventoryItemDurability(id)
 	local broken = icon and GetInventoryItemBroken("player", id)
 	local r, g, b, a
-	if broken or (cur and max and max > 0 and cur == 0) then
+	-- The item on the cursor fits here: the accent, over every other state.
+	if CursorHasItem() and C_PaperDollInfo.CursorCanGoInSlot(id) then
+		r, g, b = Polestar.Theme.Color("accent"); a = 1
+	elseif broken or (cur and max and max > 0 and cur == 0) then
 		r, g, b = Polestar.Theme.Color("danger"); a = 1
 	elseif cur and max and max > 0 and cur / max < 0.25 then
 		r, g, b = Polestar.Theme.Color("warning"); a = 1
@@ -190,6 +212,19 @@ local function newSlot(parent, name, layer, side)
 	s.Icon = ns.GameIcon(s)
 	s.Icon:SetPoint("TOPLEFT", 1, -1)
 	s.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	-- Polestar's bag upgrade arrow, top-left as on every item it marks.
+	s.psUp = W.Tex(s, "OVERLAY", "qol-upgrade", "success")
+	s.psUp:SetSize(18, 18)
+	s.psUp:SetPoint("TOPLEFT", s, "TOPLEFT", 0, 0)
+	-- Pressed, the icon nudges 1px, as an icon button's glyph.
+	s:SetScript("OnMouseDown", function(self)
+		self.Icon:SetPoint("TOPLEFT", 2, -2)
+		self.Icon:SetPoint("BOTTOMRIGHT", 0, 0)
+	end)
+	s:SetScript("OnMouseUp", function(self)
+		self.Icon:SetPoint("TOPLEFT", 1, -1)
+		self.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	end)
 	W.Hover(s)
 	s:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	s:RegisterForDrag("LeftButton")
@@ -284,7 +319,9 @@ end
 local paintPrimary -- below, with the stats it reads
 
 local function paintGear()
-	for _, s in ipairs(slots) do paintSlot(s) end
+	local up = upgradeSlots()
+	f.psUp = up -- for the cursor's repaint (CURSOR_CHANGED)
+	for _, s in ipairs(slots) do paintSlot(s, up) end
 	paintPrimary()
 end
 
@@ -762,6 +799,14 @@ function M.Enable()
 	-- Stats read in combat may be stand-ins (fill); read them again after it.
 	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", changed)
 	Polestar.RegisterEvent("PLAYER_EQUIPMENT_CHANGED", changed)
+	-- Bags change what the upgrade arrows point at.
+	Polestar.RegisterEvent("BAG_UPDATE_DELAYED", changed)
+	-- An item picked up or put down: the borders of the slots it fits.
+	Polestar.RegisterEvent("CURSOR_CHANGED", function()
+		if f and f:IsShown() and f.psGear:IsShown() then
+			for _, s in ipairs(slots) do paintSlot(s, f.psUp) end
+		end
+	end)
 	Polestar.RegisterEvent("UNIT_INVENTORY_CHANGED", function(_, unit) if unit == "player" then changed() end end)
 	-- A new look (gear, form) rebuilds the scene, as the stock sheet does.
 	Polestar.RegisterEvent("UNIT_MODEL_CHANGED", function(_, unit)

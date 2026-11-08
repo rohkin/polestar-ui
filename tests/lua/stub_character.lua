@@ -45,6 +45,15 @@ function C_Item.GetItemStats(link)
 	return { ITEM_MOD_STAMINA_SHORT = 6 + id, ITEM_MOD_STRENGTH_SHORT = 4 + id % 5, ITEM_MOD_AGILITY_SHORT = id % 3, RESISTANCE0_NAME = 80 }
 end
 
+-- The cursor holds an item that fits stub.cursorFits[slot id]; the bags
+-- (backpack only) hold two items.
+function CursorHasItem() return stub.cursorFits ~= nil end
+function C_PaperDollInfo.CursorCanGoInSlot(id) return stub.cursorFits and stub.cursorFits[id] or false end
+NUM_BAG_SLOTS = 4
+C_Container = C_Container or {}
+function C_Container.GetContainerNumSlots(bag) return bag == 0 and 2 or 0 end
+function C_Container.GetContainerItemLink(bag, i) return ("|Hitem:9%d::::::::24:::::|h[Bag item]|h"):format(i) end
+
 -- A spell (an enchant, a stone) waiting for its item: stub.targeting.
 function SpellIsTargeting() return stub.targeting or false end
 

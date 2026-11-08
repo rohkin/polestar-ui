@@ -280,8 +280,10 @@ New components, built from Polestar's widgets. Each takes its colours through
   textMuted at 60% (the client's own art, so a game icon, not a glyph).
 - **Hover:** the hover wash, the game's tooltip (`GameTooltip:SetInventoryItem`),
   and a 1px accent border while the cursor holds an item that fits the slot.
-- **Upgrade:** Polestar's bag upgrade arrow (`qol-upgrade`) when Polestar's gear
-  advice says so, top-left as everywhere else.
+- **Upgrade:** Polestar's bag upgrade arrow (`qol-upgrade`, success, 18px)
+  top-left when an item in the bags is an upgrade for this slot (Polestar's
+  bag verdict, `Gear.Bags.IsUpgrade`, and the slot `Gear.CompareToEquipped`
+  weighs it against); off with Polestar's bag arrows.
 - **Durability:** under 25%, the border turns warning; broken, danger.
 - **Press:** the icon nudges 1px, as an icon button's glyph.
 
