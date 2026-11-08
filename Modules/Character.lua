@@ -51,11 +51,19 @@ end
 -- Short stat names, so an item's stats fit beside its slot (this screen only).
 -- shortcut: English abbreviations; other locales and unlisted stats get the client's full name.
 local SHORT = { STAMINA = "Sta", STRENGTH = "Str", AGILITY = "Agi", INTELLECT = "Int", SPIRIT = "Spi",
-	ATTACK_POWER = "AP", RANGED_ATTACK_POWER = "RAP", SPELL_POWER = "SP", SPELL_HEALING_DONE = "Heal",
+	ATTACK_POWER = "AP", RANGED_ATTACK_POWER = "RAP", SPELL_POWER = "SP", SPELL_DAMAGE_DONE = "SP",
+	SPELL_HEALING_DONE = "Heal",
 	CRIT_RATING = "Crit", HIT_RATING = "Hit", HASTE_RATING = "Haste", EXPERTISE_RATING = "Exp",
 	DEFENSE_SKILL_RATING = "Def", DODGE_RATING = "Dodge", PARRY_RATING = "Parry", BLOCK_RATING = "Block",
 	BLOCK_VALUE = "Block Value", RESILIENCE_RATING = "Resil", ARMOR_PENETRATION_RATING = "ArP",
 	SPELL_PENETRATION = "Pen", MANA_REGENERATION = "MP5", DAMAGE_PER_SECOND = "DPS" }
+-- By the client's name, for keys not above (Forever's newer items).
+local SHORT_NAMED = { ["spell damage"] = "SP", ["bonus damage"] = "SP", ["spell power"] = "SP",
+	["healing"] = "Heal", ["bonus healing"] = "Heal", ["spell healing"] = "Heal", ["healing power"] = "Heal" }
+
+local function shortName(k)
+	return SHORT[k:match("^ITEM_MOD_(.-)_SHORT$") or ""] or SHORT_NAMED[_G[k]:lower()] or _G[k]
+end
 
 -- The item's stats ("+12 Sta  +8 Str"), largest first; armor left out.
 local function itemStats(link)
@@ -63,7 +71,7 @@ local function itemStats(link)
 	local list = {}
 	for k, n in pairs(t or {}) do
 		if k ~= "RESISTANCE0_NAME" and _G[k] and n ~= 0 then
-			list[#list + 1] = { n, SHORT[k:match("^ITEM_MOD_(.-)_SHORT$") or ""] or _G[k] }
+			list[#list + 1] = { n, shortName(k) }
 		end
 	end
 	table.sort(list, function(a, b) if a[1] ~= b[1] then return a[1] > b[1] end return a[2] < b[2] end)

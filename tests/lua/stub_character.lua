@@ -31,11 +31,14 @@ function GetInventoryItemLink(unit, id)
 	if GEAR[id] then return ("|cff1eff00|Hitem:%d::::::::24:::::|h[%s]|h|r"):format(id, NAMES[id]) end
 end
 SHIRTSLOT, TABARDSLOT, FINGER1SLOT, TRINKET1SLOT = "Shirt", "Tabard", "Finger", "Trinket"
+ITEM_MOD_FOREVER_SPELL_DAMAGE_SHORT, ITEM_MOD_FOREVER_HEALING_SHORT = "Spell Damage", "Healing"
 ITEM_MOD_STAMINA_SHORT, ITEM_MOD_STRENGTH_SHORT, ITEM_MOD_AGILITY_SHORT, RESISTANCE0_NAME = "Stamina", "Strength", "Agility", "Armor"
 C_Item = C_Item or {}
 function C_Item.GetItemStats(link)
 	local id = tonumber(link:match("item:(%d+)"))
 	if id == 8 or id == 15 then return { RESISTANCE0_NAME = 20 } end
+	-- Forever's newer items: a key the short names do not list, known by its name.
+	if id == 7 then return { ITEM_MOD_STAMINA_SHORT = 9, ITEM_MOD_FOREVER_SPELL_DAMAGE_SHORT = 12, ITEM_MOD_FOREVER_HEALING_SHORT = 22 } end
 	return { ITEM_MOD_STAMINA_SHORT = 6 + id, ITEM_MOD_STRENGTH_SHORT = 4 + id % 5, ITEM_MOD_AGILITY_SHORT = id % 3, RESISTANCE0_NAME = 80 }
 end
 
