@@ -89,7 +89,8 @@ How a stock element is replaced, for every module.
 6. **Follow the client rules.** [CLIENT.md](CLIENT.md) lists what the client
    does that the preview stub did not, each learnt from a bug in game: no
    `HideUIPanel`, fonts before text, secret values in combat, protected calls
-   in combat, stock scenes tuned for stock frames. A new rule goes there, and
+   in combat, stock scenes tuned for stock frames, lists that change without
+   an event. A new rule goes there, and
    into the preview where it can.
 
 Each catalogue entry below names its **Risk**: *low* (no protected calls, stock
@@ -111,7 +112,15 @@ Polestar's: the band 0–112, the tab band 112–152, the hairline at 152, the 2
   profession) at the band's line, then the window's sections as `W.ShellNav`
   rows. The Polestar emblem stays in the rail of a hub only.
 - **Header.** The page title in Hero on the band, its subtitle in Note textDim:
-  a fact, never a description ("Level 24 Human Warrior", "Blacksmithing 145/150").
+  a fact ("Level 24 Human Warrior", "Blacksmithing 145/150"), or one line for
+  a newer player saying what the page is and what they can do on it ("Click a
+  faction to follow it on your experience bar.", "Your skills rise as you use
+  them; a trainer raises how high they can go."). Anything that can be
+  clicked or dragged in a way a newer player would not guess ends its tooltip
+  with a hint in textMuted after a blank line (`ns.TooltipHint`), saying what
+  it does now ("Shown on your experience bar. Click to stop.", "Drag an item
+  here to equip it."); where the title line holds facts, the hints live in the
+  tooltips alone (Gear, Stats).
 - **Tabs.** `W.ShellTabs` for the views of one page; one view is no tab row.
 - **Footer.** Only when a page has actions (Reset, Craft, Learn). Never "Close":
   the ✕ and Escape already close it.
@@ -169,14 +178,24 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     sections and rows keep the stock order, so switching never moves anything.
     Never the accent: these are numbers, and the archetype is a view, not an
     action.
-- **Reputation:** one row panel per header (expansion, then faction group):
-  faction rows 40px, the name in Body text, the standing in Small in its standing
-  colour (legible form), a 2px standing bar (track wash, fill in the standing
-  colour) under the row text. A watched faction carries the 2px accent bar.
-- **Currency:** stat-row layout; the icon 16px before the name, the amount in
-  Number.
-- **Honor:** the rank as Display with its rank icon, then stat rows.
-- **Skills:** headers as Headings, each skill a 28px row with its skill bar.
+The other sections share one grouped list: the client's top headers as
+Headings with their hairline, a chevron in the gutter that folds them (the
+client's own collapse state), over a row panel. They are painted out of combat
+only and read in the background like the stats (CLIENT.md, rule 3).
+- **Reputation:** faction rows 40px: the name in Body text, the standing in
+  Small in its standing colour (legible form) at the right, a 2px standing bar
+  (track wash, fill in the standing colour) under them. A sub-header is a row
+  in textDim with its own chevron, its factions indented 18px. A click watches
+  a faction (or stops watching it); the watched one carries the 2px accent bar.
+  The tooltip is the faction's description and its points in this standing.
+- **Currency:** 28px rows: the icon 16px in a 1px hairline (18px at 15), the name in Label, the amount
+  (and its cap) in Number at the right; the game's currency tooltip.
+- **Honor:** Forever's PvP rank (the major faction 2800, as the stock page
+  reads it): the title and rank in Display, the season in Small textDim, the
+  points to the next rank in Number over a 3px accent progress line.
+- **Skills:** the stock page's lines (no class skills, no sub-lines): 40px
+  rows, the name in Body, "rank/max" (and the modifier, "(+5)") in Small textDim
+  at the right, the 2px accent skill bar under them.
 
 #### Professions book (`ProfessionsBookFrame`) — Risk: medium
 `TOGGLEPROFESSIONBOOK` → `ToggleProfessionsBook()`.

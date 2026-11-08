@@ -34,7 +34,7 @@
 <path id="gInter-Mediumttf-998" d="M133 402L187 223L212 229Q297 252 356.5 223.5Q416 195 447 87L471 5L46 -1118L284 -1118L505 -483Q530 -409 549 -337Q568 -265 586 -193Q605 -265 625 -337.5Q645 -410 671 -483L896 -1118L1132 -1118L646 155Q595 289 508.5 357.5Q422 426 287 426Q235 426 194.5 418.5Q154 411 133 402Z"/>
 <path id="gInter-Mediumttf-727" d="M148 0L148 -1490L368 -1490L368 -646L388 -646L829 -1118L1093 -1118L643 -636L1124 0L852 0L475 -501L368 -394L368 0Z"/>
 <clipPath id="p0c51"><rect x="29" y="153" width="239" height="498"/></clipPath>
-<linearGradient id="p0g271" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(230,186,102)" stop-opacity="0.12"/><stop offset="1" stop-color="rgb(230,186,102)" stop-opacity="0"/></linearGradient>
+<linearGradient id="p0g282" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(230,186,102)" stop-opacity="0.12"/><stop offset="1" stop-color="rgb(230,186,102)" stop-opacity="0"/></linearGradient>
 <clipPath id="p0c84"><rect x="269" y="185" width="714" height="518"/></clipPath>
 <linearGradient id="p0g73" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(230,186,102)" stop-opacity="0"/><stop offset="1" stop-color="rgb(230,186,102)" stop-opacity="0.18"/></linearGradient>
 <linearGradient id="p0g72" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(230,186,102)" stop-opacity="0.18"/><stop offset="1" stop-color="rgb(240,214,163)" stop-opacity="0.9"/></linearGradient>
@@ -76,7 +76,7 @@
 <rect x="289" y="179" width="51" height="2" fill="rgb(230,186,102)" fill-opacity="1"/>
 <g transform="translate(356.9 166.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-397" x="0"/><use href="#gInter-Mediumttf-889" x="1323"/><use href="#gInter-Mediumttf-507" x="2020"/><use href="#gInter-Mediumttf-889" x="3183"/><use href="#gInter-Mediumttf-871" x="3880"/></g>
 <g transform="translate(355.9 165.32) scale(0.005859)" fill="rgb(195,202,221)" fill-opacity="1"><use href="#gInter-Mediumttf-397" x="0"/><use href="#gInter-Mediumttf-889" x="1323"/><use href="#gInter-Mediumttf-507" x="2020"/><use href="#gInter-Mediumttf-889" x="3183"/><use href="#gInter-Mediumttf-871" x="3880"/></g>
-<rect x="29" y="153" width="203.15" height="36" fill="url(#p0g271)" opacity="1" clip-path="url(#p0c51)"/>
+<rect x="29" y="153" width="203.15" height="36" fill="url(#p0g282)" opacity="1" clip-path="url(#p0c51)"/>
 <rect x="29" y="153" width="2" height="36" fill="rgb(230,186,102)" fill-opacity="1" clip-path="url(#p0c51)"/>
 <image x="53" y="163" width="16" height="16" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAr0lEQVR4nO2UsQ2EMAxFrdsxBQvcJKzAMDCQR6AFI1IEFGMMsWn8JBeIWO9HkT4EQfAGnP6/beALSNzRzHk68CTLl9P4hGDkPiEEuW0IRj7ksQ3ByYv/diEkeXGufYgbNz/0QNMQtJgEebUHmBAJtNDSKMjZm1ZCjKCFlnqFXArRwxNwf4ZUfKt64Lz/CoweYOTFOf8eqJz364GLPfsekEDLHrgLWvSAFmzZA0FgxQr3B3UT3ONbRgAAAABJRU5ErkJggg==" clip-path="url(#p0c51)"/>
 <g clip-path="url(#p0c51)"><g transform="translate(82 176.68) scale(0.006348)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-73" x="0"/><use href="#gInter-Mediumttf-670" x="1502"/><use href="#gInter-Mediumttf-507" x="2734"/><use href="#gInter-Mediumttf-852" x="3897"/><use href="#gInter-Mediumttf-507" x="4689"/><use href="#gInter-Mediumttf-586" x="5852"/><use href="#gInter-Mediumttf-889" x="7034"/><use href="#gInter-Mediumttf-614" x="7731"/><use href="#gInter-Mediumttf-852" x="8934"/></g></g>

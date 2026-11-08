@@ -1,0 +1,388 @@
+-- The Character window's other sections (docs/DESIGN.md, "Character"):
+-- Reputation, Currency, Honor and Skills. Each page is
+--   ns.CharacterPages[stock subframe] = { build = fn(body, width) -> frame, paint = fn(frame) -> height }
+-- and is painted only out of combat (docs/CLIENT.md, rule 3): in combat a page
+-- keeps what it last drew, and Character.lua reads it again once combat ends.
+
+local ADDON, ns = ...
+local W, Theme = Polestar.Widgets, Polestar.Theme
+
+local pages = {}
+ns.CharacterPages = pages
+
+local HEAD_H, GAP, ROW_H, BAR_ROW_H = 44, 22, 28, 40
+
+local function hideTip() GameTooltip:Hide() end
+
+-- Folds or unfolds a group through the client, then redraws at once: the
+-- currency list sends no event when it folds.
+local function fold(fn)
+	fn()
+	if ns.RefreshCharacter then ns.RefreshCharacter() end
+end
+
+---------------------------------------------------------------------------
+-- A grouped list: a heading per group (its chevron in the gutter folds it),
+-- over a row panel. groups = { { name, collapsed, toggle = fn, rows = { data, ... } } };
+-- spec = { height, new = fn(row), draw = fn(row, data) }.
+
+local function listView(body, width)
+	local v = CreateFrame("Frame", nil, body)
+	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, 0)
+	v:SetWidth(width)
+	v.groups = {}
+	return v
+end
+
+local function group(v, i)
+	local g = v.groups[i]
+	if g then return g end
+	g = { Head = W.SectionHeader(v), Panel = W.RowPanel(v), rows = {} }
+	g.Head:SetPoint("RIGHT", v, "RIGHT", 0, 0)
+	g.Panel:SetPoint("RIGHT", v, "RIGHT", 0, 0)
+	g.Chevron = W.Tex(g.Head, "ARTWORK", "chevron-down", "textDim")
+	g.Chevron:SetSize(12, 12)
+	g.Chevron:SetPoint("RIGHT", g.Head.Text, "LEFT", -6, 0)
+	-- The click area spans the chevron in the gutter and the heading.
+	g.Hit = CreateFrame("Button", nil, g.Head)
+	g.Hit:SetPoint("TOPLEFT", g.Head, "TOPLEFT", -24, 0)
+	g.Hit:SetPoint("BOTTOMRIGHT", g.Head, "BOTTOMRIGHT", 0, 0)
+	g.Hit:SetScript("OnClick", function() if g.toggle then fold(g.toggle) end end)
+	g.Hit:SetScript("OnEnter", function() W.Color(g.Chevron, "text") end)
+	g.Hit:SetScript("OnLeave", function() W.Color(g.Chevron, "textDim") end)
+	v.groups[i] = g
+	return g
+end
+
+local function row(g, i, spec)
+	local r = g.rows[i]
+	if r then return r end
+	r = CreateFrame("Button", nil, g.Panel)
+	r:SetHeight(spec.height)
+	r:SetPoint("TOPLEFT", g.Panel, "TOPLEFT", 0, -(i - 1) * spec.height)
+	r:SetPoint("RIGHT", g.Panel, "RIGHT", 0, 0)
+	if i > 1 then
+		local d = W.Divider(r)
+		d:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
+		d:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
+	end
+	W.Hover(r)
+	r:SetScript("OnLeave", hideTip)
+	spec.new(r)
+	g.rows[i] = r
+	return r
+end
+
+local function paintList(v, groups, spec)
+	local y = 0
+	for i, data in ipairs(groups) do
+		local g = group(v, i)
+		g.toggle = data.toggle
+		W.SetSection(g.Head, data.name)
+		g.Chevron:SetTexture(Theme.Media(data.collapsed and "chevron-right" or "chevron-down"))
+		g.Head:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -y)
+		g.Head:Show()
+		local n = data.collapsed and 0 or #data.rows
+		for k = 1, n do
+			local r = row(g, k, spec)
+			r.psBarW = v:GetWidth() - 28 -- the bar spans the row inside its 16 and 12 insets
+			spec.draw(r, data.rows[k])
+			r:Show()
+		end
+		for k = n + 1, #g.rows do g.rows[k]:Hide() end
+		g.Panel:SetShown(n > 0)
+		g.Panel:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -(y + HEAD_H))
+		g.Panel:SetHeight(math.max(1, n * spec.height))
+		y = y + HEAD_H + n * spec.height + (n > 0 and GAP or 0)
+	end
+	for i = #groups + 1, #v.groups do
+		v.groups[i].Head:Hide()
+		v.groups[i].Panel:Hide()
+	end
+	v:SetHeight(y)
+	return y
+end
+
+-- A row with a name on the left, a value on the right and, for bar rows, a
+-- 2px bar under them (docs/DESIGN.md, "Skill Bar").
+local function newBarRow(r)
+	r.Name = W.Text(r, "body", "text")
+	r.Name:SetPoint("TOPLEFT", r, "TOPLEFT", 16, -8)
+	r.Value = W.Text(r, "small", "textDim")
+	r.Value:SetPoint("TOPRIGHT", r, "TOPRIGHT", -12, -9)
+	r.Bar = W.ProgressLine(r, 2)
+	r.Bar:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 16, 8)
+	r.Bar:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -12, 8)
+	r.Mark = W.Fill(r, "accent", "ARTWORK", 0)
+	r.Mark:ClearAllPoints()
+	r.Mark:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
+	r.Mark:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
+	r.Mark:SetWidth(2)
+end
+
+local function setBar(r, frac, red, green, blue)
+	W.SetProgress(r.Bar, math.max(0, math.min(1, frac)), r.psBarW)
+	W.Uncolor(r.Bar.Fill)
+	if red then r.Bar.Fill:SetVertexColor(red, green, blue, 1) else W.Color(r.Bar.Fill, "accent") end
+end
+
+local function pageOf(paintFn, subtitle)
+	return { build = listView, paint = paintFn, subtitle = subtitle }
+end
+
+---------------------------------------------------------------------------
+-- Reputation: groups are the top headers; a sub-header (isChild) is a row,
+-- its factions indented under it. A click watches a faction (the XP bar's
+-- reputation), or folds a sub-header.
+
+local function standingColor(reaction)
+	local c = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
+	if not c then return nil end
+	return Theme.Legible(c.r, c.g, c.b)
+end
+
+local function repEnter(r)
+	local d = r.psData
+	if not d or d.isHeader and not d.isHeaderWithRep then return end
+	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
+	GameTooltip:SetText(d.name)
+	if d.description and d.description ~= "" then GameTooltip:AddLine(d.description, 1, 1, 1, true) end
+	local span = d.nextReactionThreshold - d.currentReactionThreshold
+	if span > 0 then
+		GameTooltip:AddLine(("%s / %s"):format(BreakUpLargeNumbers(d.currentStanding - d.currentReactionThreshold), BreakUpLargeNumbers(span)), 1, 1, 1)
+	end
+	-- What a click does, for players new to it: a sub-header folds instead.
+	if not d.isHeader then
+		ns.TooltipHint(d.isWatched and "Shown on your experience bar. Click to stop."
+			or "Click to follow it on your experience bar.")
+	end
+	GameTooltip:Show()
+end
+
+local function repClick(r)
+	local d = r.psData
+	if not d then return end
+	if d.isHeader then
+		fold(function()
+			if d.isCollapsed then C_Reputation.ExpandFactionHeader(d.index) else C_Reputation.CollapseFactionHeader(d.index) end
+		end)
+	else
+		C_Reputation.SetWatchedFactionByIndex(d.isWatched and 0 or d.index)
+	end
+end
+
+local repSpec = {
+	height = BAR_ROW_H,
+	new = function(r)
+		newBarRow(r)
+		r.Chevron = W.Tex(r, "ARTWORK", "chevron-down", "textDim")
+		r.Chevron:SetSize(12, 12)
+		r.Chevron:SetPoint("RIGHT", r.Name, "LEFT", -6, 0)
+		r:SetScript("OnEnter", repEnter)
+		r:SetScript("OnClick", repClick)
+	end,
+	draw = function(r, d)
+		r.psData = d
+		r.Name:SetPoint("TOPLEFT", r, "TOPLEFT", d.indent and 34 or 16, -8)
+		r.Name:SetText(d.name)
+		W.Color(r.Name, d.isHeader and "textDim" or "text")
+		r.Chevron:SetShown(d.isHeader)
+		r.Chevron:SetTexture(Theme.Media(d.isCollapsed and "chevron-right" or "chevron-down"))
+		r.Mark:SetShown(d.isWatched)
+		local rep = not d.isHeader or d.isHeaderWithRep
+		r.Value:SetShown(rep)
+		r.Bar:SetShown(rep)
+		if rep then
+			local cr, cg, cb = standingColor(d.reaction)
+			r.Value:SetText(GetText("FACTION_STANDING_LABEL" .. d.reaction, UnitSex("player")))
+			W.Uncolor(r.Value)
+			if cr then r.Value:SetTextColor(cr, cg, cb, 1) else W.Color(r.Value, "textDim") end
+			local span = d.nextReactionThreshold - d.currentReactionThreshold
+			setBar(r, span > 0 and (d.currentStanding - d.currentReactionThreshold) / span or 1, cr, cg, cb)
+		end
+	end,
+}
+
+pages.ReputationFrame = pageOf(function(v)
+	local groups, cur = {}, nil
+	for i = 1, C_Reputation.GetNumFactions() do
+		local d = C_Reputation.GetFactionDataByIndex(i)
+		if d then
+			d.index = i
+			if d.isHeader and not d.isChild then
+				local idx = i
+				cur = { name = d.name, collapsed = d.isCollapsed, rows = {}, toggle = function()
+					if d.isCollapsed then C_Reputation.ExpandFactionHeader(idx) else C_Reputation.CollapseFactionHeader(idx) end
+				end }
+				groups[#groups + 1] = cur
+			else
+				if not cur then
+					cur = { name = REPUTATION or "Reputation", rows = {} }
+					groups[#groups + 1] = cur
+				end
+				d.indent = d.isChild and not d.isHeader
+				cur.rows[#cur.rows + 1] = d
+			end
+		end
+	end
+	return paintList(v, groups, repSpec)
+end, "Click a faction to follow it on your experience bar.")
+
+---------------------------------------------------------------------------
+-- Currency: the client's currency list, its headers as groups.
+
+local currencySpec = {
+	height = ROW_H,
+	new = function(r)
+		-- The icon inset 1px in a hairline, as a gear slot tile.
+		r.IconFrame = CreateFrame("Frame", nil, r)
+		r.IconFrame:SetSize(18, 18)
+		r.IconFrame:SetPoint("LEFT", r, "LEFT", 15, 0)
+		r.Icon = ns.GameIcon(r.IconFrame)
+		r.Icon:SetPoint("TOPLEFT", 1, -1)
+		r.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+		r.Name = W.Text(r, "label", "text")
+		r.Name:SetPoint("LEFT", r.IconFrame, "RIGHT", 7, 0)
+		r.Value = W.Text(r, "number", "text")
+		r.Value:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+		r:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetCurrencyToken(self.psIndex)
+			GameTooltip:Show()
+		end)
+	end,
+	draw = function(r, d)
+		r.psIndex = d.index
+		r.Icon:SetTexture(d.iconFileID)
+		Theme.Border(r.IconFrame, Theme.Wash("border"))
+		r.Name:SetText(d.name)
+		local q = BreakUpLargeNumbers(d.quantity)
+		if d.maxQuantity and d.maxQuantity > 0 then q = q .. " / " .. BreakUpLargeNumbers(d.maxQuantity) end
+		r.Value:SetText(q)
+	end,
+}
+
+pages.TokenFrame = pageOf(function(v)
+	local groups, cur = {}, nil
+	for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
+		local d = C_CurrencyInfo.GetCurrencyListInfo(i)
+		if d then
+			d.index = i
+			if d.isHeader then
+				local idx, expanded = i, d.isHeaderExpanded
+				cur = { name = d.name, collapsed = not expanded, rows = {}, toggle = function()
+					C_CurrencyInfo.ExpandCurrencyList(idx, not expanded)
+				end }
+				groups[#groups + 1] = cur
+			elseif cur then
+				cur.rows[#cur.rows + 1] = d
+			end
+		end
+	end
+	return paintList(v, groups, currencySpec)
+end, "Currencies you've earned, by group. Click a heading to fold it.")
+
+---------------------------------------------------------------------------
+-- Skills: the client's skill lines (as the stock page filters them: no class
+-- skills, no sub-lines), headers as groups, each skill with its bar.
+
+local CLASS_SKILLS = 7 -- the stock page's HIDDEN_SKILL_LINE_CATEGORIES
+
+local skillSpec = {
+	height = BAR_ROW_H,
+	new = function(r)
+		newBarRow(r)
+		r.Mark:Hide()
+		r:SetScript("OnEnter", function(self)
+			local d = self.psData
+			if not (d and d.description and d.description ~= "") then return end
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(d.name)
+			GameTooltip:AddLine(d.description, 1, 1, 1, true)
+			GameTooltip:Show()
+		end)
+	end,
+	draw = function(r, d)
+		r.psData = d
+		r.Name:SetText(d.name)
+		local text = ("%d/%d"):format(d.rank, d.maxRank)
+		if d.modifier and d.modifier ~= 0 then text = ("%s (%+d)"):format(text, d.modifier) end
+		r.Value:SetText(text)
+		setBar(r, d.maxRank > 0 and d.rank / d.maxRank or 0)
+	end,
+}
+
+pages.SkillsFrame = pageOf(function(v)
+	local groups, cur = {}, nil
+	for i = 1, C_SkillInfo.GetNumSkillLines() do
+		local d = C_SkillInfo.GetSkillLineInfo(i)
+		if d and d.parentSkillLineID == 0 then
+			if d.isHeader then
+				if d.skillID == CLASS_SKILLS then
+					cur = nil
+				else
+					local idx = i
+					cur = { name = d.name, collapsed = d.isCollapsed, rows = {}, toggle = function()
+						if d.isCollapsed then C_SkillInfo.ExpandSkillHeader(idx) else C_SkillInfo.CollapseSkillHeader(idx) end
+					end }
+					groups[#groups + 1] = cur
+				end
+			elseif cur and d.skillLineCategoryID ~= CLASS_SKILLS then
+				cur.rows[#cur.rows + 1] = d
+			end
+		end
+	end
+	return paintList(v, groups, skillSpec)
+end, "Your skills rise as you use them; a trainer raises how high they can go.")
+
+---------------------------------------------------------------------------
+-- Honor: Forever's PvP rank, kept as the major faction 2800 (as the stock
+-- PVPRankFrame reads it): the rank and its title, the points to the next.
+
+local PVP_RANK_FACTION = 2800
+
+local function rankTitle(rank)
+	if not rank or rank <= 0 then return PVP_RANK_0_NAME or "Unranked" end
+	local alliance = UnitFactionGroup("player") == "Alliance" and 1 or 0
+	return GetText("PVP_RANK_" .. (Enum.PvPRanks.Rank_1 + rank - 1) .. "_" .. alliance, UnitSex("player"))
+end
+
+pages.PVPRankFrame = {
+	subtitle = "Win battlegrounds and fight in world PvP to earn rank points.",
+	build = function(body, width)
+		local v = CreateFrame("Frame", nil, body)
+		v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
+		v:SetWidth(width)
+		v.Rank = W.Text(v, "display", "text")
+		v.Rank:SetPoint("TOPLEFT", v, "TOPLEFT", 0, 0)
+		v.Season = W.Text(v, "small", "textDim")
+		v.Season:SetPoint("TOPLEFT", v.Rank, "BOTTOMLEFT", 0, -6)
+		v.Points = W.Text(v, "number", "textDim")
+		v.Points:SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -50)
+		v.Bar = W.ProgressLine(v, 3)
+		v.Bar:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -68)
+		v.Bar:SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -68)
+		v.Empty = W.Text(v, "note", "textDim")
+		v.Empty:SetPoint("TOPLEFT", v, "TOPLEFT", 0, 0)
+		return v
+	end,
+	paint = function(v)
+		local info = C_MajorFactions and C_MajorFactions.GetMajorFactionProgressionInfo(PVP_RANK_FACTION)
+		for _, r in ipairs({ v.Rank, v.Season, v.Points, v.Bar }) do r:SetShown(info ~= nil) end
+		v.Empty:SetShown(not info)
+		if not info then
+			v.Empty:SetText(PVP_RANK_DETAIL_UNAVAILABLE or "No PvP rank this season.")
+			v:SetHeight(40)
+			return 64
+		end
+		local rank = info.renownLevel or 0
+		v.Rank:SetText(rank > 0 and ("%s · %s"):format(rankTitle(rank), (PVP_RANK_NUMBER or "Rank %d"):format(rank)) or rankTitle(rank))
+		local season = GetCurrentArenaSeason and GetCurrentArenaSeason() or 0
+		v.Season:SetText(season > 0 and (EXPANSION_SEASON_NAME or "%sSeason %d"):format("", season) or "")
+		local earned, need = info.renownReputationEarned or 0, info.renownLevelThreshold or 0
+		v.Points:SetText(need > 0 and ("%s / %s"):format(BreakUpLargeNumbers(earned), BreakUpLargeNumbers(need)) or "")
+		W.SetProgress(v.Bar, need > 0 and math.min(1, earned / need) or 1, v:GetWidth())
+		v:SetHeight(72)
+		return 96
+	end,
+}

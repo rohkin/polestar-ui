@@ -84,6 +84,20 @@ distances in `showModel`).
 **Caught by:** nothing automatic (the preview draws no 3D models); check a tall
 race in game.
 
+## 6. Not every client list says when it changes
+
+**What happened:** folding a Currency group did nothing until something else
+redrew the page. `C_CurrencyInfo.ExpandCurrencyList` sends no event, unlike
+the reputation and skill lists (`UPDATE_FACTION`, `SKILL_LINES_CHANGED`).
+
+**Rule:** after any change we make through the client (fold, watch, select),
+redraw at once (`fold` in CharacterPages.lua); never rely on an event to
+come back. And a click area covers everything that looks clickable: a glyph in
+the gutter sits outside its heading's frame.
+
+**Caught by:** the `character-currency-folded` scene (its stub folds without an
+event; the scene clicks the chevron's click area).
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

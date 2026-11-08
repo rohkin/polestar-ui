@@ -26,6 +26,12 @@ const SCENES = [
 	{ file: 'character.svg', title: 'Character', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character")' }] },
 	{ file: 'character-stats.svg', title: 'Character: Stats', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
 	{ file: 'character-stats-tank.svg', title: 'Character: Stats, Tank', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUICharDB.archetype = "tank"; PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
+	{ file: 'character-reputation.svg', title: 'Character: Reputation', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "ReputationFrame")' }] },
+	{ file: 'character-currency.svg', title: 'Character: Currency', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "TokenFrame")' }] },
+	{ file: 'character-honor.svg', title: 'Character: Honor', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PVPRankFrame")' }] },
+	{ file: 'character-skills.svg', title: 'Character: Skills', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "SkillsFrame")' }] },
+	// A click on a group's chevron folds it, and the page redraws without an event.
+	{ file: 'character-currency-folded.svg', title: 'Character: Currency, a group folded', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "TokenFrame"); PolestarUICharacter.psPages.TokenFrame.groups[1].Hit:Click()' }] },
 	// First opened mid-fight: the stats read in the background before it still show.
 	{ file: 'character-stats-combat.svg', title: 'Character: Stats in combat', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'stub.fire("PLAYER_ENTERING_WORLD"); stub.advance(1); stub.inCombat = true; PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
 ];

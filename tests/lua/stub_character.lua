@@ -64,3 +64,83 @@ PAPERDOLL_STATCATEGORIES = {
 	{ categoryName = "Defense", unit = "player", stats = { { stat = "DEFENSE" }, { stat = "DODGE" }, { stat = "PARRY" }, { stat = "ARMOR" } } },
 	{ categoryName = "Pet", unit = "pet", stats = { { stat = "HEALTH" } } },
 }
+
+-- The other sections: a few factions, currencies, skills and a PvP rank.
+function UnitSex(unit) return 2 end
+function UnitFactionGroup(unit) return "Alliance", "Alliance" end
+function BreakUpLargeNumbers(n)
+	local s = tostring(math.floor(n))
+	while true do
+		local k
+		s, k = s:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+		if k == 0 then return s end
+	end
+end
+function GetText(key) return _G[key] or key end
+FACTION_STANDING_LABEL4, FACTION_STANDING_LABEL5, FACTION_STANDING_LABEL6 = "Neutral", "Friendly", "Honored"
+FACTION_BAR_COLORS = { [4] = { r = 1, g = 1, b = 0 }, [5] = { r = 0, g = 0.6, b = 0.1 }, [6] = { r = 0, g = 0.6, b = 0.1 } }
+local function faction(name, reaction, cur, lo, hi, extra)
+	local d = { name = name, description = "", reaction = reaction, currentStanding = cur, currentReactionThreshold = lo,
+		nextReactionThreshold = hi, isHeader = false, isChild = false, isCollapsed = false, isWatched = false }
+	for k, v in pairs(extra or {}) do d[k] = v end
+	return d
+end
+local FACTIONS = {
+	faction("Alliance", 0, 0, 0, 0, { isHeader = true }),
+	faction("Stormwind", 6, 11200, 9000, 21000, { isWatched = true }),
+	faction("Ironforge", 5, 4100, 3000, 9000),
+	faction("Darnassus", 4, 1500, 0, 3000),
+	faction("Classic", 0, 0, 0, 0, { isHeader = true, isCollapsed = true }),
+}
+C_Reputation = { GetNumFactions = function() return #FACTIONS end, GetFactionDataByIndex = function(i) return FACTIONS[i] end }
+
+local CURRENCIES = {
+	{ name = "Player vs. Player", isHeader = true, isHeaderExpanded = true },
+	{ name = "Honor Points", isHeader = false, quantity = 1240, maxQuantity = 75000, iconFileID = 1455894 },
+	{ name = "Arena Points", isHeader = false, quantity = 0, maxQuantity = 0, iconFileID = 1455894 },
+	{ name = "Miscellaneous", isHeader = true, isHeaderExpanded = true },
+	{ name = "Darkmoon Prize Ticket", isHeader = false, quantity = 12, maxQuantity = 0, iconFileID = 134481 },
+}
+C_CurrencyInfo = { GetCurrencyListSize = function() return #CURRENCIES end, GetCurrencyListInfo = function(i) return CURRENCIES[i] end }
+-- Folding hides the header's currencies from the list, as the client does,
+-- and sends no event.
+local hidden = {}
+function C_CurrencyInfo.ExpandCurrencyList(index, expand)
+	local h = CURRENCIES[index]
+	h.isHeaderExpanded = expand
+	if expand then
+		for i, c in ipairs(hidden[h] or {}) do table.insert(CURRENCIES, index + i, c) end
+		hidden[h] = nil
+	else
+		hidden[h] = {}
+		while CURRENCIES[index + 1] and not CURRENCIES[index + 1].isHeader do
+			table.insert(hidden[h], table.remove(CURRENCIES, index + 1))
+		end
+	end
+end
+
+local function skill(name, rank, max, extra)
+	local d = { name = name, rank = rank, maxRank = max, modifier = 0, isHeader = false, isCollapsed = false,
+		parentSkillLineID = 0, skillLineCategoryID = 9, skillID = 0, description = "" }
+	for k, v in pairs(extra or {}) do d[k] = v end
+	return d
+end
+local SKILLS = {
+	skill("Class Skills", 0, 0, { isHeader = true, skillID = 7 }),
+	skill("Arms", 1, 1, { skillLineCategoryID = 7 }),
+	skill("Professions", 0, 0, { isHeader = true, skillID = 11 }),
+	skill("Mining", 112, 150),
+	skill("Blacksmithing", 95, 150),
+	skill("Weapon Skills", 0, 0, { isHeader = true, skillID = 6 }),
+	skill("Swords", 118, 120, { modifier = 5 }),
+	skill("Two-Handed Swords", 64, 120),
+}
+C_SkillInfo = { GetNumSkillLines = function() return #SKILLS end, GetSkillLineInfo = function(i) return SKILLS[i] end }
+
+Enum.PvPRanks = { Rank_1 = 5 }
+PVP_RANK_9_1, PVP_RANK_NUMBER = "Sergeant", "Rank %d"
+EXPANSION_SEASON_NAME = "%sSeason %d"
+function GetCurrentArenaSeason() return 1 end
+C_MajorFactions = { GetMajorFactionProgressionInfo = function(id)
+	return { renownLevel = 5, renownReputationEarned = 1240, renownLevelThreshold = 2000 }
+end }

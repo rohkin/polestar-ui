@@ -41,6 +41,22 @@ Polestar.OnLogin(function()
 	end
 end)
 
+-- Ends the shown tooltip with a hint of what the player can do here, in
+-- textMuted after a blank line (docs/DESIGN.md, "Header").
+function ns.TooltipHint(text)
+	local r, g, b = Polestar.Theme.Color("textMuted")
+	GameTooltip:AddLine(" ")
+	GameTooltip:AddLine(text, r, g, b, true)
+end
+
+-- A texture for a game icon (item, currency, spell), cropped of the border
+-- the client bakes into its icons, as Polestar's own icons are.
+function ns.GameIcon(parent, layer)
+	local t = parent:CreateTexture(nil, layer or "ARTWORK")
+	t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+	return t
+end
+
 local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
 
 -- /pui <module> opens it; /pui <module> on|off takes effect after /reload.

@@ -6,7 +6,6 @@ local W = Polestar.Widgets
 
 local NAME = "PolestarUICharacter"
 -- The stock subframes, in stock order; their keys are what ToggleCharacter takes.
--- shortcut: Currency is always listed; hide it via ShouldShowCurrencyTab when its page is built (4e).
 local SECTIONS = {
 	{ key = "PaperDollFrame", label = CHARACTER or "Character", icon = "icon-level" },
 	{ key = "ReputationFrame", label = REPUTATION or "Reputation", icon = "icon-rep" },
@@ -61,8 +60,11 @@ end
 
 local function slotEnter(s)
 	GameTooltip:SetOwner(s, "ANCHOR_RIGHT")
-	if not GameTooltip:SetInventoryItem("player", s:GetID()) then
+	if GameTooltip:SetInventoryItem("player", s:GetID()) then
+		ns.TooltipHint("Drag to take it off. Shift-click to link it in chat.")
+	else
 		GameTooltip:SetText(s.psLabel)
+		ns.TooltipHint("Drag an item here to equip it.")
 	end
 	GameTooltip:Show()
 end
@@ -121,6 +123,14 @@ local function buildGear(body, width)
 	local m = CreateFrame("ModelScene", nil, well, "PanningModelSceneMixinTemplate")
 	m:SetPoint("TOPLEFT", 1, -1)
 	m:SetPoint("BOTTOMRIGHT", -1, 1)
+	-- Hooked: the template has its own mouse scripts.
+	m:HookScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(UnitName("player"))
+		ns.TooltipHint("Drag to turn, scroll to zoom, right-drag to move.")
+		GameTooltip:Show()
+	end)
+	m:HookScript("OnLeave", W.HideTooltip)
 	v.Model = m
 	return v
 end
@@ -334,6 +344,14 @@ local function build()
 	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
 	f.psGear = buildGear(f.Body, f.BodyWidth)
 	f.psStats = buildStats(f.Body, f.BodyWidth)
+	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
+	f.psPages = {}
+	for key, page in pairs(ns.CharacterPages) do
+		local v = page.build(f.Body, f.BodyWidth)
+		v:Hide()
+		v.psPaint, v.psH = page.paint, 0
+		f.psPages[key] = v
+	end
 	-- The archetype as filter segments at the right of the tab row (as the
 	-- guide picker's faction filter): its right edge mirrors the first tab.
 	local segs, x = {}, -20
@@ -360,6 +378,18 @@ local function build()
 	Polestar.CloseOnEscape(NAME)
 end
 
+-- A section page, painted out of combat only (docs/CLIENT.md, rule 3); in
+-- combat it keeps what it last drew. Returns the body height.
+local function paintPage(v)
+	if not InCombatLockdown() then
+		-- A page that fails keeps what it drew; the error still reaches the
+		-- error handler (BugGrabber in game, a failed test in the preview).
+		local ok, h = pcall(v.psPaint, v)
+		if ok then v.psH = h else geterrorhandler()(h) end
+	end
+	return v.psH + 8
+end
+
 local function refresh()
 	local level, race = UnitLevel("player"), UnitRace("player")
 	f.psName:SetText(UnitName("player"))
@@ -374,7 +404,7 @@ local function refresh()
 	else
 		W.ShellTabs(f, nil)
 		for _, s in ipairs(SECTIONS) do
-			if s.key == section then W.ShellTitle(f, s.label) end
+			if s.key == section then W.ShellTitle(f, s.label, ns.CharacterPages[s.key] and ns.CharacterPages[s.key].subtitle) end
 		end
 	end
 	W.ShellFooter(f, {}, {})
@@ -391,7 +421,17 @@ local function refresh()
 	elseif stats then
 		h = paintStats() + 8
 	end
+	for key, v in pairs(f.psPages) do
+		local on = key == section
+		v:SetShown(on)
+		if on then h = paintPage(v) end
+	end
 	W.ShellBody(f, h)
+end
+
+-- Redraws the window where it stands (CharacterPages.lua's folds).
+function ns.RefreshCharacter()
+	if f and f:IsShown() then refresh() end
 end
 
 function M.Show(key, view)
@@ -429,6 +469,7 @@ function M.Enable()
 		if InCombatLockdown() then return end
 		if not f then build() end
 		paintStats()
+		for _, v in pairs(f.psPages) do paintPage(v) end
 	end
 	local function changed()
 		if not (f and f:IsShown()) then
@@ -440,6 +481,9 @@ function M.Enable()
 		end
 		if f.psGear:IsShown() then paintGear() end
 		if f.psStats:IsShown() then W.ShellBody(f, paintStats() + 8) end
+		for _, v in pairs(f.psPages) do
+			if v:IsShown() then W.ShellBody(f, paintPage(v)) end
+		end
 	end
 	Polestar.RegisterEvent("PLAYER_ENTERING_WORLD", changed)
 	-- The stock sheet's stat events (PaperDollFrame_OnLoad).
@@ -450,6 +494,10 @@ function M.Enable()
 	Polestar.RegisterEvent("COMBAT_RATING_UPDATE", changed)
 	Polestar.RegisterEvent("PLAYER_DAMAGE_DONE_MODS", changed)
 	Polestar.RegisterEvent("SKILL_LINES_CHANGED", changed)
+	-- The section pages' events.
+	Polestar.RegisterEvent("UPDATE_FACTION", changed)
+	Polestar.RegisterEvent("CURRENCY_DISPLAY_UPDATE", changed)
+	Polestar.RegisterEvent("MAJOR_FACTION_RENOWN_LEVEL_CHANGED", changed)
 	-- Stats read in combat may be stand-ins (fill); read them again after it.
 	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", changed)
 	Polestar.RegisterEvent("PLAYER_EQUIPMENT_CHANGED", changed)
