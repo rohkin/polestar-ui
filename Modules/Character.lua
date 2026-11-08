@@ -110,7 +110,35 @@ local function buildGear(body, width)
 	for i, name in ipairs(WEAPONS) do
 		newSlot(v, name):SetPoint("BOTTOMLEFT", v, "BOTTOM", -row / 2 + (i - 1) * (SLOT + GAP), 0)
 	end
+	-- The model well between the columns (docs/DESIGN.md, "Model Well").
+	local well = CreateFrame("Frame", nil, v)
+	well:SetPoint("TOPLEFT", v, "TOPLEFT", SLOT + 16, 0)
+	well:SetPoint("BOTTOMRIGHT", v, "TOPRIGHT", -(SLOT + 16), -(#LEFT * (SLOT + GAP) - GAP))
+	Polestar.Theme.Skin(well, "inset")
+	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
+	-- The game's own character-sheet scene: its camera frames every race and
+	-- form, and the template turns, zooms and pans it. Our frame, their template.
+	local m = CreateFrame("ModelScene", nil, well, "PanningModelSceneMixinTemplate")
+	m:SetPoint("TOPLEFT", 1, -1)
+	m:SetPoint("BOTTOMRIGHT", -1, 1)
+	v.Model = m
 	return v
+end
+
+-- The scene's camera is tuned for the stock sheet's tall, narrow well; ours is
+-- wider and shorter, so the camera starts further back and may zoom out further.
+-- shortcut: one factor for every race (a troll fits at 1.35); derive it from the well's aspect if a race still clips.
+local BACK_OFF, ZOOM_OUT = 1.35, 2
+
+local function showModel()
+	local scene = f.psGear.Model
+	ModelSceneUtil.SetUpCharacterSheetScene(scene)
+	local cam = scene.GetActiveCamera and scene:GetActiveCamera()
+	if cam and cam.GetMaxZoomDistance and cam:GetMaxZoomDistance() then
+		local d = cam:GetZoomDistance()
+		cam:SetMaxZoomDistance(cam:GetMaxZoomDistance() * ZOOM_OUT)
+		cam:SetZoomDistance(d * BACK_OFF)
+	end
 end
 
 local function paintGear()
@@ -149,7 +177,10 @@ local function refresh()
 	W.ShellFooter(f, {}, {})
 	local gear = section == "PaperDollFrame" and tab == "gear"
 	f.psGear:SetShown(gear)
-	if gear then paintGear() end
+	if gear then
+		paintGear()
+		showModel()
+	end
 	W.ShellBody(f, gear and f.psGear:GetHeight() + 48 or 0)
 end
 
@@ -183,6 +214,10 @@ function M.Enable()
 	end
 	Polestar.RegisterEvent("PLAYER_EQUIPMENT_CHANGED", changed)
 	Polestar.RegisterEvent("UNIT_INVENTORY_CHANGED", function(_, unit) if unit == "player" then changed() end end)
+	-- A new look (gear, form) rebuilds the scene, as the stock sheet does.
+	Polestar.RegisterEvent("UNIT_MODEL_CHANGED", function(_, unit)
+		if unit == "player" and f and f:IsShown() and f.psGear:IsShown() then showModel() end
+	end)
 end
 
 ns.Module("character", M)

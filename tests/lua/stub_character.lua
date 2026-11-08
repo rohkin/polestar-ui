@@ -24,3 +24,6 @@ function GetInventoryItemQuality(unit, id) return GEAR[id] and GEAR[id][1] end
 function GetInventoryItemBroken(unit, id) return GEAR[id] and GEAR[id][3] or false end
 function GetInventoryItemDurability(id) if GEAR[id] then return GEAR[id][2] * 100, 100 end end
 function GetInventoryItemLink(unit, id) return nil end
+
+-- The character-sheet model scene: the preview draws its well, not the model.
+ModelSceneUtil = { SetUpCharacterSheetScene = function(scene) end }
