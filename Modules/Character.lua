@@ -225,8 +225,8 @@ local function buildGear(body, width)
 	for i, name in ipairs(WEAPONS) do
 		newSlot(v, name):SetPoint("TOPLEFT", v, "TOP", -row / 2 + (i - 1) * (SLOT + GAP), -(colH + 16))
 	end
-	-- The primary stats' strip (paintPrimary).
-	local primary = W.RowPanel(v)
+	-- The primary stats' strip (paintPrimary): on the page, no panel.
+	local primary = CreateFrame("Frame", nil, v)
 	primary:SetPoint("BOTTOMLEFT", v, "BOTTOMLEFT", 0, 0)
 	primary:SetPoint("BOTTOMRIGHT", v, "BOTTOMRIGHT", 0, 0)
 	primary:SetHeight(PRIMARY_H)
@@ -514,12 +514,12 @@ local function primaryCell(strip, i)
 	c.Label:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 6, 5)
 	c.Label:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -6, 5)
 	for _, t in ipairs({ c.Value, c.Label }) do t:SetJustifyH("CENTER") end
+	-- Between cells, the middle dot the page subtitle separates with.
 	if i > 1 then
-		local d = W.Divider(c, true)
-		d:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
-		d:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 0, 0)
+		c.Dot = W.Tex(c, "ARTWORK", "circle", "textMuted")
+		c.Dot:SetSize(4, 4)
+		c.Dot:SetPoint("CENTER", c, "LEFT", 0, 0)
 	end
-	W.Hover(c)
 	c:SetScript("OnEnter", statEnter)
 	c:SetScript("OnLeave", W.HideTooltip)
 	return c

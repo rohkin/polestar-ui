@@ -168,8 +168,10 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     quality colour, its stats ("+12 Sta  +8 Str": short names on this screen only, armor left out) in
     Small textDim under it, 220px wide; empty, the slot's name in textMuted.
     Painted out of combat only. Under the weapons, a 40px panel of primary stats:
-    cells spread evenly, the value in Number over its name in Small textDim,
-    hairlines between, filled and guarded as the Stats tab's rows.
+    cells spread evenly on the page (no panel), the value in Number over its
+    name in Small textDim, a 4px textMuted dot (`circle`) between cells, as the
+    subtitle's "·"; no hover wash, the tooltip only; filled and guarded as the
+    Stats tab's rows.
   - *Stats*: stat panels in Polestar's settings layout, flowed into two
     columns 24px apart (each section into the shorter one, so the page rarely
     scrolls): a Heading per stock category (`PAPERDOLL_STATCATEGORIES`) over a
