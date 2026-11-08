@@ -18,6 +18,16 @@ local TABS = { { key = "gear", label = "Gear" }, { key = "stats", label = "Stats
 local f, section, tab = nil, "PaperDollFrame", "gear"
 local M = {}
 
+-- The player's name (UnitName, UnitPVPName) as last read out of combat: in
+-- combat the client may hand our code a secret one, which tooltips and our
+-- strings refuse (docs/CLIENT.md, rule 3).
+local known = {}
+local function playerText(fn)
+	local v = fn("player")
+	if v ~= nil and not (issecretvalue and issecretvalue(v)) then known[fn] = v end
+	return known[fn]
+end
+
 ---------------------------------------------------------------------------
 -- Gear: the slot tiles (docs/DESIGN.md, "Slot Tile"), in the stock columns.
 
@@ -190,7 +200,7 @@ local function buildGear(body, width)
 	-- Hooked: the template has its own mouse scripts.
 	m:HookScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText(UnitName("player"))
+		GameTooltip:SetText(playerText(UnitName) or "")
 		ns.TooltipHint("Drag to turn, scroll to zoom, right-drag to move.")
 		GameTooltip:Show()
 	end)
@@ -305,22 +315,57 @@ end
 local lastRead = {}
 local secret = issecretvalue or function() return false end
 
--- Runs one stock stat function on row r; true when the stat is to be shown.
+-- The stock functions write into this hidden row, never into ours: even out
+-- of combat their text can be secret, and Polestar's font hook on our strings
+-- cannot read a secret one (docs/CLIENT.md, rule 3). Its strings take the
+-- game's font, so no hook. What it holds is copied over only when not secret.
+local scratch
+local OWN = {} -- the scratch row's own keys; any other is the stock function's
+
+-- Runs fn on the scratch row: true, label, value, its fields (numericValue,
+-- tooltip, onEnterFunc ...), shown; nil when it fails or reads secret.
+local function runStock(fn)
+	if not scratch then
+		scratch = CreateFrame("Button", nil, UIParent)
+		scratch:SetAlpha(0)
+		for _, k in ipairs({ "Label", "Value" }) do
+			scratch[k] = scratch:CreateFontString(nil, "OVERLAY")
+			scratch[k]:SetFontObject(GameFontHighlightSmall)
+		end
+		for k in pairs(scratch) do OWN[k] = true end
+	end
+	for k in pairs(scratch) do if not OWN[k] then scratch[k] = nil end end
+	scratch:Show()
+	scratch.Label:SetText("")
+	scratch.Value:SetText("")
+	if not pcall(fn, scratch, "player") then return end
+	local label, value = scratch.Label:GetText(), scratch.Value:GetText()
+	if secret(label) or secret(value) or secret(scratch.numericValue) then return end
+	local fields = {}
+	for k, v in pairs(scratch) do if not OWN[k] then fields[k] = v end end
+	-- The stock label ends in STAT_FORMAT's colon; a row label here has none.
+	return true, (label or ""):gsub("%s*:%s*$", ""), value, fields, scratch:IsShown()
+end
+
+-- Fills row r from one stock stat function; true when the stat is to be shown.
+-- In combat, or when the read fails, it shows what the stat last read.
 local function fill(r, fn, hideAt)
-	r.onEnterFunc, r.UpdateTooltip, r.tooltip, r.tooltip2, r.tooltip3, r.numericValue = nil
+	for k in pairs(r.psFields or {}) do r[k] = nil end
 	r:Show()
-	if InCombatLockdown() or not pcall(fn, r, "player") or secret(r.numericValue) then
+	local ok, label, value, fields, shown
+	if not InCombatLockdown() then ok, label, value, fields, shown = runStock(fn) end
+	if ok then
+		lastRead[fn] = { label, value, fields }
+	else
 		local last = lastRead[fn]
 		if not last then return false end
-		r.Label:SetText(last[1])
-		r.Value:SetText(last[2])
-		r.numericValue, r.tooltip, r.tooltip2 = last[3], last[4], last[5]
-		return true
+		label, value, fields, shown = last[1], last[2], last[3], true
 	end
-	-- The stock label ends in STAT_FORMAT's colon; a row label here has none.
-	r.Label:SetText((r.Label:GetText() or ""):gsub("%s*:%s*$", ""))
-	lastRead[fn] = { r.Label:GetText(), r.Value:GetText(), r.numericValue, r.tooltip, r.tooltip2 }
-	return r:IsShown() and (hideAt == nil or hideAt ~= r.numericValue)
+	r.Label:SetText(label)
+	r.Value:SetText(value or "")
+	for k, v in pairs(fields) do r[k] = v end
+	r.psFields = fields
+	return shown and (hideAt == nil or hideAt ~= fields.numericValue)
 end
 
 -- { name, { { fn, hideAt, key }, ... } } for the player's categories, in the
@@ -527,7 +572,7 @@ end
 
 local function refresh()
 	local level, race = UnitLevel("player"), UnitRace("player")
-	f.psName:SetText(UnitName("player"))
+	f.psName:SetText(playerText(UnitName) or "")
 	f.psLine:SetText(("Level %d %s"):format(level, UnitClass("player")))
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
 	if section == "PaperDollFrame" then
@@ -535,7 +580,7 @@ local function refresh()
 		local sub = ("Level %d %s %s"):format(level, race, UnitClass("player"))
 		local ilvl = itemLevel()
 		if ilvl then sub = sub .. " · Item level " .. ilvl end
-		W.ShellTitle(f, UnitPVPName("player") or UnitName("player"), sub)
+		W.ShellTitle(f, playerText(UnitPVPName) or playerText(UnitName) or "", sub)
 	else
 		W.ShellTabs(f, nil)
 		for _, s in ipairs(SECTIONS) do
@@ -605,6 +650,8 @@ function M.Enable()
 		warming = false
 		if InCombatLockdown() then return end
 		if not f then build() end
+		playerText(UnitName)
+		playerText(UnitPVPName)
 		paintStats()
 		for _, v in pairs(f.psPages) do paintPage(v) end
 	end

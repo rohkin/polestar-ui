@@ -25,6 +25,8 @@ const FALLBACK = 'Inter-Medium.ttf';
 const SCENES = [
 	{ file: 'character.svg', title: 'Character', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character")' }] },
 	{ file: 'character-primary-tank.svg', title: 'Character: Gear, Tank (the same choice as the Stats tab)', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUICharDB.archetype = "tank"; PolestarUI.Show("character")' }] },
+	// Stats read once, then secret out of combat: the rows keep what they read, and no secret reaches our strings.
+	{ file: 'character-stats-secret.svg', title: 'Character: Stats gone secret', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PaperDollFrame", "stats"); stub.secretStats = true; stub.fire("UNIT_STATS", "player")' }] },
 	{ file: 'character-stats.svg', title: 'Character: Stats', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
 	{ file: 'character-stats-tank.svg', title: 'Character: Stats, Tank', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUICharDB.archetype = "tank"; PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
 	{ file: 'character-reputation.svg', title: 'Character: Reputation', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "ReputationFrame")' }] },
@@ -33,8 +35,8 @@ const SCENES = [
 	{ file: 'character-skills.svg', title: 'Character: Skills', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "SkillsFrame")' }] },
 	// A click on a group's chevron folds it, and the page redraws without an event.
 	{ file: 'character-currency-folded.svg', title: 'Character: Currency, a group folded', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "TokenFrame"); PolestarUICharacter.psPages.TokenFrame.groups[1].Hit:Click()' }] },
-	// First opened mid-fight: the stats read in the background before it still show.
-	{ file: 'character-stats-combat.svg', title: 'Character: Stats in combat', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'stub.fire("PLAYER_ENTERING_WORLD"); stub.advance(1); stub.inCombat = true; PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
+	// First opened mid-fight: the stats and name read in the background before it still show, and the model's tooltip takes no secret name.
+	{ file: 'character-stats-combat.svg', title: 'Character: Stats in combat', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'stub.fire("PLAYER_ENTERING_WORLD"); stub.advance(1); stub.inCombat = true; PolestarUI.Show("character", "PaperDollFrame", "stats"); stub.RunScript(PolestarUICharacter.psGear.Model, "OnEnter")' }] },
 ];
 
 function loadFonts() {

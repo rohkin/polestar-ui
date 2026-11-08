@@ -3,7 +3,7 @@
 function UnitLevel(unit) return 24 end
 function UnitRace(unit) return "Human", "Human" end
 function UnitClass(unit) return "Warrior", "WARRIOR", 1 end
-function UnitPVPName(unit) return "Testchar" end
+function UnitPVPName(unit) return InCombatLockdown() and stub.SECRET or "Testchar" end
 function ToggleCharacter(tab, onlyShow) end
 
 -- Gear: the client's slot ids; a few items of each quality, one worn down,
@@ -48,6 +48,8 @@ local function stat(label, value, hidden)
 	return { updateFunc = function(r)
 		if hidden then r:Hide() return end
 		r.Label:SetText(STAT_FORMAT:format(label))
+		-- stub.secretStats: the client makes a value secret, even out of combat.
+		if stub.secretStats then r.Value:SetText(stub.SECRET) return end
 		r.Value:SetText(value)
 		r.numericValue = tonumber(value) or 1
 		r.tooltip = label .. " " .. value

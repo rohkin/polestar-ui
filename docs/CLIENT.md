@@ -51,13 +51,21 @@ combat:
   opened mid-fight still has them, and read again on `PLAYER_REGEN_ENABLED`;
 - guard anything that may still be secret with `issecretvalue` before
   comparing it;
-- never let stock code write into our `W.Text` strings in combat: Polestar's
-  font hook reads the text.
+- never let stock code write into our `W.Text` strings, in combat or out:
+  Polestar's font hook reads the text, and values can be secret out of combat
+  too (seen from a background stat read). Stock functions write into a hidden
+  row on a game font (`runStock` in Character.lua); only what is not secret
+  is copied over.
 
 `pcall` is not enough: a stock function can succeed and leave secret values
 behind, and an error inside a secure hook escapes it.
 
-**Caught by:** the `character-stats-combat` scene (a stub stat that errors in
+The player's own name (`UnitName("player")`, `UnitPVPName`) is secret in
+combat too: `GameTooltip:SetText` refuses it. Read it through `playerText`,
+which keeps the last name read out of combat.
+
+**Caught by:** the `character-stats-secret` scene (stats turn secret out of
+combat; the rows keep what they read) and the `character-stats-combat` scene (a stub stat that errors in
 combat; the tab is first opened mid-fight and must show every stat).
 
 ## 4. Protected calls in combat are blocked, and `pcall` does not stop that

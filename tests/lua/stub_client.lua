@@ -3,6 +3,24 @@
 
 local M = stub.Methods
 
+-- Secret values: in combat the player's name reaches addon code secret, and
+-- neither a tooltip nor our strings (Polestar's font hook reads them) take one.
+-- A string on a game font object has no hook: it holds the secret as is.
+-- (stub_character.lua's UnitPVPName answers stub.SECRET the same way.)
+local SECRET = setmetatable({}, { __tostring = function() return "<secret>" end })
+stub.SECRET = SECRET
+function issecretvalue(v) return v == SECRET end
+local unitName = UnitName
+function UnitName(unit, ...)
+	if unit == "player" and InCombatLockdown() then return SECRET end
+	return unitName(unit, ...)
+end
+local tipText = GameTooltip.SetText
+function GameTooltip.SetText(self, t, ...)
+	if t == SECRET then error("bad argument #2 to 'SetText' (a secret value)", 2) end
+	return tipText(self, t, ...)
+end
+
 -- A FontString with no font (none set, no font object, no template) cannot
 -- take text: the client errors "Font not set".
 local create, setText = M.CreateFontString, M.SetText
@@ -12,6 +30,10 @@ function M.CreateFontString(self, name, layer, inherits)
 	return fs
 end
 function M.SetText(self, t)
+	if t == SECRET then
+		if self.kind == "FontString" and self.fontObject then self.text = SECRET return end
+		error("bad argument #2 to 'SetText' (a secret value)", 2)
+	end
 	if self.kind == "FontString" and not (self.font or self.fontObject or self.psInherits) then
 		error("FontString:SetText(): Font not set", 2)
 	end
