@@ -5,4 +5,3 @@ function UnitRace(unit) return "Human", "Human" end
 function UnitClass(unit) return "Warrior", "WARRIOR", 1 end
 function UnitPVPName(unit) return "Testchar" end
 function ToggleCharacter(tab, onlyShow) end
-function HideUIPanel(frame) frame:Hide() end

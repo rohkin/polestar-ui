@@ -71,7 +71,10 @@ How a stock element is replaced, for every module.
    micro buttons call stock toggles (`ToggleCharacter`, `ToggleProfessionsBook`,
    `ProfessionsFrame_LoadUI`). We follow them with `hooksecurefunc` (a post-hook
    never taints the caller): the stock window the toggle just showed is closed
-   with `HideUIPanel` in the same call, so it never draws, and ours opens. We
+   with its own `Hide()` in the same call, so it never draws, and ours opens.
+   Never `HideUIPanel`: it dispatches to the forbidden `FramePositionDelegate`
+   and does nothing from addon code; the panel manager repairs a panel hidden
+   directly before it places the next one (`RepairUIPanelState`). We
    never replace the global, reparent the stock frame or unregister its events.
 3. **Off is off.** `/pui <module> off` and a `/reload` give the stock window back
    untouched, since nothing was changed on it.

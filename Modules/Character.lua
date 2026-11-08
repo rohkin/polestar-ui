@@ -68,8 +68,11 @@ end
 function M.Enable()
 	-- Every stock door (TOGGLECHARACTER0/2/4, the micro button) calls
 	-- ToggleCharacter; it has just shown CharacterFrame, which we close again.
+	-- Hide(), not HideUIPanel: that dispatches to a forbidden frame, which does
+	-- nothing from addon code; the panel manager repairs a frame hidden this
+	-- way before it places the next panel (FramePositionDelegate:ShowUIPanel).
 	hooksecurefunc("ToggleCharacter", function(key, onlyShow)
-		if CharacterFrame and CharacterFrame:IsShown() then HideUIPanel(CharacterFrame) end
+		if CharacterFrame and CharacterFrame:IsShown() then CharacterFrame:Hide() end
 		M.Toggle(key, onlyShow)
 	end)
 end
