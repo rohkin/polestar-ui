@@ -36,7 +36,8 @@ end
 local SLOT, GAP, TEXT_W, PRIMARY_H = 36, 6, 220, 40
 local LEFT = { "HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot" }
 local RIGHT = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot", "Trinket1Slot" }
-local WEAPONS = { "MainHandSlot", "SecondaryHandSlot", "RangedSlot", "AmmoSlot" }
+-- The weapons continue the columns, after a gap: hands left, ranged right.
+local WEAPONS = { { "left", "MainHandSlot", "SecondaryHandSlot" }, { "right", "RangedSlot", "AmmoSlot" } }
 local slots = {}
 
 local function qualityRGB(q)
@@ -95,7 +96,11 @@ local function itemStats(link)
 		end
 	end
 	table.sort(list, function(a, b) if a[1] ~= b[1] then return a[1] > b[1] end return a[2] < b[2] end)
-	for i, e in ipairs(list) do list[i] = ("+%g %s"):format(e[1], e[2]) end
+	-- Fractions (a weapon's DPS) to one decimal; DPS is a rate, not a bonus: "15.3 DPS".
+	for i, e in ipairs(list) do
+		local n = e[1] % 1 == 0 and ("%d"):format(e[1]) or ("%.1f"):format(e[1])
+		list[i] = (e[2] == SHORT.DAMAGE_PER_SECOND and "%s %s" or "+%s %s"):format(n, e[2])
+	end
 	return table.concat(list, "  ")
 end
 
@@ -270,8 +275,8 @@ local function overSlot(s)
 	over:Show()
 end
 
--- side: "left" or "right" for a column slot, its name and stats on the
--- inside (on `layer`, over the model); nil for a weapon.
+-- side: "left" or "right", the column the slot is in; its name and stats on
+-- the inside (on `layer`, over the model).
 local function newSlot(parent, name, layer, side)
 	local id, empty = C_PaperDollInfo.GetInventorySlotInfo(name)
 	local s = CreateFrame("Button", nil, parent)
@@ -332,15 +337,20 @@ local function buildGear(body, width)
 	local colH = #LEFT * (SLOT + GAP) - GAP
 	local v = CreateFrame("Frame", nil, body)
 	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
-	v:SetSize(width, colH + 16 + SLOT + 12 + PRIMARY_H)
+	local weapH = 2 * (SLOT + GAP) - GAP
+	v:SetSize(width, colH + 16 + weapH + 12 + PRIMARY_H)
 	-- The item lines may run over the model, so they sit on a layer above it.
 	local text = CreateFrame("Frame", nil, v)
 	text:SetAllPoints(v)
 	for i, name in ipairs(LEFT) do newSlot(v, name, text, "left"):SetPoint("TOPLEFT", v, "TOPLEFT", 0, -(i - 1) * (SLOT + GAP)) end
 	for i, name in ipairs(RIGHT) do newSlot(v, name, text, "right"):SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -(i - 1) * (SLOT + GAP)) end
-	local row = #WEAPONS * (SLOT + GAP) - GAP
-	for i, name in ipairs(WEAPONS) do
-		newSlot(v, name):SetPoint("TOPLEFT", v, "TOP", -row / 2 + (i - 1) * (SLOT + GAP), -(colH + 16))
+	for _, col in ipairs(WEAPONS) do
+		local side = col[1]
+		local p = side == "left" and "TOPLEFT" or "TOPRIGHT"
+		for i = 1, 2 do
+			local name = col[i + 1]
+			newSlot(v, name, text, side):SetPoint(p, v, p, 0, -(colH + 16 + (i - 1) * (SLOT + GAP)))
+		end
 	end
 	-- The primary stats' strip (paintPrimary): on the page, no panel.
 	local primary = CreateFrame("Frame", nil, v)

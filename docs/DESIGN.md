@@ -162,8 +162,9 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
   class. Tabs: Gear, Stats.
   - *Gear*: two slot columns on the 32 and right edges (Head, Neck, Shoulder,
     Back, Chest, Shirt, Tabard, Wrist; Hands, Waist, Legs, Feet, Finger ×2,
-    Trinket ×2), weapons in a row under the model, the model well between the
-    columns. Slot tiles 36px, 6px apart. Beside each column's
+    Trinket ×2), then, 16px down, the weapons continuing the columns (Main Hand
+    and Off Hand left, Ranged and Ammo right); the model well between the
+    armor columns. Slot tiles 36px, 6px apart. Beside each column's
     slot, on the inside (over the model well): the item's name in Label in its
     quality colour, its stats ("+12 Sta  +8 Str": short names on this screen only, armor left out) in
     Small textDim under it, 220px wide, and a permanent enchant (its tooltip line,
