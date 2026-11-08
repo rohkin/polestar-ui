@@ -18,14 +18,15 @@ local TABS = { { key = "gear", label = "Gear" }, { key = "stats", label = "Stats
 local f, section, tab = nil, "PaperDollFrame", "gear"
 local M = {}
 
--- The player's name (UnitName, UnitPVPName) as last read out of combat: in
--- combat the client may hand our code a secret one, which tooltips and our
--- strings refuse (docs/CLIENT.md, rule 3).
+-- The player's name (UnitName, UnitPVPName, GetGuildInfo) as last read out
+-- of combat: in combat the client may hand our code a secret one, which
+-- tooltips and our strings refuse (docs/CLIENT.md, rule 3). A nil (no guild)
+-- is kept too.
 local known = {}
 local function playerText(fn)
 	local v = fn("player")
-	if v ~= nil and not (issecretvalue and issecretvalue(v)) then known[fn] = v end
-	return known[fn]
+	if not (issecretvalue and issecretvalue(v)) then known[fn] = v or false end
+	return known[fn] or nil
 end
 
 ---------------------------------------------------------------------------
@@ -565,10 +566,24 @@ local function build()
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
 	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Search, f.Status, f.Stage }) do r:SetParent(holder) end
+	-- The class icon on an inset well with a hairline, centred on the title line.
+	local well = CreateFrame("Frame", nil, f.Sidebar)
+	well:SetSize(36, 36)
+	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
+	Polestar.Theme.Skin(well, "inset")
+	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
+	f.psClass = ns.GameIcon(well)
+	f.psClass:SetPoint("TOPLEFT", 1, -1)
+	f.psClass:SetPoint("BOTTOMRIGHT", -1, 1)
 	f.psName = W.Text(f.Sidebar, "title", "text")
-	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24, -47)
+	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
 	f.psLine = W.Text(f.Sidebar, "small", "textDim")
 	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
+	f.psGuild = W.Text(f.Sidebar, "small", "textMuted")
+	f.psGuild:SetPoint("TOPLEFT", f.psLine, "BOTTOMLEFT", 0, -4)
+	-- To the sidebar's 24 edge; a longer guild ends in an ellipsis
+	-- (a fixed width on an unwrapped string: the client's own truncation).
+	for _, t in ipairs({ f.psName, f.psLine, f.psGuild }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
 	f.psGear = buildGear(f.Body, f.BodyWidth)
 	f.psStats = buildStats(f.Body, f.BodyWidth)
 	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
@@ -619,6 +634,8 @@ local function refresh()
 	local level, race = UnitLevel("player"), UnitRace("player")
 	f.psName:SetText(playerText(UnitName) or "")
 	f.psLine:SetText(("Level %d %s"):format(level, UnitClass("player")))
+	f.psGuild:SetText(playerText(GetGuildInfo) or "")
+	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
 	if section == "PaperDollFrame" then
 		W.ShellTabs(f, TABS, tab, function(k) tab = k; refresh() end)
@@ -697,6 +714,7 @@ function M.Enable()
 		if not f then build() end
 		playerText(UnitName)
 		playerText(UnitPVPName)
+		playerText(GetGuildInfo)
 		paintStats()
 		for _, v in pairs(f.psPages) do paintPage(v) end
 	end

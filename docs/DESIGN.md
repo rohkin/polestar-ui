@@ -150,9 +150,11 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 Opened by `TOGGLECHARACTER0/2/4`, `TOGGLECURRENCY` and the micro button; all
 call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
 - **Shell:** 960×680 with sidebar (240).
-- **Subject block:** the class icon (36px, game icon on an inset well, hairline),
-  the name in Title, "Level 24 Warrior" in Small textDim; the guild under it in
-  Small textMuted.
+- **Subject block:** the class icon (36px, `ClassIcon_<class>` on an inset
+  well, hairline), the first name in Title (no surname: the sidebar has no room), "Level 24 Warrior" in Small textDim; the
+  guild under it in Small textMuted (none without one); each to the 24 edge,
+  ending in an ellipsis past it. Name and guild are read
+  out of combat (CLIENT.md, rule 3).
 - **Sidebar sections** (stock subframes, in stock order): Character
   (`PaperDollFrame`), Reputation, Currency (only while `ShouldShowCurrencyTab`),
   Honor (`PVPRankFrame`), Skills, Statistics.
