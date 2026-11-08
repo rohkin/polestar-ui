@@ -161,8 +161,13 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
   - *Gear*: two slot columns on the 32 and right edges (Head, Neck, Shoulder,
     Back, Chest, Shirt, Tabard, Wrist; Hands, Waist, Legs, Feet, Finger ×2,
     Trinket ×2), weapons in a row under the model, the model well between the
-    columns. Slot tiles 40px, 6px apart (stock spacing). Under each column's
-    slot, nothing: the item's name and level live in the tooltip.
+    columns. Slot tiles 36px, 6px apart. Beside each column's
+    slot, on the inside (over the model well): the item's name in Label in its
+    quality colour, its stats ("+12 Sta  +8 Str": short names on this screen only, armor left out) in
+    Small textDim under it, 220px wide; empty, the slot's name in textMuted.
+    Painted out of combat only. Under the weapons, a 40px panel of primary stats:
+    cells spread evenly, the value in Number over its name in Small textDim,
+    hairlines between, filled and guarded as the Stats tab's rows.
   - *Stats*: stat panels in Polestar's settings layout, flowed into two
     columns 24px apart (each section into the shorter one, so the page rarely
     scrolls): a Heading per stock category (`PAPERDOLL_STATCATEGORIES`) over a
@@ -171,13 +176,20 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     `PAPERDOLL_STATINFO[stat].updateFunc`, so the client's colours for buffed
     and debuffed values stay. The item level (from level 10) joins the page
     subtitle ("Level 31 Troll Warlock · Item level 42"), not a section of one row.
-  - *Archetype*: Melee, Caster and Tank as filter segments at the right of the
-    tab row, per character (`PolestarUICharDB.archetype`; until chosen, casters
-    by class start on Caster, the rest on Melee). It highlights in place: the
-    archetype's key stats read in text, every other row in textMuted, and the
-    sections and rows keep the stock order, so switching never moves anything.
-    Never the accent: these are numbers, and the archetype is a view, not an
-    action.
+  - *Archetype*: one menu (Polestar's) at the right of the tab row, the same
+    on Gear and Stats, per character (`PolestarUICharDB.archetype`; until
+    chosen, hunters Ranged, casters by class Caster, the rest Melee). On
+    Stats it highlights in place: the archetype's key stats read in text,
+    every other row in textMuted, and the sections and rows keep the stock
+    order, so switching never moves anything. Never the accent: these are
+    numbers, and the archetype is a view, not an action. Under the gear it
+    picks the primary stats. From Forever's stats (Classic's, with one Hit and
+    one Crit; Defense 440 makes a tank uncrittable):
+    Melee: Strength, Agility, Attack Power, Crit, Hit. Ranged: Agility, Ranged
+    AP, Ranged damage, Crit, Hit. Caster: Intellect, Spell Power, Crit, Hit,
+    Spell Penetration. Healer: Intellect, Spirit, Healing, Crit, Mana regen.
+    Tank: Health, Armor, Defense, Dodge, Parry, Block (where the stock sheet
+    shows it).
 The other sections share one grouped list: the client's top headers as
 Headings with their hairline, a chevron in the gutter that folds them (the
 client's own collapse state), over a row panel. They are painted out of combat
@@ -252,7 +264,7 @@ New components, built from Polestar's widgets. Each takes its colours through
 `Theme.Color`/`W.Painter` only.
 
 ### Slot Tile
-- **Size:** 40×40; the game icon inset 1px; a 1px border in the item's raw
+- **Size:** 36×36; the game icon inset 1px; a 1px border in the item's raw
   quality colour (common and poor items: the border hairline).
 - **Empty:** the inset well with the stock empty-slot texture desaturated to
   textMuted at 60% (the client's own art, so a game icon, not a glyph).
@@ -269,8 +281,8 @@ edge minus 12, a hairline between rows (Polestar's row panel). A value above its
 base takes success, below it danger; the tooltip is the game's stat tooltip.
 
 ### Model Well
-The inset paint (shade at 25%) with a hairline, holding a `DressUpModel` of the
-player; drag to turn, wheel to zoom. No band, no glow.
+No border: shade (Polestar's `glow` texture at 60%) that fades out towards
+its edges, holding the player's model; drag to turn, wheel to zoom. No band.
 
 ### Recipe Row
 28px list row (Polestar's list row): a 16px icon at 24, the name in Body in its

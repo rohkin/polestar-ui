@@ -21,7 +21,7 @@ local M = {}
 ---------------------------------------------------------------------------
 -- Gear: the slot tiles (docs/DESIGN.md, "Slot Tile"), in the stock columns.
 
-local SLOT, GAP = 40, 6
+local SLOT, GAP, TEXT_W, PRIMARY_H = 36, 6, 220, 40
 local LEFT = { "HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot" }
 local RIGHT = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot", "Trinket1Slot" }
 local WEAPONS = { "MainHandSlot", "SecondaryHandSlot", "RangedSlot", "AmmoSlot" }
@@ -36,12 +36,49 @@ local function qualityRGB(q)
 	if t then return t.r, t.g, t.b end
 end
 
+-- Short stat names, so an item's stats fit beside its slot (this screen only).
+-- shortcut: English abbreviations; other locales and unlisted stats get the client's full name.
+local SHORT = { STAMINA = "Sta", STRENGTH = "Str", AGILITY = "Agi", INTELLECT = "Int", SPIRIT = "Spi",
+	ATTACK_POWER = "AP", RANGED_ATTACK_POWER = "RAP", SPELL_POWER = "SP", SPELL_HEALING_DONE = "Heal",
+	CRIT_RATING = "Crit", HIT_RATING = "Hit", HASTE_RATING = "Haste", EXPERTISE_RATING = "Exp",
+	DEFENSE_SKILL_RATING = "Def", DODGE_RATING = "Dodge", PARRY_RATING = "Parry", BLOCK_RATING = "Block",
+	BLOCK_VALUE = "Block Value", RESILIENCE_RATING = "Resil", ARMOR_PENETRATION_RATING = "ArP",
+	SPELL_PENETRATION = "Pen", MANA_REGENERATION = "MP5", DAMAGE_PER_SECOND = "DPS" }
+
+-- The item's stats ("+12 Sta  +8 Str"), largest first; armor left out.
+local function itemStats(link)
+	local t = C_Item.GetItemStats(link)
+	local list = {}
+	for k, n in pairs(t or {}) do
+		if k ~= "RESISTANCE0_NAME" and _G[k] and n ~= 0 then
+			list[#list + 1] = { n, SHORT[k:match("^ITEM_MOD_(.-)_SHORT$") or ""] or _G[k] }
+		end
+	end
+	table.sort(list, function(a, b) if a[1] ~= b[1] then return a[1] > b[1] end return a[2] < b[2] end)
+	for i, e in ipairs(list) do list[i] = ("+%g %s"):format(e[1], e[2]) end
+	return table.concat(list, "  ")
+end
+
+-- The name and stats beside a column slot; the slot's name when empty. Out of
+-- combat only: item stats may be secret in it (docs/CLIENT.md, rule 3).
+local function paintSlotText(s, icon, q)
+	if not s.psName or InCombatLockdown() then return end
+	local link = icon and GetInventoryItemLink("player", s:GetID())
+	local name = link and link:match("%[(.-)%]")
+	s.psName:SetText(name or s.psLabel)
+	local r, g, b = qualityRGB(q or 1)
+	if name and r then s.psName:SetTextColor(r, g, b) else W.Color(s.psName, name and "text" or "textMuted") end
+	s.psStats:SetText(link and itemStats(link) or "")
+end
+
 local function paintSlot(s)
 	local id = s:GetID()
 	local icon = GetInventoryItemTexture("player", id)
 	s.Icon:SetTexture(icon or s.psEmpty)
 	s.Icon:SetDesaturated(not icon)
 	s.Icon:SetAlpha(icon and 1 or 0.6)
+	if icon then s.Icon:SetVertexColor(1, 1, 1) else s.Icon:SetVertexColor(Polestar.Theme.Color("textMuted")) end
+	paintSlotText(s, icon, icon and GetInventoryItemQuality("player", id))
 	local cur, max = GetInventoryItemDurability(id)
 	local broken = icon and GetInventoryItemBroken("player", id)
 	local r, g, b, a
@@ -78,7 +115,9 @@ local function slotClick(s, button)
 	if button == "LeftButton" then PickupInventoryItem(s:GetID()) end
 end
 
-local function newSlot(parent, name)
+-- side: "left" or "right" for a column slot, its name and stats on the
+-- inside (on `layer`, over the model); nil for a weapon.
+local function newSlot(parent, name, layer, side)
 	local id, empty = C_PaperDollInfo.GetInventorySlotInfo(name)
 	local s = CreateFrame("Button", nil, parent)
 	s:SetID(id)
@@ -86,7 +125,7 @@ local function newSlot(parent, name)
 	s.psEmpty = empty
 	s.psLabel = _G[name:upper()] or name
 	W.Fill(s, "scrim", "BACKGROUND", 0)
-	s.Icon = s:CreateTexture(nil, "ARTWORK")
+	s.Icon = ns.GameIcon(s)
 	s.Icon:SetPoint("TOPLEFT", 1, -1)
 	s.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
 	W.Hover(s)
@@ -97,27 +136,52 @@ local function newSlot(parent, name)
 	s:SetScript("OnReceiveDrag", function(self) PickupInventoryItem(self:GetID()) end)
 	s:SetScript("OnEnter", slotEnter)
 	s:SetScript("OnLeave", W.HideTooltip)
+	if side then
+		local p, rel, x = "LEFT", "RIGHT", 8
+		if side == "right" then p, rel, x = "RIGHT", "LEFT", -8 end
+		s.psName = W.Text(layer, "label", "text")
+		s.psName:SetPoint(p, s, rel, x, 8)
+		s.psStats = W.Text(layer, "small", "textDim")
+		s.psStats:SetPoint(p, s, rel, x, -8)
+		for _, t in ipairs({ s.psName, s.psStats }) do
+			t:SetWidth(TEXT_W)
+			t:SetJustifyH(p)
+		end
+	end
 	slots[#slots + 1] = s
 	return s
 end
 
--- The two columns on the body's edges, the weapons centred under them.
+-- The two columns on the body's edges, the weapons centred under them, and
+-- under those the primary stats' strip.
 local function buildGear(body, width)
+	local colH = #LEFT * (SLOT + GAP) - GAP
 	local v = CreateFrame("Frame", nil, body)
 	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
-	v:SetSize(width, #LEFT * (SLOT + GAP) - GAP + 16 + SLOT)
-	for i, name in ipairs(LEFT) do newSlot(v, name):SetPoint("TOPLEFT", v, "TOPLEFT", 0, -(i - 1) * (SLOT + GAP)) end
-	for i, name in ipairs(RIGHT) do newSlot(v, name):SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -(i - 1) * (SLOT + GAP)) end
+	v:SetSize(width, colH + 16 + SLOT + 12 + PRIMARY_H)
+	-- The item lines may run over the model, so they sit on a layer above it.
+	local text = CreateFrame("Frame", nil, v)
+	text:SetAllPoints(v)
+	for i, name in ipairs(LEFT) do newSlot(v, name, text, "left"):SetPoint("TOPLEFT", v, "TOPLEFT", 0, -(i - 1) * (SLOT + GAP)) end
+	for i, name in ipairs(RIGHT) do newSlot(v, name, text, "right"):SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -(i - 1) * (SLOT + GAP)) end
 	local row = #WEAPONS * (SLOT + GAP) - GAP
 	for i, name in ipairs(WEAPONS) do
-		newSlot(v, name):SetPoint("BOTTOMLEFT", v, "BOTTOM", -row / 2 + (i - 1) * (SLOT + GAP), 0)
+		newSlot(v, name):SetPoint("TOPLEFT", v, "TOP", -row / 2 + (i - 1) * (SLOT + GAP), -(colH + 16))
 	end
-	-- The model well between the columns (docs/DESIGN.md, "Model Well").
+	-- The primary stats' strip (paintPrimary).
+	local primary = W.RowPanel(v)
+	primary:SetPoint("BOTTOMLEFT", v, "BOTTOMLEFT", 0, 0)
+	primary:SetPoint("BOTTOMRIGHT", v, "BOTTOMRIGHT", 0, 0)
+	primary:SetHeight(PRIMARY_H)
+	v.Primary = primary
+	-- The model well between the columns (docs/DESIGN.md, "Model Well"): no
+	-- border, a shade that fades out towards its edges.
 	local well = CreateFrame("Frame", nil, v)
 	well:SetPoint("TOPLEFT", v, "TOPLEFT", SLOT + 16, 0)
-	well:SetPoint("BOTTOMRIGHT", v, "TOPRIGHT", -(SLOT + 16), -(#LEFT * (SLOT + GAP) - GAP))
-	Polestar.Theme.Skin(well, "inset")
-	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
+	well:SetPoint("BOTTOMRIGHT", v, "TOPRIGHT", -(SLOT + 16), -colH)
+	local shade = W.Tex(well, "BACKGROUND", "glow")
+	shade:SetAllPoints(well)
+	W.Painter(shade, function(t) local r, g, b = Polestar.Theme.Color("shade"); t:SetVertexColor(r, g, b, 0.6) end)
 	-- The game's own character-sheet scene: its camera frames every race and
 	-- form, and the template turns, zooms and pans it. Our frame, their template.
 	local m = CreateFrame("ModelScene", nil, well, "PanningModelSceneMixinTemplate")
@@ -131,6 +195,7 @@ local function buildGear(body, width)
 		GameTooltip:Show()
 	end)
 	m:HookScript("OnLeave", W.HideTooltip)
+	text:SetFrameLevel(m:GetFrameLevel() + 10)
 	v.Model = m
 	return v
 end
@@ -151,8 +216,11 @@ local function showModel()
 	end
 end
 
+local paintPrimary -- below, with the stats it reads
+
 local function paintGear()
 	for _, s in ipairs(slots) do paintSlot(s) end
+	paintPrimary()
 end
 
 ---------------------------------------------------------------------------
@@ -163,17 +231,30 @@ end
 
 local STAT_H, HEAD_H, SECTION_GAP, COL_GAP = 28, 44, 22, 24
 
--- Archetypes: the player's choice (per character) of which stats matter. The
--- layout never moves: `key` stats read in text, the rest in textMuted.
+-- Archetypes: the player's choice (per character, PolestarUICharDB.archetype),
+-- one menu on both tabs. On the Stats tab the layout never moves: `key` stats
+-- read in text, the rest in textMuted. Under the gear, `stats` are the strip.
+-- The lists follow Forever's stats (Classic's, with one Hit and one Crit).
 local ARCHETYPES = {
-	{ id = "melee", label = "Melee",
-		key = { STRENGTH = true, AGILITY = true, MAINHAND_DAMAGE = true, OFFHAND_DAMAGE = true, RANGED_DAMAGE = true,
-			ATTACK_AP = true, RANGED_ATTACK_AP = true, HITCHANCE = true, CRITCHANCE = true, HASTE = true, EXPERTISE = true, ARMORPEN = true } },
-	{ id = "caster", label = "Caster",
-		key = { INTELLECT = true, SPIRIT = true, POWER = true, MANAREGEN = true, SPELLPOWER = true, SPELLHEALING = true,
-			SPELLPENETRATION = true, HITCHANCE = true, CRITCHANCE = true, HASTE = true } },
-	{ id = "tank", label = "Tank",
-		key = { STAMINA = true, HEALTH = true, DEFENSE = true, DODGE = true, PARRY = true, BLOCK = true, ARMOR = true } },
+	{ id = "melee", label = "Melee", tip = "Stats for melee fighters.",
+		key = { STRENGTH = true, AGILITY = true, MAINHAND_DAMAGE = true, OFFHAND_DAMAGE = true, ATTACK_AP = true,
+			HITCHANCE = true, CRITCHANCE = true, HASTE = true, EXPERTISE = true, ARMORPEN = true },
+		stats = { "STRENGTH", "AGILITY", "ATTACK_AP", "CRITCHANCE", "HITCHANCE" } },
+	{ id = "ranged", label = "Ranged", tip = "Stats for hunters and other ranged fighters.",
+		key = { AGILITY = true, RANGED_DAMAGE = true, RANGED_ATTACK_AP = true, HITCHANCE = true, CRITCHANCE = true,
+			HASTE = true, ARMORPEN = true },
+		stats = { "AGILITY", "RANGED_ATTACK_AP", "RANGED_DAMAGE", "CRITCHANCE", "HITCHANCE" } },
+	{ id = "caster", label = "Caster", tip = "Stats for spellcasters who deal damage.",
+		key = { INTELLECT = true, SPIRIT = true, POWER = true, MANAREGEN = true, SPELLPOWER = true,
+			SPELLPENETRATION = true, HITCHANCE = true, CRITCHANCE = true, HASTE = true },
+		stats = { "INTELLECT", "SPELLPOWER", "CRITCHANCE", "HITCHANCE", "SPELLPENETRATION" } },
+	{ id = "healer", label = "Healer", tip = "Stats for healers.",
+		key = { INTELLECT = true, SPIRIT = true, POWER = true, MANAREGEN = true, SPELLHEALING = true,
+			CRITCHANCE = true, HASTE = true },
+		stats = { "INTELLECT", "SPIRIT", "SPELLHEALING", "CRITCHANCE", "MANAREGEN" } },
+	{ id = "tank", label = "Tank", tip = "Stats for tanks.",
+		key = { STAMINA = true, HEALTH = true, DEFENSE = true, DODGE = true, PARRY = true, BLOCK = true, ARMOR = true },
+		stats = { "HEALTH", "ARMOR", "DEFENSE", "DODGE", "PARRY", "BLOCK" } },
 }
 local BY_ID = {}
 for _, a in ipairs(ARCHETYPES) do BY_ID[a.id] = a end
@@ -184,7 +265,7 @@ local function archetype()
 	local id = PolestarUICharDB and PolestarUICharDB.archetype
 	if not BY_ID[id] then
 		local _, class = UnitClass("player")
-		id = CASTERS[class] and "caster" or "melee"
+		id = class == "HUNTER" and "ranged" or CASTERS[class] and "caster" or "melee"
 	end
 	return BY_ID[id]
 end
@@ -283,11 +364,6 @@ local function paintStats()
 	local v = f.psStats
 	local colH = { 0, 0 }
 	local arch = archetype()
-	for _, b in ipairs(v.segments) do
-		local on = b.psKey == arch.id
-		b.Selected:SetShown(on)
-		W.Color(b.Label, on and "text" or "textMuted")
-	end
 	local cats = statCategories(arch)
 	for i, cat in ipairs(cats) do
 		local s = v.sections[i]
@@ -331,6 +407,67 @@ local function paintStats()
 	return h
 end
 
+---------------------------------------------------------------------------
+-- Primary stats: the strip under the gear, the archetype's `stats`. Each cell
+-- is a stat row as on the Stats tab (fill), so its combat rules hold.
+
+-- A cell: the value in Number over its name in Small textDim, centred.
+local function primaryCell(strip, i)
+	local c = CreateFrame("Button", nil, strip)
+	c:SetHeight(PRIMARY_H)
+	c.Value = W.Text(c, "number", "text")
+	c.Value:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -5)
+	c.Value:SetPoint("TOPRIGHT", c, "TOPRIGHT", -6, -5)
+	c.Label = W.Text(c, "small", "textDim")
+	c.Label:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 6, 5)
+	c.Label:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -6, 5)
+	for _, t in ipairs({ c.Value, c.Label }) do t:SetJustifyH("CENTER") end
+	if i > 1 then
+		local d = W.Divider(c, true)
+		d:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
+		d:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 0, 0)
+	end
+	W.Hover(c)
+	c:SetScript("OnEnter", statEnter)
+	c:SetScript("OnLeave", W.HideTooltip)
+	return c
+end
+
+-- The picked list's stats that show (the stock functions hide some, as Block
+-- without a shield), spread evenly across the strip.
+function paintPrimary()
+	local strip, list = f.psGear.Primary, archetype()
+	strip.cells = strip.cells or {}
+	local n = 0
+	for _, key in ipairs(list.stats) do
+		local info = PAPERDOLL_STATINFO[key]
+		if info then
+			local c = strip.cells[n + 1] or primaryCell(strip, n + 1)
+			strip.cells[n + 1] = c
+			if fill(c, info.updateFunc) then n = n + 1 else c:Hide() end
+		end
+	end
+	for k = n + 1, #strip.cells do strip.cells[k]:Hide() end
+	local w = f.BodyWidth / math.max(n, 1)
+	for k = 1, n do
+		local c = strip.cells[k]
+		c:SetWidth(w)
+		c:SetPoint("TOPLEFT", strip, "TOPLEFT", (k - 1) * w, 0)
+	end
+end
+
+local function pickArchetype(self)
+	if W.MenuShown(self) then return W.HideMenu() end
+	local cur, items = archetype(), {}
+	for i, a in ipairs(ARCHETYPES) do
+		items[i] = { text = a.label, checked = a == cur, onClick = function()
+			PolestarUICharDB.archetype = a.id
+			M.Show()
+		end }
+	end
+	W.ShowMenu(self, items, { minWidth = self:GetWidth() })
+end
+
 local function build()
 	f = W.Shell(NAME, {})
 	-- The subject block names the window, in place of Polestar's lockup.
@@ -352,29 +489,27 @@ local function build()
 		v.psPaint, v.psH = page.paint, 0
 		f.psPages[key] = v
 	end
-	-- The archetype as filter segments at the right of the tab row (as the
-	-- guide picker's faction filter): its right edge mirrors the first tab.
-	local segs, x = {}, -20
-	for i = #ARCHETYPES, 1, -1 do
-		local a = ARCHETYPES[i]
-		local b = CreateFrame("Button", nil, f.TabRow)
-		b:SetHeight(24)
-		b.psKey = a.id
-		W.Hover(b)
-		b.Selected = W.Fill(b, "panelAlt", "BACKGROUND", 0)
-		b.Label = W.Text(b, "small", "textMuted")
-		b.Label:SetPoint("CENTER", b, "CENTER", 0, 0)
-		b.Label:SetText(a.label)
-		b:SetWidth(math.floor(b.Label:GetStringWidth() + 20 + 0.5))
-		b:SetPoint("RIGHT", f.TabRow, "RIGHT", x, 0)
-		b:SetScript("OnClick", function(self)
-			PolestarUICharDB.archetype = self.psKey
-			M.Show()
-		end)
-		x = x - b:GetWidth() - 2
-		segs[i] = b
-	end
-	f.psStats.segments = segs
+	-- The archetype's menu at the right of the tab row, on both tabs.
+	local pick = CreateFrame("Button", nil, f.TabRow)
+	pick:SetHeight(24)
+	pick:SetPoint("RIGHT", f.TabRow, "RIGHT", -20, 0)
+	W.Hover(pick)
+	pick.Label = W.Text(pick, "small", "text")
+	pick.Label:SetPoint("LEFT", pick, "LEFT", 10, 0)
+	pick.Arrow = W.Tex(pick, "ARTWORK", "chevron-down", "textDim")
+	pick.Arrow:SetSize(12, 12)
+	pick.Arrow:SetPoint("RIGHT", pick, "RIGHT", -10, 0)
+	pick:SetScript("OnClick", pickArchetype)
+	pick:SetScript("OnEnter", function(self)
+		local a = archetype()
+		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+		GameTooltip:SetText(a.label)
+		GameTooltip:AddLine(a.tip, 1, 1, 1, true)
+		ns.TooltipHint("Picks the stats under your gear and the ones that stand out on the Stats tab. Kept for this character.")
+		GameTooltip:Show()
+	end)
+	pick:SetScript("OnLeave", W.HideTooltip)
+	f.psPick = pick
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -412,12 +547,14 @@ local function refresh()
 	local stats = section == "PaperDollFrame" and tab == "stats"
 	f.psGear:SetShown(gear)
 	f.psStats:SetShown(stats)
-	for _, b in ipairs(f.psStats.segments) do b:SetShown(stats) end
+	f.psPick:SetShown(gear or stats)
+	f.psPick.Label:SetText(archetype().label .. " stats")
+	f.psPick:SetWidth(math.floor(f.psPick.Label:GetStringWidth() + 44 + 0.5))
 	local h = 0
 	if gear then
 		paintGear()
 		showModel()
-		h = f.psGear:GetHeight() + 48
+		h = f.psGear:GetHeight() + 24
 	elseif stats then
 		h = paintStats() + 8
 	end

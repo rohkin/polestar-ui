@@ -23,7 +23,20 @@ function GetInventoryItemTexture(unit, id) return GEAR[id] and 134400 or nil end
 function GetInventoryItemQuality(unit, id) return GEAR[id] and GEAR[id][1] end
 function GetInventoryItemBroken(unit, id) return GEAR[id] and GEAR[id][3] or false end
 function GetInventoryItemDurability(id) if GEAR[id] then return GEAR[id][2] * 100, 100 end end
-function GetInventoryItemLink(unit, id) return nil end
+-- Names and stats for the worn items; names as long as the game's longest fit.
+local NAMES = { [1] = "Helm of the Fallen Champion", [3] = "Ridge Spaulders", [5] = "Breastplate of the Long Watch",
+	[7] = "Scouting Leggings", [8] = "Worn Boots", [10] = "Bloodied Gauntlets", [15] = "Frayed Cloak", [16] = "Whirling Blade", [18] = "Hunting Bow" }
+function GetInventoryItemLink(unit, id)
+	if GEAR[id] then return ("|cff1eff00|Hitem:%d::::::::24:::::|h[%s]|h|r"):format(id, NAMES[id]) end
+end
+SHIRTSLOT, TABARDSLOT, FINGER1SLOT, TRINKET1SLOT = "Shirt", "Tabard", "Finger", "Trinket"
+ITEM_MOD_STAMINA_SHORT, ITEM_MOD_STRENGTH_SHORT, ITEM_MOD_AGILITY_SHORT, RESISTANCE0_NAME = "Stamina", "Strength", "Agility", "Armor"
+C_Item = C_Item or {}
+function C_Item.GetItemStats(link)
+	local id = tonumber(link:match("item:(%d+)"))
+	if id == 8 or id == 15 then return { RESISTANCE0_NAME = 20 } end
+	return { ITEM_MOD_STAMINA_SHORT = 6 + id, ITEM_MOD_STRENGTH_SHORT = 4 + id % 5, ITEM_MOD_AGILITY_SHORT = id % 3, RESISTANCE0_NAME = 80 }
+end
 
 -- The character-sheet model scene: the preview draws its well, not the model.
 ModelSceneUtil = { SetUpCharacterSheetScene = function(scene) end }
