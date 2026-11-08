@@ -80,14 +80,19 @@ secure frames), check `InCombatLockdown()` and queue it for
 
 Some calls are not blocked but forbidden outright from addon code, in or out
 of combat: `PickupInventoryItem` while a spell waits for its item (an enchant,
-a sharpening stone) is applying that spell. Hand those to the client's secure
-code (a `SecureActionButtonTemplate` button's `target-slot`), on a button kept
-off our windows: a window with secure children cannot be hidden in combat.
-Place it out of combat and hide it on `PLAYER_REGEN_DISABLED` (`applyOver` in
-Character.lua).
+a sharpening stone, an armor kit) is applying that spell, and
+`UseInventoryItem` (right-click use) is protected. Hand those to the client's
+secure code (a `SecureActionButtonTemplate` button: `*target-slot*` for the
+targeting, which the game gates on `SpellCanTargetItem`, and the `item` type for
+use), on a button kept off our windows: a window with secure children cannot be
+hidden in combat. Place it out of combat over the hovered slot, hand its other
+clicks and drags back to the slot, and hide it on `PLAYER_REGEN_DISABLED`
+(`overSlot` in Character.lua). Give it a strata above the window's: in the same
+strata, a level higher, the game still handed the mouse to the slot under it.
 
 **Caught by:** nothing automatic for blocked calls; BugGrabber in game. The
-`character-enchant` scene checks the secure button lands on the hovered slot.
+`character-enchant` scene checks the secure button lands on the hovered slot, with use only on
+a filled one.
 
 ## 5. Stock scenes are tuned for stock frames
 

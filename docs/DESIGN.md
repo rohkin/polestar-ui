@@ -286,6 +286,9 @@ New components, built from Polestar's widgets. Each takes its colours through
   weighs it against); off with Polestar's bag arrows.
 - **Durability:** under 25%, the border turns warning; broken, danger.
 - **Press:** the icon nudges 1px, as an icon button's glyph.
+- **Use:** right-click uses a worn item with a Use: effect (the tooltip hint
+  says so); a click while an enchant, kit or stone waits applies it. Out of
+  combat only: both are protected.
 
 ### Stat Row
 28px; the label in Label textDim at 16, the value in Number text at the right

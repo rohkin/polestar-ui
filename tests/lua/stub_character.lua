@@ -54,6 +54,10 @@ C_Container = C_Container or {}
 function C_Container.GetContainerNumSlots(bag) return bag == 0 and 2 or 0 end
 function C_Container.GetContainerItemLink(bag, i) return ("|Hitem:9%d::::::::24:::::|h[Bag item]|h"):format(i) end
 
+-- The gloves have a Use: effect (an engineering tinker).
+function GetInventoryItemID(unit, id) return GEAR[id] and id end
+function C_Item.GetItemSpell(link) if link:match("item:10:") then return "Nitro Boosts", 55004 end end
+
 -- A spell (an enchant, a stone) waiting for its item: stub.targeting.
 function SpellIsTargeting() return stub.targeting or false end
 
