@@ -166,7 +166,9 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     columns. Slot tiles 36px, 6px apart. Beside each column's
     slot, on the inside (over the model well): the item's name in Label in its
     quality colour, its stats ("+12 Sta  +8 Str": short names on this screen only, armor left out) in
-    Small textDim under it, 220px wide; empty, the slot's name in textMuted.
+    Small textDim under it, 220px wide, and a permanent enchant (its tooltip line,
+    "Enchanted: " dropped) in Small success under that, the three lines
+    centred on the slot; empty, the slot's name in textMuted.
     Painted out of combat only. Under the weapons, a 40px panel of primary stats:
     cells spread evenly on the page (no panel), the value in Number over its
     name in Small textDim, a 4px textMuted dot (`circle`) between cells, as the

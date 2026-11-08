@@ -65,6 +65,26 @@ local function shortName(k)
 	return SHORT[k:match("^ITEM_MOD_(.-)_SHORT$") or ""] or SHORT_NAMED[_G[k]:lower()] or _G[k]
 end
 
+-- An enchant's words in the same short names ("+15 Agility" to "+15 Agi"):
+-- the client's names for the stats above, whole words, longest first.
+local named
+local function shortWords(text)
+	if not named then
+		named = {}
+		for k, s in pairs(SHORT) do
+			local n = _G["ITEM_MOD_" .. k .. "_SHORT"]
+			if n then named[#named + 1] = { n:lower(), s } end
+		end
+		for n, s in pairs(SHORT_NAMED) do named[#named + 1] = { n, s } end
+		table.sort(named, function(a, b) return #a[1] > #b[1] end)
+	end
+	for _, e in ipairs(named) do
+		local i, j = text:lower():find("%f[%w]" .. e[1]:gsub("%p", "%%%0") .. "%f[%W]")
+		if i then text = text:sub(1, i - 1) .. e[2] .. text:sub(j + 1) end
+	end
+	return text
+end
+
 -- The item's stats ("+12 Sta  +8 Str"), largest first; armor left out.
 local function itemStats(link)
 	local t = C_Item.GetItemStats(link)
@@ -79,6 +99,21 @@ local function itemStats(link)
 	return table.concat(list, "  ")
 end
 
+-- The worn item's permanent enchant, as its tooltip line reads, without the
+-- "Enchanted: " the game puts before it.
+local ENCHANT_LINE = Enum and Enum.TooltipDataLineType and Enum.TooltipDataLineType.ItemEnchantmentPermanent or 15
+local function enchantText(id)
+	local data = C_TooltipInfo and C_TooltipInfo.GetInventoryItem("player", id)
+	for _, line in ipairs(data and data.lines or {}) do
+		local text = line.type == ENCHANT_LINE and line.leftText
+		if text and not (issecretvalue and issecretvalue(text)) then
+			local pre = ENCHANTED_TOOLTIP_LINE and ENCHANTED_TOOLTIP_LINE:match("^(.-)%%s")
+			if pre and pre ~= "" and text:sub(1, #pre) == pre then text = text:sub(#pre + 1) end
+			return shortWords(text)
+		end
+	end
+end
+
 -- The name and stats beside a column slot; the slot's name when empty. Out of
 -- combat only: item stats may be secret in it (docs/CLIENT.md, rule 3).
 local function paintSlotText(s, icon, q)
@@ -89,6 +124,12 @@ local function paintSlotText(s, icon, q)
 	local r, g, b = qualityRGB(q or 1)
 	if name and r then s.psName:SetTextColor(r, g, b) else W.Color(s.psName, name and "text" or "textMuted") end
 	s.psStats:SetText(link and itemStats(link) or "")
+	-- The enchant as a third line, the three centred on the slot as the two are.
+	local ench = link and enchantText(s:GetID())
+	s.psEnchant:SetText(ench or "")
+	local p, rel, x = unpack(s.psSide)
+	s.psName:SetPoint(p, s, rel, x, ench and 12 or 8)
+	s.psStats:SetPoint(p, s, rel, x, ench and 0 or -8)
 end
 
 -- The slots an item in the bags would upgrade, by Polestar's own bag verdict
@@ -269,11 +310,14 @@ local function newSlot(parent, name, layer, side)
 	if side then
 		local p, rel, x = "LEFT", "RIGHT", 8
 		if side == "right" then p, rel, x = "RIGHT", "LEFT", -8 end
+		s.psSide = { p, rel, x }
 		s.psName = W.Text(layer, "label", "text")
 		s.psName:SetPoint(p, s, rel, x, 8)
 		s.psStats = W.Text(layer, "small", "textDim")
 		s.psStats:SetPoint(p, s, rel, x, -8)
-		for _, t in ipairs({ s.psName, s.psStats }) do
+		s.psEnchant = W.Text(layer, "small", "success")
+		s.psEnchant:SetPoint(p, s, rel, x, -12)
+		for _, t in ipairs({ s.psName, s.psStats, s.psEnchant }) do
 			t:SetWidth(TEXT_W)
 			t:SetJustifyH(p)
 		end
