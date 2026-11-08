@@ -3,6 +3,9 @@
 
 local M = stub.Methods
 
+-- The call stack as text, as the client's debugstack gives it.
+function debugstack() return debug.traceback("", 2) end
+
 -- Secret values: in combat the player's name reaches addon code secret, and
 -- neither a tooltip nor our strings (Polestar's font hook reads them) take one.
 -- A string on a game font object has no hook: it holds the secret as is.

@@ -6,6 +6,9 @@ function UnitClass(unit) return "Warrior", "WARRIOR", 1 end
 function UnitPVPName(unit) return InCombatLockdown() and stub.SECRET or "Testchar" end
 function GetGuildInfo(unit) return InCombatLockdown() and stub.SECRET or "The Night Watch", "Member", 3 end
 function ToggleCharacter(tab, onlyShow) end
+-- The game's own open for a spell waiting on an item (an enchant): with the
+-- stock frame hidden, it toggles.
+function ShowCharacterFrameIfMatchesContext() ToggleCharacter("PaperDollFrame") end
 
 -- Gear: the client's slot ids; a few items of each quality, one worn down,
 -- one broken, the rest empty. Icons are client art, which the preview does

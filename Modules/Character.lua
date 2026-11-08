@@ -709,9 +709,13 @@ function M.Enable()
 	-- Hide(), not HideUIPanel: that dispatches to a forbidden frame, which does
 	-- nothing from addon code; the panel manager repairs a frame hidden this
 	-- way before it places the next panel (FramePositionDelegate:ShowUIPanel).
+	-- When a spell waits for an item (an enchant), the game opens the sheet
+	-- through ShowCharacterFrameIfMatchesContext: it means "show", but finding
+	-- the stock frame hidden it toggles, which would close ours.
 	hooksecurefunc("ToggleCharacter", function(key, onlyShow)
 		if CharacterFrame and CharacterFrame:IsShown() then CharacterFrame:Hide() end
-		M.Toggle(key, onlyShow)
+		local forContext = debugstack and debugstack():find("ShowCharacterFrameIfMatchesContext", 1, true)
+		M.Toggle(key, onlyShow or forContext ~= nil)
 	end)
 	-- Out of combat, the stats are read even with the window closed (coalesced
 	-- to one read per half second), so a window first opened mid-fight shows

@@ -115,6 +115,20 @@ the gutter sits outside its heading's frame.
 **Caught by:** the `character-currency-folded` scene (its stub folds without an
 event; the scene clicks the chevron's click area).
 
+## 7. The game opens stock frames for its own reasons, through toggles
+
+**What happened:** starting an enchant from the bags closed the Character
+window. The game opens the sheet for a spell waiting on an item
+(`ShowCharacterFrameIfMatchesContext`); it checks the stock frame, finds it
+hidden (ours replaced it), and calls `ToggleCharacter`, which our hook took as
+"close".
+
+**Rule:** a replacement's toggle hook must tell the player's toggle from the
+game's "show it". Where the game calls the toggle to show, treat it as
+`onlyShow` (the hook in Character.lua reads `debugstack` for that caller).
+
+**Caught by:** the `character-enchant-open` scene.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with
