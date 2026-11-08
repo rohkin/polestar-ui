@@ -25,6 +25,8 @@ const FALLBACK = 'Inter-Medium.ttf';
 const SCENES = [
 	{ file: 'character.svg', title: 'Character', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character")' }] },
 	{ file: 'character-primary-tank.svg', title: 'Character: Gear, Tank (the same choice as the Stats tab)', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUICharDB.archetype = "tank"; PolestarUI.Show("character")' }] },
+	// An enchant waiting for its item: hovering a slot puts the secure apply button over it, targeting that slot.
+	{ file: 'character-enchant.svg', title: 'Character: an enchant over the head slot', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character"); stub.targeting = true; local s; for _, c in ipairs({ PolestarUICharacter.psGear:GetChildren() }) do if c.psLabel and c:GetID() == 1 then s = c end end; stub.RunScript(s, "OnEnter"); local a = PolestarUICharacterApply; assert(a and a:IsShown(), "no apply button"); assert(a:GetAttribute("target-slot1") == 1, "wrong slot"); assert(a:GetAttribute("type1") == "psapply")' }] },
 	// Stats read once, then secret out of combat: the rows keep what they read, and no secret reaches our strings.
 	{ file: 'character-stats-secret.svg', title: 'Character: Stats gone secret', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PaperDollFrame", "stats"); stub.secretStats = true; stub.fire("UNIT_STATS", "player")' }] },
 	{ file: 'character-stats.svg', title: 'Character: Stats', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },

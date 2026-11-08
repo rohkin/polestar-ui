@@ -38,6 +38,9 @@ function C_Item.GetItemStats(link)
 	return { ITEM_MOD_STAMINA_SHORT = 6 + id, ITEM_MOD_STRENGTH_SHORT = 4 + id % 5, ITEM_MOD_AGILITY_SHORT = id % 3, RESISTANCE0_NAME = 80 }
 end
 
+-- A spell (an enchant, a stone) waiting for its item: stub.targeting.
+function SpellIsTargeting() return stub.targeting or false end
+
 -- The character-sheet model scene: the preview draws its well, not the model.
 ModelSceneUtil = { SetUpCharacterSheetScene = function(scene) end }
 

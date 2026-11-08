@@ -78,7 +78,16 @@ passthrough setup on frames near secure ones, `SetAttribute`, showing or moving
 secure frames), check `InCombatLockdown()` and queue it for
 `PLAYER_REGEN_ENABLED`. The block is an event, not a Lua error.
 
-**Caught by:** nothing automatic yet; BugGrabber in game.
+Some calls are not blocked but forbidden outright from addon code, in or out
+of combat: `PickupInventoryItem` while a spell waits for its item (an enchant,
+a sharpening stone) is applying that spell. Hand those to the client's secure
+code (a `SecureActionButtonTemplate` button's `target-slot`), on a button kept
+off our windows: a window with secure children cannot be hidden in combat.
+Place it out of combat and hide it on `PLAYER_REGEN_DISABLED` (`applyOver` in
+Character.lua).
+
+**Caught by:** nothing automatic for blocked calls; BugGrabber in game. The
+`character-enchant` scene checks the secure button lands on the hovered slot.
 
 ## 5. Stock scenes are tuned for stock frames
 

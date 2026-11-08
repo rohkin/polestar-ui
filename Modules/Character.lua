@@ -116,13 +116,55 @@ local function slotEnter(s)
 	GameTooltip:Show()
 end
 
+local applyOver -- below
+
 -- Left: pick up or put down (the stock slot's own call, unprotected); with a
 -- modifier, the client's linking and try-on handling.
--- shortcut: right-click "use" is left out (UseInventoryItem is protected); add a secure item button when needed.
+-- shortcut: right-click "use" is left out (UseInventoryItem is protected); applyOver's secure button could do it.
 local function slotClick(s, button)
 	local link = GetInventoryItemLink("player", s:GetID())
 	if link and IsModifiedClick() and HandleModifiedItemClick(link) then return end
-	if button == "LeftButton" then PickupInventoryItem(s:GetID()) end
+	if button ~= "LeftButton" then return end
+	-- Picking up while a spell targets is applying it: forbidden to us, so the
+	-- secure button (below) takes the click; this click only brings it.
+	if SpellIsTargeting() then return applyOver(s) end
+	PickupInventoryItem(s:GetID())
+end
+
+-- An enchant, stone or poison waiting for its item: applying it to an
+-- equipped item is protected (PickupInventoryItem from our code is forbidden
+-- then). So while the cursor targets, out of combat, one secure button takes
+-- the hovered slot's place and the client's own secure code applies it
+-- (SecureActionButton's "target-slot"). It hangs off UIParent, not the
+-- window: a window with secure children could not close in combat
+-- (docs/CLIENT.md, rule 4), and it hides as combat starts.
+local apply
+function applyOver(s)
+	if InCombatLockdown() or not SpellIsTargeting() then return end
+	if not apply then
+		apply = CreateFrame("Button", "PolestarUICharacterApply", UIParent, "SecureActionButtonTemplate")
+		apply:RegisterForClicks("LeftButtonUp")
+		-- A type with no action: the click only targets the slot.
+		apply:SetAttribute("type1", "psapply")
+		apply:SetAttribute("useOnKeyDown", false)
+		apply:SetScript("OnLeave", function(self)
+			W.HideTooltip()
+			if not InCombatLockdown() then self:Hide() end
+		end)
+		apply:HookScript("OnClick", function(self)
+			if not InCombatLockdown() then self:Hide() end
+		end)
+		Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() apply:Hide() end)
+	end
+	local k = s:GetEffectiveScale() / UIParent:GetEffectiveScale()
+	apply:ClearAllPoints()
+	apply:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", s:GetLeft() * k, s:GetTop() * k)
+	apply:SetSize(s:GetWidth() * k, s:GetHeight() * k)
+	apply:SetFrameStrata(f:GetFrameStrata())
+	apply:SetFrameLevel(s:GetFrameLevel() + 20)
+	apply:SetAttribute("target-slot1", s:GetID())
+	apply:SetScript("OnEnter", function() slotEnter(s) end)
+	apply:Show()
 end
 
 -- side: "left" or "right" for a column slot, its name and stats on the
@@ -144,7 +186,10 @@ local function newSlot(parent, name, layer, side)
 	s:SetScript("OnClick", slotClick)
 	s:SetScript("OnDragStart", function(self) PickupInventoryItem(self:GetID()) end)
 	s:SetScript("OnReceiveDrag", function(self) PickupInventoryItem(self:GetID()) end)
-	s:SetScript("OnEnter", slotEnter)
+	s:SetScript("OnEnter", function(self)
+		slotEnter(self)
+		applyOver(self)
+	end)
 	s:SetScript("OnLeave", W.HideTooltip)
 	if side then
 		local p, rel, x = "LEFT", "RIGHT", 8
