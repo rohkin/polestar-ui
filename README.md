@@ -14,7 +14,7 @@ A companion to [Polestar](https://github.com/fitzforge/polestar): the game's own
 
 ## Development
 
-The design system is [docs/DESIGN.md](docs/DESIGN.md), on top of Polestar's own.
+The design system is [docs/DESIGN.md](docs/DESIGN.md), on top of Polestar's own. Before building a surface, read [docs/CLIENT.md](docs/CLIENT.md): the client rules learnt from bugs in game, and how to read errors from it.
 
 Needs Node 24+, a Lua 5.1 (`luajit` works; or set `LUA`), and a Polestar checkout at `../polestar` (or `$POLESTAR_DIR`).
 

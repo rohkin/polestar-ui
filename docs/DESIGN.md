@@ -86,6 +86,12 @@ How a stock element is replaced, for every module.
    with attributes set out of combat. Item equipping out of combat
    (`PickupInventoryItem`, `EquipCursorItem`) is not protected.
 
+6. **Follow the client rules.** [CLIENT.md](CLIENT.md) lists what the client
+   does that the preview stub did not, each learnt from a bug in game: no
+   `HideUIPanel`, fonts before text, secret values in combat, protected calls
+   in combat, stock scenes tuned for stock frames. A new rule goes there, and
+   into the preview where it can.
+
 Each catalogue entry below names its **Risk**: *low* (no protected calls, stock
 frame not read by secure code), *medium* (stock frame read by gamepad
 navigation), *high* (protected actions or secure headers).
