@@ -163,3 +163,22 @@ function GetCurrentArenaSeason() return 1 end
 C_MajorFactions = { GetMajorFactionProgressionInfo = function(id)
 	return { renownLevel = 5, renownReputationEarned = 1240, renownLevelThreshold = 2000 }
 end }
+
+-- Statistics: two top categories (one with a sub-category) and one left
+-- folded; a money value, a count and a zero ("--").
+STATISTICS = "Statistics"
+local STAT_CATS = { [130] = { "Character", -1 }, [140] = { "Wealth", 130 }, [141] = { "Combat", -1 }, [145] = { "Deaths", -1 } }
+local STATS = {
+	[130] = { { "Quests completed", "212" }, { "Daily quests completed", "0" } },
+	[140] = { { "Gold looted", "54|TInterface/MoneyFrame/UI-GoldIcon:0:0:2:0|t" }, { "Most gold ever owned", "61" } },
+	[141] = { { "Creatures killed", "14820" } },
+	[145] = { { "Total deaths", "37" } },
+}
+function GetStatisticsCategoryList() return { 130, 140, 141, 145 } end
+function GetCategoryInfo(id) return STAT_CATS[id][1], STAT_CATS[id][2] end
+function GetCategoryNumAchievements(id) return #(STATS[id] or {}) end
+function GetStatistic(id, i) return STATS[id][i][2], false, id * 100 + i end
+function GetAchievementInfo(statID)
+	local s = STATS[math.floor(statID / 100)][statID % 100]
+	return statID, s[1]
+end

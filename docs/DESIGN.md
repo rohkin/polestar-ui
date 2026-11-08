@@ -210,6 +210,12 @@ only and read in the background like the stats (CLIENT.md, rule 3).
 - **Skills:** the stock page's lines (no class skills, no sub-lines): 40px
   rows, the name in Body, "rank/max" (and the modifier, "(+5)") in Small textDim
   at the right, the 2px accent skill bar under them.
+- **Statistics:** the client's statistic categories as the stock page reads
+  them, a group per top category; a sub-category is a row in textDim with its
+  own chevron, its statistics indented 18px. 28px rows: the name in Label (cut
+  with an ellipsis, the whole name in the tooltip), the value in Number at the
+  right ("--" for none); no row panel or hairlines, the rows on the page. The client keeps no fold state here: the folds are
+  ours, and every category starts folded.
 
 #### Professions book (`ProfessionsBookFrame`) — Risk: medium
 `TOGGLEPROFESSIONBOOK` → `ToggleProfessionsBook()`.

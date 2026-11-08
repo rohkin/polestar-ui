@@ -1,5 +1,5 @@
 -- The Character window's other sections (docs/DESIGN.md, "Character"):
--- Reputation, Currency, Honor and Skills. Each page is
+-- Reputation, Currency, Honor, Skills and Statistics. Each page is
 --   ns.CharacterPages[stock subframe] = { build = fn(body, width) -> frame, paint = fn(frame) -> height }
 -- and is painted only out of combat (docs/CLIENT.md, rule 3): in combat a page
 -- keeps what it last drew, and Character.lua reads it again once combat ends.
@@ -24,7 +24,8 @@ end
 ---------------------------------------------------------------------------
 -- A grouped list: a heading per group (its chevron in the gutter folds it),
 -- over a row panel. groups = { { name, collapsed, toggle = fn, rows = { data, ... } } };
--- spec = { height, new = fn(row), draw = fn(row, data) }.
+-- spec = { height, new = fn(row), draw = fn(row, data), plain }; plain: the
+-- rows sit on the page, with no panel or hairlines around them.
 
 local function listView(body, width)
 	local v = CreateFrame("Frame", nil, body)
@@ -34,10 +35,10 @@ local function listView(body, width)
 	return v
 end
 
-local function group(v, i)
+local function group(v, i, spec)
 	local g = v.groups[i]
 	if g then return g end
-	g = { Head = W.SectionHeader(v), Panel = W.RowPanel(v), rows = {} }
+	g = { Head = W.SectionHeader(v), Panel = spec.plain and CreateFrame("Frame", nil, v) or W.RowPanel(v), rows = {} }
 	g.Head:SetPoint("RIGHT", v, "RIGHT", 0, 0)
 	g.Panel:SetPoint("RIGHT", v, "RIGHT", 0, 0)
 	g.Chevron = W.Tex(g.Head, "ARTWORK", "chevron-down", "textDim")
@@ -61,7 +62,7 @@ local function row(g, i, spec)
 	r:SetHeight(spec.height)
 	r:SetPoint("TOPLEFT", g.Panel, "TOPLEFT", 0, -(i - 1) * spec.height)
 	r:SetPoint("RIGHT", g.Panel, "RIGHT", 0, 0)
-	if i > 1 then
+	if i > 1 and not spec.plain then
 		local d = W.Divider(r)
 		d:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
 		d:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
@@ -76,7 +77,7 @@ end
 local function paintList(v, groups, spec)
 	local y = 0
 	for i, data in ipairs(groups) do
-		local g = group(v, i)
+		local g = group(v, i, spec)
 		g.toggle = data.toggle
 		W.SetSection(g.Head, data.name)
 		g.Chevron:SetTexture(Theme.Media(data.collapsed and "chevron-right" or "chevron-down"))
@@ -334,6 +335,108 @@ pages.SkillsFrame = pageOf(function(v)
 	end
 	return paintList(v, groups, skillSpec)
 end, "Your skills rise as you use them; a trainer raises how high they can go.")
+
+---------------------------------------------------------------------------
+-- Statistics: the client's statistic categories (as the stock StatisticsFrame
+-- reads them), a group per top category; a sub-category is a row with its own
+-- chevron, its statistics indented under it. The client keeps no fold state
+-- for these, so the folds are ours, and every category starts folded: there
+-- are hundreds of statistics.
+-- shortcut: folds last the session; keep them in PolestarUICharDB if players ask.
+
+local statOpen = {}
+
+-- As the stock page: "--" for none; a number with its thousands marks; any
+-- other text (money) as the client gives it.
+local function statValue(quantity)
+	local n = tonumber(quantity)
+	if n then return n > 0 and BreakUpLargeNumbers(n) or "--" end
+	return (quantity and quantity ~= "") and quantity or "--"
+end
+
+local statSpec = {
+	height = ROW_H,
+	plain = true,
+	new = function(r)
+		r.Value = W.Text(r, "number", "text")
+		r.Value:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+		r.Name = W.Text(r, "label", "text")
+		r.Name:SetPoint("RIGHT", r.Value, "LEFT", -12, 0)
+		r.Chevron = W.Tex(r, "ARTWORK", "chevron-down", "textDim")
+		r.Chevron:SetSize(12, 12)
+		r.Chevron:SetPoint("RIGHT", r.Name, "LEFT", -6, 0)
+		r:SetScript("OnClick", function(self)
+			local d = self.psData
+			if d and d.toggle then fold(d.toggle) end
+		end)
+		-- The whole name when the row cuts it, as the stock page does.
+		r:SetScript("OnEnter", function(self)
+			if not (self.Name.IsTruncated and self.Name:IsTruncated()) then return end
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(self.Name:GetText())
+			GameTooltip:Show()
+		end)
+	end,
+	draw = function(r, d)
+		r.psData = d
+		r.Name:SetPoint("LEFT", r, "LEFT", d.indent and 34 or 16, 0)
+		r.Name:SetText(d.name)
+		W.Color(r.Name, d.toggle and "textDim" or "text")
+		r.Chevron:SetShown(d.toggle ~= nil)
+		r.Chevron:SetTexture(Theme.Media(d.collapsed and "chevron-right" or "chevron-down"))
+		r.Value:SetText(d.value or "")
+	end,
+}
+
+local function statToggle(id) return function() statOpen[id] = not statOpen[id] end end
+
+-- A category's statistics, as rows.
+local function statRows(id, rows, indent)
+	for i = 1, GetCategoryNumAchievements(id) do
+		local quantity, skip, statID = GetStatistic(id, i)
+		if not skip and statID then
+			rows[#rows + 1] = { name = select(2, GetAchievementInfo(statID)) or UNKNOWN, value = statValue(quantity), indent = indent }
+		end
+	end
+end
+
+pages.StatisticsFrame = pageOf(function(v)
+	-- The list's numeric keys in order, as the stock page walks it.
+	local list, keys = GetStatisticsCategoryList() or {}, {}
+	for k, id in pairs(list) do if type(k) == "number" and id then keys[#keys + 1] = k end end
+	table.sort(keys)
+	local roots, kids = {}, {}
+	for _, k in ipairs(keys) do
+		local id = list[k]
+		local _, parent = GetCategoryInfo(id)
+		if parent == -1 then
+			roots[#roots + 1] = id
+		else
+			kids[parent] = kids[parent] or {}
+			table.insert(kids[parent], id)
+		end
+	end
+	local groups = {}
+	for _, root in ipairs(roots) do
+		local g = { name = GetCategoryInfo(root), collapsed = not statOpen[root], toggle = statToggle(root), rows = {} }
+		if statOpen[root] then
+			statRows(root, g.rows, false)
+			-- Deeper categories join their top one's group as sub-categories.
+			local function sub(parent)
+				for _, id in ipairs(kids[parent] or {}) do
+					g.rows[#g.rows + 1] = { name = GetCategoryInfo(id), collapsed = not statOpen[id], toggle = statToggle(id) }
+					if statOpen[id] then
+						statRows(id, g.rows, true)
+						sub(id)
+					end
+				end
+			end
+			sub(root)
+		end
+		groups[#groups + 1] = g
+	end
+	return paintList(v, groups, statSpec)
+end, "What your character has done, counted. Click a heading to open it.")
 
 ---------------------------------------------------------------------------
 -- Honor: Forever's PvP rank, kept as the major faction 2800 (as the stock

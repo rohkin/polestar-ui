@@ -12,6 +12,7 @@ local SECTIONS = {
 	{ key = "TokenFrame", label = CURRENCY or "Currency", icon = "qol-coin" },
 	{ key = "PVPRankFrame", label = PVP or "Honor", icon = "flag" },
 	{ key = "SkillsFrame", label = SKILLS or "Skills", icon = "icon-skill" },
+	{ key = "StatisticsFrame", label = STATISTICS or "Statistics", icon = "icon-achieve" },
 }
 local TABS = { { key = "gear", label = "Gear" }, { key = "stats", label = "Stats" } }
 
@@ -745,6 +746,7 @@ function M.Enable()
 	Polestar.RegisterEvent("UPDATE_FACTION", changed)
 	Polestar.RegisterEvent("CURRENCY_DISPLAY_UPDATE", changed)
 	Polestar.RegisterEvent("MAJOR_FACTION_RENOWN_LEVEL_CHANGED", changed)
+	Polestar.RegisterEvent("CRITERIA_UPDATE", changed)
 	-- Stats read in combat may be stand-ins (fill); read them again after it.
 	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", changed)
 	Polestar.RegisterEvent("PLAYER_EQUIPMENT_CHANGED", changed)

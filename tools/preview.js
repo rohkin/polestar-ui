@@ -35,6 +35,9 @@ const SCENES = [
 	{ file: 'character-currency.svg', title: 'Character: Currency', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "TokenFrame")' }] },
 	{ file: 'character-honor.svg', title: 'Character: Honor', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PVPRankFrame")' }] },
 	{ file: 'character-skills.svg', title: 'Character: Skills', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "SkillsFrame")' }] },
+	{ file: 'character-statistics.svg', title: 'Character: Statistics, folded', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "StatisticsFrame")' }] },
+	// A heading opens its category, and a sub-category row opens under it, each redrawn at once.
+	{ file: 'character-statistics-open.svg', title: 'Character: Statistics, a category open', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "StatisticsFrame"); local v = PolestarUICharacter.psPages.StatisticsFrame; v.groups[1].Hit:Click(); v.groups[1].rows[3]:Click()' }] },
 	// A click on a group's chevron folds it, and the page redraws without an event.
 	{ file: 'character-currency-folded.svg', title: 'Character: Currency, a group folded', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "TokenFrame"); PolestarUICharacter.psPages.TokenFrame.groups[1].Hit:Click()' }] },
 	// First opened mid-fight: the stats and name read in the background before it still show, and the model's tooltip takes no secret name.
