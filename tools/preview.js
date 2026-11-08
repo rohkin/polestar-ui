@@ -48,7 +48,7 @@ function metricsLua(fonts) {
 
 function dumpPanel(panel, prelude) {
 	const { emitted } = runAddon({
-		stubs: ['stub_ui.lua', ...(panel.stubs || [])],
+		stubs: ['stub_ui.lua', 'stub_client.lua', ...(panel.stubs || [])],
 		before: `${prelude}\ndofile(${JSON.stringify(path.join(ROOT, 'tools', 'preview', 'stub.lua'))})`,
 		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, { name: 'Polestar_UI', dir: ROOT }],
 		script: `uistub.install()\nstub.login()\n${panel.script}\nstub.advance(1)\npreview.emit()`,
