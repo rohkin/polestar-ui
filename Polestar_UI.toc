@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: Polestar: UI
+## Notes: A companion to Polestar: the game's own windows in Polestar's look.
+## Version: 0.0.1
+## Category: Polestar
+## Group: Polestar
+## Dependencies: Polestar
+## IconTexture: Interface\AddOns\Polestar\Media\UI\logo
+## SavedVariables: PolestarUIDB
+
+Core.lua
