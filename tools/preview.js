@@ -24,6 +24,10 @@ const FALLBACK = 'Inter-Medium.ttf';
 // Scenes: Lua run once the player has logged in. `roots` names the frames drawn.
 const SCENES = [
 	{ file: 'character.svg', title: 'Character', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character")' }] },
+	{ file: 'character-stats.svg', title: 'Character: Stats', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
+	{ file: 'character-stats-tank.svg', title: 'Character: Stats, Tank', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'PolestarUICharDB.archetype = "tank"; PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
+	// First opened mid-fight: the stats read in the background before it still show.
+	{ file: 'character-stats-combat.svg', title: 'Character: Stats in combat', panels: [{ roots: ['PolestarUICharacter'], stubs: ['stub_character.lua'], script: 'stub.fire("PLAYER_ENTERING_WORLD"); stub.advance(1); stub.inCombat = true; PolestarUI.Show("character", "PaperDollFrame", "stats")' }] },
 ];
 
 function loadFonts() {

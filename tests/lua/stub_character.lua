@@ -27,3 +27,40 @@ function GetInventoryItemLink(unit, id) return nil end
 
 -- The character-sheet model scene: the preview draws its well, not the model.
 ModelSceneUtil = { SetUpCharacterSheetScene = function(scene) end }
+
+-- Stats: the stock categories and their update functions, filled with the
+-- sample warrior's numbers the way the stock ones fill a row.
+STAT_FORMAT, STAT_AVERAGE_ITEM_LEVEL, MIN_PLAYER_LEVEL_FOR_ITEM_LEVEL_DISPLAY = "%s:", "Item Level", 10
+local function stat(label, value, hidden)
+	return { updateFunc = function(r)
+		if hidden then r:Hide() return end
+		r.Label:SetText(STAT_FORMAT:format(label))
+		r.Value:SetText(value)
+		r.numericValue = tonumber(value) or 1
+		r.tooltip = label .. " " .. value
+	end }
+end
+function GetAverageItemLevel() return 27.4, 27.4, 27.4 end
+function C_PaperDollInfo.GetMinItemLevel() return nil end
+function PaperDollStatTooltip(r) end
+PAPERDOLL_STATINFO = {
+	HEALTH = stat("Health", "1,240"), POWER = stat("Rage", "100"),
+	STRENGTH = stat("Strength", "|cff20ff2078|r"), AGILITY = stat("Agility", "45"), STAMINA = stat("Stamina", "71"),
+	INTELLECT = stat("Intellect", "22"), SPIRIT = stat("Spirit", "31"),
+	MAINHAND_DAMAGE = stat("Main Hand", "41 - 63"), OFFHAND_DAMAGE = stat("Off Hand", "0"), ATTACK_AP = stat("Attack Power", "196"),
+	HITCHANCE = stat("Hit", "2%"), CRITCHANCE = stat("Crit", "6.4%"), SPELLPOWER = stat("Spell Power", "0", true),
+	DEFENSE = stat("Defense", "120"), DODGE = stat("Dodge", "5.1%"), PARRY = stat("Parry", "5%"), ARMOR = stat("Armor", "1,032"),
+}
+-- Movement speed is secret in combat: the stock maths on it errors there.
+PAPERDOLL_STATINFO.MOVESPEED = { updateFunc = function(r)
+	if InCombatLockdown() then error("attempt to perform arithmetic on local 'runSpeed' (a secret number value)") end
+	stat("Movement Speed", "100%").updateFunc(r)
+end }
+PAPERDOLL_STATCATEGORIES = {
+	{ categoryName = "General", unit = "player", stats = { { stat = "HEALTH" }, { stat = "POWER" }, { stat = "MOVESPEED" } } },
+	{ categoryName = "Attributes", unit = "player", stats = { { stat = "STRENGTH" }, { stat = "AGILITY" }, { stat = "STAMINA" }, { stat = "INTELLECT" }, { stat = "SPIRIT" } } },
+	{ categoryName = "Weapons", unit = "player", stats = { { stat = "MAINHAND_DAMAGE" }, { stat = "OFFHAND_DAMAGE", hideAt = 0 }, { stat = "ATTACK_AP" } } },
+	{ categoryName = "Modifiers", unit = "player", stats = { { stat = "HITCHANCE" }, { stat = "CRITCHANCE" }, { stat = "SPELLPOWER", hideAt = 0 } } },
+	{ categoryName = "Defense", unit = "player", stats = { { stat = "DEFENSE" }, { stat = "DODGE" }, { stat = "PARRY" }, { stat = "ARMOR" } } },
+	{ categoryName = "Pet", unit = "pet", stats = { { stat = "HEALTH" } } },
+}

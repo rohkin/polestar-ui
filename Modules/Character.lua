@@ -145,6 +145,182 @@ local function paintGear()
 	for _, s in ipairs(slots) do paintSlot(s) end
 end
 
+---------------------------------------------------------------------------
+-- Stats: the stock categories (PAPERDOLL_STATCATEGORIES), each a heading over
+-- a row panel (docs/DESIGN.md, "Stat Row"), flowed into two columns. The
+-- numbers and tooltips are the stock sheet's own: each row is handed to
+-- PAPERDOLL_STATINFO[stat].updateFunc, which fills Label, Value and tooltip.
+
+local STAT_H, HEAD_H, SECTION_GAP, COL_GAP = 28, 44, 22, 24
+
+-- Archetypes: the player's choice (per character) of which stats matter. The
+-- layout never moves: `key` stats read in text, the rest in textMuted.
+local ARCHETYPES = {
+	{ id = "melee", label = "Melee",
+		key = { STRENGTH = true, AGILITY = true, MAINHAND_DAMAGE = true, OFFHAND_DAMAGE = true, RANGED_DAMAGE = true,
+			ATTACK_AP = true, RANGED_ATTACK_AP = true, HITCHANCE = true, CRITCHANCE = true, HASTE = true, EXPERTISE = true, ARMORPEN = true } },
+	{ id = "caster", label = "Caster",
+		key = { INTELLECT = true, SPIRIT = true, POWER = true, MANAREGEN = true, SPELLPOWER = true, SPELLHEALING = true,
+			SPELLPENETRATION = true, HITCHANCE = true, CRITCHANCE = true, HASTE = true } },
+	{ id = "tank", label = "Tank",
+		key = { STAMINA = true, HEALTH = true, DEFENSE = true, DODGE = true, PARRY = true, BLOCK = true, ARMOR = true } },
+}
+local BY_ID = {}
+for _, a in ipairs(ARCHETYPES) do BY_ID[a.id] = a end
+-- The starting choice by class, until the player picks one.
+local CASTERS = { MAGE = true, WARLOCK = true, PRIEST = true, DRUID = true, SHAMAN = true }
+
+local function archetype()
+	local id = PolestarUICharDB and PolestarUICharDB.archetype
+	if not BY_ID[id] then
+		local _, class = UnitClass("player")
+		id = CASTERS[class] and "caster" or "melee"
+	end
+	return BY_ID[id]
+end
+
+local function statEnter(r)
+	if r.onEnterFunc then r.onEnterFunc(r) else PaperDollStatTooltip(r) end
+end
+
+local function statRow(s, i)
+	local r = s.rows[i]
+	if r then return r end
+	r = CreateFrame("Button", nil, s.Panel)
+	r:SetHeight(STAT_H)
+	r:SetPoint("TOPLEFT", s.Panel, "TOPLEFT", 0, -(i - 1) * STAT_H)
+	r:SetPoint("RIGHT", s.Panel, "RIGHT", 0, 0)
+	r.Label = W.Text(r, "label", "textDim")
+	r.Label:SetPoint("LEFT", r, "LEFT", 16, 0)
+	r.Value = W.Text(r, "number", "text")
+	r.Value:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+	if i > 1 then
+		local d = W.Divider(r)
+		d:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
+		d:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
+	end
+	W.Hover(r)
+	r:SetScript("OnEnter", statEnter)
+	r:SetScript("OnLeave", W.HideTooltip)
+	s.rows[i] = r
+	return r
+end
+
+-- The last values each stock stat function gave, by function. In combat the
+-- client makes many stats secret: the stock functions, called from our
+-- (tainted) code, error on them or write secret text into our strings. So in
+-- combat they are not run at all; each stat shows what it last read, and the
+-- page reads them again when combat ends (PLAYER_REGEN_ENABLED).
+local lastRead = {}
+local secret = issecretvalue or function() return false end
+
+-- Runs one stock stat function on row r; true when the stat is to be shown.
+local function fill(r, fn, hideAt)
+	r.onEnterFunc, r.UpdateTooltip, r.tooltip, r.tooltip2, r.tooltip3, r.numericValue = nil
+	r:Show()
+	if InCombatLockdown() or not pcall(fn, r, "player") or secret(r.numericValue) then
+		local last = lastRead[fn]
+		if not last then return false end
+		r.Label:SetText(last[1])
+		r.Value:SetText(last[2])
+		r.numericValue, r.tooltip, r.tooltip2 = last[3], last[4], last[5]
+		return true
+	end
+	-- The stock label ends in STAT_FORMAT's colon; a row label here has none.
+	r.Label:SetText((r.Label:GetText() or ""):gsub("%s*:%s*$", ""))
+	lastRead[fn] = { r.Label:GetText(), r.Value:GetText(), r.numericValue, r.tooltip, r.tooltip2 }
+	return r:IsShown() and (hideAt == nil or hideAt ~= r.numericValue)
+end
+
+-- { name, { { fn, hideAt, key }, ... } } for the player's categories, in the
+-- stock order.
+local function statCategories(arch)
+	local cats = {}
+	for _, c in ipairs(PAPERDOLL_STATCATEGORIES or {}) do
+		if (c.unit or "player") == "player" then
+			local list = {}
+			for _, st in ipairs(c.stats) do
+				local info = PAPERDOLL_STATINFO[st.stat]
+				if info and (not st.showFunc or st.showFunc()) then
+					list[#list + 1] = { info.updateFunc, st.hideAt, arch.key[st.stat] or false }
+				end
+			end
+			cats[#cats + 1] = { c.categoryName, list }
+		end
+	end
+	return cats
+end
+
+-- The item level the stock sheet shows (PaperDollFrame_SetItemLevel's own
+-- sum), from its level on; nil below it.
+local function itemLevel()
+	if UnitLevel("player") < (MIN_PLAYER_LEVEL_FOR_ITEM_LEVEL_DISPLAY or 10) then return nil end
+	local _, equipped = GetAverageItemLevel()
+	return math.floor(math.max(C_PaperDollInfo.GetMinItemLevel() or 0, equipped or 0))
+end
+
+local function buildStats(body, width)
+	local v = CreateFrame("Frame", nil, body)
+	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, 0)
+	v:SetWidth(width)
+	v.colW = (width - COL_GAP) / 2
+	v.sections = {}
+	return v
+end
+
+-- Lays the categories out, each in the shorter column; returns the height.
+local function paintStats()
+	local v = f.psStats
+	local colH = { 0, 0 }
+	local arch = archetype()
+	for _, b in ipairs(v.segments) do
+		local on = b.psKey == arch.id
+		b.Selected:SetShown(on)
+		W.Color(b.Label, on and "text" or "textMuted")
+	end
+	local cats = statCategories(arch)
+	for i, cat in ipairs(cats) do
+		local s = v.sections[i]
+		if not s then
+			s = { Head = W.SectionHeader(v), Panel = W.RowPanel(v), rows = {} }
+			s.Head:SetWidth(v.colW)
+			s.Panel:SetWidth(v.colW)
+			v.sections[i] = s
+		end
+		local n = 0
+		for _, e in ipairs(cat[2]) do
+			local r = statRow(s, n + 1)
+			if fill(r, e[1], e[2]) then
+				n = n + 1
+				W.Color(r.Label, e[3] and "text" or "textMuted")
+				W.Color(r.Value, e[3] and "text" or "textMuted")
+			else
+				r:Hide()
+			end
+		end
+		for k = n + 1, #s.rows do s.rows[k]:Hide() end
+		local shown = n > 0
+		s.Head:SetShown(shown)
+		s.Panel:SetShown(shown)
+		if shown then
+			local col = colH[1] <= colH[2] and 1 or 2
+			local x, y = (col - 1) * (v.colW + COL_GAP), colH[col]
+			W.SetSection(s.Head, cat[1])
+			s.Head:SetPoint("TOPLEFT", v, "TOPLEFT", x, -y)
+			s.Panel:SetPoint("TOPLEFT", v, "TOPLEFT", x, -(y + HEAD_H))
+			s.Panel:SetHeight(n * STAT_H)
+			colH[col] = y + HEAD_H + n * STAT_H + SECTION_GAP
+		end
+	end
+	for i = #cats + 1, #v.sections do
+		v.sections[i].Head:Hide()
+		v.sections[i].Panel:Hide()
+	end
+	local h = math.max(colH[1], colH[2])
+	v:SetHeight(h)
+	return h
+end
+
 local function build()
 	f = W.Shell(NAME, {})
 	-- The subject block names the window, in place of Polestar's lockup.
@@ -157,6 +333,30 @@ local function build()
 	f.psLine = W.Text(f.Sidebar, "small", "textDim")
 	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
 	f.psGear = buildGear(f.Body, f.BodyWidth)
+	f.psStats = buildStats(f.Body, f.BodyWidth)
+	-- The archetype as filter segments at the right of the tab row (as the
+	-- guide picker's faction filter): its right edge mirrors the first tab.
+	local segs, x = {}, -20
+	for i = #ARCHETYPES, 1, -1 do
+		local a = ARCHETYPES[i]
+		local b = CreateFrame("Button", nil, f.TabRow)
+		b:SetHeight(24)
+		b.psKey = a.id
+		W.Hover(b)
+		b.Selected = W.Fill(b, "panelAlt", "BACKGROUND", 0)
+		b.Label = W.Text(b, "small", "textMuted")
+		b.Label:SetPoint("CENTER", b, "CENTER", 0, 0)
+		b.Label:SetText(a.label)
+		b:SetWidth(math.floor(b.Label:GetStringWidth() + 20 + 0.5))
+		b:SetPoint("RIGHT", f.TabRow, "RIGHT", x, 0)
+		b:SetScript("OnClick", function(self)
+			PolestarUICharDB.archetype = self.psKey
+			M.Show()
+		end)
+		x = x - b:GetWidth() - 2
+		segs[i] = b
+	end
+	f.psStats.segments = segs
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -167,7 +367,10 @@ local function refresh()
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
 	if section == "PaperDollFrame" then
 		W.ShellTabs(f, TABS, tab, function(k) tab = k; refresh() end)
-		W.ShellTitle(f, UnitPVPName("player") or UnitName("player"), ("Level %d %s %s"):format(level, race, UnitClass("player")))
+		local sub = ("Level %d %s %s"):format(level, race, UnitClass("player"))
+		local ilvl = itemLevel()
+		if ilvl then sub = sub .. " · Item level " .. ilvl end
+		W.ShellTitle(f, UnitPVPName("player") or UnitName("player"), sub)
 	else
 		W.ShellTabs(f, nil)
 		for _, s in ipairs(SECTIONS) do
@@ -176,17 +379,25 @@ local function refresh()
 	end
 	W.ShellFooter(f, {}, {})
 	local gear = section == "PaperDollFrame" and tab == "gear"
+	local stats = section == "PaperDollFrame" and tab == "stats"
 	f.psGear:SetShown(gear)
+	f.psStats:SetShown(stats)
+	for _, b in ipairs(f.psStats.segments) do b:SetShown(stats) end
+	local h = 0
 	if gear then
 		paintGear()
 		showModel()
+		h = f.psGear:GetHeight() + 48
+	elseif stats then
+		h = paintStats() + 8
 	end
-	W.ShellBody(f, gear and f.psGear:GetHeight() + 48 or 0)
+	W.ShellBody(f, h)
 end
 
-function M.Show(key)
+function M.Show(key, view)
 	if not f then build() end
 	section = key or section
+	tab = view or tab
 	refresh()
 	f:Show()
 end
@@ -209,9 +420,38 @@ function M.Enable()
 		if CharacterFrame and CharacterFrame:IsShown() then CharacterFrame:Hide() end
 		M.Toggle(key, onlyShow)
 	end)
-	local function changed()
-		if f and f:IsShown() and f.psGear:IsShown() then paintGear() end
+	-- Out of combat, the stats are read even with the window closed (coalesced
+	-- to one read per half second), so a window first opened mid-fight shows
+	-- them from just before it (fill's lastRead).
+	local warming = false
+	local function warm()
+		warming = false
+		if InCombatLockdown() then return end
+		if not f then build() end
+		paintStats()
 	end
+	local function changed()
+		if not (f and f:IsShown()) then
+			if not warming and not InCombatLockdown() then
+				warming = true
+				Polestar.After(0.5, warm)
+			end
+			return
+		end
+		if f.psGear:IsShown() then paintGear() end
+		if f.psStats:IsShown() then W.ShellBody(f, paintStats() + 8) end
+	end
+	Polestar.RegisterEvent("PLAYER_ENTERING_WORLD", changed)
+	-- The stock sheet's stat events (PaperDollFrame_OnLoad).
+	for _, e in ipairs({ "UNIT_STATS", "UNIT_RANGEDDAMAGE", "UNIT_RANGED_ATTACK_POWER", "UNIT_ATTACK", "UNIT_SPELL_HASTE",
+		"UNIT_RESISTANCES", "UNIT_DAMAGE", "UNIT_ATTACK_SPEED", "UNIT_MAXHEALTH", "UNIT_AURA", "UNIT_LEVEL" }) do
+		Polestar.RegisterEvent(e, function(_, unit) if unit == "player" then changed() end end)
+	end
+	Polestar.RegisterEvent("COMBAT_RATING_UPDATE", changed)
+	Polestar.RegisterEvent("PLAYER_DAMAGE_DONE_MODS", changed)
+	Polestar.RegisterEvent("SKILL_LINES_CHANGED", changed)
+	-- Stats read in combat may be stand-ins (fill); read them again after it.
+	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", changed)
 	Polestar.RegisterEvent("PLAYER_EQUIPMENT_CHANGED", changed)
 	Polestar.RegisterEvent("UNIT_INVENTORY_CHANGED", function(_, unit) if unit == "player" then changed() end end)
 	-- A new look (gear, form) rebuilds the scene, as the stock sheet does.

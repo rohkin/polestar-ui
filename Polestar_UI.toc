@@ -7,6 +7,7 @@
 ## Dependencies: Polestar
 ## IconTexture: Interface\AddOns\Polestar\Media\UI\logo
 ## SavedVariables: PolestarUIDB
+## SavedVariablesPerCharacter: PolestarUICharDB
 
 Core.lua
 Modules\Character.lua

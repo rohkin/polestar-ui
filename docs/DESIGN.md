@@ -148,9 +148,21 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     Trinket ×2), weapons in a row under the model, the model well between the
     columns. Slot tiles 40px, 6px apart (stock spacing). Under each column's
     slot, nothing: the item's name and level live in the tooltip.
-  - *Stats*: one column of stat panels in Polestar's settings layout: a Heading
-    per stock category (`PAPERDOLL_STATCATEGORIES`: General, Attributes, Melee,
-    Ranged, Spell, Defence) and a panel of 28px stat rows.
+  - *Stats*: stat panels in Polestar's settings layout, flowed into two
+    columns 24px apart (each section into the shorter one, so the page rarely
+    scrolls): a Heading per stock category (`PAPERDOLL_STATCATEGORIES`) over a
+    panel of 28px stat rows. Numbers, the stats a character shows and their
+    tooltips are the stock sheet's own: each row is filled by
+    `PAPERDOLL_STATINFO[stat].updateFunc`, so the client's colours for buffed
+    and debuffed values stay. The item level (from level 10) joins the page
+    subtitle ("Level 31 Troll Warlock · Item level 42"), not a section of one row.
+  - *Archetype*: Melee, Caster and Tank as filter segments at the right of the
+    tab row, per character (`PolestarUICharDB.archetype`; until chosen, casters
+    by class start on Caster, the rest on Melee). It highlights in place: the
+    archetype's key stats read in text, every other row in textMuted, and the
+    sections and rows keep the stock order, so switching never moves anything.
+    Never the accent: these are numbers, and the archetype is a view, not an
+    action.
 - **Reputation:** one row panel per header (expansion, then faction group):
   faction rows 40px, the name in Body text, the standing in Small in its standing
   colour (legible form), a 2px standing bar (track wash, fill in the standing

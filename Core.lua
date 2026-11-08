@@ -35,6 +35,7 @@ Polestar.OnLogin(function()
 	PolestarUIDB = PolestarUIDB or {}
 	PolestarUIDB.modules = PolestarUIDB.modules or {}
 	PolestarUIDB.pos = PolestarUIDB.pos or {}
+	PolestarUICharDB = PolestarUICharDB or {}
 	for _, key in ipairs(ns.order) do
 		if ns.Enabled(key) then ns.modules[key].Enable() end
 	end
