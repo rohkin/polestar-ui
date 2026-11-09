@@ -7,6 +7,8 @@ Still early: more windows are on the way. Done so far:
 - **Character**: gear around the model, a foldable stats drawer, and Reputation, Currency, Player vs. Player, Skills and Statistics pages.
 - **Spellbook**: every tab, search, cooldowns and pet autocast; click to cast or drag to your bars.
 - **Talents**: the three trees on the class's art, search, and points staged until you Apply.
+- **Professions**: a card per profession with its rank, spells and the game's card art.
+- **Crafting**: recipes by category with "Can make now" and "Recent", search and the game's filters, reagents, and Craft or Craft all; switch professions from the rail.
 
 ![Character window](screenshots/character.png)
 
