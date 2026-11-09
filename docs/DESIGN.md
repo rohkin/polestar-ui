@@ -405,11 +405,21 @@ the stock code knows (a recipe link) still open the stock window.
   show their tooltips.
 - **Subject block:** the profession's icon, name in Title, and its 2px skill
   bar under it with the rank ("112/150") above the bar's right end.
-- **Sidebar:** the search (shell's own), then the learnt recipes under their
+- **Sidebar:** the search (shell's own) and the filter, then the learnt recipes under their
   categories in the client's order, "Can make now" (nothing missing, no
   cooldown) and "Recent" (the last 8 crafted here, kept per character) first.
   A category is a heading row with its count; a click folds it. Under it, one
   recipe row per recipe. A search shows every match, unfolded.
+- **Filter:** it acts on the list, so it sits in the sidebar at the end of
+  the search row: a 30px square on the search field's well, the `sliders`
+  glyph, in the accent while a filter hides recipes (on the band it read as
+  filtering the selected recipe). Its menu drops under it, over the list.
+  Its menu is the game's own filter menu, flat (Polestar's menu has no
+  submenus): "Has skill up" (not for a guild's recipes), "Have materials",
+  then after a hairline "Check all", "Uncheck all" and each item slot. The
+  client keeps them (`C_TradeSkillUI.SetOnlyShow*`, `SetInventorySlotFilter`)
+  and they act on its filtered recipe list, as in the stock window; the menu
+  opens again after each pick.
 - **Main column:** title the selected recipe, subtitle its category. One view,
   so no tab row (Orders later).
   - *Recipe page:* the product as a 40px tile with its name in its quality

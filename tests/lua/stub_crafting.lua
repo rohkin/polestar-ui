@@ -48,9 +48,27 @@ function T.GetTradeSkillTexture() return 136249 end
 function T.IsTradeSkillLinked() return false end
 function T.IsTradeSkillGuild() return false end
 function T.IsDataSourceChanging() return false end
+-- The client's filters: skill-ups (not trivial), materials, item slots
+-- (slot 1 Chest: the vest; slot 2 Feet: the boots; slot 3 Bag).
+local only = { skill = false, make = false }
+local SLOTS, SLOT_OF, hidden = { "Chest", "Feet", "Bag" }, { [2385] = 1, [3914] = 1, [3845] = 2, [3755] = 3 }, {}
+function T.GetOnlyShowSkillUpRecipes() return only.skill end
+function T.SetOnlyShowSkillUpRecipes(on) only.skill = on end
+function T.GetOnlyShowMakeableRecipes() return only.make end
+function T.SetOnlyShowMakeableRecipes(on) only.make = on end
+function T.GetAllFilterableInventorySlotsCount() return #SLOTS end
+function T.GetFilterableInventorySlotName(i) return SLOTS[i] end
+function T.IsInventorySlotFiltered(i) return hidden[i] or false end
+function T.SetInventorySlotFilter(i, shown) hidden[i] = not shown end
+function T.AreAnyInventorySlotsFiltered() return next(hidden) ~= nil and (hidden[1] or hidden[2] or hidden[3]) or false end
 function T.GetFilteredRecipeIDs()
 	local ids = {}
-	for _, r in ipairs(RECIPES) do ids[#ids + 1] = r[1] end
+	for _, r in ipairs(RECIPES) do
+		local slot = SLOT_OF[r[1]]
+		if not (only.skill and r[4] == 3) and not (only.make and T.GetCraftableCount(r[1]) == 0) and not (slot and hidden[slot]) then
+			ids[#ids + 1] = r[1]
+		end
+	end
 	return ids
 end
 function T.GetCategoryInfo(id) return { categoryID = id, name = CATEGORIES[id][1], uiOrder = CATEGORIES[id][2] } end

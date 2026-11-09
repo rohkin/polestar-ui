@@ -33,6 +33,13 @@ local function viewing()
 	return C_TradeSkillUI.IsTradeSkillLinked() or C_TradeSkillUI.IsTradeSkillGuild()
 end
 
+-- A game filter hides recipes (its Filter menu: filterMenu).
+local function filtering()
+	local T = C_TradeSkillUI
+	return T.GetOnlyShowSkillUpRecipes() or T.GetOnlyShowMakeableRecipes()
+		or (T.AreAnyInventorySlotsFiltered and T.AreAnyInventorySlotsFiltered()) or false
+end
+
 -- Recipes crafted lately, newest first, for every profession (kept per character).
 local function recent()
 	PolestarUICharDB.recentRecipes = PolestarUICharDB.recentRecipes or {}
@@ -461,11 +468,49 @@ function refresh()
 	else
 		hidePage()
 		W.ShellTitle(f, query ~= "" and "Search" or p.professionName,
-			query ~= "" and "No recipe you know matches." or "You know no recipes yet: a trainer teaches them.")
+			(query ~= "" or filtering()) and "No recipe you know matches." or "You know no recipes yet: a trainer teaches them.")
 		W.ShellBody(f, 0)
 	end
 	W.ShellWatermark(f, info == nil)
+	W.SetIconState(f.psFilter, filtering())
 	paintFooter(info)
+end
+
+-- The game's own recipe filters, as its Filter menu: skill-ups, materials,
+-- item slots. They act on GetFilteredRecipeIDs. The list redraws at once and
+-- again on the client's TRADE_SKILL_LIST_UPDATE (docs/CLIENT.md, rule 6); the
+-- menu opens again after each pick, so several can be set in a row.
+local function filterMenu(anchor)
+	if W.MenuShown(anchor) then return W.HideMenu() end
+	local T = C_TradeSkillUI
+	local function pick(fn)
+		return function()
+			fn()
+			refresh()
+			filterMenu(anchor)
+		end
+	end
+	local items = {}
+	if not T.IsTradeSkillGuild() then
+		items[#items + 1] = { text = TRADESKILL_FILTER_HAS_SKILL_UP or "Has skill up", checked = T.GetOnlyShowSkillUpRecipes(),
+			onClick = pick(function() T.SetOnlyShowSkillUpRecipes(not T.GetOnlyShowSkillUpRecipes()) end) }
+	end
+	items[#items + 1] = { text = CRAFT_IS_MAKEABLE or "Have materials", checked = T.GetOnlyShowMakeableRecipes(),
+		onClick = pick(function() T.SetOnlyShowMakeableRecipes(not T.GetOnlyShowMakeableRecipes()) end) }
+	-- Slots: a slot shown is "checked"; the client calls showing it
+	-- SetInventorySlotFilter(i, true), as the stock menu's Check All does.
+	local n = T.GetAllFilterableInventorySlotsCount and T.GetAllFilterableInventorySlotsCount() or 0
+	if n > 0 then
+		local function all(on) return pick(function() for i = 1, n do T.SetInventorySlotFilter(i, on) end end) end
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = CHECK_ALL or "Check all", onClick = all(true) }
+		items[#items + 1] = { text = UNCHECK_ALL or "Uncheck all", onClick = all(false) }
+		for i = 1, n do
+			items[#items + 1] = { text = T.GetFilterableInventorySlotName(i), checked = not T.IsInventorySlotFiltered(i),
+				onClick = pick(function() T.SetInventorySlotFilter(i, T.IsInventorySlotFiltered(i)) end) }
+		end
+	end
+	W.ShowMenu(anchor, items, { minWidth = 180 })
 end
 
 local function build()
@@ -559,6 +604,13 @@ local function build()
 	f.psMax = W.Button(step, "Max", function() setQty(math.huge) end, { ghost = true })
 	f.psMax:SetPoint("LEFT", f.psMore, "RIGHT", 8, 0)
 
+	-- The filter acts on the list: it sits at the end of the search row, its
+	-- glyph in the accent while a filter hides recipes.
+	local top = W.SHELL.header - 30
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", filterMenu, 14)
+	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
+	Theme.Skin(f.psFilter, "editbox")
 
 	W.ShellTabs(f, nil)
 	ns.LinkPlace(f)
