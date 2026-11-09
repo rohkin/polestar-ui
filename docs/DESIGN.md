@@ -445,6 +445,23 @@ the stock code knows (a recipe link) still open the stock window.
     and the game asks for the item, as it would from the spellbook (a trade
     window's item). An item no longer in the bags or worn is let go.
 
+#### Legacy (`LegacySystemFrame`, Blizzard_LegacySystem) — Risk: high
+Forever's account-wide progression: a renown track (faction 2802), the
+challenges (achievements) and a legacy talent tree (`C_Traits`). The stock
+window's show and hide run `UpdateMicroButtons`, so it is never touched
+(CLIENT.md, rule 8): `TOGGLELEGACYSYSTEM` and `LegacyMicroButton` open ours
+through `ns.Doors`, and like the stock toggle only from legacy level 1.
+- **Shell:** 960×680 with sidebar. Subject block: the Legacy emblem, "Legacy",
+  the legacy level. Sections: Reward Track, Challenges, Legacy Tree.
+- **Reward Track:** progress toward the next level (a skill bar with the
+  earned/threshold value), then a row panel, one row per level with a reward:
+  the level, the reward's game icon, its name and description
+  (`RenownRewardUtil`), a check when earned or a lock. The current level
+  carries the accent mark. Tooltips are the stock card's.
+- **Challenges, Legacy Tree:** not built yet; they say to shift-click the micro
+  button for the game's window (the Nothing Lost Rule). Until Challenges is
+  built, the achievements key and challenge links stay the game's.
+
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
 Quest log (medium), Social (low), Merchant (medium), Bank (medium), Mail (low),

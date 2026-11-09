@@ -16,3 +16,4 @@ Modules\Spellbook.lua
 Modules\Talents.lua
 Modules\Professions.lua
 Modules\Crafting.lua
+Modules\Legacy.lua
