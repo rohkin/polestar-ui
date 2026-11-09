@@ -181,6 +181,21 @@ Character gear slots share: build any new hover button with it.
 **Caught by:** nothing automatic (the stub has no drag and drop); drag a spell
 or a worn item and release it in game.
 
+## 10. Anchoring a secure frame to a frame protects that frame
+
+**What happened:** `ADDON_ACTION_BLOCKED` on `ProfessionMicroButton:Enable()`
+in combat, blamed on another addon (OpenMap) whose map toggle ran the game's
+`UpdateMicroButtons`. Our secure overlay was anchored to the micro button
+(`SetAllPoints`), which made the micro button protected, so the game's own
+`Enable()` of it was blocked whenever tainted code led there.
+
+**Rule:** never anchor a secure frame of ours to a Blizzard frame. Place it
+by position, relative to `UIParent`, out of combat (`ns.Doors` in Core.lua
+copies the micro button's rect each frame it changes).
+
+**Caught by:** the `talents` scene checks the overlay is not anchored to the
+micro button and still covers it.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

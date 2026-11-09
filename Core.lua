@@ -163,7 +163,6 @@ function ns.Doors(name, actions, micro, onMicro)
 	bindKeys()
 	if not micro then return end
 	local o = CreateFrame("Button", "PolestarUI" .. name .. "Micro", UIParent, "SecureActionButtonTemplate")
-	o:SetAllPoints(micro)
 	o:RegisterForClicks("LeftButtonUp")
 	o:SetAttribute("useOnKeyDown", false)
 	o:SetAttribute("shift-type1", "click")
@@ -176,11 +175,24 @@ function ns.Doors(name, actions, micro, onMicro)
 		GameTooltip:Show()
 	end)
 	o:SetScript("OnLeave", function() GameTooltip:Hide() end)
-	-- Our own frame, not the micro button's child: a driver keeps it over the
-	-- button, out of combat only (a secure button cannot be shown or moved in combat).
+	-- Our own frame, not the micro button's child, nor anchored to it: a secure
+	-- frame anchored to a frame makes that frame protected, and the game's own
+	-- Enable() of the micro button was then blocked in combat (docs/CLIENT.md,
+	-- rule 10). A driver places it over the button by position, out of combat
+	-- only (a secure button cannot be shown or moved in combat).
 	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
 		if InCombatLockdown() then return end
 		local on = micro:IsVisible() and micro:IsEnabled()
+		if on then
+			local k = micro:GetEffectiveScale() / UIParent:GetEffectiveScale()
+			local x, y, w, h = micro:GetLeft() * k, micro:GetBottom() * k, micro:GetWidth() * k, micro:GetHeight() * k
+			if x ~= o.psX or y ~= o.psY or w ~= o:GetWidth() or h ~= o:GetHeight() then
+				o.psX, o.psY = x, y
+				o:ClearAllPoints()
+				o:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+				o:SetSize(w, h)
+			end
+		end
 		-- Above the micro button, wherever Edit Mode or the bar puts it.
 		if on and (o:GetFrameStrata() ~= micro:GetFrameStrata() or o:GetFrameLevel() <= micro:GetFrameLevel()) then
 			o:SetFrameStrata(micro:GetFrameStrata())
