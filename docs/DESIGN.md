@@ -433,9 +433,17 @@ the stock code knows (a recipe link) still open the stock window.
   one) on the right; all faded to 45% while the game would refuse the craft or
   the recipes are another player's. `C_TradeSkillUI.CraftRecipe` is not
   protected on Forever (`SecretArguments = "AllowedWhenUntainted"`, no
-  restriction): our button's click calls it. A recipe the game would allocate
-  an item for (an enchant) is cast the same way; the game then asks for the
-  item.
+  restriction): our button's click calls it.
+  - *Enchants* (`recipeType == Enchant`): after the reagents, "Item to
+    enchant" and one item slot, as the game's (`PROFESSIONS_ADD_ENCHANT`,
+    "Add an item", in textMuted on an empty well). A click lists the items it
+    can go on (`GetEnchantItems`, worn ones marked "(equipped)") in Polestar's
+    menu; a right-click clears it; the tooltip is the item's
+    (`SetItemByGUID`). With an item, Craft is `CraftEnchant` on its location
+    (not protected either), one at a time unless the item stores enchants
+    (`CanStoreEnchantInItem`, a vellum); without one, Craft casts the enchant
+    and the game asks for the item, as it would from the spellbook (a trade
+    window's item). An item no longer in the bags or worn is let go.
 
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
@@ -492,7 +500,8 @@ its edges, holding the player's model; drag to turn, wheel to zoom. No band.
 ### Recipe Row
 28px list row (Polestar's list row): a 16px icon at 24, the name in Body in its
 difficulty colour (legible form: optimal, medium, easy, trivial), the number
-craftable now in Number textMuted at the right. Selected: the selection wash and
+craftable now in Number textMuted at the right. A long name (an enchant's)
+takes a second line, never more, and the row grows to hold it. Selected: the selection wash and
 the 2px accent bar.
 
 ### Reagent Tile

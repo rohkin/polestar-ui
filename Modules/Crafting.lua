@@ -12,6 +12,9 @@ local HEAD_H, ROW_H, TILE_H, PRODUCT, RECENT = 32, 28, 32, 40, 8
 local DIFFICULTY = { [0] = { 1, 0.5, 0.25 }, [1] = { 1, 1, 0 }, [2] = { 0.25, 0.75, 0.25 }, [3] = { 0.5, 0.5, 0.5 } }
 
 local f, query, sel, selKey, qty = nil, "", nil, nil, 1
+-- An enchant's item (its GUID), chosen in the item slot; nil: Craft lets the
+-- game ask for it, as a cast does.
+local target
 local folded, lastSel = {}, {}
 local closing -- the game closed the trade skill itself
 -- A trade skill was opened: TRADE_SKILL_SHOW can come before its data, as
@@ -198,13 +201,14 @@ local function recipeRow(i)
 	r.Count:SetPoint("RIGHT", r, "RIGHT", -W.SHELL.side, 0)
 	r.Name = W.Text(r, "body", "text")
 	r.Name:SetPoint("LEFT", r.Icon, "RIGHT", 8, 0)
-	r.Name:SetPoint("RIGHT", r.Count, "LEFT", -8, 0)
 	r.Name:SetJustifyH("LEFT")
-	r.Name:SetWordWrap(false)
+	-- A long name (an enchant's) takes a second line, as the shell's nav rows.
+	r.Name:SetWordWrap(true)
+	r.Name:SetMaxLines(2)
 	r:SetScript("OnClick", function(self)
 		local id = self.psRecipe.recipeID
 		if IsModifiedClick("CHATLINK") then return insertLink(C_TradeSkillUI.GetRecipeLink(id)) end
-		if id ~= sel then qty = 1 end
+		if id ~= sel then qty, target = 1, nil end
 		sel, selKey = id, self.psKey
 		refresh()
 	end)
@@ -222,6 +226,10 @@ local function paintRow(r, info, key)
 	W.Uncolor(r.Name)
 	if c then r.Name:SetTextColor(Theme.Legible(c[1], c[2], c[3])) else W.Color(r.Name, "text") end
 	r.Count:SetText(info.count > 0 and info.count or "")
+	-- The name runs from the icon to the count; the row grows for a second line.
+	local side = W.SHELL.side
+	r.Name:SetWidth((f.psSidebar or W.SHELL.sidebar) - 1 - (side + 16 + 8) - side - (info.count > 0 and r.Count:GetStringWidth() + 8 or 0))
+	r:SetHeight(math.max(ROW_H, math.ceil(r.Name:GetStringHeight()) + 12))
 	local on = info.recipeID == sel and key == selKey
 	r.Sel:SetShown(on)
 	r.Bar:SetShown(on)
@@ -248,7 +256,7 @@ local function paintNav(list)
 					local r = recipeRow(ri)
 					paintRow(r, info, s.key)
 					place(r, y)
-					y = y + ROW_H
+					y = y + r:GetHeight()
 				end
 			end
 		end
@@ -310,6 +318,30 @@ local function paintTile(t, slot)
 	paintQuality(t.Name, t.Well, q)
 	t.Count:SetText(("%d/%d"):format(have, slot.quantityRequired))
 	W.Color(t.Count, have >= slot.quantityRequired and "text" or "danger")
+end
+
+-- An item by its GUID (a bag or worn item): name, icon, quality, worn.
+local function itemByGUID(guid)
+	local id = C_Item.GetItemIDByGUID(guid)
+	if not id then return end
+	W.PrefetchItem(id)
+	local loc = C_Item.GetItemLocation(guid)
+	return C_Item.GetItemNameByID(id), C_Item.GetItemIconByID(id), C_Item.GetItemQualityByID(id), loc and loc:IsEquipmentSlot()
+end
+
+-- The items an enchant can go on, as the game's item slot lists them.
+local function targetMenu(slot)
+	if W.MenuShown(slot) then return W.HideMenu() end
+	local items = {}
+	for _, guid in ipairs(C_TradeSkillUI.GetEnchantItems(sel) or {}) do
+		local name, _, _, worn = itemByGUID(guid)
+		if name then
+			items[#items + 1] = { text = worn and (name .. " (equipped)") or name, checked = guid == target,
+				onClick = function() target = guid; refresh() end }
+		end
+	end
+	if #items == 0 then items[1] = { text = "Nothing in your bags or gear takes it.", disabled = true } end
+	W.ShowMenu(slot, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 200 })
 end
 
 -- The recipe page: the product, what it says, its reagents in two columns,
@@ -374,6 +406,33 @@ local function paintPage(info)
 	end
 	for i = #slots + 1, #tiles do tiles[i]:Hide() end
 	y = y + math.ceil(#slots / 2) * (TILE_H + 8)
+	-- An enchant: the item it goes on, as the game's item slot. A chosen item
+	-- no longer in the bags or worn is let go.
+	f.psEnchant = s.recipeType == Enum.TradeskillRecipeType.Enchant
+	local t = f.psTarget
+	f.psHead2:SetShown(f.psEnchant)
+	t:SetShown(f.psEnchant)
+	if f.psEnchant then
+		if target and not tContains(C_TradeSkillUI.GetEnchantItems(id) or {}, target) then target = nil end
+		y = y + 8
+		f.psHead2:ClearAllPoints()
+		f.psHead2:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
+		f.psHead2:SetWidth(w)
+		y = y + f.psHead2:GetHeight() + 12
+		local name, icon, q = nil, nil, nil
+		if target then name, icon, q = itemByGUID(target) end
+		t.Icon:SetTexture(icon)
+		t.Icon:SetShown(icon ~= nil)
+		t.Name:SetText(name or PROFESSIONS_ADD_ENCHANT or "Add an item")
+		if name then paintQuality(t.Name, t.Well, q) else
+			W.Color(t.Name, "textMuted")
+			Theme.Border(t.Well, Theme.Wash("border"))
+		end
+		t:ClearAllPoints()
+		t:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
+		t:SetWidth((w - 8) / 2)
+		y = y + TILE_H
+	end
 	local list = notes(info)
 	for i, fs in ipairs(f.psNotes) do
 		local n = list[i]
@@ -395,6 +454,9 @@ local function hidePage()
 	f.psProduct:Hide()
 	f.psDesc:Hide()
 	f.psHead:Hide()
+	f.psHead2:Hide()
+	f.psTarget:Hide()
+	f.psEnchant = false
 	for _, t in ipairs(tiles) do t:Hide() end
 	for _, fs in ipairs(f.psNotes) do fs:Hide() end
 end
@@ -405,16 +467,23 @@ local function paintFooter(info)
 	local blocked = not info or viewing() or select(2, notes(info))
 	local can = not blocked and info.count > 0
 	local most = can and info.count or 1
+	-- An enchant goes on one item; more only into one that stores them (a
+	-- vellum), as the game's window allows.
+	if f.psEnchant and not (target and C_TradeSkillUI.CanStoreEnchantInItem(target)) then most = 1 end
 	qty = math.max(1, math.min(qty, most))
 	if not f.psQty:HasFocus() then f.psQty:SetText(qty) end
 	local function craft(n)
-		C_TradeSkillUI.CraftRecipe(info.recipeID, n)
+		if f.psEnchant and target then
+			C_TradeSkillUI.CraftEnchant(info.recipeID, n, nil, C_Item.GetItemLocation(target))
+		else
+			C_TradeSkillUI.CraftRecipe(info.recipeID, n)
+		end
 		remember(info.recipeID)
 		refresh()
 	end
 	W.ShellFooter(f, {}, {
 		{ label = info and info.alternateVerb or "Craft", onClick = function() craft(qty) end, opts = { primary = true } },
-		{ label = "Craft all", onClick = function() craft(info.count) end },
+		{ label = "Craft all", onClick = function() craft(most) end },
 	})
 	-- Disabled as Polestar disables: faded to 45%.
 	local function enable(b, on)
@@ -561,6 +630,42 @@ local function build()
 	f.psDesc:SetWordWrap(true)
 	f.psHead = W.SectionHeader(f.Body)
 	W.SetSection(f.psHead, "Reagents")
+	f.psHead2 = W.SectionHeader(f.Body)
+	W.SetSection(f.psHead2, "Item to enchant")
+	-- The enchant's item slot: a click lists the items it can go on, a
+	-- right-click clears it.
+	local t = CreateFrame("Button", nil, f.Body)
+	t:SetHeight(TILE_H)
+	W.Hover(t)
+	t.Well, t.Icon = iconWell(t, TILE_H)
+	t.Well:SetPoint("LEFT", t, "LEFT", 0, 0)
+	t.Name = W.Text(t, "label", "textMuted")
+	t.Name:SetPoint("LEFT", t.Well, "RIGHT", 8, 0)
+	t.Name:SetPoint("RIGHT", t, "RIGHT", -8, 0)
+	t.Name:SetJustifyH("LEFT")
+	t.Name:SetWordWrap(false)
+	t:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	t:SetScript("OnClick", function(self, button)
+		if button == "RightButton" then
+			target = nil
+			W.HideMenu()
+			return refresh()
+		end
+		targetMenu(self)
+	end)
+	t:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		if target then
+			GameTooltip:SetItemByGUID(target)
+			ns.TooltipHint("Click to choose another item. Right-click to clear it.")
+		else
+			GameTooltip:SetText(PROFESSIONS_ADD_ENCHANT or "Add an item")
+			ns.TooltipHint("Click to choose the item to enchant. Without one, Craft asks for it, as casting the enchant does.")
+		end
+		GameTooltip:Show()
+	end)
+	t:SetScript("OnLeave", W.HideTooltip)
+	f.psTarget = t
 	f.psNotes = {}
 	for i = 1, 3 do
 		f.psNotes[i] = W.Text(f.Body, "note", "textDim")
@@ -635,7 +740,7 @@ function M.Show()
 	if not f then build() end
 	if f.psProf ~= p.professionID then
 		f.psProf = p.professionID
-		sel, selKey, qty, query = lastSel[p.professionID], nil, 1, ""
+		sel, selKey, qty, query, target = lastSel[p.professionID], nil, 1, "", nil
 		f.Search:SetText("")
 	end
 	closing = nil

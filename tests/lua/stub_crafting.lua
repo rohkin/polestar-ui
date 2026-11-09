@@ -8,11 +8,14 @@ stub.unrouted = {}
 function GameEvent.UnregisterInternalEvent(event) stub.unrouted[event] = true end
 
 Enum.CraftingReagentType = { Modifying = 0, Basic = 1, Finishing = 2, Automatic = 3 }
+Enum.TradeskillRecipeType = { Item = 1, Salvage = 2, Enchant = 3, Gathering = 4 }
+tContains = tContains or function(t, v) for _, x in ipairs(t) do if x == v then return true end end return false end
 
 -- item ID = { name, quality, held }
 local ITEMS = {
 	[2589] = { "Linen Cloth", 1, 9 }, [2996] = { "Bolt of Linen Cloth", 1, 1 }, [2320] = { "Coarse Thread", 1, 3 },
 	[2318] = { "Light Leather", 1, 0 }, [14256] = { "Felcloth", 2, 2 },
+	[10940] = { "Strange Dust", 1, 4 }, [5] = { "Breastplate of the Long Watch", 4 }, [2569] = { "Linen Vest", 1 },
 	[2568] = { "Brown Linen Vest", 1 }, [4312] = { "Soft-soled Linen Boots", 2 }, [4238] = { "Linen Bag", 1 }, [14342] = { "Mooncloth", 2 },
 }
 C_Item = C_Item or {}
@@ -21,7 +24,7 @@ function C_Item.GetItemIconByID(id) return ITEMS[id] and 134400 end
 function C_Item.GetItemQualityByID(id) return ITEMS[id] and ITEMS[id][2] end
 function C_Item.GetItemCount(id) return ITEMS[id] and ITEMS[id][3] or 0 end
 
-local CATEGORIES = { [10] = { "Materials", 1 }, [11] = { "Armor", 2 }, [12] = { "Bags", 3 } }
+local CATEGORIES = { [10] = { "Materials", 1 }, [11] = { "Armor", 2 }, [12] = { "Bags", 3 }, [13] = { "Enchantments", 4 } }
 -- recipe ID = { name, category, difficulty, product, { { item, needed } }, learnt }
 local RECIPES = {
 	{ 2963, "Bolt of Linen Cloth", 10, 3, 2996, { { 2589, 2 } } },
@@ -30,6 +33,8 @@ local RECIPES = {
 	{ 3845, "Soft-soled Linen Boots", 11, 1, 4312, { { 2996, 3 }, { 2318, 1 }, { 2320, 1 } } },
 	{ 3914, "Brown Linen Pants", 11, 2, 2568, { { 2996, 2 } }, false },
 	{ 3755, "Linen Bag", 12, 0, 4238, { { 2996, 3 }, { 2320, 3 } } },
+	-- An enchant (listed while stub.enchanting): it goes on an item.
+	{ 7420, "Enchant Chest - Minor Health", 13, 0, nil, { { 10940, 1 } }, nil, true },
 }
 local byID = {}
 for _, r in ipairs(RECIPES) do byID[r[1]] = r end
@@ -65,7 +70,7 @@ function T.GetFilteredRecipeIDs()
 	local ids = {}
 	for _, r in ipairs(RECIPES) do
 		local slot = SLOT_OF[r[1]]
-		if not (only.skill and r[4] == 3) and not (only.make and T.GetCraftableCount(r[1]) == 0) and not (slot and hidden[slot]) then
+		if (not r[8] or stub.enchanting) and not (only.skill and r[4] == 3) and not (only.make and T.GetCraftableCount(r[1]) == 0) and not (slot and hidden[slot]) then
 			ids[#ids + 1] = r[1]
 		end
 	end
@@ -88,7 +93,8 @@ function T.GetRecipeSchematic(id)
 	for i, g in ipairs(r[6]) do
 		slots[i] = { reagents = { { itemID = g[1] } }, reagentType = 1, quantityRequired = g[2], slotIndex = i, hiddenInCraftingForm = false, required = true }
 	end
-	return { recipeID = id, name = r[2], icon = 134400, quantityMin = 1, quantityMax = 1, outputItemID = r[5], reagentSlotSchematics = slots }
+	return { recipeID = id, name = r[2], icon = 134400, quantityMin = 1, quantityMax = 1, outputItemID = r[5], reagentSlotSchematics = slots,
+		recipeType = r[8] and 3 or 1 }
 end
 function T.GetRecipeDescription(id)
 	if id == 18560 then return "Turns felcloth into mooncloth, by the light of a moonwell." end
@@ -113,3 +119,14 @@ function stub.openTradeSkill()
 	stub.fire("TRADE_SKILL_LIST_UPDATE")
 end
 function T.CanTradeSkillShowCraftingUI(spellID) return true end
+
+-- The enchant's items: the worn chest and a vest in the bags (by GUID).
+local GUIDS = { ["Item-worn-5"] = { 5, true }, ["Item-bag-2569"] = { 2569, false } }
+function C_Item.GetItemIDByGUID(guid) return GUIDS[guid] and GUIDS[guid][1] end
+function C_Item.GetItemLocation(guid)
+	local g = GUIDS[guid]
+	return g and { guid = guid, IsEquipmentSlot = function() return g[2] end }
+end
+function T.GetEnchantItems(id) return id == 7420 and { "Item-worn-5", "Item-bag-2569" } or {} end
+function T.CanStoreEnchantInItem(guid) return false end
+function T.CraftEnchant(id, n, reagents, loc) stub.enchanted = { id, n, loc and loc.guid } end
