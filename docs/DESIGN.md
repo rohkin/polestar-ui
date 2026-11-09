@@ -303,8 +303,13 @@ applied. Not protected, but refused in combat and while
   step between positions that is at least a quarter of the largest, and each
   node rounds to the nearest cell. A node reads as the stock one: a 40px game
   icon on an inset well; partly learnt, its 1px border and rank in success;
-  maxed, in the accent; open to a point, the hairline and no rank; locked by
-  its tier or a prerequisite, the icon desaturated at 35%. The rank (the
+  maxed, in the accent; open to a point, the hairline and no rank. Greyed as
+  the stock button greys (`CalculateVisualState`): a talent keeps its colour
+  while it has points or can take one now (`canPurchaseRank`, prerequisites
+  met, the active spec, its cost, `C_Traits.GetNodeCost`, on hand); else its
+  icon is desaturated, at 30% while its tier is closed (`isAvailable`), at
+  75% otherwise (a prerequisite missing, no point to spend, the inactive
+  spec). The rank (the
   points in it, "3") is in Number text on a solid 18px chip (the bg ground,
   its 1px border in the node's state colour) centred on the well's
   bottom-right corner, shown once learnt: legible over any icon. Prerequisites are the client's

@@ -248,9 +248,6 @@ local function newNode(parent)
 	return b
 end
 
--- A node, as the stock frame reads: maxed with its border and rank in the
--- accent, partly learnt in success, open to a point on the hairline, locked
--- (tier or prerequisite) desaturated and dim. The rank shows once learnt.
 -- The search, as the stock frame's: a talent's name or its description.
 local function matches(spell, def)
 	if query == "" then return true end
@@ -258,6 +255,26 @@ local function matches(spell, def)
 		return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:lower():find(query, 1, true)
 	end
 	return has(def and def.overrideName) or (spell and (has(C_Spell.GetSpellName(spell)) or has(C_Spell.GetSpellDescription(spell)))) or false
+end
+
+-- The points on hand, by trait currency, for the trees being painted.
+local onHand = {}
+
+-- A node's state, as the stock button reckons it (CalculateVisualState):
+-- maxed, selectable (CanPurchaseRank: the client's canPurchaseRank,
+-- prerequisites met, the active spec, its cost on hand) or with points in it
+-- keeps its colour; else
+-- it is desaturated, darkest while its tier is closed (gated), dimmed while
+-- a prerequisite is missing or its cost is not on hand. Maxed shows its
+-- border and rank in the accent, partly learnt in success; the rank shows
+-- once learnt.
+local function lit(config, n, rank, max)
+	if rank >= max or rank > 0 then return true end
+	if not (n.canPurchaseRank and n.meetsEdgeRequirements) or group ~= activeGroup() then return false end
+	for _, c in ipairs(C_Traits.GetNodeCost(config, n.ID) or {}) do
+		if (onHand[c.ID] or 0) < num(c.amount) then return false end
+	end
+	return true
 end
 
 local function paintNode(b, config, n)
@@ -269,10 +286,10 @@ local function paintNode(b, config, n)
 	b.psEntry, b.psSpell, b.psNode, b.psInfo, b.psDef, b.psConfig = entryID, spell, n.ID, n, def, config
 	local rank, max = num(n.currentRank), num(n.maxRanks)
 	b.psRank = rank
-	local locked = not (n.isAvailable and n.meetsEdgeRequirements) and rank == 0
+	local on = lit(config, n, rank, max)
 	b.Icon:SetTexture(icon)
-	b.Icon:SetDesaturated(locked)
-	b.Icon:SetAlpha(locked and 0.35 or 1)
+	b.Icon:SetDesaturated(not on)
+	b.Icon:SetAlpha(on and 1 or n.isAvailable and 0.75 or 0.3)
 	local state = rank >= max and "accent" or rank > 0 and "success" or nil
 	b.Rank:SetText(rank)
 	W.Color(b.Rank, state or "text")
@@ -290,6 +307,9 @@ end
 -- (the art's panels, between its seams); returns the height.
 local function paintTrees(config)
 	local trees = readTrees(config)
+	onHand = {}
+	local tree = treeOf(config)
+	for _, c in ipairs(tree and C_Traits.GetTreeCurrencyInfo(config, tree, false) or {}) do onHand[c.traitCurrencyID] = num(c.quantity) end
 	local colW = (f.BodyWidth + 2 * W.SHELL.pad) / math.max(#trees, 1)
 	local at, ni, li, bottom = {}, 0, 0, 0
 	for i, t in ipairs(trees) do

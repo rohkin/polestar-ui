@@ -168,6 +168,8 @@ function stub.finishCommit()
 end
 function UIErrorsFrame:AddExternalErrorMessage(msg) stub.uiError = msg end
 IsModifiedClick = IsModifiedClick or function() return false end
+-- Every talent costs a point of the tree's one currency.
+function C_Traits.GetNodeCost(config, id) return { { ID = 1, amount = 1 } } end
 function C_Traits.GetEntryInfo(config, entry) return { definitionID = entry, maxRanks = 1, conditionIDs = {} } end
 function C_Traits.GetDefinitionInfo(def) local n = data.nodes[byEntry[def]]; return n and { spellID = n[3] } end
 C_Spell = C_Spell or {}
