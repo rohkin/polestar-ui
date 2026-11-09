@@ -98,57 +98,33 @@ local function paintArt(c)
 	end
 end
 
--- The profession tabs down a window's right side, as on the stock window:
--- the overview (this window), then each profession with a crafting window,
--- the open one marked. Shared with Crafting.lua. Casting a profession is
--- protected: out of combat a secure button of ours takes the hovered tab's
--- place (ns.Overlay). ns.ProfessionTabs(window, onOverview) -> paint(skill
--- line of the open profession, or nil for the overview).
-local TAB = 40
-local function tabEnter(t)
-	GameTooltip:SetOwner(t, "ANCHOR_RIGHT")
-	GameTooltip:SetText(t.psName)
-	if not t.psActive then
-		ns.TooltipHint(t.psSpell and "Click to open its recipes." or "Click to see all your professions.")
-	end
-	GameTooltip:Show()
-end
+-- The professions as sections of a section rail (Polestar's, W.ShellRail)
+-- at the window's left edge: the overview (this window), then each
+-- profession with a crafting window, the open one marked. Shared with
+-- Crafting.lua; the window is made with `rail = true`. Their icons stay the
+-- game's (the Two Families Rule). Casting a profession is protected: out of
+-- combat a secure button of ours takes the hovered section's place
+-- (ns.Overlay). ns.ProfessionTabs(window, onOverview) -> paint(skill line of
+-- the open profession, or nil for the overview).
+local OVERVIEW_ICON = "Interface\\Icons\\INV_SideTab_Professions_c60"
 
 local overTab = ns.Overlay("PolestarUIProfessionTab", {
-	enter = tabEnter,
+	enter = function(b)
+		GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
+		GameTooltip:SetText(b.psName)
+		if not b.psActive then ns.TooltipHint("Click to open its recipes.") end
+		GameTooltip:Show()
+	end,
 	pickup = function() end,
-	attrs = function(over, t)
-		over:SetAttribute("type1", not t.psActive and "spell" or nil)
-		over:SetAttribute("spell", t.psSpell)
+	attrs = function(over, b)
+		over:SetAttribute("type1", not b.psActive and "spell" or nil)
+		over:SetAttribute("spell", b.psSpell)
 	end,
 })
 
 function ns.ProfessionTabs(win, onOverview)
-	local tabs = {}
-	local function tab(i)
-		if tabs[i] then return tabs[i] end
-		local t = CreateFrame("Button", nil, win)
-		t:SetSize(TAB, TAB)
-		t:SetPoint("TOPLEFT", win, "TOPRIGHT", 2, -(24 + (i - 1) * (TAB + 6)))
-		Polestar.Theme.Skin(t, "inset")
-		W.Hover(t)
-		t.Icon = ns.GameIcon(t)
-		t.Icon:SetPoint("TOPLEFT", 1, -1)
-		t.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
-		t:SetScript("OnEnter", function(self)
-			tabEnter(self)
-			if self.psSpell then overTab(self) end
-		end)
-		t:SetScript("OnLeave", W.HideTooltip)
-		-- The overview's click; a profession's is the secure button's.
-		t:SetScript("OnClick", function(self)
-			if not self.psSpell and not self.psActive and onOverview then onOverview() end
-		end)
-		tabs[i] = t
-		return t
-	end
 	return function(current)
-		local list = { { name = "Professions", icon = "Interface\\Icons\\INV_SideTab_Professions_c60", active = current == nil } }
+		local items = { { key = "overview", label = "Overview", tip = "All your professions", icon = OVERVIEW_ICON } }
 		local slots = { GetProfessions() }
 		for k = 1, 5 do
 			local i = slots[k]
@@ -156,22 +132,35 @@ function ns.ProfessionTabs(win, onOverview)
 				local name, icon, _, _, _, offset, skillLine = GetProfessionInfo(i)
 				local info = C_SpellBook.GetSpellBookItemInfo(offset + 1, Enum.SpellBookSpellBank.Player)
 				if info and info.spellID and C_TradeSkillUI.CanTradeSkillShowCraftingUI(info.spellID) then
-					list[#list + 1] = { name = name, icon = icon, spell = info.spellID, active = current ~= nil and skillLine == current }
+					items[#items + 1] = { key = skillLine, label = name, icon = icon, spell = info.spellID }
 				end
 			end
 		end
-		for i, d in ipairs(list) do
-			local t = tab(i)
-			t.psName, t.psSpell, t.psActive = d.name, d.spell, d.active
-			t.Icon:SetTexture(d.icon)
-			if d.active then
-				Polestar.Theme.Border(t, Polestar.Theme.Color("accent"))
-			else
-				Polestar.Theme.Border(t, Polestar.Theme.Wash("border"))
+		local active = current or "overview"
+		W.ShellRail(win, items, nil, active, function(key)
+			if key == "overview" and current ~= nil and onOverview then onOverview() end
+		end)
+		for i, d in ipairs(items) do
+			local b = win.railButtons[i]
+			b.psName, b.psSpell, b.psActive = d.label, d.spell, d.key == active
+			-- A game icon, not a glyph: the rail's tint taken off, its border cropped.
+			W.Uncolor(b.Icon)
+			b.Icon:SetVertexColor(1, 1, 1, 1)
+			b.Icon:SetTexture(d.icon)
+			b.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+			b.Icon:SetSize(24, 24)
+			if not b.psCast then
+				b.psCast = true
+				b:HookScript("OnEnter", function(self) if self.psSpell then overTab(self) end end)
 			end
-			t:Show()
 		end
-		for i = #list + 1, #tabs do tabs[i]:Hide() end
+		-- The rail grows to its widest label; a window without a sidebar hangs
+		-- its main column off the rail's edge (docs/CLIENT.md, rule 12).
+		if not win.Sidebar:IsShown() then
+			win.Main:ClearAllPoints()
+			win.Main:SetPoint("TOPLEFT", win, "TOPLEFT", 1 + win.psRail, -1)
+			win.Main:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -1, 1)
+		end
 	end
 end
 
@@ -274,13 +263,12 @@ end
 
 local function build()
 	-- No sidebar: one page, nothing to navigate; the band names the window.
-	f = W.Shell(NAME, { width = 760, sidebar = 0 })
+	-- The section rail holds the professions; Polestar's emblem stays off it.
+	f = W.Shell(NAME, { width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
 	f.Sidebar:Hide()
-	-- The main column hangs off the sidebar's right edge; a frame 0 wide has
-	-- no rect in the client, so nothing on it would draw (docs/CLIENT.md, rule 12).
-	f.Main:ClearAllPoints()
-	f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
-	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+	local holder = CreateFrame("Frame", nil, f)
+	holder:Hide()
+	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot }) do r:SetParent(holder) end
 	f.psTabs = ns.ProfessionTabs(f)
 	f.psHeads = { W.SectionHeader(f.Body), W.SectionHeader(f.Body) }
 	f.psHeads[1].Text:SetText("Primary")

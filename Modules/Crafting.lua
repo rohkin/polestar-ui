@@ -469,7 +469,7 @@ function refresh()
 end
 
 local function build()
-	f = W.Shell(NAME, { width = 760, searchPlaceholder = "Search recipes", onSearch = function(text)
+	f = W.Shell(NAME, { width = 760 + W.SHELL.rail, rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
 		query = (text or ""):lower()
 		if f and f:IsShown() then refresh() end
 	end })
@@ -558,6 +558,7 @@ local function build()
 	f.psMore:SetPoint("LEFT", e, "RIGHT", 4, 0)
 	f.psMax = W.Button(step, "Max", function() setQty(math.huge) end, { ghost = true })
 	f.psMax:SetPoint("LEFT", f.psMore, "RIGHT", 8, 0)
+
 
 	W.ShellTabs(f, nil)
 	f.psTabs = ns.ProfessionTabs(f, function()

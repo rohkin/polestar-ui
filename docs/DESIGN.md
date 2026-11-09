@@ -352,10 +352,11 @@ micro buttons. So, as the Spellbook, ours opens from `TOGGLEPROFESSIONBOOK` and
 `ProfessionMicroButton` through `ns.Doors`, never touching the stock window;
 shift-click on the micro button opens the stock one. It closes when a
 profession opens (`TRADE_SKILL_SHOW`), as ours takes the crafting window.
-- **Shell:** 760×680, no sidebar (`sidebar = 0`, hidden): one page, nothing
-  to navigate, so no subject block either; the band names the window.
-- **Profession tabs:** the crafting window's (`ns.ProfessionTabs`, below), the
-  overview marked; a profession's tab opens its crafting window.
+- **Shell:** 760×680 plus the section rail, no sidebar (`sidebar = 0`,
+  hidden): one page, nothing to navigate, so no subject block either; the band
+  names the window.
+- **Professions rail:** the crafting window's (`ns.ProfessionTabs`, below),
+  "Overview" marked; a profession's section opens its crafting window.
 - **Main column:** title "Professions", subtitle "2 of 2 professions learnt."
   and what the player can do. The
   stock page's five slots as cards on the panel ground under two headings:
@@ -388,16 +389,18 @@ and ours opens on the same event. Ours holds the trade skill: closing it calls
 trade skill's data (the stock window opens empty and fills on
 `TRADE_SKILL_LIST_UPDATE`): ours then opens on that update. Doors only
 the stock code knows (a recipe link) still open the stock window.
-- **Shell:** 760×680 with sidebar, near the stock window's width.
-- **Profession tabs** (`ns.ProfessionTabs`, shared with the Professions
-  window): down the window's right side, outside it, as on the
-  stock window: 40px game icons on inset wells, 6px apart. The first opens
-  the Professions window (closing this one); then one per profession with a
-  crafting window, in the stock order, the open one's hairline in the accent.
-  Casting a profession is protected: out of combat a secure button of ours
-  takes the hovered tab's place (`ns.Overlay`), its click the profession's
-  spell; the open one casts nothing. In combat the tabs only show their
-  tooltips.
+- **Shell:** 760×680 with sidebar, near the stock window's width, plus the
+  section rail.
+- **Professions rail** (`ns.ProfessionTabs`, shared with the Professions
+  window): the shell's section rail (`rail = true`, `W.ShellRail`), Polestar's
+  own way to switch sections. "Overview" first (the Professions window,
+  closing this one), then one section per profession with a crafting window,
+  in the stock order; the open one marked as the rail marks it. The icons are
+  the game's (24px, untinted), not glyphs; Polestar's emblem stays off the
+  rail. Casting a profession is protected: out of combat a secure button of
+  ours takes the hovered section's place (`ns.Overlay`), its click the
+  profession's spell; the open one casts nothing. In combat the sections only
+  show their tooltips.
 - **Subject block:** the profession's icon, name in Title, and its 2px skill
   bar under it with the rank ("112/150") above the bar's right end.
 - **Sidebar:** the search (shell's own), then the learnt recipes under their
