@@ -1,5 +1,5 @@
 -- The Spellbook (docs/DESIGN.md, "Spellbook"): the stock spellbook tab of
--- PlayerSpellsFrame in a Polestar shell. Talents keep the game's window.
+-- PlayerSpellsFrame in a Polestar shell. Talents are Talents.lua's.
 
 local ADDON, ns = ...
 local W = Polestar.Widgets

@@ -1,0 +1,345 @@
+-- Talents (docs/DESIGN.md, "Talents"): the stock talents tab of
+-- PlayerSpellsFrame in a Polestar shell. Forever's three classic trees live on
+-- the client's trait engine: one C_Traits tree, a node group per talent tree.
+-- This first step shows them; spending comes next.
+
+local ADDON, ns = ...
+local W = Polestar.Widgets
+
+local NAME = "PolestarUITalents"
+local NODE, PITCH, HEAD_H = 40, 52, 48
+
+local f, group = nil, nil -- group: the spec group shown (1 Primary, 2 Secondary)
+local M = {}
+local nodes, lines = {}, {}
+
+-- Numbers the client may hand over secret in combat (docs/CLIENT.md, rule 3).
+local function num(v)
+	if v == nil or (issecretvalue and issecretvalue(v)) then return 0 end
+	return v
+end
+
+local function activeGroup() return C_SpecializationInfo.GetActiveSpecGroup() or 1 end
+local function numGroups() return GetNumSpecGroups and GetNumSpecGroups() or 1 end
+local function configOf(g) return C_SpecializationInfo.GetCombatConfigIDForSpecGroup(g) end
+
+local function treeOf(config)
+	local info = config and C_Traits.GetConfigInfo(config)
+	return info and info.treeIDs and info.treeIDs[1]
+end
+
+local function spentIn(config)
+	local tree = treeOf(config)
+	local c = tree and C_Traits.GetTreeCurrencyInfo(config, tree, false)
+	return c and c[1] and num(c[1].spent) or 0, c and c[1] and num(c[1].quantity) or 0
+end
+
+-- The node's entry and its icon: the client's override icon, else the spell's.
+local function entryOf(config, info)
+	local entryID = info.activeEntry and info.activeEntry.entryID or info.entryIDs[1]
+	local entry = entryID and C_Traits.GetEntryInfo(config, entryID)
+	local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
+	local icon = def and (def.overrideIcon or (def.spellID and C_Spell.GetSpellTexture(def.spellID)))
+	return entryID, icon, def and def.spellID
+end
+
+-- One cell of the client's grid: the smallest step between positions,
+-- ignoring the few units the client nudges a node off it (steps under a
+-- quarter of the largest).
+local function cell(v)
+	table.sort(v)
+	local big, s = 0, nil
+	for i = 2, #v do big = math.max(big, v[i] - v[i - 1]) end
+	for i = 2, #v do
+		local d = v[i] - v[i - 1]
+		if d >= big / 4 and d > 0 and (not s or d < s) then s = d end
+	end
+	return s or 1
+end
+
+-- The trees: the client's groups in order, each with its nodes on a grid read
+-- off the client's positions (rounded to the nearest cell).
+local function readTrees(config)
+	local tree = treeOf(config)
+	if not tree then return {} end
+	local trees, byGroup = {}, {}
+	local displays = C_Traits.GetGroupDisplayInfoByTreeID(tree) or {}
+	table.sort(displays, function(a, b) return a.orderIndex < b.orderIndex end)
+	local ids = {}
+	for i, d in ipairs(displays) do
+		trees[i] = { name = d.displayName, icon = d.icon, groupID = d.groupID, nodes = {} }
+		byGroup[d.groupID] = trees[i]
+		ids[i] = d.groupID
+	end
+	for _, gc in ipairs(C_Traits.GetGroupCurrencyInfo(config, ids) or {}) do
+		local t = byGroup[gc.traitNodeGroupID]
+		if t and gc.currencyInfos[1] then t.spent = num(gc.currencyInfos[1].spent) end
+	end
+	local ys, top = {}, nil
+	for _, id in ipairs(C_Traits.GetTreeNodes(tree) or {}) do
+		local info = C_Traits.GetNodeInfo(config, id)
+		local t
+		for _, g in ipairs(info and info.isVisible and info.groupIDs or {}) do t = t or byGroup[g] end
+		if t then
+			t.nodes[#t.nodes + 1] = info
+			ys[#ys + 1] = info.posY
+			top = math.min(top or info.posY, info.posY)
+		end
+	end
+	local sy, sx = cell(ys), nil
+	for _, t in ipairs(trees) do
+		local xs = {}
+		for i, n in ipairs(t.nodes) do xs[i] = n.posX end
+		if #xs > 1 then sx = math.min(sx or math.huge, cell(xs)) end
+	end
+	for _, t in ipairs(trees) do
+		local left
+		for _, n in ipairs(t.nodes) do left = math.min(left or n.posX, n.posX) end
+		-- shortcut: a tree with no talent in its first column is drawn one column left; classic trees all use it.
+		for _, n in ipairs(t.nodes) do
+			n.col = math.floor((n.posX - left) / (sx or 1) + 0.5)
+			n.row = math.floor((n.posY - top) / sy + 0.5)
+		end
+	end
+	return trees
+end
+
+local function nodeEnter(b)
+	GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
+	GameTooltip:SetTraitEntry(b.psEntry, b.psRank > 0 and b.psRank or nil)
+	GameTooltip:Show()
+end
+
+-- Shift-click links the talent's spell, as the stock frame.
+local function nodeClick(b)
+	if b.psSpell and IsModifiedClick("CHATLINK") then ChatFrameUtil.InsertLink(C_Spell.GetSpellLink(b.psSpell)) end
+end
+
+local function newNode(parent)
+	local b = CreateFrame("Button", nil, parent)
+	b:SetSize(NODE, NODE)
+	Polestar.Theme.Skin(b, "inset")
+	Polestar.Theme.Border(b, Polestar.Theme.Wash("border"))
+	b.Icon = ns.GameIcon(b)
+	b.Icon:SetPoint("TOPLEFT", 1, -1)
+	b.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	W.Hover(b)
+	-- The rank, once learnt, on a chip at the bottom-right corner.
+	b.Chip = CreateFrame("Frame", nil, b)
+	b.Chip:SetSize(16, 16)
+	b.Chip:SetPoint("CENTER", b, "BOTTOMRIGHT", -3, 3)
+	Polestar.Theme.Skin(b.Chip, "inset")
+	b.Rank = W.Text(b.Chip, "number", "textDim")
+	b.Rank:SetPoint("CENTER", 0, 0)
+	b:SetScript("OnEnter", nodeEnter)
+	b:SetScript("OnLeave", W.HideTooltip)
+	b:SetScript("OnClick", nodeClick)
+	return b
+end
+
+-- A node, as the stock frame reads: maxed with its border and rank in the
+-- accent, partly learnt in success, open to a point on the hairline, locked
+-- (tier or prerequisite) desaturated and dim. The rank shows once learnt.
+local function paintNode(b, config, n)
+	local entryID, icon, spell = entryOf(config, n)
+	b.psEntry, b.psSpell, b.psNode = entryID, spell, n.ID
+	local rank, max = num(n.currentRank), num(n.maxRanks)
+	b.psRank = rank
+	local locked = not (n.isAvailable and n.meetsEdgeRequirements) and rank == 0
+	b.Icon:SetTexture(icon)
+	b.Icon:SetDesaturated(locked)
+	b.Icon:SetAlpha(locked and 0.35 or 1)
+	local state = rank >= max and "accent" or rank > 0 and "success" or nil
+	b.Rank:SetText(rank)
+	W.Color(b.Rank, state or "text")
+	b.Chip:SetShown(rank > 0)
+	if state then
+		local r, g, bl = Polestar.Theme.Color(state)
+		Polestar.Theme.Border(b, r, g, bl, 1)
+	else
+		Polestar.Theme.Border(b, Polestar.Theme.Wash("border"))
+	end
+end
+
+-- The three trees side by side, a third of the body each; returns the height.
+local function paintTrees(config)
+	local trees = readTrees(config)
+	local colW = f.BodyWidth / math.max(#trees, 1)
+	local at, ni, li, bottom = {}, 0, 0, 0
+	for i, t in ipairs(trees) do
+		local h = f.psHeads[i]
+		if not h then
+			h = CreateFrame("Frame", nil, f.Body)
+			h:SetSize(1, 24)
+			h.Well = CreateFrame("Frame", nil, h)
+			h.Well:SetSize(24, 24)
+			h.Well:SetPoint("LEFT", 0, 0)
+			Polestar.Theme.Skin(h.Well, "inset")
+			Polestar.Theme.Border(h.Well, Polestar.Theme.Wash("border"))
+			h.Icon = ns.GameIcon(h.Well)
+			h.Icon:SetPoint("TOPLEFT", 1, -1)
+			h.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+			h.Name = W.Text(h, "heading", "text")
+			h.Name:SetPoint("LEFT", h.Well, "RIGHT", 8, 0)
+			h.Spent = W.Text(h, "number", "textDim")
+			h.Spent:SetPoint("RIGHT", 0, 0)
+			f.psHeads[i] = h
+		end
+		-- The grid sits centred in the column, its heading as wide over it.
+		local x0 = W.SHELL.pad + (i - 1) * colW
+		local cols = 3
+		for _, n in ipairs(t.nodes) do cols = math.max(cols, n.col) end
+		local gw = NODE + cols * PITCH
+		local gx = x0 + (colW - 24 - gw) / 2
+		h:ClearAllPoints()
+		h:SetPoint("TOPLEFT", f.Body, "TOPLEFT", gx, -24)
+		h:SetWidth(gw)
+		h.Icon:SetTexture(t.icon)
+		h.Name:SetText(t.name)
+		h.Spent:SetText(t.spent or 0)
+		h:Show()
+		for _, n in ipairs(t.nodes) do
+			ni = ni + 1
+			local b = nodes[ni] or newNode(f.Body)
+			nodes[ni] = b
+			b:ClearAllPoints()
+			b:SetPoint("TOPLEFT", f.Body, "TOPLEFT", gx + n.col * PITCH, -(24 + HEAD_H + n.row * PITCH))
+			b:SetFrameLevel(f.Body:GetFrameLevel() + 2)
+			paintNode(b, config, n)
+			b:Show()
+			at[n.ID] = b
+			bottom = math.max(bottom, 24 + HEAD_H + n.row * PITCH + NODE)
+		end
+	end
+	for i = #trees + 1, #f.psHeads do f.psHeads[i]:Hide() end
+	for i = ni + 1, #nodes do nodes[i]:Hide() end
+	-- Prerequisites: the client's edges, 2px, in the accent once met.
+	for _, t in ipairs(trees) do
+		for _, n in ipairs(t.nodes) do
+			for _, e in ipairs(n.visibleEdges or {}) do
+				local a, b = at[n.ID], at[e.targetNode]
+				if a and b then
+					li = li + 1
+					local l = lines[li] or f.Body:CreateLine(nil, "BORDER")
+					lines[li] = l
+					l:SetThickness(2)
+					l:SetStartPoint("CENTER", a)
+					l:SetEndPoint("CENTER", b)
+					if e.isActive then
+						l:SetColorTexture(Polestar.Theme.Color("accent"))
+					else
+						l:SetColorTexture(Polestar.Theme.Wash("border"))
+					end
+					l:Show()
+				end
+			end
+		end
+	end
+	for i = li + 1, #lines do lines[i]:Hide() end
+	f.psEmpty:SetShown(#trees == 0)
+	return bottom + 24
+end
+
+local function optionsMenu(self)
+	if W.MenuShown(self) then return W.HideMenu() end
+	W.ShowMenu(self, { { text = "Game's talents: shift-click their micro button", disabled = true } }, { minWidth = 200 })
+end
+
+local function build()
+	-- Wider than the shell's 960: three four-column trees side by side.
+	f = W.Shell(NAME, { width = 1100 })
+	-- The subject block names the window, in place of Polestar's lockup.
+	-- Reparented, not hidden: the shell re-shows its version line on every show.
+	local holder = CreateFrame("Frame", nil, f)
+	holder:Hide()
+	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Search, f.Status, f.Stage }) do r:SetParent(holder) end
+	local well = CreateFrame("Frame", nil, f.Sidebar)
+	well:SetSize(36, 36)
+	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
+	Polestar.Theme.Skin(well, "inset")
+	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
+	f.psClass = ns.GameIcon(well)
+	f.psClass:SetPoint("TOPLEFT", 1, -1)
+	f.psClass:SetPoint("BOTTOMRIGHT", -1, 1)
+	f.psName = W.Text(f.Sidebar, "title", "text")
+	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
+	f.psLine = W.Text(f.Sidebar, "small", "textDim")
+	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
+	for _, t in ipairs({ f.psName, f.psLine }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
+	-- The way to the stock frame (its search, inspect), on the band.
+	local opt = CreateFrame("Button", nil, f.Header)
+	opt:SetSize(96, 24)
+	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
+	W.Hover(opt)
+	opt.Label = W.Text(opt, "small", "text")
+	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
+	opt.Label:SetText("Options")
+	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
+	opt.Arrow:SetSize(12, 12)
+	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
+	opt:SetScript("OnClick", optionsMenu)
+	f.psOptions = opt
+	f.psHeads = {}
+	f.psEmpty = W.Text(f.Body, "default", "textDim")
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psEmpty:SetText("No talents yet: they open at level 10.")
+	-- The stock window's sounds: it never opens now to play them.
+	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_OPEN_WINDOW) end)
+	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_CLOSE_WINDOW) end)
+	Polestar.CloseOnEscape(NAME)
+end
+
+local function refresh()
+	if group > numGroups() then group = activeGroup() end
+	local _, cls = UnitClass("player")
+	f.psName:SetText((UnitClass("player")))
+	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
+	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. cls)
+	-- The stock tabs as nav rows: the active spec with the dot, the other its points spent.
+	local nav = {}
+	for g = 1, numGroups() do
+		local active = g == activeGroup()
+		nav[g] = { key = g, label = g == 1 and (DUAL_SPEC_PRIMARY or "Primary") or (DUAL_SPEC_SECONDARY or "Secondary"),
+			icon = "star", dot = active or nil, count = not active and spentIn(configOf(g)) or nil }
+	end
+	W.ShellNav(f, nav, group, function(k) group = k; M.Show() end)
+	local config = configOf(group)
+	local _, left = spentIn(config)
+	local sub
+	if group ~= activeGroup() then
+		sub = "Not your active spec."
+	elseif left > 0 then
+		sub = left == 1 and "1 point to spend." or ("%d points to spend."):format(left)
+	else
+		sub = "Every point is spent."
+	end
+	W.ShellTitle(f, "Talents", sub)
+	W.ShellTabs(f, nil)
+	W.ShellFooter(f, {}, {})
+	W.ShellBody(f, paintTrees(config))
+end
+
+function M.Show(g)
+	if not f then build() end
+	group = g or group or activeGroup()
+	refresh()
+	f:Show()
+end
+
+function M.Toggle()
+	if f and f:IsShown() then f:Hide() else M.Show() end
+end
+
+function M.Enable()
+	-- The talents key and micro button open ours; the stock window is never
+	-- touched (docs/CLIENT.md, rule 8). A talent link and inspecting another
+	-- player stay the game's.
+	ns.Doors("Talents", { TOGGLETALENTS = M.Toggle }, TalentMicroButton, M.Toggle)
+	local function changed() if f and f:IsShown() and not InCombatLockdown() then refresh() end end
+	for _, e in ipairs({ "TRAIT_CONFIG_UPDATED", "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
+		"ACTIVE_COMBAT_CONFIG_CHANGED", "ACTIVE_TALENT_GROUP_CHANGED", "PLAYER_REGEN_ENABLED" }) do
+		Polestar.RegisterEvent(e, changed)
+	end
+end
+
+ns.Module("talents", M)

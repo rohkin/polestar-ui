@@ -154,7 +154,7 @@ secure code for the stock window. Opening the stock window from our own code
 player to the shift-click instead. Doors that only the stock code knows (a
 spell or talent link, a new-spell toast) stay the game's.
 
-**Caught by:** the `spellbook` scene: the stub's
+**Caught by:** the `spellbook` and `talents` scenes: the stub's
 `PlayerSpellsFrame:Hide()` errors when addon code calls it, the keys go
 through override bindings (refused in combat), and the micro overlay is
 checked.

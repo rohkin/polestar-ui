@@ -221,8 +221,8 @@ only and read in the background like the stats (CLIENT.md, rule 3).
 Opened by its keys (`TOGGLESPELLBOOK`; `TOGGLEPETBOOK` at Pet) and
 `SpellbookMicroButton` through `ns.Doors`, never touching the stock window
 (CLIENT.md, rule 8); shift-click on the micro button opens the stock one.
-Spell links and new-spell toasts stay the game's. Its talents tab stays the
-game's.
+Spell links and new-spell toasts stay the game's. Its talents tab is the
+Talents window's.
 - **Shell:** 960×680 with sidebar.
 - **Subject block:** the class icon, the class in Title, "Level 24" in Small
   textDim.
@@ -253,6 +253,51 @@ game's.
   runs the game's `/petautocasttoggle`). Pet commands (Attack, Follow) only
   drag: cast by name they would be the player's own.
 
+#### Talents (`PlayerSpellsFrame`, its talents tab) — Risk: high
+Opened by `TOGGLETALENTS` and `TalentMicroButton` through `ns.Doors`, as the
+Spellbook (in combat too); shift-click on the micro button opens the stock
+window. Talent links and inspecting another player stay the game's.
+Forever's talents are the classic three trees on the client's trait engine
+(`C_Traits`, one tree, a node group per talent tree): changes are staged, then
+applied. Not protected, but refused in combat and while
+`C_ClassTalents.CanChangeTalents` says no; switching spec is a cast.
+- **Shell:** 1100×680 with sidebar: wider than the shell's 960, so three
+  four-column trees stand apart.
+- **Subject block:** the class icon, the class in Title, "Level 60" in Small
+  textDim.
+- **Sidebar:** the stock tabs as nav rows, Primary and Secondary
+  (`DUAL_SPEC_PRIMARY`/`SECONDARY`): the active spec's row with the dot, the
+  other with its points spent as the count. Secondary is listed once dual spec
+  is learnt (`GetNumSpecGroups() > 1`).
+- **Main column:** title "Talents", subtitle the points left ("12 points to
+  spend.", "Every point is spent."). Viewing the spec that is not active, the
+  subtitle says so ("Not your active spec.") and the footer's primary action
+  is "Activate" (the stock `SetActiveSpecGroup`), the trees read-only.
+- **Trees:** the three trees side by side, each a column a third of the body:
+  the tree's nodes on a 52px grid centred in the column, under its heading as
+  wide as the grid: its icon (24px) and name in Heading, the points spent in
+  Number textDim at the right. The grid is read off the client's positions
+  (`posX`, `posY`), which sit a few units off it: one cell is the smallest
+  step between positions that is at least a quarter of the largest, and each
+  node rounds to the nearest cell. A node reads as the stock one: a 40px game
+  icon on an inset well; partly learnt, its 1px border and rank in success;
+  maxed, in the accent; open to a point, the hairline and no rank; locked by
+  its tier or a prerequisite, the icon desaturated at 35%. The rank (the
+  points in it, "3") is in Number on an inset chip centred on the well's
+  bottom-right corner, shown once learnt. Prerequisites are the client's
+  edges, drawn as 2px lines in the border wash under the nodes, in the accent
+  once met.
+- **Node:** click puts a point in, right-click takes one back (`PurchaseRank`,
+  `RefundRank`); the game's tooltip (`GameTooltip:SetTraitEntry`) with the hint
+  after a blank line. Shift-click links the spell.
+- **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
+  `W.Modal`) on the left; "Undo" (default, drops what is staged:
+  `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`) on the
+  right, both only while something is staged.
+- **Options:** on the band, a disabled line saying the micro button's
+  shift-click opens the game's talents (its search and inspect, until ours has
+  them: the Nothing Lost Rule).
+
 #### Professions book (`ProfessionsBookFrame`) — Risk: medium
 `TOGGLEPROFESSIONBOOK` → `ToggleProfessionsBook()`.
 - **Shell:** plain, 560×520. One card per known profession (primary first, then
@@ -282,7 +327,6 @@ Opened by the game when a profession is cast (`TRADE_SKILL_SHOW`).
 
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
-Talents (`PlayerSpellsFrame`'s talents tab, high),
 Quest log (medium), Social (low), Merchant (medium), Bank (medium), Mail (low),
 Auction (medium), Trainer (low), Gossip and Quest dialog (medium), Loot (high:
 `LootSlot`), Game menu (high: protected logout/exit), StaticPopup (high: never
