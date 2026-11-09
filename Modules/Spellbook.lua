@@ -126,66 +126,26 @@ local function pickup(r)
 end
 
 -- Casting is protected. So out of combat one secure button takes the hovered
--- row's place, its left click the game's "spell" action; everything else
--- (drag, link) it hands back to the row. It hangs off UIParent, a strata
--- above the window (docs/CLIENT.md, rule 4), and hides as combat starts or
--- the row moves (a scroll); in combat the rows still drag and link.
-local over
-local function overRow(r)
-	if InCombatLockdown() then return end
-	if not over then
-		over = CreateFrame("Button", "PolestarUISpellbookCast", UIParent, "SecureActionButtonTemplate")
-		over:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-		over:RegisterForDrag("LeftButton")
-		over:EnableMouse(true)
-		over:SetAttribute("useOnKeyDown", false)
-		over:SetScript("PostClick", function(self) rowClick(self.psRow) end)
-		-- Kept shown while dragging: hiding a drag's source ends the drag, and
-		-- the release would not drop the spell on the bar it is over.
-		over:SetScript("OnDragStart", function(self)
-			self.psDragging = true
-			pickup(self.psRow)
-		end)
-		over:SetScript("OnDragStop", function(self)
-			self.psDragging = nil
-			if not InCombatLockdown() and not self:IsMouseOver() then self:Hide() end
-		end)
-		over:SetScript("OnEnter", function(self) rowEnter(self.psRow) end)
-		over:SetScript("OnLeave", function(self)
-			W.HideTooltip()
-			if not InCombatLockdown() and not self.psDragging then self:Hide() end
-		end)
-		over:SetScript("OnHide", function(self)
-			self.psDragging = nil
-			self.psRow:UnlockHighlight()
-		end)
-		over:SetScript("OnUpdate", function(self)
-			local r = self.psRow
-			if InCombatLockdown() then return end
-			if not r:IsVisible() or r:GetTop() ~= self.psTop then self:Hide() end
-		end)
-		Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() over:Hide() end)
-	end
-	if over.psRow and over.psRow ~= r then over.psRow:UnlockHighlight() end
-	over.psRow, over.psTop = r, r:GetTop()
-	local k = r:GetEffectiveScale() / UIParent:GetEffectiveScale()
-	over:ClearAllPoints()
-	over:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", r:GetLeft() * k, r:GetTop() * k)
-	over:SetSize(r:GetWidth() * k, r:GetHeight() * k)
-	-- Above the window's strata: in it the game gave the row the mouse (docs/CLIENT.md, rule 4).
-	over:SetFrameStrata("DIALOG")
-	over:SetFrameLevel(r:GetFrameLevel() + 20)
-	local s = r.psSpell
-	-- The player's spells by ID (that rank exactly); the pet's by name, as a macro casts them.
-	over:SetAttribute("type1", castable(s) and "spell" or nil)
-	over:SetAttribute("spell", s.bank == bank("Pet") and s.info.name or s.info.spellID)
-	-- Autocast is protected too: the game's own slash command, as a macro runs it.
-	local auto = autocast(s)
-	over:SetAttribute("type2", auto and "macro" or nil)
-	over:SetAttribute("macrotext", auto and ((SLASH_PET_AUTOCASTTOGGLE1 or "/petautocasttoggle") .. " " .. s.info.name) or nil)
-	r:LockHighlight()
-	over:Show()
-end
+-- row's place (ns.Overlay), its left click the game's "spell" action;
+-- everything else (drag, link) it hands back to the row. In combat the rows
+-- still drag and link.
+local overRow = ns.Overlay("PolestarUISpellbookCast", {
+	enter = rowEnter,
+	pickup = pickup,
+	setup = function(over)
+		over:HookScript("PostClick", function(self) rowClick(self.psTarget) end)
+	end,
+	attrs = function(over, r)
+		local s = r.psSpell
+		-- The player's spells by ID (that rank exactly); the pet's by name, as a macro casts them.
+		over:SetAttribute("type1", castable(s) and "spell" or nil)
+		over:SetAttribute("spell", s.bank == bank("Pet") and s.info.name or s.info.spellID)
+		-- Autocast is protected too: the game's own slash command, as a macro runs it.
+		local auto = autocast(s)
+		over:SetAttribute("type2", auto and "macro" or nil)
+		over:SetAttribute("macrotext", auto and ((SLASH_PET_AUTOCASTTOGGLE1 or "/petautocasttoggle") .. " " .. s.info.name) or nil)
+	end,
+})
 
 local function newRow(parent)
 	local r = CreateFrame("Button", nil, parent)

@@ -57,6 +57,76 @@ function ns.GameIcon(parent, layer)
 	return t
 end
 
+-- One secure button of ours over the hovered target (a spell row, a gear
+-- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
+-- rule 4). It hangs off UIParent above the window's strata, and hides as the
+-- mouse leaves, the target moves (a scroll) or hides, or combat starts.
+-- A drag keeps it shown, and a press keeps it on the pressed target, until
+-- release (rule 9). `o`:
+--   enter(t), pickup(t): the target's hover and drag;
+--   attrs(over, t): its secure attributes;
+--   stale(t): also hide when true (optional);
+--   setup(over): extra scripts, added with HookScript (optional).
+-- Returns place(t), for the target's OnEnter.
+function ns.Overlay(name, o)
+	local over
+	local function place(t)
+		if InCombatLockdown() then return end
+		if not over then
+			over = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
+			over:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			over:RegisterForDrag("LeftButton")
+			over:EnableMouse(true)
+			over:SetAttribute("useOnKeyDown", false)
+			local function release(self)
+				self.psDragging, self.psPressed = nil, nil
+				if not InCombatLockdown() and not self:IsMouseOver() then self:Hide() end
+			end
+			over:SetScript("OnMouseDown", function(self, button)
+				if button == "LeftButton" then self.psPressed = self.psTarget end
+			end)
+			-- During a drag the release is the drag's: OnDragStop ends it.
+			over:SetScript("OnMouseUp", function(self) if not self.psDragging then release(self) end end)
+			over:SetScript("OnDragStart", function(self)
+				self.psDragging = true
+				o.pickup(self.psPressed or self.psTarget)
+			end)
+			over:SetScript("OnDragStop", release)
+			over:SetScript("OnEnter", function(self) o.enter(self.psTarget) end)
+			over:SetScript("OnLeave", function(self)
+				Polestar.Widgets.HideTooltip()
+				if not InCombatLockdown() and not self.psDragging and not self.psPressed then self:Hide() end
+			end)
+			over:SetScript("OnHide", function(self)
+				self.psDragging, self.psPressed = nil, nil
+				self.psTarget:UnlockHighlight()
+			end)
+			over:SetScript("OnUpdate", function(self)
+				local t = self.psTarget
+				if InCombatLockdown() then return end
+				if not t:IsVisible() or t:GetTop() ~= self.psTop or (o.stale and o.stale(t)) then self:Hide() end
+			end)
+			Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() over:Hide() end)
+			if o.setup then o.setup(over) end
+		end
+		if over.psPressed then return end
+		if over.psTarget and over.psTarget ~= t then over.psTarget:UnlockHighlight() end
+		over.psTarget, over.psTop = t, t:GetTop()
+		local k = t:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		over:ClearAllPoints()
+		over:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", t:GetLeft() * k, t:GetTop() * k)
+		over:SetSize(t:GetWidth() * k, t:GetHeight() * k)
+		-- Above the window's strata: in it, a level higher, the game still gave
+		-- the target the mouse.
+		over:SetFrameStrata("DIALOG")
+		over:SetFrameLevel(t:GetFrameLevel() + 20)
+		o.attrs(over, t)
+		t:LockHighlight() -- the target's hover wash, now under the button
+		over:Show()
+	end
+	return place
+end
+
 -- A replaced window's doors that run no stock code (docs/CLIENT.md, rule 8):
 -- each binding's keys click a button of ours (override bindings, set out of
 -- combat), and an invisible secure button of ours lies over the micro button

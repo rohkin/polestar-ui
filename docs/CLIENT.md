@@ -168,8 +168,15 @@ soon as the drag leaves the row, and a hidden source ends the drag before the
 release reaches the bar.
 
 **Rule:** a frame a drag can start from stays shown until `OnDragStop`; hide
-it then if the mouse has left (`over` in Spellbook.lua, `overSlot` in
-Character.lua).
+it then if the mouse has left.
+
+A drag starts a few pixels after the press, often already over the next
+row. A button that moves between rows on hover must stay on the pressed row
+from `OnMouseDown` until release, and drag the pressed row's spell. Otherwise
+a fast drag takes the next row's spell, or nothing.
+
+Both live in `ns.Overlay` (Core.lua), which the Spellbook rows and the
+Character gear slots share: build any new hover button with it.
 
 **Caught by:** nothing automatic (the stub has no drag and drop); drag a spell
 or a worn item and release it in game.

@@ -167,78 +167,37 @@ end
 
 -- Using a worn item (right-click) and applying an enchant, kit or stone to
 -- one are protected. So out of combat one secure button takes the hovered
--- slot's place: right-click is the game's "item" action on the slot, and a
--- click while a spell targets an item lets the game's own code apply it
--- ("target-slot"). Everything else (pick up, drag, link) it hands back to the
--- slot. It hangs off UIParent, not the window: a window with secure children
--- could not close in combat (docs/CLIENT.md, rule 4); it hides as combat
--- starts, and the slots then only pick up and link.
-local over
-local function overSlot(s)
-	if InCombatLockdown() then return end
-	if not over then
-		over = CreateFrame("Button", "PolestarUICharacterSlot", UIParent, "SecureActionButtonTemplate")
-		over:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-		over:RegisterForDrag("LeftButton")
-		over:EnableMouse(true)
-		over:SetAttribute("useOnKeyDown", false)
-		over:SetScript("PreClick", function(self) self.psTargeting = SpellIsTargeting() end)
-		over:SetScript("PostClick", function(self, button)
-			if not self.psTargeting then slotClick(self.psSlot, button) end
-			if not InCombatLockdown() then overSlot(self.psSlot) end -- the slot may have changed
+-- slot's place (ns.Overlay): right-click is the game's "item" action on the
+-- slot, and a click while a spell targets an item lets the game's own code
+-- apply it ("target-slot"). Everything else (pick up, drag, link) it hands
+-- back to the slot. In combat the slots only pick up and link.
+local overSlot
+local function pickupWorn(s) if not SpellIsTargeting() then PickupInventoryItem(s:GetID()) end end
+overSlot = ns.Overlay("PolestarUICharacterSlot", {
+	enter = slotEnter,
+	pickup = pickupWorn,
+	-- Over the ranged slot's ammo tile, the ammo tile takes the mouse.
+	stale = function(s) return s.psAmmo and s.psAmmo:IsShown() and s.psAmmo:IsMouseOver() end,
+	setup = function(over)
+		over:HookScript("PreClick", function(self) self.psTargeting = SpellIsTargeting() end)
+		over:HookScript("PostClick", function(self, button)
+			if not self.psTargeting then slotClick(self.psTarget, button) end
+			if not InCombatLockdown() then overSlot(self.psTarget) end -- the slot may have changed
 		end)
-		local function pickup(self) if not SpellIsTargeting() then PickupInventoryItem(self.psSlot:GetID()) end end
-		-- Kept shown while dragging: hiding a drag's source ends the drag, and
-		-- the release would not drop the item where it is over.
-		over:SetScript("OnDragStart", function(self)
-			self.psDragging = true
-			pickup(self)
-		end)
-		over:SetScript("OnDragStop", function(self)
-			self.psDragging = nil
-			if not InCombatLockdown() and not self:IsMouseOver() then self:Hide() end
-		end)
-		over:SetScript("OnReceiveDrag", pickup)
+		over:HookScript("OnReceiveDrag", function(self) pickupWorn(self.psTarget) end)
 		for _, e in ipairs({ "OnMouseDown", "OnMouseUp" }) do
-			over:SetScript(e, function(self) self.psSlot:GetScript(e)(self.psSlot) end)
+			over:HookScript(e, function(self) self.psTarget:GetScript(e)(self.psTarget) end)
 		end
-		over:SetScript("OnEnter", function(self) slotEnter(self.psSlot) end)
-		over:SetScript("OnLeave", function(self)
-			W.HideTooltip()
-			if not InCombatLockdown() and not self.psDragging then self:Hide() end
-		end)
-		over:SetScript("OnHide", function(self)
-			self.psDragging = nil
-			self.psSlot:UnlockHighlight()
-			self.psSlot:GetScript("OnMouseUp")(self.psSlot)
-		end)
-		-- The window closed (a key) or the tab changed under the cursor.
-		-- Over the ranged slot's ammo tile, the ammo tile takes the mouse.
-		over:SetScript("OnUpdate", function(self)
-			local ammo = self.psSlot.psAmmo
-			if InCombatLockdown() then return end
-			if not self.psSlot:IsVisible() or (ammo and ammo:IsShown() and ammo:IsMouseOver()) then self:Hide() end
-		end)
-		Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() over:Hide() end)
-	end
-	if over.psSlot and over.psSlot ~= s then over.psSlot:UnlockHighlight() end
-	over.psSlot = s
-	local k = s:GetEffectiveScale() / UIParent:GetEffectiveScale()
-	over:ClearAllPoints()
-	over:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", s:GetLeft() * k, s:GetTop() * k)
-	over:SetSize(s:GetWidth() * k, s:GetHeight() * k)
-	-- Above the window's strata: in it, the game still gave the slot the mouse
-	-- although the button was shown over it, a level higher.
-	over:SetFrameStrata("DIALOG")
-	over:SetFrameLevel(s:GetFrameLevel() + 20)
-	local id = s:GetID()
-	over:SetAttribute("*target-slot*", id)
-	-- An empty slot gets no action: the game's "item" action expects an item.
-	over:SetAttribute("type2", GetInventoryItemID("player", id) and "item" or nil)
-	over:SetAttribute("item", tostring(id))
-	s:LockHighlight() -- the slot's hover wash, now under the overlay
-	over:Show()
-end
+		over:HookScript("OnHide", function(self) self.psTarget:GetScript("OnMouseUp")(self.psTarget) end)
+	end,
+	attrs = function(over, s)
+		local id = s:GetID()
+		over:SetAttribute("*target-slot*", id)
+		-- An empty slot gets no action: the game's "item" action expects an item.
+		over:SetAttribute("type2", GetInventoryItemID("player", id) and "item" or nil)
+		over:SetAttribute("item", tostring(id))
+	end,
+})
 
 -- side: where its name and enchant go (on `layer`, over the model): "left"
 -- for text on its right, "right" for text on its left, "below"; nil for none.
