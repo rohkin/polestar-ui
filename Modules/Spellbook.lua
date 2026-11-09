@@ -185,7 +185,16 @@ end
 -- combat, which the sweep takes but our code cannot test (docs/CLIENT.md, rule 3).
 local function paintCooldown(r)
 	local s = r.psSpell
-	local cd = s and s.info.itemType ~= Enum.SpellBookItemType.FutureSpell and C_SpellBook.GetSpellBookItemCooldown(s.slot, s.bank)
+	if not (s and s.info.itemType ~= Enum.SpellBookItemType.FutureSpell) then return r.Cooldown:Clear() end
+	-- A duration object: the client's way to hand a cooldown that may be secret
+	-- (in combat) to addon code; SetCooldown refuses secret times from us.
+	local getDuration = C_SpellBook.GetSpellBookItemCooldownDuration
+	if getDuration and r.Cooldown.SetCooldownFromDurationObject then
+		local d = getDuration(s.slot, s.bank)
+		if d then r.Cooldown:SetCooldownFromDurationObject(d) else r.Cooldown:Clear() end
+		return
+	end
+	local cd = C_SpellBook.GetSpellBookItemCooldown(s.slot, s.bank)
 	if cd and ((issecretvalue and issecretvalue(cd.isEnabled)) or cd.isEnabled) then
 		r.Cooldown:SetCooldown(cd.startTime, cd.duration, cd.modRate)
 	else

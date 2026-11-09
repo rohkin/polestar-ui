@@ -60,6 +60,12 @@ combat:
 `pcall` is not enough: a stock function can succeed and leave secret values
 behind, and an error inside a secure hook escapes it.
 
+Cooldown times are secret in combat, and `Cooldown:SetCooldown` refuses them
+from addon code. Draw a spell's sweep from its duration object
+(`C_SpellBook.GetSpellBookItemCooldownDuration` into
+`SetCooldownFromDurationObject`), which carries them without our code
+reading them (`paintCooldown` in Spellbook.lua).
+
 The player's own name (`UnitName("player")`, `UnitPVPName`) is secret in
 combat too: `GameTooltip:SetText` refuses it. Read it through `playerText`,
 which keeps the last name read out of combat.
