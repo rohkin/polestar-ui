@@ -14,3 +14,4 @@ Modules\CharacterPages.lua
 Modules\Character.lua
 Modules\Spellbook.lua
 Modules\Talents.lua
+Modules\Professions.lua

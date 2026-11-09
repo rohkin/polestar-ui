@@ -253,6 +253,9 @@ local function paintRow(r, s)
 	paintCooldown(r)
 end
 
+-- A spellbook row for other windows' spells (the Professions window's).
+ns.SpellRow = { New = newRow, Paint = paintRow, PaintCooldown = paintCooldown }
+
 -- Two columns of rows, in book order down the left column, then the right.
 -- Returns the body height.
 local function paintList(list)

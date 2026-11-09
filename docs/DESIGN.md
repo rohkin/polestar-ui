@@ -341,14 +341,27 @@ applied. Not protected, but refused in combat and while
   shift-click opens the game's talents (its search and inspect, until ours has
   them: the Nothing Lost Rule).
 
-#### Professions book (`ProfessionsBookFrame`) — Risk: medium
-`TOGGLEPROFESSIONBOOK` → `ToggleProfessionsBook()`.
-- **Shell:** plain, 560×520. One card per known profession (primary first, then
-  secondary): the profession's icon (40px), name in Title, rank in Number with
-  its skill bar, and its spells as Default buttons ("Open Blacksmithing",
-  "Smelting"). These are spell casts, so the buttons are
-  `SecureActionButtonTemplate` with `type=spell` (protected: set out of combat).
-  The unlearn action is an action tile in danger, confirmed by `W.Modal`.
+#### Professions book (`ProfessionsFrame`, its book page) — Risk: high
+Forever has no `ProfessionsBookFrame`: `ToggleProfessionsBook` shows
+`ProfessionsFrame` on its book page (`SelectBookPage`), whose show touches the
+micro buttons. So, as the Spellbook, ours opens from `TOGGLEPROFESSIONBOOK` and
+`ProfessionMicroButton` through `ns.Doors`, never touching the stock window;
+shift-click on the micro button opens the stock one. It closes when a
+profession opens (`TRADE_SKILL_SHOW`): the crafting window is the game's.
+- **Shell:** 960×680 with sidebar; no search, no sections.
+- **Subject block:** the stock book's icon, "Professions" in Title, "2 of 2
+  professions learnt" in Small textDim.
+- **Main column:** title "Professions", subtitle what the player can do. The
+  stock page's five slots as cards on the panel ground under two headings:
+  Primary (one to a row: wide, short cards, the spells side by side, as the
+  stock page), then Secondary (Cooking, Fishing, First Aid, three
+  to a row). A card: the profession's icon (40px on an inset well), its name in
+  Title, its skill bar with the rank ("145/150 (+5)") above its right end, then
+  its spells as the Spellbook's rows (`ns.SpellRow`: click casts through the
+  secure button, drag, shift-click links, cooldown). An empty slot: the stock
+  scroll icon desaturated, the slot's name and the stock "learn it" line in
+  textMuted. A primary's ✕ unlearns it (`C_SkillInfo.AbandonSkill`, not
+  protected), confirmed by `W.Modal` in danger.
 
 #### Professions (`ProfessionsFrame`) — Risk: medium
 Opened by the game when a profession is cast (`TRADE_SKILL_SHOW`).

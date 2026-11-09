@@ -54,7 +54,7 @@ end
 -- Key bindings: the keys bound to each action, and the override bindings set
 -- over them (refused in combat). stub.pressKey(key) runs what the key does:
 -- the override's button, else the game's own binding (stub.bindingRun[action]).
-stub.bindings = { TOGGLETALENTS = { "N" }, TOGGLESPELLBOOK = { "P" }, TOGGLEPETBOOK = { "SHIFT-P" } }
+stub.bindings = { TOGGLETALENTS = { "N" }, TOGGLESPELLBOOK = { "P" }, TOGGLEPETBOOK = { "SHIFT-P" }, TOGGLEPROFESSIONBOOK = { "K" } }
 stub.overrides, stub.bindingRun = {}, {}
 function GetBindingKey(action) return unpack(stub.bindings[action] or {}) end
 function SetOverrideBindingClick(owner, priority, key, button)
