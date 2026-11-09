@@ -159,44 +159,34 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
   (`PaperDollFrame`), Reputation, Currency (only while `ShouldShowCurrencyTab`),
   Honor (`PVPRankFrame`), Skills, Statistics.
 - **Character page** — title the character's PvP name, subtitle level, race,
-  class. Tabs: Gear, Stats.
+  class. No tabs: the gear, with the stats in a drawer at the window's right.
+  Item level is not shown anywhere: it means nothing in Forever.
   - *Gear*: two slot columns on the 32 and right edges (Head, Neck, Shoulder,
     Back, Chest, Shirt, Tabard, Wrist; Hands, Waist, Legs, Feet, Finger ×2,
-    Trinket ×2), then, 16px down, the weapons continuing the columns (Main Hand
-    and Off Hand left, Ranged and Ammo right); the model well between the
-    armor columns. Slot tiles 36px, 6px apart. Beside each column's
-    slot, on the inside (over the model well): the item's name in Label in its
-    quality colour, its stats ("+12 Sta  +8 Str": short names on this screen only, armor left out) in
-    Small textDim under it, 220px wide, and a permanent enchant (its tooltip line,
-    "Enchanted: " dropped) in Small success under that, the three lines
-    centred on the slot; empty, the slot's name in textMuted.
-    Painted out of combat only. Under the weapons, a 40px panel of primary stats:
-    cells spread evenly on the page (no panel), the value in Number over its
-    name in Small textDim, a 4px textMuted dot (`circle`) between cells, as the
-    subtitle's "·"; no hover wash, the tooltip only; filled and guarded as the
-    Stats tab's rows.
-  - *Stats*: stat panels in Polestar's settings layout, flowed into two
-    columns 24px apart (each section into the shorter one, so the page rarely
-    scrolls): a Heading per stock category (`PAPERDOLL_STATCATEGORIES`) over a
-    panel of 28px stat rows. Numbers, the stats a character shows and their
-    tooltips are the stock sheet's own: each row is filled by
-    `PAPERDOLL_STATINFO[stat].updateFunc`, so the client's colours for buffed
-    and debuffed values stay. The item level (from level 10) joins the page
-    subtitle ("Level 31 Troll Warlock · Item level 42"), not a section of one row.
-  - *Archetype*: one menu (Polestar's) at the right of the tab row, the same
-    on Gear and Stats, per character (`PolestarUICharDB.archetype`; until
-    chosen, hunters Ranged, casters by class Caster, the rest Melee). On
-    Stats it highlights in place: the archetype's key stats read in text,
-    every other row in textMuted, and the sections and rows keep the stock
-    order, so switching never moves anything. Never the accent: these are
-    numbers, and the archetype is a view, not an action. Under the gear it
-    picks the primary stats. From Forever's stats (Classic's, with one Hit and
-    one Crit; Defense 440 makes a tank uncrittable):
-    Melee: Strength, Agility, Attack Power, Crit, Hit. Ranged: Agility, Ranged
-    AP, Ranged damage, Crit, Hit. Caster: Intellect, Spell Power, Crit, Hit,
-    Spell Penetration. Healer: Intellect, Spirit, Healing, Crit, Mana regen.
-    Tank: Health, Armor, Defense, Dodge, Parry, Block (where the stock sheet
-    shows it).
+    Trinket ×2), then, 16px down, the weapons in a row centred under the model
+    well (Main Hand, Off Hand, Ranged), as the stock sheet and the armory lay
+    them out. Ammo is a 16px tile in the Ranged slot's bottom-right corner,
+    shown only when the ranged weapon is a bow, gun or crossbow. Slot tiles
+    36px, 6px apart. Beside each column's slot, on the inside (over the model
+    well): the item's name in Label in its quality colour, 220px wide, and
+    under it a permanent enchant (its tooltip line, "Enchanted: " dropped) in
+    Small success; the lines centred on the slot (no item stats: those are the
+    drawer's). The weapons' text sits on the row's outer sides, Main Hand's
+    left and Ranged's right, and Off Hand's centred under its slot; empty, the
+    slot's name in textMuted. Painted out of combat only.
+  - *Stats drawer*: 280px wide, its own window skin, docked flush to the
+    window's right edge and as tall (the shell stays 960 wide; open, the two
+    read as one 1240px window, as in the armory). "Hide stats" / "Show
+    stats" with a chevron at the right of the tab row (kept with no tabs) puts
+    it away and back, for every character (`PolestarUIDB.hideStats`). In it:
+    "Stats" in Heading, centred 36px down, then one scrolling column from
+    72px: a Heading per stock category (`PAPERDOLL_STATCATEGORIES`) over a
+    panel of 28px stat rows, 24px in, every row alike (no highlights). A
+    chevron in the gutter beside each heading folds it; the folds are kept for
+    every character (`PolestarUIDB.statsFolded`, by category name). Numbers,
+    the stats a character shows and their tooltips are the stock sheet's own:
+    each row is filled by `PAPERDOLL_STATINFO[stat].updateFunc`, so the
+    client's colours for buffed and debuffed values stay.
 The other sections share one grouped list: the client's top headers as
 Headings with their hairline, a chevron in the gutter that folds them (the
 client's own collapse state), over a row panel. They are painted out of combat

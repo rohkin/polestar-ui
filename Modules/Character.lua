@@ -14,9 +14,7 @@ local SECTIONS = {
 	{ key = "SkillsFrame", label = SKILLS or "Skills", icon = "icon-skill" },
 	{ key = "StatisticsFrame", label = STATISTICS or "Statistics", icon = "icon-achieve" },
 }
-local TABS = { { key = "gear", label = "Gear" }, { key = "stats", label = "Stats" } }
-
-local f, section, tab = nil, "PaperDollFrame", "gear"
+local f, section = nil, "PaperDollFrame"
 local M = {}
 
 -- The player's name (UnitName, UnitPVPName, GetGuildInfo) as last read out
@@ -33,11 +31,12 @@ end
 ---------------------------------------------------------------------------
 -- Gear: the slot tiles (docs/DESIGN.md, "Slot Tile"), in the stock columns.
 
-local SLOT, GAP, TEXT_W, PRIMARY_H = 36, 6, 220, 40
+local SLOT, GAP, TEXT_W = 36, 6, 220
 local LEFT = { "HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot" }
 local RIGHT = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot", "Trinket1Slot" }
--- The weapons continue the columns, after a gap: hands left, ranged right.
-local WEAPONS = { { "left", "MainHandSlot", "SecondaryHandSlot" }, { "right", "RangedSlot", "AmmoSlot" } }
+-- The weapons in a row under the model, as the stock sheet and the armory lay
+-- them out: each one's text on its outer side, the off hand's below it.
+local WEAPONS = { { "MainHandSlot", "right" }, { "SecondaryHandSlot", "below" }, { "RangedSlot", "left" } }
 local slots = {}
 
 local function qualityRGB(q)
@@ -47,61 +46,6 @@ local function qualityRGB(q)
 	end
 	local t = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
 	if t then return t.r, t.g, t.b end
-end
-
--- Short stat names, so an item's stats fit beside its slot (this screen only).
--- shortcut: English abbreviations; other locales and unlisted stats get the client's full name.
-local SHORT = { STAMINA = "Sta", STRENGTH = "Str", AGILITY = "Agi", INTELLECT = "Int", SPIRIT = "Spi",
-	ATTACK_POWER = "AP", RANGED_ATTACK_POWER = "RAP", SPELL_POWER = "SP", SPELL_DAMAGE_DONE = "SP",
-	SPELL_HEALING_DONE = "Heal",
-	CRIT_RATING = "Crit", HIT_RATING = "Hit", HASTE_RATING = "Haste", EXPERTISE_RATING = "Exp",
-	DEFENSE_SKILL_RATING = "Def", DODGE_RATING = "Dodge", PARRY_RATING = "Parry", BLOCK_RATING = "Block",
-	BLOCK_VALUE = "Block Value", RESILIENCE_RATING = "Resil", ARMOR_PENETRATION_RATING = "ArP",
-	SPELL_PENETRATION = "Pen", MANA_REGENERATION = "MP5", DAMAGE_PER_SECOND = "DPS" }
--- By the client's name, for keys not above (Forever's newer items).
-local SHORT_NAMED = { ["spell damage"] = "SP", ["bonus damage"] = "SP", ["spell power"] = "SP",
-	["healing"] = "Heal", ["bonus healing"] = "Heal", ["spell healing"] = "Heal", ["healing power"] = "Heal" }
-
-local function shortName(k)
-	return SHORT[k:match("^ITEM_MOD_(.-)_SHORT$") or ""] or SHORT_NAMED[_G[k]:lower()] or _G[k]
-end
-
--- An enchant's words in the same short names ("+15 Agility" to "+15 Agi"):
--- the client's names for the stats above, whole words, longest first.
-local named
-local function shortWords(text)
-	if not named then
-		named = {}
-		for k, s in pairs(SHORT) do
-			local n = _G["ITEM_MOD_" .. k .. "_SHORT"]
-			if n then named[#named + 1] = { n:lower(), s } end
-		end
-		for n, s in pairs(SHORT_NAMED) do named[#named + 1] = { n, s } end
-		table.sort(named, function(a, b) return #a[1] > #b[1] end)
-	end
-	for _, e in ipairs(named) do
-		local i, j = text:lower():find("%f[%w]" .. e[1]:gsub("%p", "%%%0") .. "%f[%W]")
-		if i then text = text:sub(1, i - 1) .. e[2] .. text:sub(j + 1) end
-	end
-	return text
-end
-
--- The item's stats ("+12 Sta  +8 Str"), largest first; armor left out.
-local function itemStats(link)
-	local t = C_Item.GetItemStats(link)
-	local list = {}
-	for k, n in pairs(t or {}) do
-		if k ~= "RESISTANCE0_NAME" and _G[k] and n ~= 0 then
-			list[#list + 1] = { n, shortName(k) }
-		end
-	end
-	table.sort(list, function(a, b) if a[1] ~= b[1] then return a[1] > b[1] end return a[2] < b[2] end)
-	-- Fractions (a weapon's DPS) to one decimal; DPS is a rate, not a bonus: "15.3 DPS".
-	for i, e in ipairs(list) do
-		local n = e[1] % 1 == 0 and ("%d"):format(e[1]) or ("%.1f"):format(e[1])
-		list[i] = (e[2] == SHORT.DAMAGE_PER_SECOND and "%s %s" or "+%s %s"):format(n, e[2])
-	end
-	return table.concat(list, "  ")
 end
 
 -- The worn item's permanent enchant, as its tooltip line reads, without the
@@ -114,13 +58,13 @@ local function enchantText(id)
 		if text and not (issecretvalue and issecretvalue(text)) then
 			local pre = ENCHANTED_TOOLTIP_LINE and ENCHANTED_TOOLTIP_LINE:match("^(.-)%%s")
 			if pre and pre ~= "" and text:sub(1, #pre) == pre then text = text:sub(#pre + 1) end
-			return shortWords(text)
+			return text
 		end
 	end
 end
 
--- The name and stats beside a column slot; the slot's name when empty. Out of
--- combat only: item stats may be secret in it (docs/CLIENT.md, rule 3).
+-- The name and enchant beside a slot; the slot's name when empty. Out of
+-- combat only: item data may be secret in it (docs/CLIENT.md, rule 3).
 local function paintSlotText(s, icon, q)
 	if not s.psName or InCombatLockdown() then return end
 	local link = icon and GetInventoryItemLink("player", s:GetID())
@@ -128,13 +72,20 @@ local function paintSlotText(s, icon, q)
 	s.psName:SetText(name or s.psLabel)
 	local r, g, b = qualityRGB(q or 1)
 	if name and r then s.psName:SetTextColor(r, g, b) else W.Color(s.psName, name and "text" or "textMuted") end
-	s.psStats:SetText(link and itemStats(link) or "")
-	-- The enchant as a third line, the three centred on the slot as the two are.
 	local ench = link and enchantText(s:GetID())
 	s.psEnchant:SetText(ench or "")
+	-- Beside the slot, the one or two lines centred on it; below, they hang down.
 	local p, rel, x = unpack(s.psSide)
-	s.psName:SetPoint(p, s, rel, x, ench and 12 or 8)
-	s.psStats:SetPoint(p, s, rel, x, ench and 0 or -8)
+	if p ~= "TOP" then s.psName:SetPoint(p, s, rel, x, ench and 8 or 0) end
+end
+
+-- Whether the worn ranged weapon shoots ammo (a bow, gun or crossbow).
+local AMMO_WEAPONS = { [2] = true, [3] = true, [18] = true }
+local function needsAmmo(ranged)
+	local link = GetInventoryItemLink("player", ranged:GetID())
+	if not link then return false end
+	local _, _, _, _, _, class, sub = C_Item.GetItemInfoInstant(link)
+	return class == 2 and AMMO_WEAPONS[sub] or false
 end
 
 -- The slots an item in the bags would upgrade, by Polestar's own bag verdict
@@ -164,6 +115,7 @@ local function paintSlot(s, up)
 	s.Icon:SetAlpha(icon and 1 or 0.6)
 	if icon then s.Icon:SetVertexColor(1, 1, 1) else s.Icon:SetVertexColor(Polestar.Theme.Color("textMuted")) end
 	paintSlotText(s, icon, icon and GetInventoryItemQuality("player", id))
+	if s.psAmmo then s.psAmmo:SetShown(needsAmmo(s)) end
 	local cur, max = GetInventoryItemDurability(id)
 	local broken = icon and GetInventoryItemBroken("player", id)
 	local r, g, b, a
@@ -251,8 +203,11 @@ local function overSlot(s)
 			self.psSlot:GetScript("OnMouseUp")(self.psSlot)
 		end)
 		-- The window closed (a key) or the tab changed under the cursor.
+		-- Over the ranged slot's ammo tile, the ammo tile takes the mouse.
 		over:SetScript("OnUpdate", function(self)
-			if not self.psSlot:IsVisible() and not InCombatLockdown() then self:Hide() end
+			local ammo = self.psSlot.psAmmo
+			if InCombatLockdown() then return end
+			if not self.psSlot:IsVisible() or (ammo and ammo:IsShown() and ammo:IsMouseOver()) then self:Hide() end
 		end)
 		Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() over:Hide() end)
 	end
@@ -275,13 +230,13 @@ local function overSlot(s)
 	over:Show()
 end
 
--- side: "left" or "right", the column the slot is in; its name and stats on
--- the inside (on `layer`, over the model).
-local function newSlot(parent, name, layer, side)
+-- side: where its name and enchant go (on `layer`, over the model): "left"
+-- for text on its right, "right" for text on its left, "below"; nil for none.
+local function newSlot(parent, name, layer, side, size)
 	local id, empty = C_PaperDollInfo.GetInventorySlotInfo(name)
 	local s = CreateFrame("Button", nil, parent)
 	s:SetID(id)
-	s:SetSize(SLOT, SLOT)
+	s:SetSize(size or SLOT, size or SLOT)
 	s.psEmpty = empty
 	s.psLabel = _G[name:upper()] or name
 	W.Fill(s, "scrim", "BACKGROUND", 0)
@@ -315,49 +270,45 @@ local function newSlot(parent, name, layer, side)
 	if side then
 		local p, rel, x = "LEFT", "RIGHT", 8
 		if side == "right" then p, rel, x = "RIGHT", "LEFT", -8 end
+		if side == "below" then p, rel, x = "TOP", "BOTTOM", 0 end
 		s.psSide = { p, rel, x }
 		s.psName = W.Text(layer, "label", "text")
-		s.psName:SetPoint(p, s, rel, x, 8)
-		s.psStats = W.Text(layer, "small", "textDim")
-		s.psStats:SetPoint(p, s, rel, x, -8)
+		s.psName:SetPoint(p, s, rel, x, p == "TOP" and -4 or 0)
 		s.psEnchant = W.Text(layer, "small", "success")
-		s.psEnchant:SetPoint(p, s, rel, x, -12)
-		for _, t in ipairs({ s.psName, s.psStats, s.psEnchant }) do
+		s.psEnchant:SetPoint("TOP", s.psName, "BOTTOM", 0, -2)
+		for _, t in ipairs({ s.psName, s.psEnchant }) do
 			t:SetWidth(TEXT_W)
-			t:SetJustifyH(p)
+			t:SetJustifyH(p == "TOP" and "CENTER" or p)
 		end
 	end
 	slots[#slots + 1] = s
 	return s
 end
 
--- The two columns on the body's edges, the weapons centred under them, and
--- under those the primary stats' strip.
+-- The two columns on the body's edges, the weapons centred under them.
 local function buildGear(body, width)
 	local colH = #LEFT * (SLOT + GAP) - GAP
 	local v = CreateFrame("Frame", nil, body)
 	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
-	local weapH = 2 * (SLOT + GAP) - GAP
-	v:SetSize(width, colH + 16 + weapH + 12 + PRIMARY_H)
+	-- The weapon row and, under the off hand, its two lines.
+	local weapH = SLOT + 36
+	v:SetSize(width, colH + 16 + weapH)
 	-- The item lines may run over the model, so they sit on a layer above it.
 	local text = CreateFrame("Frame", nil, v)
 	text:SetAllPoints(v)
 	for i, name in ipairs(LEFT) do newSlot(v, name, text, "left"):SetPoint("TOPLEFT", v, "TOPLEFT", 0, -(i - 1) * (SLOT + GAP)) end
 	for i, name in ipairs(RIGHT) do newSlot(v, name, text, "right"):SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -(i - 1) * (SLOT + GAP)) end
-	for _, col in ipairs(WEAPONS) do
-		local side = col[1]
-		local p = side == "left" and "TOPLEFT" or "TOPRIGHT"
-		for i = 1, 2 do
-			local name = col[i + 1]
-			newSlot(v, name, text, side):SetPoint(p, v, p, 0, -(colH + 16 + (i - 1) * (SLOT + GAP)))
+	local row = #WEAPONS * (SLOT + GAP) - GAP
+	for i, w in ipairs(WEAPONS) do
+		local s = newSlot(v, w[1], text, w[2])
+		s:SetPoint("TOPLEFT", v, "TOP", -row / 2 + (i - 1) * (SLOT + GAP), -(colH + 16))
+		-- Ammo: a small tile in the ranged slot's corner, shown when it shoots.
+		if w[1] == "RangedSlot" then
+			s.psAmmo = newSlot(s, "AmmoSlot", nil, nil, 16)
+			s.psAmmo:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, 0)
+			s.psAmmo.psUp:SetSize(10, 10)
 		end
 	end
-	-- The primary stats' strip (paintPrimary): on the page, no panel.
-	local primary = CreateFrame("Frame", nil, v)
-	primary:SetPoint("BOTTOMLEFT", v, "BOTTOMLEFT", 0, 0)
-	primary:SetPoint("BOTTOMRIGHT", v, "BOTTOMRIGHT", 0, 0)
-	primary:SetHeight(PRIMARY_H)
-	v.Primary = primary
 	-- The model well between the columns (docs/DESIGN.md, "Model Well"): no
 	-- border, a shade that fades out towards its edges.
 	local well = CreateFrame("Frame", nil, v)
@@ -400,61 +351,20 @@ local function showModel()
 	end
 end
 
-local paintPrimary -- below, with the stats it reads
-
 local function paintGear()
 	local up = upgradeSlots()
 	f.psUp = up -- for the cursor's repaint (CURSOR_CHANGED)
 	for _, s in ipairs(slots) do paintSlot(s, up) end
-	paintPrimary()
 end
 
 ---------------------------------------------------------------------------
--- Stats: the stock categories (PAPERDOLL_STATCATEGORIES), each a heading over
--- a row panel (docs/DESIGN.md, "Stat Row"), flowed into two columns. The
+-- Stats: a drawer docked to the window's right edge, the stock categories
+-- (PAPERDOLL_STATCATEGORIES) in one column, each a heading over a row panel
+-- (docs/DESIGN.md, "Stat Row"); the player can put it away. The
 -- numbers and tooltips are the stock sheet's own: each row is handed to
 -- PAPERDOLL_STATINFO[stat].updateFunc, which fills Label, Value and tooltip.
 
-local STAT_H, HEAD_H, SECTION_GAP, COL_GAP = 28, 44, 22, 24
-
--- Archetypes: the player's choice (per character, PolestarUICharDB.archetype),
--- one menu on both tabs. On the Stats tab the layout never moves: `key` stats
--- read in text, the rest in textMuted. Under the gear, `stats` are the strip.
--- The lists follow Forever's stats (Classic's, with one Hit and one Crit).
-local ARCHETYPES = {
-	{ id = "melee", label = "Melee", tip = "Stats for melee fighters.",
-		key = { STRENGTH = true, AGILITY = true, MAINHAND_DAMAGE = true, OFFHAND_DAMAGE = true, ATTACK_AP = true,
-			HITCHANCE = true, CRITCHANCE = true, HASTE = true, EXPERTISE = true, ARMORPEN = true },
-		stats = { "STRENGTH", "AGILITY", "ATTACK_AP", "CRITCHANCE", "HITCHANCE" } },
-	{ id = "ranged", label = "Ranged", tip = "Stats for hunters and other ranged fighters.",
-		key = { AGILITY = true, RANGED_DAMAGE = true, RANGED_ATTACK_AP = true, HITCHANCE = true, CRITCHANCE = true,
-			HASTE = true, ARMORPEN = true },
-		stats = { "AGILITY", "RANGED_ATTACK_AP", "RANGED_DAMAGE", "CRITCHANCE", "HITCHANCE" } },
-	{ id = "caster", label = "Caster", tip = "Stats for spellcasters who deal damage.",
-		key = { INTELLECT = true, SPIRIT = true, POWER = true, MANAREGEN = true, SPELLPOWER = true,
-			SPELLPENETRATION = true, HITCHANCE = true, CRITCHANCE = true, HASTE = true },
-		stats = { "INTELLECT", "SPELLPOWER", "CRITCHANCE", "HITCHANCE", "SPELLPENETRATION" } },
-	{ id = "healer", label = "Healer", tip = "Stats for healers.",
-		key = { INTELLECT = true, SPIRIT = true, POWER = true, MANAREGEN = true, SPELLHEALING = true,
-			CRITCHANCE = true, HASTE = true },
-		stats = { "INTELLECT", "SPIRIT", "SPELLHEALING", "CRITCHANCE", "MANAREGEN" } },
-	{ id = "tank", label = "Tank", tip = "Stats for tanks.",
-		key = { STAMINA = true, HEALTH = true, DEFENSE = true, DODGE = true, PARRY = true, BLOCK = true, ARMOR = true },
-		stats = { "HEALTH", "ARMOR", "DEFENSE", "DODGE", "PARRY", "BLOCK" } },
-}
-local BY_ID = {}
-for _, a in ipairs(ARCHETYPES) do BY_ID[a.id] = a end
--- The starting choice by class, until the player picks one.
-local CASTERS = { MAGE = true, WARLOCK = true, PRIEST = true, DRUID = true, SHAMAN = true }
-
-local function archetype()
-	local id = PolestarUICharDB and PolestarUICharDB.archetype
-	if not BY_ID[id] then
-		local _, class = UnitClass("player")
-		id = class == "HUNTER" and "ranged" or CASTERS[class] and "caster" or "melee"
-	end
-	return BY_ID[id]
-end
+local STAT_H, HEAD_H, SECTION_GAP, STATS_W, STATS_TOP = 28, 44, 22, 280, 72
 
 local function statEnter(r)
 	if r.onEnterFunc then r.onEnterFunc(r) else PaperDollStatTooltip(r) end
@@ -544,9 +454,9 @@ local function fill(r, fn, hideAt)
 	return shown and (hideAt == nil or hideAt ~= fields.numericValue)
 end
 
--- { name, { { fn, hideAt, key }, ... } } for the player's categories, in the
+-- { name, { { fn, hideAt }, ... } } for the player's categories, in the
 -- stock order.
-local function statCategories(arch)
+local function statCategories()
 	local cats = {}
 	for _, c in ipairs(PAPERDOLL_STATCATEGORIES or {}) do
 		if (c.unit or "player") == "player" then
@@ -554,7 +464,7 @@ local function statCategories(arch)
 			for _, st in ipairs(c.stats) do
 				local info = PAPERDOLL_STATINFO[st.stat]
 				if info and (not st.showFunc or st.showFunc()) then
-					list[#list + 1] = { info.updateFunc, st.hideAt, arch.key[st.stat] or false }
+					list[#list + 1] = { info.updateFunc, st.hideAt }
 				end
 			end
 			cats[#cats + 1] = { c.categoryName, list }
@@ -563,131 +473,97 @@ local function statCategories(arch)
 	return cats
 end
 
--- The item level the stock sheet shows (PaperDollFrame_SetItemLevel's own
--- sum), from its level on; nil below it.
-local function itemLevel()
-	if UnitLevel("player") < (MIN_PLAYER_LEVEL_FOR_ITEM_LEVEL_DISPLAY or 10) then return nil end
-	local _, equipped = GetAverageItemLevel()
-	return math.floor(math.max(C_PaperDollInfo.GetMinItemLevel() or 0, equipped or 0))
-end
-
-local function buildStats(body, width)
-	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, 0)
-	v:SetWidth(width)
-	v.colW = (width - COL_GAP) / 2
+-- The drawer: its own window skin, flush with the window's right edge, its
+-- heading over a scrolling column.
+local function buildStats()
+	local d = CreateFrame("Frame", NAME .. "Stats", f)
+	d:SetPoint("TOPLEFT", f, "TOPRIGHT", -1, 0)
+	d:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", -1, 0)
+	d:SetWidth(STATS_W)
+	d:EnableMouse(true)
+	Polestar.Theme.Skin(d, "window")
+	local title = W.Text(d, "heading", "text")
+	title:SetPoint("LEFT", d, "TOPLEFT", 24, -STATS_TOP / 2)
+	title:SetText("Stats")
+	d.Scroll = W.Scroll(d)
+	d.Scroll:SetPoint("TOPLEFT", d, "TOPLEFT", 0, -STATS_TOP)
+	d.Scroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -4, 4)
+	local v = d.Scroll.Child
+	v:SetWidth(STATS_W - 4)
+	v.colW = STATS_W - 48
 	v.sections = {}
-	return v
+	d.Body = v
+	return d
 end
 
--- Lays the categories out, each in the shorter column; returns the height.
-local function paintStats()
-	local v = f.psStats
-	local colH = { 0, 0 }
-	local arch = archetype()
-	local cats = statCategories(arch)
+-- The folded categories, by name, for every character (PolestarUIDB.statsFolded).
+local function folded()
+	PolestarUIDB.statsFolded = PolestarUIDB.statsFolded or {}
+	return PolestarUIDB.statsFolded
+end
+
+local paintStats
+
+-- A category: its heading (the chevron in the gutter and the heading fold it)
+-- over its row panel.
+local function statSection(v)
+	local s = { Head = W.SectionHeader(v), Panel = W.RowPanel(v), rows = {} }
+	s.Head:SetWidth(v.colW)
+	s.Panel:SetWidth(v.colW)
+	s.Chevron = W.Tex(s.Head, "ARTWORK", "chevron-down", "textDim")
+	s.Chevron:SetSize(12, 12)
+	s.Chevron:SetPoint("RIGHT", s.Head.Text, "LEFT", -6, 0)
+	s.Hit = CreateFrame("Button", nil, s.Head)
+	s.Hit:SetPoint("TOPLEFT", s.Head, "TOPLEFT", -24, 0)
+	s.Hit:SetPoint("BOTTOMRIGHT", s.Head, "BOTTOMRIGHT", 0, 0)
+	s.Hit:SetScript("OnClick", function()
+		folded()[s.name] = not folded()[s.name] or nil
+		paintStats()
+	end)
+	s.Hit:SetScript("OnEnter", function() W.Color(s.Chevron, "text") end)
+	s.Hit:SetScript("OnLeave", function() W.Color(s.Chevron, "textDim") end)
+	return s
+end
+
+-- Lays the categories out down the drawer and sets its scroll.
+function paintStats()
+	local d = f.psStats
+	local v, y = d.Body, 0
+	local cats = statCategories()
 	for i, cat in ipairs(cats) do
-		local s = v.sections[i]
-		if not s then
-			s = { Head = W.SectionHeader(v), Panel = W.RowPanel(v), rows = {} }
-			s.Head:SetWidth(v.colW)
-			s.Panel:SetWidth(v.colW)
-			v.sections[i] = s
-		end
+		local s = v.sections[i] or statSection(v)
+		v.sections[i] = s
+		s.name = cat[1]
 		local n = 0
 		for _, e in ipairs(cat[2]) do
 			local r = statRow(s, n + 1)
 			if fill(r, e[1], e[2]) then
 				n = n + 1
-				W.Color(r.Label, e[3] and "text" or "textMuted")
-				W.Color(r.Value, e[3] and "text" or "textMuted")
 			else
 				r:Hide()
 			end
 		end
 		for k = n + 1, #s.rows do s.rows[k]:Hide() end
-		local shown = n > 0
+		local shown, open = n > 0, not folded()[cat[1]]
 		s.Head:SetShown(shown)
-		s.Panel:SetShown(shown)
+		s.Panel:SetShown(shown and open)
 		if shown then
-			local col = colH[1] <= colH[2] and 1 or 2
-			local x, y = (col - 1) * (v.colW + COL_GAP), colH[col]
 			W.SetSection(s.Head, cat[1])
-			s.Head:SetPoint("TOPLEFT", v, "TOPLEFT", x, -y)
-			s.Panel:SetPoint("TOPLEFT", v, "TOPLEFT", x, -(y + HEAD_H))
+			s.Chevron:SetTexture(Polestar.Theme.Media(open and "chevron-down" or "chevron-right"))
+			s.Head:SetPoint("TOPLEFT", v, "TOPLEFT", 24, -y)
+			s.Panel:SetPoint("TOPLEFT", v, "TOPLEFT", 24, -(y + HEAD_H))
 			s.Panel:SetHeight(n * STAT_H)
-			colH[col] = y + HEAD_H + n * STAT_H + SECTION_GAP
+			y = y + HEAD_H + (open and n * STAT_H + SECTION_GAP or 0)
 		end
 	end
 	for i = #cats + 1, #v.sections do
 		v.sections[i].Head:Hide()
 		v.sections[i].Panel:Hide()
 	end
-	local h = math.max(colH[1], colH[2])
-	v:SetHeight(h)
-	return h
+	W.SetScrollContent(d.Scroll, y, f:GetHeight() - STATS_TOP - 4)
 end
 
----------------------------------------------------------------------------
--- Primary stats: the strip under the gear, the archetype's `stats`. Each cell
--- is a stat row as on the Stats tab (fill), so its combat rules hold.
-
--- A cell: the value in Number over its name in Small textDim, centred.
-local function primaryCell(strip, i)
-	local c = CreateFrame("Button", nil, strip)
-	c:SetHeight(PRIMARY_H)
-	c.Value = W.Text(c, "number", "text")
-	c.Value:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -5)
-	c.Value:SetPoint("TOPRIGHT", c, "TOPRIGHT", -6, -5)
-	c.Label = W.Text(c, "small", "textDim")
-	c.Label:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 6, 5)
-	c.Label:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -6, 5)
-	for _, t in ipairs({ c.Value, c.Label }) do t:SetJustifyH("CENTER") end
-	-- Between cells, the middle dot the page subtitle separates with.
-	if i > 1 then
-		c.Dot = W.Tex(c, "ARTWORK", "circle", "textMuted")
-		c.Dot:SetSize(4, 4)
-		c.Dot:SetPoint("CENTER", c, "LEFT", 0, 0)
-	end
-	c:SetScript("OnEnter", statEnter)
-	c:SetScript("OnLeave", W.HideTooltip)
-	return c
-end
-
--- The picked list's stats that show (the stock functions hide some, as Block
--- without a shield), spread evenly across the strip.
-function paintPrimary()
-	local strip, list = f.psGear.Primary, archetype()
-	strip.cells = strip.cells or {}
-	local n = 0
-	for _, key in ipairs(list.stats) do
-		local info = PAPERDOLL_STATINFO[key]
-		if info then
-			local c = strip.cells[n + 1] or primaryCell(strip, n + 1)
-			strip.cells[n + 1] = c
-			if fill(c, info.updateFunc) then n = n + 1 else c:Hide() end
-		end
-	end
-	for k = n + 1, #strip.cells do strip.cells[k]:Hide() end
-	local w = f.BodyWidth / math.max(n, 1)
-	for k = 1, n do
-		local c = strip.cells[k]
-		c:SetWidth(w)
-		c:SetPoint("TOPLEFT", strip, "TOPLEFT", (k - 1) * w, 0)
-	end
-end
-
-local function pickArchetype(self)
-	if W.MenuShown(self) then return W.HideMenu() end
-	local cur, items = archetype(), {}
-	for i, a in ipairs(ARCHETYPES) do
-		items[i] = { text = a.label, checked = a == cur, onClick = function()
-			PolestarUICharDB.archetype = a.id
-			M.Show()
-		end }
-	end
-	W.ShowMenu(self, items, { minWidth = self:GetWidth() })
-end
+local refresh, statsShown -- below
 
 local function build()
 	f = W.Shell(NAME, {})
@@ -715,7 +591,7 @@ local function build()
 	-- (a fixed width on an unwrapped string: the client's own truncation).
 	for _, t in ipairs({ f.psName, f.psLine, f.psGuild }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
 	f.psGear = buildGear(f.Body, f.BodyWidth)
-	f.psStats = buildStats(f.Body, f.BodyWidth)
+	f.psStats = buildStats()
 	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
 	f.psPages = {}
 	for key, page in pairs(ns.CharacterPages) do
@@ -724,27 +600,21 @@ local function build()
 		v.psPaint, v.psH = page.paint, 0
 		f.psPages[key] = v
 	end
-	-- The archetype's menu at the right of the tab row, on both tabs.
-	local pick = CreateFrame("Button", nil, f.TabRow)
-	pick:SetHeight(24)
-	pick:SetPoint("RIGHT", f.TabRow, "RIGHT", -20, 0)
-	W.Hover(pick)
-	pick.Label = W.Text(pick, "small", "text")
-	pick.Label:SetPoint("LEFT", pick, "LEFT", 10, 0)
-	pick.Arrow = W.Tex(pick, "ARTWORK", "chevron-down", "textDim")
-	pick.Arrow:SetSize(12, 12)
-	pick.Arrow:SetPoint("RIGHT", pick, "RIGHT", -10, 0)
-	pick:SetScript("OnClick", pickArchetype)
-	pick:SetScript("OnEnter", function(self)
-		local a = archetype()
-		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-		GameTooltip:SetText(a.label)
-		GameTooltip:AddLine(a.tip, 1, 1, 1, true)
-		ns.TooltipHint("Picks the stats under your gear and the ones that stand out on the Stats tab. Kept for this character.")
-		GameTooltip:Show()
+	-- The drawer's toggle at the right of the tab row (kept with no tabs).
+	local toggle = CreateFrame("Button", nil, f.TabRow)
+	toggle:SetHeight(24)
+	toggle:SetPoint("RIGHT", f.TabRow, "RIGHT", -20, 0)
+	W.Hover(toggle)
+	toggle.Label = W.Text(toggle, "small", "text")
+	toggle.Label:SetPoint("LEFT", toggle, "LEFT", 10, 0)
+	toggle.Arrow = W.Tex(toggle, "ARTWORK", "chevron-left", "textDim")
+	toggle.Arrow:SetSize(12, 12)
+	toggle.Arrow:SetPoint("RIGHT", toggle, "RIGHT", -10, 0)
+	toggle:SetScript("OnClick", function()
+		PolestarUIDB.hideStats = statsShown() or nil
+		refresh()
 	end)
-	pick:SetScript("OnLeave", W.HideTooltip)
-	f.psPick = pick
+	f.psToggle = toggle
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -760,18 +630,21 @@ local function paintPage(v)
 	return v.psH + 8
 end
 
-local function refresh()
+-- The drawer is shown unless the player put it away (for every character).
+function statsShown() return not (PolestarUIDB and PolestarUIDB.hideStats) end
+
+function refresh()
 	local level, race = UnitLevel("player"), UnitRace("player")
 	f.psName:SetText(playerText(UnitName) or "")
 	f.psLine:SetText(("Level %d %s"):format(level, UnitClass("player")))
 	f.psGuild:SetText(playerText(GetGuildInfo) or "")
 	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
-	if section == "PaperDollFrame" then
-		W.ShellTabs(f, TABS, tab, function(k) tab = k; refresh() end)
+	local gear = section == "PaperDollFrame"
+	f.psKeepTabRow = gear
+	if gear then
+		W.ShellTabs(f, nil)
 		local sub = ("Level %d %s %s"):format(level, race, UnitClass("player"))
-		local ilvl = itemLevel()
-		if ilvl then sub = sub .. " · Item level " .. ilvl end
 		W.ShellTitle(f, playerText(UnitPVPName) or playerText(UnitName) or "", sub)
 	else
 		W.ShellTabs(f, nil)
@@ -780,21 +653,22 @@ local function refresh()
 		end
 	end
 	W.ShellFooter(f, {}, {})
-	local gear = section == "PaperDollFrame" and tab == "gear"
-	local stats = section == "PaperDollFrame" and tab == "stats"
+	local stats = gear and statsShown()
 	f.psGear:SetShown(gear)
 	f.psStats:SetShown(stats)
-	f.psPick:SetShown(gear or stats)
-	f.psPick.Label:SetText(archetype().label .. " stats")
-	f.psPick:SetWidth(math.floor(f.psPick.Label:GetStringWidth() + 44 + 0.5))
+	-- The window keeps its drawer on screen too.
+	f:SetClampRectInsets(0, stats and STATS_W - 1 or 0, 0, 0)
+	f.psToggle:SetShown(gear)
+	f.psToggle.Label:SetText(stats and "Hide stats" or "Show stats")
+	f.psToggle.Arrow:SetTexture(Polestar.Theme.Media(stats and "chevron-left" or "chevron-right"))
+	f.psToggle:SetWidth(math.floor(f.psToggle.Label:GetStringWidth() + 44 + 0.5))
 	local h = 0
 	if gear then
 		paintGear()
 		showModel()
 		h = f.psGear:GetHeight() + 24
-	elseif stats then
-		h = paintStats() + 8
 	end
+	if stats then paintStats() end
 	for key, v in pairs(f.psPages) do
 		local on = key == section
 		v:SetShown(on)
@@ -808,10 +682,9 @@ function ns.RefreshCharacter()
 	if f and f:IsShown() then refresh() end
 end
 
-function M.Show(key, view)
+function M.Show(key)
 	if not f then build() end
 	section = key or section
-	tab = view or tab
 	refresh()
 	f:Show()
 end
@@ -861,7 +734,7 @@ function M.Enable()
 			return
 		end
 		if f.psGear:IsShown() then paintGear() end
-		if f.psStats:IsShown() then W.ShellBody(f, paintStats() + 8) end
+		if f.psStats:IsShown() then paintStats() end
 		for _, v in pairs(f.psPages) do
 			if v:IsShown() then W.ShellBody(f, paintPage(v)) end
 		end

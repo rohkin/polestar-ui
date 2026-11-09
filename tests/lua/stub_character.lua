@@ -22,29 +22,22 @@ function C_PaperDollInfo.GetInventorySlotInfo(name)
 end
 ITEM_QUALITY_COLORS = { [1] = { r = 1, g = 1, b = 1 }, [2] = { r = 0.12, g = 1, b = 0 }, [3] = { r = 0, g = 0.44, b = 0.87 }, [4] = { r = 0.64, g = 0.21, b = 0.93 } }
 -- slot id = { quality, durability left (fraction), broken }
-local GEAR = { [1] = { 3, 1 }, [3] = { 2, 1 }, [5] = { 4, 1 }, [7] = { 2, 0.2 }, [8] = { 1, 1 }, [10] = { 2, 0, true }, [15] = { 1, 1 }, [16] = { 3, 1 }, [18] = { 2, 1 } }
+local GEAR = { [1] = { 3, 1 }, [3] = { 2, 1 }, [5] = { 4, 1 }, [7] = { 2, 0.2 }, [8] = { 1, 1 }, [10] = { 2, 0, true }, [15] = { 1, 1 }, [16] = { 3, 1 }, [18] = { 2, 1 }, [0] = { 1, 1 } }
 function GetInventoryItemTexture(unit, id) return GEAR[id] and 134400 or nil end
 function GetInventoryItemQuality(unit, id) return GEAR[id] and GEAR[id][1] end
 function GetInventoryItemBroken(unit, id) return GEAR[id] and GEAR[id][3] or false end
 function GetInventoryItemDurability(id) if GEAR[id] then return GEAR[id][2] * 100, 100 end end
--- Names and stats for the worn items; names as long as the game's longest fit.
+-- Names for the worn items; names as long as the game's longest fit.
 local NAMES = { [1] = "Helm of the Fallen Champion", [3] = "Ridge Spaulders", [5] = "Breastplate of the Long Watch",
-	[7] = "Scouting Leggings", [8] = "Worn Boots", [10] = "Bloodied Gauntlets", [15] = "Frayed Cloak", [16] = "Whirling Blade", [18] = "Hunting Bow" }
+	[7] = "Scouting Leggings", [8] = "Worn Boots", [10] = "Bloodied Gauntlets", [15] = "Frayed Cloak", [16] = "Whirling Blade", [18] = "Hunting Bow", [0] = "Rough Arrow" }
 function GetInventoryItemLink(unit, id)
 	if GEAR[id] then return ("|cff1eff00|Hitem:%d::::::::24:::::|h[%s]|h|r"):format(id, NAMES[id]) end
 end
 SHIRTSLOT, TABARDSLOT, FINGER1SLOT, TRINKET1SLOT, AMMOSLOT = "Shirt", "Tabard", "Finger", "Trinket", "Ammo"
-ITEM_MOD_FOREVER_SPELL_DAMAGE_SHORT, ITEM_MOD_FOREVER_HEALING_SHORT = "Spell Damage", "Healing"
-ITEM_MOD_DAMAGE_PER_SECOND_SHORT = "Damage Per Second"
-ITEM_MOD_STAMINA_SHORT, ITEM_MOD_STRENGTH_SHORT, ITEM_MOD_AGILITY_SHORT, RESISTANCE0_NAME = "Stamina", "Strength", "Agility", "Armor"
 C_Item = C_Item or {}
-function C_Item.GetItemStats(link)
-	local id = tonumber(link:match("item:(%d+)"))
-	if id == 8 or id == 15 then return { RESISTANCE0_NAME = 20 } end
-	-- Forever's newer items: a key the short names do not list, known by its name.
-	if id == 16 then return { ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 15.3333, ITEM_MOD_STAMINA_SHORT = 8 } end
-	if id == 7 then return { ITEM_MOD_STAMINA_SHORT = 9, ITEM_MOD_FOREVER_SPELL_DAMAGE_SHORT = 12, ITEM_MOD_FOREVER_HEALING_SHORT = 22 } end
-	return { ITEM_MOD_STAMINA_SHORT = 6 + id, ITEM_MOD_STRENGTH_SHORT = 4 + id % 5, ITEM_MOD_AGILITY_SHORT = id % 3, RESISTANCE0_NAME = 80 }
+-- The ranged slot holds a bow (weapon class 2, subclass 2): it shoots ammo.
+function C_Item.GetItemInfoInstant(link)
+	if tonumber(link:match("item:(%d+)")) == 18 then return 18, "Weapon", "Bows", "INVTYPE_RANGED", 134400, 2, 2 end
 end
 
 -- The cursor holds an item that fits stub.cursorFits[slot id]; the bags
@@ -76,7 +69,7 @@ ModelSceneUtil = { SetUpCharacterSheetScene = function(scene) end }
 
 -- Stats: the stock categories and their update functions, filled with the
 -- sample warrior's numbers the way the stock ones fill a row.
-STAT_FORMAT, STAT_AVERAGE_ITEM_LEVEL, MIN_PLAYER_LEVEL_FOR_ITEM_LEVEL_DISPLAY = "%s:", "Item Level", 10
+STAT_FORMAT, STAT_AVERAGE_ITEM_LEVEL = "%s:", "Item Level"
 local function stat(label, value, hidden)
 	return { updateFunc = function(r)
 		if hidden then r:Hide() return end
@@ -88,8 +81,6 @@ local function stat(label, value, hidden)
 		r.tooltip = label .. " " .. value
 	end }
 end
-function GetAverageItemLevel() return 27.4, 27.4, 27.4 end
-function C_PaperDollInfo.GetMinItemLevel() return nil end
 function PaperDollStatTooltip(r) end
 PAPERDOLL_STATINFO = {
 	HEALTH = stat("Health", "1,240"), POWER = stat("Rage", "100"),

@@ -31,7 +31,7 @@ with a bare `CreateFontString()` was handed to a stock function that called
 
 **Rule:** make every font string with `W.Text` (it sets the font). Do not pass
 our frames into stock functions to borrow a value when the stock code's own
-inputs give it (`itemLevel()` reads `GetAverageItemLevel` itself).
+inputs give it.
 
 **Caught by:** `stub_client.lua` errors on `SetText` without a font, and its
 `GetFont` returns nil when none is set, as the client does.
