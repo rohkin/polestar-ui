@@ -57,6 +57,69 @@ function ns.GameIcon(parent, layer)
 	return t
 end
 
+-- A replaced window's doors that run no stock code (docs/CLIENT.md, rule 8):
+-- each binding's keys click a button of ours (override bindings, set out of
+-- combat), and an invisible secure button of ours lies over the micro button
+-- while it is shown and enabled: a click opens ours, a shift-click clicks the
+-- micro button from secure code, which opens the stock window untainted.
+-- `actions` maps a binding name to its click.
+local keyOwner, keyButtons, keySig = CreateFrame("Frame"), {}, nil
+local function bindKeys()
+	if InCombatLockdown() then return end -- PLAYER_REGEN_ENABLED binds them
+	local sig = {}
+	for action in pairs(keyButtons) do sig[#sig + 1] = action .. "=" .. table.concat({ GetBindingKey(action) }, ",") end
+	table.sort(sig)
+	sig = table.concat(sig, ";")
+	-- Only on a change: setting overrides fires UPDATE_BINDINGS again.
+	if sig == keySig then return end
+	keySig = sig
+	ClearOverrideBindings(keyOwner)
+	for action, name in pairs(keyButtons) do
+		for _, key in ipairs({ GetBindingKey(action) }) do SetOverrideBindingClick(keyOwner, false, key, name) end
+	end
+end
+
+function ns.Doors(name, actions, micro, onMicro)
+	for action, fn in pairs(actions) do
+		local b = CreateFrame("Button", "PolestarUI" .. name .. action, UIParent)
+		b:SetScript("OnClick", function() fn() end)
+		keyButtons[action] = b:GetName()
+	end
+	if not keySig then
+		Polestar.RegisterEvent("UPDATE_BINDINGS", bindKeys)
+		Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", bindKeys)
+	end
+	keySig = false
+	bindKeys()
+	if not micro then return end
+	local o = CreateFrame("Button", "PolestarUI" .. name .. "Micro", UIParent, "SecureActionButtonTemplate")
+	o:SetAllPoints(micro)
+	o:RegisterForClicks("LeftButtonUp")
+	o:SetAttribute("useOnKeyDown", false)
+	o:SetAttribute("shift-type1", "click")
+	o:SetAttribute("clickbutton", micro)
+	o:SetScript("PostClick", function() if not IsShiftKeyDown() then onMicro() end end)
+	o:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(micro.tooltipText or "")
+		ns.TooltipHint("Shift-click for the game's own window.")
+		GameTooltip:Show()
+	end)
+	o:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	-- Our own frame, not the micro button's child: a driver keeps it over the
+	-- button, out of combat only (a secure button cannot be shown or moved in combat).
+	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
+		if InCombatLockdown() then return end
+		local on = micro:IsVisible() and micro:IsEnabled()
+		-- Above the micro button, wherever Edit Mode or the bar puts it.
+		if on and (o:GetFrameStrata() ~= micro:GetFrameStrata() or o:GetFrameLevel() <= micro:GetFrameLevel()) then
+			o:SetFrameStrata(micro:GetFrameStrata())
+			o:SetFrameLevel(micro:GetFrameLevel() + 10)
+		end
+		o:SetShown(on)
+	end)
+end
+
 local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
 
 -- /pui <module> opens it; /pui <module> on|off takes effect after /reload.

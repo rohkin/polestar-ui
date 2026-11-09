@@ -134,6 +134,31 @@ game's "show it". Where the game calls the toggle to show, treat it as
 
 **Caught by:** the `character-enchant-open` scene.
 
+## 8. Hiding a stock window runs its OnHide as ours
+
+**What happened:** `ADDON_ACTION_BLOCKED` on `MultiBarBottomLeft:SetFrameStrata()`
+opening talents in combat, blamed on Polestar_UI, and a talent window that
+would not close. The Spellbook and Talents doors closed `PlayerSpellsFrame`
+with `Hide()` out of combat; its `OnHide` then ran as our code and wrote the
+action bars' grid state (`MultiActionBar_HideAllGrids`: `showAllButtons` on
+every bar and button). In combat the stock window's own `OnShow` read those
+values, its execution was tainted, and the action bar call was blocked.
+
+**Rule:** never show or hide a stock window whose show/hide scripts touch
+secure frames (`PlayerSpellsFrame` does: action bars, micro buttons). Open
+ours from doors that run no stock code (`ns.Doors` in Core.lua): its keys as
+override bindings to a button of ours (set out of combat), and a secure button
+of ours over its micro button, whose shift-click clicks the micro button from
+secure code for the stock window. Opening the stock window from our own code
+(a menu entry calling `PlayerSpellsUtil`) taints it the same way: point the
+player to the shift-click instead. Doors that only the stock code knows (a
+spell or talent link, a new-spell toast) stay the game's.
+
+**Caught by:** the `spellbook` scene: the stub's
+`PlayerSpellsFrame:Hide()` errors when addon code calls it, the keys go
+through override bindings (refused in combat), and the micro overlay is
+checked.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

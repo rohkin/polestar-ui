@@ -76,6 +76,11 @@ How a stock element is replaced, for every module.
    and does nothing from addon code; the panel manager repairs a panel hidden
    directly before it places the next one (`RepairUIPanelState`). We
    never replace the global, reparent the stock frame or unregister its events.
+   **Except** a stock window whose show/hide scripts touch secure frames
+   (`PlayerSpellsFrame`: the action bars): hiding it from our code taints them
+   (CLIENT.md, rule 8). Such a window is never touched; its keys are override
+   bindings to a button of ours and its micro button carries a secure overlay
+   of ours (`ns.Doors`), whose shift-click opens the stock window.
 3. **Off is off.** `/pui <module> off` and a `/reload` give the stock window back
    untouched, since nothing was changed on it.
 4. **With the gamepad UI on** (`Polestar.GamepadUI()`), a module whose stock
@@ -213,11 +218,11 @@ only and read in the background like the stats (CLIENT.md, rule 3).
   ours, and every category starts folded.
 
 #### Spellbook (`PlayerSpellsFrame`, its spellbook tab) — Risk: high
-`TOGGLESPELLBOOK` → `PlayerSpellsUtil.ToggleSpellBookFrame()`; the micro
-button, spell links and new-spell toasts go through the other
-`PlayerSpellsUtil` opens. Each is followed (`hooksecurefunc`); when the stock
-window shows its spellbook tab it is hidden and ours opens. Its talents tab
-stays the game's.
+Opened by its keys (`TOGGLESPELLBOOK`; `TOGGLEPETBOOK` at Pet) and
+`SpellbookMicroButton` through `ns.Doors`, never touching the stock window
+(CLIENT.md, rule 8); shift-click on the micro button opens the stock one.
+Spell links and new-spell toasts stay the game's. Its talents tab stays the
+game's.
 - **Shell:** 960×680 with sidebar.
 - **Subject block:** the class icon, the class in Title, "Level 24" in Small
   textDim.
@@ -228,8 +233,9 @@ stays the game's.
 - **Main column:** title the category, subtitle what the player can do ("Click
   a spell to cast it, or drag it to your action bars."). An Options menu at the
   band's bottom right: the stock book's settings (Show passive spells, Show all
-  ranks; the same CVars), "Open the game's spellbook" (the stock window, for
-  what other addons add to it, as What's Training?'s tab) and, when that addon
+  ranks; the same CVars), a disabled line saying the micro button's
+  shift-click opens the game's spellbook (for what other addons add to it, as
+  What's Training?'s tab) and, when that addon
   is loaded, "What's Training?" (its own window).
 - **Rows:** two columns, book order down the left, then the right; a 36px
   game icon on an inset well with a hairline, the name in Label, under it in

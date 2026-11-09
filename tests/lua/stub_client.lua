@@ -50,3 +50,24 @@ function M.GetFont(self)
 	if self.kind == "FontString" and not (self.font or self.fontObject or self.psInherits) then return nil end
 	return getFont(self)
 end
+
+-- Key bindings: the keys bound to each action, and the override bindings set
+-- over them (refused in combat). stub.pressKey(key) runs what the key does:
+-- the override's button, else the game's own binding (stub.bindingRun[action]).
+stub.bindings = { TOGGLETALENTS = { "N" }, TOGGLESPELLBOOK = { "P" }, TOGGLEPETBOOK = { "SHIFT-P" } }
+stub.overrides, stub.bindingRun = {}, {}
+function GetBindingKey(action) return unpack(stub.bindings[action] or {}) end
+function SetOverrideBindingClick(owner, priority, key, button)
+	if InCombatLockdown() then error("SetOverrideBindingClick is protected in combat", 2) end
+	stub.overrides[key] = button
+end
+function ClearOverrideBindings(owner)
+	if InCombatLockdown() then error("ClearOverrideBindings is protected in combat", 2) end
+	stub.overrides = {}
+end
+function stub.pressKey(key)
+	if stub.overrides[key] then return _G[stub.overrides[key]]:Click() end
+	for action, keys in pairs(stub.bindings) do
+		for _, k in ipairs(keys) do if k == key and stub.bindingRun[action] then stub.bindingRun[action]() end end
+	end
+end

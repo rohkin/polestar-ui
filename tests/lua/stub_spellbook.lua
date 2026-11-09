@@ -66,14 +66,10 @@ function C_Spell.GetSpellInfo(id) local s = BOOK[id - 100]; return s and { castT
 MANA, PET = "Mana", "Pet"
 ChatFrameUtil = { InsertLink = function(link) stub.linked = link end }
 
--- The stock doors: each shows the stock frame on its spellbook tab, as the client does.
+-- The game's window: addon code must never show or hide it (docs/CLIENT.md, rule 8).
 PlayerSpellsFrame = CreateFrame("Frame", "PlayerSpellsFrame", UIParent)
 PlayerSpellsFrame:Hide()
-function PlayerSpellsFrame:IsFrameTabActive(tab) return tab == 1 end
-PlayerSpellsUtil = { FrameTabs = { SpellBook = 1 }, SpellBookCategories = { General = 1, Class = 2, Pet = 3 } }
-local function showStock() PlayerSpellsFrame:Show() end
-PlayerSpellsUtil.ToggleSpellBookFrame = showStock
-PlayerSpellsUtil.TogglePlayerSpellsFrame = showStock
-PlayerSpellsUtil.OpenToSpellBookTab = showStock
-PlayerSpellsUtil.OpenToSpellBookTabAtSpell = showStock
-function PlayerSpellsUtil:OpenToSpellBookTabAtCategory() showStock() end
+function PlayerSpellsFrame.Hide() error("addon code hid PlayerSpellsFrame", 2) end
+function stub.bindingRun.TOGGLESPELLBOOK() PlayerSpellsFrame:Show() end
+SpellbookMicroButton = CreateFrame("Button", "SpellbookMicroButton", UIParent)
+SpellbookMicroButton.tooltipText = "Spellbook & Abilities (P)"

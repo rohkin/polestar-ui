@@ -267,14 +267,6 @@ local function whatsTraining()
 	return ldb and ldb:GetDataObjectByName("WhatsTrainingMinimap")
 end
 
-local passThrough = false
-local function openStock()
-	f:Hide()
-	passThrough = true
-	PlayerSpellsUtil.OpenToSpellBookTab()
-	passThrough = false
-end
-
 local function optionsMenu(self)
 	if W.MenuShown(self) then return W.HideMenu() end
 	local function flip(cvar) return function() SetCVar(cvar, GetCVarBool(cvar) and "0" or "1"); M.Show() end end
@@ -282,7 +274,7 @@ local function optionsMenu(self)
 		{ text = "Show passive spells", checked = not GetCVarBool("spellBookHidePassives"), onClick = flip("spellBookHidePassives") },
 		{ text = "Show all ranks", checked = GetCVarBool("ShowAllSpellRanks"), onClick = flip("ShowAllSpellRanks") },
 		{ separator = true },
-		{ text = "Open the game's spellbook", onClick = openStock },
+		{ text = "Game's spellbook: shift-click its micro button", disabled = true },
 	}
 	local wt = whatsTraining()
 	if wt and wt.OnClick then
@@ -329,6 +321,9 @@ local function build()
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psEmpty:SetText("No spells here.")
+	-- The stock window's sounds: it never opens now to play them.
+	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_OPEN_WINDOW) end)
+	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_CLOSE_WINDOW) end)
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -369,41 +364,12 @@ function M.Toggle(key)
 	if f and f:IsShown() and (key == nil or key == section) then f:Hide() else M.Show(key) end
 end
 
--- The category holding a spell, for the doors that open at one.
-local function sectionOf(spellID)
-	local slot = spellID and C_SpellBook.FindSpellBookSlotForSpell(spellID)
-	if not slot then return end
-	for _, c in ipairs(categories()) do
-		if c.bank == bank("Player") and slot > c.offset and slot <= c.offset + c.n then return c.key end
-	end
-end
-
 function M.Enable()
-	-- shortcut: the stub has no PlayerSpellsUtil outside the spellbook scenes; the client always does.
-	if not PlayerSpellsUtil then return end
-	-- Every stock door (TOGGLESPELLBOOK, the micro button, a spell link, a
-	-- new-spell toast) goes through PlayerSpellsUtil and shows
-	-- PlayerSpellsFrame on its spellbook tab; we close it again (Hide(), as
-	-- ToggleCharacter's hook in Character.lua) and show ours. On its talents
-	-- tab the stock window stays.
-	local function door(toggle, keyOf)
-		return function(...)
-			if passThrough then return end
-			local p, tabs = PlayerSpellsFrame, PlayerSpellsUtil.FrameTabs
-			if not (p and p:IsShown() and p:IsFrameTabActive(tabs.SpellBook)) then return end
-			p:Hide()
-			local key = keyOf and keyOf(...)
-			if toggle then M.Toggle(key) else M.Show(key) end
-		end
-	end
-	local function petKey(cat)
-		if cat and cat == PlayerSpellsUtil.SpellBookCategories.Pet then return "pet" end
-	end
-	hooksecurefunc(PlayerSpellsUtil, "ToggleSpellBookFrame", door(true, petKey))
-	hooksecurefunc(PlayerSpellsUtil, "TogglePlayerSpellsFrame", door(true))
-	hooksecurefunc(PlayerSpellsUtil, "OpenToSpellBookTab", door(false))
-	hooksecurefunc(PlayerSpellsUtil, "OpenToSpellBookTabAtCategory", door(false, function(_, cat) return petKey(cat) end))
-	hooksecurefunc(PlayerSpellsUtil, "OpenToSpellBookTabAtSpell", door(false, sectionOf))
+	-- The spellbook keys and micro button open ours; the stock window is never
+	-- touched (docs/CLIENT.md, rule 8). A spell link and a new-spell toast stay
+	-- the game's.
+	ns.Doors("Spellbook", { TOGGLESPELLBOOK = function() M.Toggle() end, TOGGLEPETBOOK = function() M.Toggle("pet") end },
+		SpellbookMicroButton, function() M.Toggle() end)
 	local function changed() if f and f:IsShown() then refresh() end end
 	Polestar.RegisterEvent("SPELLS_CHANGED", changed)
 	Polestar.RegisterEvent("PET_BAR_UPDATE", changed) -- autocast turned on or off
