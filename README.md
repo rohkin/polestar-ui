@@ -2,9 +2,25 @@
 
 A companion to [Polestar](https://github.com/fitzforge/polestar): the game's own windows remade in Polestar's look, drawn with Polestar's own widgets so they follow its scheme, accent and font live.
 
+Still early: more windows are on the way. Done so far:
+
+- **Character**: gear around the model, a foldable stats drawer, and Reputation, Currency, Player vs. Player, Skills and Statistics pages.
+- **Spellbook**: every tab, search, cooldowns and pet autocast; click to cast or drag to your bars.
+- **Talents**: the three trees on the class's art, search, and points staged until you Apply.
+
+![Character window](screenshots/character.png)
+
+![Spellbook](screenshots/spellbook.png)
+
+![Talents](screenshots/talents.png)
+
 ## Requirements
 
-- Polestar.
+- [Polestar](https://github.com/fitzforge/polestar/releases).
+
+## Install
+
+Download `Polestar_UI-<version>.zip` from [Releases](https://github.com/rohkin/polestar-ui/releases) (not "Source code"), unzip it into `World of Warcraft/_forever_/Interface/AddOns/`, and restart the game.
 
 ## Use
 
