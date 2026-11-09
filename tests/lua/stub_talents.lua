@@ -112,6 +112,9 @@ function C_Traits.GetNodeInfo(config, id)
 	return { ID = id, posX = (n[4] - 1) * 4000 + (n[6] - 1) * 600 + id % 7 * 9 - 27, posY = 1500 + (n[5] - 1) * 600 + id % 5 * 11 - 22,
 		entryIDs = { n[1] }, isVisible = true, isAvailable = spentBy(c, n[4]) >= (n[5] - 1) * 5,
 		meetsEdgeRequirements = meets, activeRank = learnt, currentRank = cur, ranksPurchased = cur, maxRanks = n[2],
+		-- A point goes in while one is left, the tier is open and prerequisites met; only a staged one comes back out.
+		canPurchaseRank = cur < n[2] and POINTS - spentBy(c) > 0 and spentBy(c, n[4]) >= (n[5] - 1) * 5 and meets,
+		canRefundRank = cur > learnt,
 		visibleEdges = edges, groupIDs = { 1000 + n[4] }, activeEntry = cur > 0 and { entryID = n[1], rank = cur } or nil,
 		nextEntry = cur < n[2] and { entryID = n[1], rank = cur + 1 } or nil, conditionIDs = { 5000 + id } }
 end
@@ -124,6 +127,22 @@ function C_Traits.GetConditionInfo(config, cond, _, treeName)
 	return { isGate = true, spentAmountRequired = need, isMet = spentBy(CONFIGS[config], n[4]) >= need, isSufficient = false, type = 1,
 		tooltipText = ("Requires %d points in %s"):format(need, treeName) }
 end
+-- Spending: staged on the config until committed.
+function C_Traits.PurchaseRank(config, id)
+	local c = CONFIGS[config]
+	if not C_Traits.GetNodeInfo(config, id).canPurchaseRank then return false end
+	c.staged[id] = (c.staged[id] or 0) + 1
+	return true
+end
+function C_Traits.RefundRank(config, id)
+	local c = CONFIGS[config]
+	if not C_Traits.GetNodeInfo(config, id).canRefundRank then return false end
+	c.staged[id] = c.staged[id] - 1
+	if c.staged[id] == 0 then c.staged[id] = nil end
+	return true
+end
+function UIErrorsFrame:AddExternalErrorMessage(msg) stub.uiError = msg end
+IsModifiedClick = IsModifiedClick or function() return false end
 function C_Traits.GetEntryInfo(config, entry) return { definitionID = entry, maxRanks = 1, conditionIDs = {} } end
 function C_Traits.GetDefinitionInfo(def) local n = data.nodes[byEntry[def]]; return n and { spellID = n[3] } end
 C_Spell = C_Spell or {}

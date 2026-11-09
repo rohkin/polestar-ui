@@ -151,13 +151,43 @@ local function nodeEnter(b)
 		end
 	end
 	if not n.meetsEdgeRequirements then line(GameTooltip_AddErrorLine, GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP) end
-	if b.psSpell then ns.TooltipHint("Shift-click to link it in chat.") end
+	-- What a click does now, on the active spec only.
+	local hint = {}
+	if group == activeGroup() then
+		if n.canPurchaseRank then hint[#hint + 1] = "Click to learn a rank." end
+		if n.canRefundRank and num(n.ranksPurchased) > 0 then hint[#hint + 1] = "Right-click to take one back." end
+	end
+	if b.psSpell then hint[#hint + 1] = "Shift-click to link it in chat." end
+	if #hint > 0 then ns.TooltipHint(table.concat(hint, " ")) end
 	tip:Show()
 end
 
 -- Shift-click links the talent's spell, as the stock frame.
-local function nodeClick(b)
-	if b.psSpell and IsModifiedClick("CHATLINK") then ChatFrameUtil.InsertLink(C_Spell.GetSpellLink(b.psSpell)) end
+-- Click spends a rank, right-click takes one back, as the stock buttons
+-- (TalentButtonSpendMixin:OnClick): staged on the config until Apply. The
+-- window redraws at once (docs/CLIENT.md, rule 6), its tooltip with it.
+local function nodeClick(b, button)
+	if b.psSpell and IsModifiedClick("CHATLINK") then
+		ChatFrameUtil.InsertLink(C_Spell.GetSpellLink(b.psSpell))
+		return
+	end
+	local n = b.psInfo
+	if not n or group ~= activeGroup() then return end
+	local op, sound
+	if button == "RightButton" then
+		if not (n.canRefundRank and num(n.ranksPurchased) > 0) then return end
+		op, sound = C_Traits.RefundRank, SOUNDKIT.UI_CLASS_TALENT_NODE_REFUND
+	else
+		if not n.canPurchaseRank then return end
+		op, sound = C_Traits.PurchaseRank, SOUNDKIT.UI_CLASS_TALENT_NODE_SPEND
+	end
+	if not op(b.psConfig, n.ID) then
+		UIErrorsFrame:AddExternalErrorMessage(GENERIC_TRAIT_FRAME_INTERNAL_ERROR or "That talent cannot be changed now.")
+		return
+	end
+	PlaySound(sound)
+	M.Show()
+	if GameTooltip:GetOwner() == b then b:GetScript("OnEnter")(b) end
 end
 
 local function newNode(parent)
@@ -182,6 +212,7 @@ local function newNode(parent)
 	b.Rank:SetPoint("CENTER", 0, 0)
 	b:SetScript("OnEnter", nodeEnter)
 	b:SetScript("OnLeave", W.HideTooltip)
+	b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	b:SetScript("OnClick", nodeClick)
 	return b
 end

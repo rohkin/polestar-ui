@@ -308,13 +308,18 @@ applied. Not protected, but refused in combat and while
   bottom-right corner, shown once learnt: legible over any icon. Prerequisites are the client's
   edges, drawn as 2px lines in the border wash under the nodes, in the accent
   once met.
-- **Node:** click puts a point in, right-click takes one back (`PurchaseRank`,
-  `RefundRank`). The tooltip is the stock talent tooltip's lines, built as the
+- **Node:** on the active spec, click puts a point in and right-click takes
+  one back, as the stock buttons allow (`canPurchaseRank`, `canRefundRank`):
+  `C_Traits.PurchaseRank`/`RefundRank` stage it on the config, with the stock
+  spend and refund sounds, and the window and tooltip redraw at once. The
+  tooltip is the stock talent tooltip's lines, built as the
   stock frame builds them: the name, "Rank 3/5", the subtext ("Passive"), this
   rank's text and, once learnt, "Next Rank:" with the next one's
   (`AppendInfo("GetTraitEntry")`), then the tier gate it waits on ("Requires
   10 points in Affliction", `C_Traits.GetConditionInfo`) and an unmet
-  prerequisite; the hint after a blank line. Shift-click links the spell.
+  prerequisite; after a blank line, the hint for what a click does now ("Click
+  to learn a rank. Right-click to take one back. Shift-click to link it in
+  chat."). Shift-click links the spell.
 - **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
   `W.Modal`) on the left; "Undo" (default, drops what is staged:
   `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`) on the
