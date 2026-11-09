@@ -71,6 +71,8 @@ end
 C_SpecializationInfo = {}
 function C_SpecializationInfo.GetActiveSpecGroup() return stub.specGroup or 1 end
 function C_SpecializationInfo.GetCombatConfigIDForSpecGroup(g) return 10 + g end
+-- stub.noPoints: a character who has not earned a talent point yet.
+function C_SpecializationInfo.HasPlayerEarnedATalentPoint() return not stub.noPoints end
 function GetNumSpecGroups() return stub.dual and 2 or 1 end
 
 C_Traits = {}

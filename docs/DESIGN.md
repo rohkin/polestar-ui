@@ -256,7 +256,10 @@ Talents window's.
 #### Talents (`PlayerSpellsFrame`, its talents tab) — Risk: high
 Opened by `TOGGLETALENTS` and `TalentMicroButton` through `ns.Doors`, as the
 Spellbook (in combat too); shift-click on the micro button opens the stock
-window. Talent links and inspecting another player stay the game's.
+window. Not before the first talent point
+(`C_SpecializationInfo.HasPlayerEarnedATalentPoint`): the stock micro button
+is disabled until then and its overlay steps aside, and the key does nothing.
+Talent links and inspecting another player stay the game's.
 Forever's talents are the classic three trees on the client's trait engine
 (`C_Traits`, one tree, a node group per talent tree): changes are staged, then
 applied. Not protected, but refused in combat and while

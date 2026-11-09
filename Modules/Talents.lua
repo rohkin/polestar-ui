@@ -495,7 +495,10 @@ function M.Enable()
 	-- The talents key and micro button open ours; the stock window is never
 	-- touched (docs/CLIENT.md, rule 8). A talent link and inspecting another
 	-- player stay the game's.
-	ns.Doors("Talents", { TOGGLETALENTS = M.Toggle }, TalentMicroButton, M.Toggle)
+	-- Not before the first talent point, as the stock micro button stays
+	-- disabled until then (its overlay then hands it the click).
+	local function toggle() if C_SpecializationInfo.HasPlayerEarnedATalentPoint() then M.Toggle() end end
+	ns.Doors("Talents", { TOGGLETALENTS = toggle }, TalentMicroButton, M.Toggle)
 	local function changed() if f and f:IsShown() and not InCombatLockdown() then refresh() end end
 	for _, e in ipairs({ "TRAIT_CONFIG_UPDATED", "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
 		"ACTIVE_COMBAT_CONFIG_CHANGED", "ACTIVE_TALENT_GROUP_CHANGED", "PLAYER_REGEN_ENABLED" }) do
