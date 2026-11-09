@@ -390,7 +390,9 @@ trade skill's data (the stock window opens empty and fills on
 `TRADE_SKILL_LIST_UPDATE`): ours then opens on that update. Doors only
 the stock code knows (a recipe link) still open the stock window.
 - **Shell:** 760×680 with sidebar, near the stock window's width, plus the
-  section rail.
+  section rail: the Professions window's size, and its place (`ns.LinkPlace`:
+  each opens where the other is or was last, kept in `PolestarUIDB.pos`), so
+  switching between them never moves the window.
 - **Professions rail** (`ns.ProfessionTabs`, shared with the Professions
   window): the shell's section rail (`rail = true`, `W.ShellRail`), Polestar's
   own way to switch sections. "Overview" first (the Professions window,

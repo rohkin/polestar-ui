@@ -164,6 +164,32 @@ function ns.ProfessionTabs(win, onOverview)
 	end
 end
 
+-- The Professions and crafting windows share one place: each opens where the
+-- other is, or was last (kept across sessions). Both are the same size.
+local linked = {}
+local function keepPlace(win)
+	local l, t = win:GetLeft(), win:GetTop()
+	if l and t then PolestarUIDB.pos.professions = { l, t } end
+end
+function ns.LinkPlace(win)
+	if #linked == 0 then
+		Polestar.RegisterEvent("PLAYER_LOGOUT", function()
+			for _, o in ipairs(linked) do if o:IsShown() then keepPlace(o) end end
+		end)
+	end
+	linked[#linked + 1] = win
+	win:HookScript("OnShow", function(self)
+		local p = PolestarUIDB.pos.professions
+		for _, o in ipairs(linked) do
+			if o ~= self and o:IsShown() and o:GetLeft() then p = { o:GetLeft(), o:GetTop() } end
+		end
+		if not p then return end
+		self:ClearAllPoints()
+		self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", p[1], p[2])
+	end)
+	win:HookScript("OnHide", keepPlace)
+end
+
 -- Unlearning, confirmed first, as the stock page's button.
 local function unlearn(c)
 	W.Modal({
@@ -269,6 +295,7 @@ local function build()
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
 	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot }) do r:SetParent(holder) end
+	ns.LinkPlace(f)
 	f.psTabs = ns.ProfessionTabs(f)
 	f.psHeads = { W.SectionHeader(f.Body), W.SectionHeader(f.Body) }
 	f.psHeads[1].Text:SetText("Primary")

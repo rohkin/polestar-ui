@@ -561,6 +561,7 @@ local function build()
 
 
 	W.ShellTabs(f, nil)
+	ns.LinkPlace(f)
 	f.psTabs = ns.ProfessionTabs(f, function()
 		f:Hide()
 		ns.Show("professions")
