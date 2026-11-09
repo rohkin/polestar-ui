@@ -188,7 +188,16 @@ local function overSlot(s)
 			if not InCombatLockdown() then overSlot(self.psSlot) end -- the slot may have changed
 		end)
 		local function pickup(self) if not SpellIsTargeting() then PickupInventoryItem(self.psSlot:GetID()) end end
-		over:SetScript("OnDragStart", pickup)
+		-- Kept shown while dragging: hiding a drag's source ends the drag, and
+		-- the release would not drop the item where it is over.
+		over:SetScript("OnDragStart", function(self)
+			self.psDragging = true
+			pickup(self)
+		end)
+		over:SetScript("OnDragStop", function(self)
+			self.psDragging = nil
+			if not InCombatLockdown() and not self:IsMouseOver() then self:Hide() end
+		end)
 		over:SetScript("OnReceiveDrag", pickup)
 		for _, e in ipairs({ "OnMouseDown", "OnMouseUp" }) do
 			over:SetScript(e, function(self) self.psSlot:GetScript(e)(self.psSlot) end)
@@ -196,9 +205,10 @@ local function overSlot(s)
 		over:SetScript("OnEnter", function(self) slotEnter(self.psSlot) end)
 		over:SetScript("OnLeave", function(self)
 			W.HideTooltip()
-			if not InCombatLockdown() then self:Hide() end
+			if not InCombatLockdown() and not self.psDragging then self:Hide() end
 		end)
 		over:SetScript("OnHide", function(self)
+			self.psDragging = nil
 			self.psSlot:UnlockHighlight()
 			self.psSlot:GetScript("OnMouseUp")(self.psSlot)
 		end)

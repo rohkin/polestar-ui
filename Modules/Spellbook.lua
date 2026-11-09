@@ -140,13 +140,25 @@ local function overRow(r)
 		over:EnableMouse(true)
 		over:SetAttribute("useOnKeyDown", false)
 		over:SetScript("PostClick", function(self) rowClick(self.psRow) end)
-		over:SetScript("OnDragStart", function(self) pickup(self.psRow) end)
+		-- Kept shown while dragging: hiding a drag's source ends the drag, and
+		-- the release would not drop the spell on the bar it is over.
+		over:SetScript("OnDragStart", function(self)
+			self.psDragging = true
+			pickup(self.psRow)
+		end)
+		over:SetScript("OnDragStop", function(self)
+			self.psDragging = nil
+			if not InCombatLockdown() and not self:IsMouseOver() then self:Hide() end
+		end)
 		over:SetScript("OnEnter", function(self) rowEnter(self.psRow) end)
 		over:SetScript("OnLeave", function(self)
 			W.HideTooltip()
-			if not InCombatLockdown() then self:Hide() end
+			if not InCombatLockdown() and not self.psDragging then self:Hide() end
 		end)
-		over:SetScript("OnHide", function(self) self.psRow:UnlockHighlight() end)
+		over:SetScript("OnHide", function(self)
+			self.psDragging = nil
+			self.psRow:UnlockHighlight()
+		end)
 		over:SetScript("OnUpdate", function(self)
 			local r = self.psRow
 			if InCombatLockdown() then return end

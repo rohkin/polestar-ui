@@ -159,6 +159,21 @@ spell or talent link, a new-spell toast) stay the game's.
 through override bindings (refused in combat), and the micro overlay is
 checked.
 
+## 9. Hiding a drag's source ends the drag
+
+**What happened:** a spell dragged from our Spellbook stayed on the cursor
+when released over an action bar; it took a click on the slot to place it.
+The secure button over the hovered row hid itself on `OnLeave`, which fires as
+soon as the drag leaves the row, and a hidden source ends the drag before the
+release reaches the bar.
+
+**Rule:** a frame a drag can start from stays shown until `OnDragStop`; hide
+it then if the mouse has left (`over` in Spellbook.lua, `overSlot` in
+Character.lua).
+
+**Caught by:** nothing automatic (the stub has no drag and drop); drag a spell
+or a worn item and release it in game.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with
