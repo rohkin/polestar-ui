@@ -210,10 +210,11 @@ local function paintNode(b, config, n)
 	end
 end
 
--- The three trees side by side, a third of the body each; returns the height.
+-- The three trees side by side, each centred in a third of the main column
+-- (the art's panels, between its seams); returns the height.
 local function paintTrees(config)
 	local trees = readTrees(config)
-	local colW = f.BodyWidth / math.max(#trees, 1)
+	local colW = (f.BodyWidth + 2 * W.SHELL.pad) / math.max(#trees, 1)
 	local at, ni, li, bottom = {}, 0, 0, 0
 	for i, t in ipairs(trees) do
 		local h = f.psHeads[i]
@@ -231,21 +232,22 @@ local function paintTrees(config)
 			h.Name = W.Text(h, "heading", "text")
 			h.Name:SetPoint("LEFT", h.Well, "RIGHT", 8, 0)
 			h.Spent = W.Text(h, "number", "textDim")
-			h.Spent:SetPoint("RIGHT", 0, 0)
+			h.Spent:SetPoint("LEFT", h.Name, "RIGHT", 8, 0)
 			f.psHeads[i] = h
 		end
-		-- The grid sits centred in the column, its heading as wide over it.
-		local x0 = W.SHELL.pad + (i - 1) * colW
+		-- The grid (four columns at least) and its heading (icon, name, points)
+		-- each centred in the column.
+		local mid = (i - 0.5) * colW
 		local cols = 3
 		for _, n in ipairs(t.nodes) do cols = math.max(cols, n.col) end
 		local gw = NODE + cols * PITCH
-		local gx = x0 + (colW - 24 - gw) / 2
-		h:ClearAllPoints()
-		h:SetPoint("TOPLEFT", f.Body, "TOPLEFT", gx, -24)
-		h:SetWidth(gw)
+		local gx = mid - gw / 2
 		h.Icon:SetTexture(t.icon)
 		h.Name:SetText(t.name)
 		h.Spent:SetText(t.spent or 0)
+		h:SetWidth(24 + 8 + h.Name:GetStringWidth() + 8 + h.Spent:GetStringWidth())
+		h:ClearAllPoints()
+		h:SetPoint("TOP", f.Body, "TOPLEFT", mid, -24)
 		h:Show()
 		for _, n in ipairs(t.nodes) do
 			ni = ni + 1
@@ -295,6 +297,61 @@ local function optionsMenu(self)
 	W.ShowMenu(self, { { text = "Game's talents: shift-click their micro button", disabled = true } }, { minWidth = 200 })
 end
 
+-- The class's talent art (the stock frame's talent-background-<class>) behind
+-- the trees, under a wash of Polestar's sky blue, both feathered out at the
+-- sides: full width, the middle band of its height (its aspect kept), so its
+-- three panels sit behind the three trees.
+local ART_ALPHA, TINT_ALPHA, FEATHER, SEAM = 0.85, 0.55, 160, 80
+local ART_PIECES = 9
+local function paintArt()
+	local _, cls = UnitClass("player")
+	local info = C_Texture and C_Texture.GetAtlasInfo("talent-background-" .. cls:lower())
+	-- The main column under the band, from the shell's own sizes.
+	local w = f.BodyWidth + 2 * W.SHELL.pad
+	local h = f:GetHeight() - W.SHELL.header - (f.Footer:IsShown() and W.SHELL.footer or 0)
+	local on = info ~= nil and w > 2 * FEATHER + 4 * SEAM and h > 0
+	for i = 1, ART_PIECES do
+		f.psArt[i]:SetShown(on)
+		f.psTint[i]:SetShown(on)
+	end
+	-- The hairline where the art meets the band: 1px of the border wash,
+	-- fading out from the middle to the column's edges.
+	local ar, ag, ab, aa = Polestar.Theme.Wash("border")
+	for i, s in ipairs(f.psStripe) do
+		s:SetShown(on)
+		s:ClearAllPoints()
+		s:SetPoint("TOPLEFT", f.Content, "TOPLEFT", (i - 1) * w / 2, 0)
+		s:SetSize(w / 2, 1)
+		local a0, a1 = i == 1 and 0 or aa or 1, i == 1 and (aa or 1) or 0
+		s:SetGradient("HORIZONTAL", CreateColor(ar, ag, ab, a0), CreateColor(ar, ag, ab, a1))
+	end
+	if not on then return end
+	local l, r, t, b = info.leftTexCoord, info.rightTexCoord, info.topTexCoord, info.bottomTexCoord
+	local keep = math.min(1, (h / w) / (info.height / info.width))
+	local mid, half = (t + b) / 2, (b - t) * keep / 2
+	t, b = mid - half, mid + half
+	-- Alpha stops across the column: in from the left edge, out to nothing at
+	-- each seam between the art's panels and in again, out at the right edge.
+	-- shortcut: the seams are taken at a third and two thirds of the atlas, as its three panels sit; measure them if a class's art differs.
+	local s1, s2 = w / 3, 2 * w / 3
+	local stops = { { 0, 0 }, { FEATHER, 1 }, { s1 - SEAM, 1 }, { s1, 0 }, { s1 + SEAM, 1 }, { s2 - SEAM, 1 },
+		{ s2, 0 }, { s2 + SEAM, 1 }, { w - FEATHER, 1 }, { w, 0 } }
+	local sr, sg, sb = Polestar.Theme.Color("sky")
+	for i = 1, ART_PIECES do
+		local x0, a0, x1, a1 = stops[i][1], stops[i][2], stops[i + 1][1], stops[i + 1][2]
+		local art, tint = f.psArt[i], f.psTint[i]
+		for _, p in ipairs({ art, tint }) do
+			p:ClearAllPoints()
+			p:SetPoint("TOPLEFT", f.Content, "TOPLEFT", x0, 0)
+			p:SetPoint("BOTTOMRIGHT", f.Content, "BOTTOMLEFT", x1, 0)
+		end
+		art:SetTexture(info.file)
+		art:SetTexCoord(l + (r - l) * x0 / w, l + (r - l) * x1 / w, t, b)
+		art:SetGradient("HORIZONTAL", CreateColor(1, 1, 1, a0 * ART_ALPHA), CreateColor(1, 1, 1, a1 * ART_ALPHA))
+		tint:SetGradient("HORIZONTAL", CreateColor(sr, sg, sb, a0 * TINT_ALPHA), CreateColor(sr, sg, sb, a1 * TINT_ALPHA))
+	end
+end
+
 local function build()
 	-- Wider than the shell's 960: three four-column trees side by side.
 	f = W.Shell(NAME, { width = 1100 })
@@ -329,6 +386,18 @@ local function build()
 	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
 	opt:SetScript("OnClick", optionsMenu)
 	f.psOptions = opt
+	f.psArt, f.psTint, f.psStripe = {}, {}, {}
+	for i = 1, 2 do
+		f.psStripe[i] = f.Content:CreateTexture(nil, "BORDER")
+		f.psStripe[i]:SetTexture("Interface\\Buttons\\WHITE8X8")
+	end
+	for i = 1, ART_PIECES do
+		f.psArt[i] = f.Content:CreateTexture(nil, "BACKGROUND", nil, 2)
+		f.psTint[i] = f.Content:CreateTexture(nil, "BACKGROUND", nil, 3)
+		f.psTint[i]:SetTexture("Interface\\Buttons\\WHITE8X8")
+	end
+	-- Repainted with the theme: the wash is Polestar's sky.
+	W.Painter(f.psTint[1], function() paintArt() end)
 	f.psHeads = {}
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
@@ -355,6 +424,7 @@ local function refresh()
 	W.ShellNav(f, nav, group, function(k) group = k; M.Show() end)
 	local config = configOf(group)
 	local _, left = spentIn(config)
+	local height = paintTrees(config)
 	local sub
 	if group ~= activeGroup() then
 		sub = "Not your active spec."
@@ -366,7 +436,8 @@ local function refresh()
 	W.ShellTitle(f, "Talents", sub)
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})
-	W.ShellBody(f, paintTrees(config))
+	paintArt() -- the footer sets the content's height
+	W.ShellBody(f, height)
 end
 
 function M.Show(g)

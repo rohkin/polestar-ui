@@ -273,10 +273,21 @@ applied. Not protected, but refused in combat and while
   spend.", "Every point is spent."). Viewing the spec that is not active, the
   subtitle says so ("Not your active spec.") and the footer's primary action
   is "Activate" (the stock `SetActiveSpecGroup`), the trees read-only.
-- **Trees:** the three trees side by side, each a column a third of the body:
-  the tree's nodes on a 52px grid centred in the column, under its heading as
-  wide as the grid: its icon (24px) and name in Heading, the points spent in
-  Number textDim at the right. The grid is read off the client's positions
+- **Art:** the class's talent art, as the stock frame shows it
+  (`talent-background-<class>`, one atlas, a panel per tree), fills the main
+  column under the band at 85%, under a wash of Polestar's sky at 55%: full
+  width, the middle band of its height (its aspect kept), so each panel sits
+  behind its tree. Both fade to nothing over 160px at the column's left and
+  right edges, and over 80px either side of each seam between the art's
+  panels (at a third and two thirds), so no hard line shows between trees. A game texture, so a game thing (the Two Families Rule); the
+  wash keeps it in Polestar's grounds and follows the theme.
+  Where it meets the band, a hairline (the border wash), full at the middle,
+  fading to nothing at the column's edges.
+- **Trees:** the three trees side by side, each a column a third of the main
+  column (the art's panels, between its seams): the tree's nodes on a 52px
+  grid of at least four columns, centred in the column, under its heading,
+  centred too: its icon (24px), its name in Heading and the points spent in
+  Number textDim 8px after it. The grid is read off the client's positions
   (`posX`, `posY`), which sit a few units off it: one cell is the smallest
   step between positions that is at least a quarter of the largest, and each
   node rounds to the nearest cell. A node reads as the stock one: a 40px game

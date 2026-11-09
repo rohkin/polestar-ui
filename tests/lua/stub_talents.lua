@@ -153,3 +153,11 @@ TalentMicroButton.tooltipText = "Talents (N)"
 -- High in its bar, as the micro menu sits: the overlay must land above it.
 TalentMicroButton:SetFrameStrata("HIGH")
 TalentMicroButton:SetFrameLevel(40)
+
+-- The class's talent art: one atlas, three panels side by side (a placeholder file in the preview).
+C_Texture = C_Texture or {}
+function C_Texture.GetAtlasInfo(atlas)
+	if atlas == "talent-background-mage" then
+		return { file = 4567890, width = 1600, height = 800, leftTexCoord = 0, rightTexCoord = 1, topTexCoord = 0, bottomTexCoord = 0.8 }
+	end
+end
