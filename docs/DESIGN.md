@@ -81,6 +81,10 @@ How a stock element is replaced, for every module.
    (CLIENT.md, rule 8). Such a window is never touched; its keys are override
    bindings to a button of ours and its micro button carries a secure overlay
    of ours (`ns.Doors`), whose shift-click opens the stock window.
+   **And except** a stock window whose hiding ends what it shows
+   (`ProfessionsFrame`: the trade skill). Its open is stopped at the game's
+   event routing (`GameEvent.UnregisterInternalEvent`), the one stock event we
+   unregister; `/reload` with the module off routes it again.
 3. **Off is off.** `/pui <module> off` and a `/reload` give the stock window back
    untouched, since nothing was changed on it.
 4. **With the gamepad UI on** (`Polestar.GamepadUI()`), a module whose stock
@@ -347,7 +351,7 @@ Forever has no `ProfessionsBookFrame`: `ToggleProfessionsBook` shows
 micro buttons. So, as the Spellbook, ours opens from `TOGGLEPROFESSIONBOOK` and
 `ProfessionMicroButton` through `ns.Doors`, never touching the stock window;
 shift-click on the micro button opens the stock one. It closes when a
-profession opens (`TRADE_SKILL_SHOW`): the crafting window is the game's.
+profession opens (`TRADE_SKILL_SHOW`), as ours takes the crafting window.
 - **Shell:** 960×680 with sidebar; no search, no sections.
 - **Subject block:** the stock book's icon, "Professions" in Title, "2 of 2
   professions learnt" in Small textDim.
@@ -373,22 +377,47 @@ profession opens (`TRADE_SKILL_SHOW`): the crafting window is the game's.
   protected), confirmed by `W.Modal` in danger.
 
 #### Professions (`ProfessionsFrame`) — Risk: medium
-Opened by the game when a profession is cast (`TRADE_SKILL_SHOW`).
-- **Shell:** 960×680 with sidebar.
-- **Subject block:** the profession's icon, name in Title, rank in Number with
-  its 2px skill bar.
-- **Sidebar:** the search (shell's own), then the recipe categories as nav rows
-  with counts; "Can make now" and "Recent" first.
-- **Main column:** title the selected recipe, subtitle its category. Tabs:
-  Recipe, (later) Orders.
-  - *Recipe page:* the product as a 40px tile with its name in its quality colour
-    (legible), the reagents as reagent tiles (two columns, 8px apart), the
-    tools/requirements line in Note (warning while missing).
-  - *Recipe list* lives in the sidebar under its category, one recipe row each.
-- **Footer:** quantity stepper (−, a 48px copy-box field, +, "Max") on the left,
-  "Craft all" (default) and "Craft" (primary) on the right.
-  `C_TradeSkillUI.CraftRecipe` is called from our button's click; verify in
-  `.ref` that it is not protected on Forever before relying on it.
+Opened by the game when a profession is cast (`TRADE_SKILL_SHOW`). The stock
+window ends the trade skill as it hides (`CloseTradeSkill` in its `OnHide`), so
+it cannot be closed under ours: the game's own open is stopped instead
+(`GameEvent.UnregisterInternalEvent("TRADE_SKILL_SHOW")`, CLIENT.md rule 11)
+and ours opens on the same event. Ours holds the trade skill: closing it calls
+`CloseTradeSkill`, and the game's `TRADE_SKILL_CLOSE` closes it. `TRADE_SKILL_SHOW` can come before the
+trade skill's data (the stock window opens empty and fills on
+`TRADE_SKILL_LIST_UPDATE`): ours then opens on that update. Doors only
+the stock code knows (a recipe link) still open the stock window.
+- **Shell:** 760×680 with sidebar, near the stock window's width.
+- **Profession tabs** (`ns.ProfessionTabs`): down the window's right side, outside it, as on the
+  stock window: 40px game icons on inset wells, 6px apart. The first opens
+  the Professions window (closing this one); then one per profession with a
+  crafting window, in the stock order, the open one's hairline in the accent.
+  Casting a profession is protected: out of combat a secure button of ours
+  takes the hovered tab's place (`ns.Overlay`), its click the profession's
+  spell; the open one casts nothing. In combat the tabs only show their
+  tooltips.
+- **Subject block:** the profession's icon, name in Title, and its 2px skill
+  bar under it with the rank ("112/150") above the bar's right end.
+- **Sidebar:** the search (shell's own), then the learnt recipes under their
+  categories in the client's order, "Can make now" (nothing missing, no
+  cooldown) and "Recent" (the last 8 crafted here, kept per character) first.
+  A category is a heading row with its count; a click folds it. Under it, one
+  recipe row per recipe. A search shows every match, unfolded.
+- **Main column:** title the selected recipe, subtitle its category. One view,
+  so no tab row (Orders later).
+  - *Recipe page:* the product as a 40px tile with its name in its quality
+    colour (legible) and "Makes 2" when it makes more than one, the recipe's
+    description in textDim, the reagents under a "Reagents" heading as reagent
+    tiles (two columns, 8px apart), then the tools and places line ("Requires
+    Moonwell"), the cooldown and the game's own reason in Note (warning while
+    they stop the craft).
+- **Footer:** quantity stepper (−, a 48px field, +, "Max") on the left,
+  "Craft all" (default) and "Craft" (primary, the recipe's own verb when it has
+  one) on the right; all faded to 45% while the game would refuse the craft or
+  the recipes are another player's. `C_TradeSkillUI.CraftRecipe` is not
+  protected on Forever (`SecretArguments = "AllowedWhenUntainted"`, no
+  restriction): our button's click calls it. A recipe the game would allocate
+  an item for (an enchant) is cast the same way; the game then asks for the
+  item.
 
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
@@ -449,8 +478,9 @@ craftable now in Number textMuted at the right. Selected: the selection wash and
 the 2px accent bar.
 
 ### Reagent Tile
-Polestar's reward tile (200×32): the icon 32px, the name in Label (quality
-colour, legible), "3/4" in Number at the right: text when enough, danger when not.
+Polestar's reward tile, 32 tall and half the page wide: the icon 32px, the name
+in Label (quality colour, legible), "3/4" (held/needed) in Number at the
+right: text when enough, danger when not.
 
 ### Skill Bar
 A 2px track wash with a fill (the accent for professions and skills, the standing

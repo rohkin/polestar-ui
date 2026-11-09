@@ -1,6 +1,6 @@
 -- Professions (docs/DESIGN.md, "Professions"): the stock professions overview
 -- (ProfessionsFrame's book page on Forever) in a Polestar shell: a card per
--- profession slot with its rank and spells. The crafting window stays the game's.
+-- profession slot with its rank and spells. The crafting window is Crafting.lua's.
 
 local ADDON, ns = ...
 local W = Polestar.Widgets
@@ -95,6 +95,83 @@ local function paintArt(c)
 		art:SetDesaturated(c.psSlot.index == nil)
 		art:SetGradient("HORIZONTAL", CreateColor(1, 1, 1, a0 * ART_ALPHA), CreateColor(1, 1, 1, a1 * ART_ALPHA))
 		tint:SetGradient("HORIZONTAL", CreateColor(sr, sg, sb, a0 * TINT_ALPHA), CreateColor(sr, sg, sb, a1 * TINT_ALPHA))
+	end
+end
+
+-- The profession tabs down a window's right side, as on the stock window:
+-- the overview (this window), then each profession with a crafting window,
+-- the open one marked. Shared with Crafting.lua. Casting a profession is
+-- protected: out of combat a secure button of ours takes the hovered tab's
+-- place (ns.Overlay). ns.ProfessionTabs(window, onOverview) -> paint(skill
+-- line of the open profession, or nil for the overview).
+local TAB = 40
+local function tabEnter(t)
+	GameTooltip:SetOwner(t, "ANCHOR_RIGHT")
+	GameTooltip:SetText(t.psName)
+	if not t.psActive then
+		ns.TooltipHint(t.psSpell and "Click to open its recipes." or "Click to see all your professions.")
+	end
+	GameTooltip:Show()
+end
+
+local overTab = ns.Overlay("PolestarUIProfessionTab", {
+	enter = tabEnter,
+	pickup = function() end,
+	attrs = function(over, t)
+		over:SetAttribute("type1", not t.psActive and "spell" or nil)
+		over:SetAttribute("spell", t.psSpell)
+	end,
+})
+
+function ns.ProfessionTabs(win, onOverview)
+	local tabs = {}
+	local function tab(i)
+		if tabs[i] then return tabs[i] end
+		local t = CreateFrame("Button", nil, win)
+		t:SetSize(TAB, TAB)
+		t:SetPoint("TOPLEFT", win, "TOPRIGHT", 2, -(24 + (i - 1) * (TAB + 6)))
+		Polestar.Theme.Skin(t, "inset")
+		W.Hover(t)
+		t.Icon = ns.GameIcon(t)
+		t.Icon:SetPoint("TOPLEFT", 1, -1)
+		t.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+		t:SetScript("OnEnter", function(self)
+			tabEnter(self)
+			if self.psSpell then overTab(self) end
+		end)
+		t:SetScript("OnLeave", W.HideTooltip)
+		-- The overview's click; a profession's is the secure button's.
+		t:SetScript("OnClick", function(self)
+			if not self.psSpell and not self.psActive and onOverview then onOverview() end
+		end)
+		tabs[i] = t
+		return t
+	end
+	return function(current)
+		local list = { { name = "Professions", icon = "Interface\\Icons\\INV_SideTab_Professions_c60", active = current == nil } }
+		local slots = { GetProfessions() }
+		for k = 1, 5 do
+			local i = slots[k]
+			if i then
+				local name, icon, _, _, _, offset, skillLine = GetProfessionInfo(i)
+				local info = C_SpellBook.GetSpellBookItemInfo(offset + 1, Enum.SpellBookSpellBank.Player)
+				if info and info.spellID and C_TradeSkillUI.CanTradeSkillShowCraftingUI(info.spellID) then
+					list[#list + 1] = { name = name, icon = icon, spell = info.spellID, active = current ~= nil and skillLine == current }
+				end
+			end
+		end
+		for i, d in ipairs(list) do
+			local t = tab(i)
+			t.psName, t.psSpell, t.psActive = d.name, d.spell, d.active
+			t.Icon:SetTexture(d.icon)
+			if d.active then
+				Polestar.Theme.Border(t, Polestar.Theme.Color("accent"))
+			else
+				Polestar.Theme.Border(t, Polestar.Theme.Wash("border"))
+			end
+			t:Show()
+		end
+		for i = #list + 1, #tabs do tabs[i]:Hide() end
 	end
 end
 
@@ -279,7 +356,7 @@ function M.Enable()
 			for _, r in ipairs(c.rows) do if r:IsShown() then ns.SpellRow.PaintCooldown(r) end end
 		end
 	end)
-	-- A profession opened: the game's crafting window takes the left slot.
+	-- A profession opened: the crafting window (Crafting.lua) takes over.
 	Polestar.RegisterEvent("TRADE_SKILL_SHOW", function() if f then f:Hide() end end)
 end
 

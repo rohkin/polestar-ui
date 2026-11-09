@@ -202,6 +202,24 @@ copies the micro button's rect each frame it changes).
 **Caught by:** the `talents` scene checks the overlay is not anchored to the
 micro button and still covers it.
 
+## 11. Hiding the stock crafting window ends the trade skill
+
+**What the source says:** `ProfessionsFrame`'s `OnHide` calls
+`C_TradeSkillUI.CloseTradeSkill()` (`Blizzard_ProfessionsFrame.lua`). Closed
+under ours the way the other windows are, it would end the trade skill ours
+shows, and every recipe read after would come back empty.
+
+**Rule:** a stock window whose hiding ends what it shows is never opened at
+all: stop its open where the game routes it
+(`GameEvent.UnregisterInternalEvent("TRADE_SKILL_SHOW")` in Crafting.lua) and
+open ours on the same event. Ours then closes what the stock window would
+(`CloseTradeSkill` as it hides), and closes itself on the game's
+`TRADE_SKILL_CLOSE` without closing it again.
+
+**Caught by:** the `crafting` scene (the routing stub records the unregister)
+and the `crafting-cooldown` scene (closing ours closes the trade skill once;
+the game's close does not close it twice).
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

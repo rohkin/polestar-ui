@@ -52,3 +52,7 @@ function C_Texture.GetAtlasInfo(atlas)
 	end
 	return atlasInfo and atlasInfo(atlas)
 end
+
+-- Each profession here has a crafting window (the tabs on the right).
+C_TradeSkillUI = C_TradeSkillUI or {}
+function C_TradeSkillUI.CanTradeSkillShowCraftingUI(spellID) return true end
