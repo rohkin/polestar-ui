@@ -220,6 +220,20 @@ open ours on the same event. Ours then closes what the stock window would
 and the `crafting-cooldown` scene (closing ours closes the trade skill once;
 the game's close does not close it twice).
 
+## 12. A frame 0 wide has no rect
+
+**What happened:** the Professions window showed its ground and the profession
+tabs, nothing else. Its sidebar was set 0 wide (`W.Shell` with `sidebar = 0`)
+and hidden; the shell hangs the main column (band, body, footer) off the
+sidebar's right edge, and the client gives a frame of no width no rect, so
+nothing anchored to it was placed or drawn. The stub placed it anyway.
+
+**Rule:** never anchor anything to a frame of size 0. To drop a shell's
+sidebar, anchor `f.Main` to the window itself (`build` in Professions.lua).
+
+**Caught by:** the `professions` scene checks the main column is anchored to
+the window.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

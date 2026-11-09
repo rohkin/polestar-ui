@@ -273,27 +273,15 @@ local function paintCard(c, slot, width, group)
 end
 
 local function build()
-	f = W.Shell(NAME)
-	f.Search:Hide()
-	-- The subject block names the window, in place of Polestar's lockup.
-	local holder = CreateFrame("Frame", nil, f)
-	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(holder) end
-	local well = CreateFrame("Frame", nil, f.Sidebar)
-	well:SetSize(36, 36)
-	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
-	Polestar.Theme.Skin(well, "inset")
-	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
-	local icon = ns.GameIcon(well)
-	icon:SetPoint("TOPLEFT", 1, -1)
-	icon:SetPoint("BOTTOMRIGHT", -1, 1)
-	icon:SetTexture("Interface\\Icons\\INV_SideTab_Professions_c60")
-	f.psName = W.Text(f.Sidebar, "title", "text")
-	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
-	f.psName:SetText("Professions")
-	f.psLine = W.Text(f.Sidebar, "small", "textDim")
-	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
-	for _, t in ipairs({ f.psName, f.psLine }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
+	-- No sidebar: one page, nothing to navigate; the band names the window.
+	f = W.Shell(NAME, { width = 760, sidebar = 0 })
+	f.Sidebar:Hide()
+	-- The main column hangs off the sidebar's right edge; a frame 0 wide has
+	-- no rect in the client, so nothing on it would draw (docs/CLIENT.md, rule 12).
+	f.Main:ClearAllPoints()
+	f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+	f.psTabs = ns.ProfessionTabs(f)
 	f.psHeads = { W.SectionHeader(f.Body), W.SectionHeader(f.Body) }
 	f.psHeads[1].Text:SetText("Primary")
 	f.psHeads[2].Text:SetText("Secondary")
@@ -307,8 +295,8 @@ end
 local function refresh()
 	local list = slots()
 	local learnt = (list[1].index and 1 or 0) + (list[2].index and 1 or 0)
-	f.psLine:SetText(("%d of 2 professions learnt"):format(learnt))
-	W.ShellTitle(f, "Professions", "Click a profession's spell to open it, or drag it to your action bars.")
+	f.psTabs(nil)
+	W.ShellTitle(f, "Professions", ("%d of 2 professions learnt. Click a profession's spell to open it, or drag it to your action bars."):format(learnt))
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})
 	local y = 0

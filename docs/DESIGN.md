@@ -352,10 +352,12 @@ micro buttons. So, as the Spellbook, ours opens from `TOGGLEPROFESSIONBOOK` and
 `ProfessionMicroButton` through `ns.Doors`, never touching the stock window;
 shift-click on the micro button opens the stock one. It closes when a
 profession opens (`TRADE_SKILL_SHOW`), as ours takes the crafting window.
-- **Shell:** 960×680 with sidebar; no search, no sections.
-- **Subject block:** the stock book's icon, "Professions" in Title, "2 of 2
-  professions learnt" in Small textDim.
-- **Main column:** title "Professions", subtitle what the player can do. The
+- **Shell:** 760×680, no sidebar (`sidebar = 0`, hidden): one page, nothing
+  to navigate, so no subject block either; the band names the window.
+- **Profession tabs:** the crafting window's (`ns.ProfessionTabs`, below), the
+  overview marked; a profession's tab opens its crafting window.
+- **Main column:** title "Professions", subtitle "2 of 2 professions learnt."
+  and what the player can do. The
   stock page's five slots as cards on the panel ground under two headings:
   Primary (one to a row: wide, short cards, the spells side by side, as the
   stock page and its art), then Secondary (Cooking, Fishing, First Aid, three
@@ -387,7 +389,8 @@ trade skill's data (the stock window opens empty and fills on
 `TRADE_SKILL_LIST_UPDATE`): ours then opens on that update. Doors only
 the stock code knows (a recipe link) still open the stock window.
 - **Shell:** 760×680 with sidebar, near the stock window's width.
-- **Profession tabs** (`ns.ProfessionTabs`): down the window's right side, outside it, as on the
+- **Profession tabs** (`ns.ProfessionTabs`, shared with the Professions
+  window): down the window's right side, outside it, as on the
   stock window: 40px game icons on inset wells, 6px apart. The first opens
   the Professions window (closing this one); then one per profession with a
   crafting window, in the stock order, the open one's hairline in the accent.
