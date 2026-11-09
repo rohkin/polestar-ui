@@ -258,8 +258,12 @@ local function paintTrees(config)
 		local gx = mid - gw / 2
 		h.Icon:SetTexture(t.icon)
 		h.Name:SetText(t.name)
+		-- The count keeps a two-digit width, so the heading stays put as points
+		-- go in ("0" and "1" are not as wide).
+		h.Spent:SetText("00")
+		local reserve = math.ceil(h.Spent:GetStringWidth())
 		h.Spent:SetText(t.spent or 0)
-		h:SetWidth(24 + 8 + h.Name:GetStringWidth() + 8 + h.Spent:GetStringWidth())
+		h:SetWidth(24 + 8 + h.Name:GetStringWidth() + 8 + reserve)
 		h:ClearAllPoints()
 		h:SetPoint("TOP", f.Body, "TOPLEFT", mid, -24)
 		h:Show()

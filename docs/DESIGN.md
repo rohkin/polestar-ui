@@ -295,7 +295,8 @@ applied. Not protected, but refused in combat and while
   column (the art's panels, between its seams): the tree's nodes on a 52px
   grid of at least four columns, centred in the column, under its heading,
   centred too: its icon (24px), its name in Heading and the points spent in
-  Number textDim 8px after it. The grid is read off the client's positions
+  Number textDim 8px after it, kept two digits wide so the heading does not
+  move as points go in. The grid is read off the client's positions
   (`posX`, `posY`), which sit a few units off it: one cell is the smallest
   step between positions that is at least a quarter of the largest, and each
   node rounds to the nearest cell. A node reads as the stock one: a 40px game
