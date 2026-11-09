@@ -265,10 +265,15 @@ applied. Not protected, but refused in combat and while
   four-column trees stand apart.
 - **Subject block:** the class icon, the class in Title, "Level 60" in Small
   textDim.
-- **Sidebar:** the stock tabs as nav rows, Primary and Secondary
-  (`DUAL_SPEC_PRIMARY`/`SECONDARY`): the active spec's row with the dot, the
-  other with its points spent as the count. Secondary is listed once dual spec
-  is learnt (`GetNumSpecGroups() > 1`).
+- **Sidebar:** the shell's search ("Search talents"), then the stock tabs as
+  nav rows, Primary and Secondary (`DUAL_SPEC_PRIMARY`/`SECONDARY`): the
+  active spec's row with the dot, the other with its points spent as the
+  count. Until dual spec is learnt (`GetNumSpecGroups() > 1`) Secondary is
+  locked, as the stock tab: the lock glyph, receding (a count of 0), a click
+  does nothing, and its tooltip is the stock `TALENT_SPEC_LOCKED`.
+- **Search:** as the stock frame's, a talent matches on its name or its
+  description; the others recede to 25%, and the subtitle counts the matches
+  ("7 talents match.").
 - **Main column:** title "Talents", subtitle the points left ("12 points to
   spend.", "Every point is spent."). Viewing the spec that is not active, the
   subtitle says so ("Not your active spec.") and the footer's primary action

@@ -10,6 +10,7 @@ local NAME = "PolestarUITalents"
 local NODE, PITCH, HEAD_H = 40, 52, 48
 
 local f, group = nil, nil -- group: the spec group shown (1 Primary, 2 Secondary)
+local query, found = "", 0 -- the sidebar search, and the talents it matched
 local M = {}
 local nodes, lines = {}, {}
 
@@ -188,8 +189,21 @@ end
 -- A node, as the stock frame reads: maxed with its border and rank in the
 -- accent, partly learnt in success, open to a point on the hairline, locked
 -- (tier or prerequisite) desaturated and dim. The rank shows once learnt.
+-- The search, as the stock frame's: a talent's name or its description.
+local function matches(spell, def)
+	if query == "" then return true end
+	local function has(text)
+		return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:lower():find(query, 1, true)
+	end
+	return has(def and def.overrideName) or (spell and (has(C_Spell.GetSpellName(spell)) or has(C_Spell.GetSpellDescription(spell)))) or false
+end
+
 local function paintNode(b, config, n)
 	local entryID, icon, spell, def = entryOf(config, n)
+	-- Searching, a talent that does not match recedes.
+	local match = matches(spell, def)
+	if query ~= "" and match then found = found + 1 end
+	b:SetAlpha(match and 1 or 0.25)
 	b.psEntry, b.psSpell, b.psNode, b.psInfo, b.psDef, b.psConfig = entryID, spell, n.ID, n, def, config
 	local rank, max = num(n.currentRank), num(n.maxRanks)
 	b.psRank = rank
@@ -354,12 +368,15 @@ end
 
 local function build()
 	-- Wider than the shell's 960: three four-column trees side by side.
-	f = W.Shell(NAME, { width = 1100 })
+	f = W.Shell(NAME, { width = 1100, searchPlaceholder = "Search talents", onSearch = function(text)
+		query = (text or ""):lower()
+		if f:IsShown() then M.Show() end
+	end })
 	-- The subject block names the window, in place of Polestar's lockup.
 	-- Reparented, not hidden: the shell re-shows its version line on every show.
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Search, f.Status, f.Stage }) do r:SetParent(holder) end
+	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(holder) end
 	local well = CreateFrame("Frame", nil, f.Sidebar)
 	well:SetSize(36, 36)
 	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
@@ -415,18 +432,41 @@ local function refresh()
 	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
 	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. cls)
 	-- The stock tabs as nav rows: the active spec with the dot, the other its points spent.
+	-- Secondary stays listed before dual spec is learnt: locked, receding
+	-- (count 0), its tooltip saying how to learn it, as the stock tab.
 	local nav = {}
-	for g = 1, numGroups() do
-		local active = g == activeGroup()
+	for g = 1, 2 do
+		local active, locked = g == activeGroup(), g > numGroups()
 		nav[g] = { key = g, label = g == 1 and (DUAL_SPEC_PRIMARY or "Primary") or (DUAL_SPEC_SECONDARY or "Secondary"),
-			icon = "star", dot = active or nil, count = not active and spentIn(configOf(g)) or nil }
+			icon = locked and "lock" or "star", dot = active or nil,
+			count = locked and 0 or (not active and spentIn(configOf(g))) or nil }
 	end
-	W.ShellNav(f, nav, group, function(k) group = k; M.Show() end)
+	W.ShellNav(f, nav, group, function(k)
+		if k > numGroups() then return end
+		group = k
+		M.Show()
+	end)
+	for _, b in ipairs(f.navButtons) do
+		if not b.psTalentTip then
+			b.psTalentTip = true
+			b:HookScript("OnEnter", function(self)
+				if self.psKey ~= 2 or numGroups() > 1 then return end
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:SetText(DUAL_SPEC_SECONDARY or "Secondary")
+				GameTooltip:AddLine(TALENT_SPEC_LOCKED or "Learn Dual Talent Specialization from a class trainer.", 1, 0.2, 0.2, true)
+				GameTooltip:Show()
+			end)
+			b:HookScript("OnLeave", W.HideTooltip)
+		end
+	end
 	local config = configOf(group)
 	local _, left = spentIn(config)
+	found = 0
 	local height = paintTrees(config)
 	local sub
-	if group ~= activeGroup() then
+	if query ~= "" then
+		sub = found == 1 and "1 talent matches." or ("%d talents match."):format(found)
+	elseif group ~= activeGroup() then
 		sub = "Not your active spec."
 	elseif left > 0 then
 		sub = left == 1 and "1 point to spend." or ("%d points to spend."):format(left)

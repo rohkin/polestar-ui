@@ -130,6 +130,7 @@ function C_Spell.GetSpellLink(id) return "|Hspell:" .. id .. "|h[" .. id .. "]|h
 local spellName = {}
 for _, n in pairs(data.nodes) do spellName[n[3]] = n[7] end
 function C_Spell.GetSpellName(id) return spellName[id] end
+function C_Spell.GetSpellDescription(id) return "Increases the damage of " .. (spellName[id] or "") .. "." end
 function C_Spell.GetSpellSubtext(id) return "Passive" end
 -- The tooltip helpers (GameTooltip_*), each a line; a trait entry's text as one line.
 function GameTooltip:AppendInfo(kind, entry, rank) self:AddLine(("[%s %d rank %d]"):format(kind, entry, rank)) end
