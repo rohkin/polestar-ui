@@ -278,7 +278,9 @@ applied. Not protected, but refused in combat and while
   description; the others recede to 25%, and the subtitle counts the matches
   ("7 talents match.").
 - **Main column:** title "Talents", subtitle the points left ("12 points to
-  spend.", "Every point is spent."). Viewing the spec that is not active, the
+  spend.", "Every point is spent."), then "Your changes are not applied
+  yet." while something is staged, and "Applying your talents…" while Apply
+  runs. Viewing the spec that is not active, the
   subtitle says so ("Not your active spec.") and the footer's primary action
   is "Activate" (the stock `SetActiveSpecGroup`), the trees read-only.
 - **Art:** the class's talent art, as the stock frame shows it
@@ -311,8 +313,9 @@ applied. Not protected, but refused in combat and while
 - **Node:** on the active spec, click puts a point in and right-click takes
   one back, as the stock buttons allow (`canPurchaseRank`, `canRefundRank`):
   `C_Traits.PurchaseRank`/`RefundRank` stage it on the config, with the stock
-  spend and refund sounds, and the window and tooltip redraw at once. The
-  tooltip is the stock talent tooltip's lines, built as the
+  spend and refund sounds, and the window and tooltip redraw at once. While
+  Apply runs, clicks change nothing. The tooltip is the stock talent
+  tooltip's lines, built as the
   stock frame builds them: the name, "Rank 3/5", the subtext ("Passive"), this
   rank's text and, once learnt, "Next Rank:" with the next one's
   (`AppendInfo("GetTraitEntry")`), then the tier gate it waits on ("Requires
@@ -322,8 +325,13 @@ applied. Not protected, but refused in combat and while
   chat."). Shift-click links the spell.
 - **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
   `W.Modal`) on the left; "Undo" (default, drops what is staged:
-  `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`) on the
-  right, both only while something is staged.
+  `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`, the
+  stock apply sound) on the right, always there so the layout never moves,
+  disabled as Polestar disables (faded to 45%) unless something is staged
+  (`ConfigHasStagedChanges`) and no commit is running. Apply first asks
+  `CanChangeTalents` (its error on the game's error line when refused); the commit is a cast, ended by
+  `TRAIT_CONFIG_UPDATED` or `CONFIG_COMMIT_FAILED`, or after the stock
+  frame's 6 seconds.
 - **Options:** on the band, a disabled line saying the micro button's
   shift-click opens the game's talents (its search and inspect, until ours has
   them: the Nothing Lost Rule).

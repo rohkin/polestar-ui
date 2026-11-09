@@ -11,6 +11,7 @@ local NODE, PITCH, HEAD_H = 40, 52, 48
 
 local f, group = nil, nil -- group: the spec group shown (1 Primary, 2 Secondary)
 local query, found = "", 0 -- the sidebar search, and the talents it matched
+local committing = false -- Apply runs as a cast: no changes until it ends
 local M = {}
 local nodes, lines = {}, {}
 
@@ -153,7 +154,7 @@ local function nodeEnter(b)
 	if not n.meetsEdgeRequirements then line(GameTooltip_AddErrorLine, GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP) end
 	-- What a click does now, on the active spec only.
 	local hint = {}
-	if group == activeGroup() then
+	if group == activeGroup() and not committing then
 		if n.canPurchaseRank then hint[#hint + 1] = "Click to learn a rank." end
 		if n.canRefundRank and num(n.ranksPurchased) > 0 then hint[#hint + 1] = "Right-click to take one back." end
 	end
@@ -172,7 +173,7 @@ local function nodeClick(b, button)
 		return
 	end
 	local n = b.psInfo
-	if not n or group ~= activeGroup() then return end
+	if not n or committing or group ~= activeGroup() then return end
 	local op, sound
 	if button == "RightButton" then
 		if not (n.canRefundRank and num(n.ranksPurchased) > 0) then return end
@@ -188,6 +189,36 @@ local function nodeClick(b, button)
 	PlaySound(sound)
 	M.Show()
 	if GameTooltip:GetOwner() == b then b:GetScript("OnEnter")(b) end
+end
+
+-- Apply commits the staged changes (C_ClassTalents.CommitConfig, as the
+-- stock Apply): a cast, ended by TRAIT_CONFIG_UPDATED or CONFIG_COMMIT_FAILED,
+-- or after the stock frame's 6 seconds at most.
+local function apply()
+	local can, canAdd, err = C_ClassTalents.CanChangeTalents()
+	if not (can or canAdd) then
+		UIErrorsFrame:AddExternalErrorMessage(err or GENERIC_TRAIT_FRAME_INTERNAL_ERROR or "Talents cannot be changed now.")
+		return
+	end
+	committing = true
+	PlaySound(SOUNDKIT.UI_CLASS_TALENT_APPLY_CHANGES)
+	if not C_ClassTalents.CommitConfig() then
+		committing = false
+		UIErrorsFrame:AddExternalErrorMessage(GENERIC_TRAIT_FRAME_INTERNAL_ERROR or "Talents cannot be changed now.")
+	else
+		C_Timer.After(6, function()
+			if committing then
+				committing = false
+				if f:IsShown() then M.Show() end
+			end
+		end)
+	end
+	M.Show()
+end
+
+local function undo()
+	C_Traits.RollbackConfig(configOf(group))
+	M.Show()
 end
 
 local function newNode(parent)
@@ -498,19 +529,29 @@ local function refresh()
 	local _, left = spentIn(config)
 	found = 0
 	local height = paintTrees(config)
+	local active = group == activeGroup()
+	local staged = active and not committing and C_Traits.ConfigHasStagedChanges(config)
 	local sub
 	if query ~= "" then
 		sub = found == 1 and "1 talent matches." or ("%d talents match."):format(found)
-	elseif group ~= activeGroup() then
+	elseif not active then
 		sub = "Not your active spec."
-	elseif left > 0 then
-		sub = left == 1 and "1 point to spend." or ("%d points to spend."):format(left)
+	elseif committing then
+		sub = "Applying your talents…"
 	else
-		sub = "Every point is spent."
+		sub = left == 0 and "Every point is spent." or left == 1 and "1 point to spend." or ("%d points to spend."):format(left)
+		if staged then sub = sub .. " Your changes are not applied yet." end
 	end
 	W.ShellTitle(f, "Talents", sub)
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, {})
+	-- Apply and Undo always there, so the layout never moves; disabled as
+	-- Polestar disables (faded to 45%) while nothing is staged. The right side
+	-- lays out from the edge.
+	W.ShellFooter(f, {}, { { label = "Apply", onClick = apply, opts = { primary = true } }, { label = "Undo", onClick = undo } })
+	for _, b in ipairs(f.footerButtons.right) do
+		b:SetEnabled(staged and true or false)
+		b:SetAlpha(staged and 1 or 0.45)
+	end
 	paintArt() -- the footer sets the content's height
 	W.ShellBody(f, height)
 end
@@ -535,7 +576,14 @@ function M.Enable()
 	local function toggle() if C_SpecializationInfo.HasPlayerEarnedATalentPoint() then M.Toggle() end end
 	ns.Doors("Talents", { TOGGLETALENTS = toggle }, TalentMicroButton, M.Toggle)
 	local function changed() if f and f:IsShown() and not InCombatLockdown() then refresh() end end
-	for _, e in ipairs({ "TRAIT_CONFIG_UPDATED", "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
+	-- A commit ends (applied or refused): changes are open again.
+	local function committed()
+		committing = false
+		if f and f:IsShown() then refresh() end
+	end
+	Polestar.RegisterEvent("TRAIT_CONFIG_UPDATED", committed)
+	Polestar.RegisterEvent("CONFIG_COMMIT_FAILED", committed)
+	for _, e in ipairs({ "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
 		"ACTIVE_COMBAT_CONFIG_CHANGED", "ACTIVE_TALENT_GROUP_CHANGED", "PLAYER_REGEN_ENABLED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end

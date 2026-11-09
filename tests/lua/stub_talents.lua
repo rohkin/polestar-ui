@@ -141,6 +141,31 @@ function C_Traits.RefundRank(config, id)
 	if c.staged[id] == 0 then c.staged[id] = nil end
 	return true
 end
+function C_Traits.ConfigHasStagedChanges(config)
+	local c = CONFIGS[config]
+	for id in pairs(data.nodes) do if (c.staged[id] or 0) ~= (c.ranks[id] or 0) then return true end end
+	return false
+end
+function C_Traits.RollbackConfig(config)
+	local c = CONFIGS[config]
+	c.staged = {}
+	for k, v in pairs(c.ranks) do c.staged[k] = v end
+	return true
+end
+-- The commit is a cast: stub.finishCommit() ends it, as TRAIT_CONFIG_UPDATED does.
+C_ClassTalents = C_ClassTalents or {}
+function C_ClassTalents.CanChangeTalents() if InCombatLockdown() then return false, false, "You can't do that in combat." end return true, true end
+function C_ClassTalents.CommitConfig()
+	stub.committing = 10 + (stub.specGroup or 1)
+	return true
+end
+function stub.finishCommit()
+	local c = CONFIGS[stub.committing]
+	c.ranks = {}
+	for k, v in pairs(c.staged) do c.ranks[k] = v end
+	stub.fire("TRAIT_CONFIG_UPDATED", stub.committing)
+	stub.committing = nil
+end
 function UIErrorsFrame:AddExternalErrorMessage(msg) stub.uiError = msg end
 IsModifiedClick = IsModifiedClick or function() return false end
 function C_Traits.GetEntryInfo(config, entry) return { definitionID = entry, maxRanks = 1, conditionIDs = {} } end
