@@ -283,13 +283,18 @@ applied. Not protected, but refused in combat and while
   icon on an inset well; partly learnt, its 1px border and rank in success;
   maxed, in the accent; open to a point, the hairline and no rank; locked by
   its tier or a prerequisite, the icon desaturated at 35%. The rank (the
-  points in it, "3") is in Number on an inset chip centred on the well's
-  bottom-right corner, shown once learnt. Prerequisites are the client's
+  points in it, "3") is in Number text on a solid 18px chip (the bg ground,
+  its 1px border in the node's state colour) centred on the well's
+  bottom-right corner, shown once learnt: legible over any icon. Prerequisites are the client's
   edges, drawn as 2px lines in the border wash under the nodes, in the accent
   once met.
 - **Node:** click puts a point in, right-click takes one back (`PurchaseRank`,
-  `RefundRank`); the game's tooltip (`GameTooltip:SetTraitEntry`) with the hint
-  after a blank line. Shift-click links the spell.
+  `RefundRank`). The tooltip is the stock talent tooltip's lines, built as the
+  stock frame builds them: the name, "Rank 3/5", the subtext ("Passive"), this
+  rank's text and, once learnt, "Next Rank:" with the next one's
+  (`AppendInfo("GetTraitEntry")`), then the tier gate it waits on ("Requires
+  10 points in Affliction", `C_Traits.GetConditionInfo`) and an unmet
+  prerequisite; the hint after a blank line. Shift-click links the spell.
 - **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
   `W.Modal`) on the left; "Undo" (default, drops what is staged:
   `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`) on the

@@ -40,7 +40,7 @@ local function entryOf(config, info)
 	local entry = entryID and C_Traits.GetEntryInfo(config, entryID)
 	local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
 	local icon = def and (def.overrideIcon or (def.spellID and C_Spell.GetSpellTexture(def.spellID)))
-	return entryID, icon, def and def.spellID
+	return entryID, icon, def and def.spellID, def
 end
 
 -- One cell of the client's grid: the smallest step between positions,
@@ -105,9 +105,53 @@ local function readTrees(config)
 end
 
 local function nodeEnter(b)
-	GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
-	GameTooltip:SetTraitEntry(b.psEntry, b.psRank > 0 and b.psRank or nil)
-	GameTooltip:Show()
+	-- The stock talent tooltip's lines (TalentDisplayMixin:SetTooltipInternal,
+	-- Camelot's overrides): name, rank, subtext, this rank's and the next
+	-- rank's text, then the tier and prerequisite it still waits on.
+	local n, tip = b.psInfo, GameTooltip
+	tip:SetOwner(b, "ANCHOR_RIGHT")
+	local def = b.psDef or {}
+	GameTooltip_SetTitle(tip, def.overrideName or (b.psSpell and C_Spell.GetSpellName(b.psSpell)) or "")
+	GameTooltip_AddHighlightLine(tip, TALENT_BUTTON_TOOLTIP_RANK_FORMAT:format(b.psRank, num(n.maxRanks)))
+	local sub = def.overrideSubtext or (b.psSpell and C_Spell.GetSpellSubtext(b.psSpell))
+	if sub and sub ~= "" then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		GameTooltip_AddColoredLine(tip, sub, DISABLED_FONT_COLOR)
+	end
+	local cur = n.activeEntry or n.nextEntry
+	if cur then
+		if not (sub and sub ~= "") then GameTooltip_AddBlankLineToTooltip(tip) end
+		tip:AppendInfo("GetTraitEntry", cur.entryID, cur.rank)
+	end
+	if n.nextEntry and num(n.ranksPurchased) > 0 then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		GameTooltip_AddHighlightLine(tip, TALENT_BUTTON_TOOLTIP_NEXT_RANK)
+		tip:AppendInfo("GetTraitEntry", n.nextEntry.entryID, n.nextEntry.rank)
+	end
+	-- The highest tier gate and every other condition with text, as the stock
+	-- frame filters them (AddConditionsToTooltip), then an unmet prerequisite.
+	local conds, gate, met = {}, nil, {}
+	for _, id in ipairs(n.conditionIDs or {}) do
+		local c = C_Traits.GetConditionInfo(b.psConfig, id, false, b.psTree)
+		if c then
+			conds[#conds + 1] = c
+			if c.isSufficient and c.isMet then met[c.type] = true end
+			if c.isGate and (not gate or c.spentAmountRequired > gate.spentAmountRequired) then gate = c end
+		end
+	end
+	local spaced = false
+	local function line(add, text)
+		if not spaced then GameTooltip_AddBlankLineToTooltip(tip); spaced = true end
+		add(tip, text)
+	end
+	for _, c in ipairs(conds) do
+		if c.tooltipText and (c.isMet or not met[c.type]) and (not c.isGate or c == gate) then
+			line(GameTooltip_AddHighlightLine, c.tooltipText)
+		end
+	end
+	if not n.meetsEdgeRequirements then line(GameTooltip_AddErrorLine, GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP) end
+	if b.psSpell then ns.TooltipHint("Shift-click to link it in chat.") end
+	tip:Show()
 end
 
 -- Shift-click links the talent's spell, as the stock frame.
@@ -124,12 +168,16 @@ local function newNode(parent)
 	b.Icon:SetPoint("TOPLEFT", 1, -1)
 	b.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
 	W.Hover(b)
-	-- The rank, once learnt, on a chip at the bottom-right corner.
+	-- The rank, once learnt, on a solid chip over the bottom-right corner,
+	-- its hairline in the node's state colour: legible on any icon.
 	b.Chip = CreateFrame("Frame", nil, b)
-	b.Chip:SetSize(16, 16)
-	b.Chip:SetPoint("CENTER", b, "BOTTOMRIGHT", -3, 3)
-	Polestar.Theme.Skin(b.Chip, "inset")
-	b.Rank = W.Text(b.Chip, "number", "textDim")
+	b.Chip:SetSize(18, 18)
+	b.Chip:SetPoint("CENTER", b, "BOTTOMRIGHT", -2, 2)
+	b.Chip:SetFrameLevel(b:GetFrameLevel() + 3)
+	local bg = b.Chip:CreateTexture(nil, "BACKGROUND")
+	bg:SetAllPoints()
+	W.Painter(bg, function(t) t:SetColorTexture(Polestar.Theme.Color("bg")) end)
+	b.Rank = W.Text(b.Chip, "number", "text")
 	b.Rank:SetPoint("CENTER", 0, 0)
 	b:SetScript("OnEnter", nodeEnter)
 	b:SetScript("OnLeave", W.HideTooltip)
@@ -141,8 +189,8 @@ end
 -- accent, partly learnt in success, open to a point on the hairline, locked
 -- (tier or prerequisite) desaturated and dim. The rank shows once learnt.
 local function paintNode(b, config, n)
-	local entryID, icon, spell = entryOf(config, n)
-	b.psEntry, b.psSpell, b.psNode = entryID, spell, n.ID
+	local entryID, icon, spell, def = entryOf(config, n)
+	b.psEntry, b.psSpell, b.psNode, b.psInfo, b.psDef, b.psConfig = entryID, spell, n.ID, n, def, config
 	local rank, max = num(n.currentRank), num(n.maxRanks)
 	b.psRank = rank
 	local locked = not (n.isAvailable and n.meetsEdgeRequirements) and rank == 0
@@ -156,6 +204,7 @@ local function paintNode(b, config, n)
 	if state then
 		local r, g, bl = Polestar.Theme.Color(state)
 		Polestar.Theme.Border(b, r, g, bl, 1)
+		Polestar.Theme.Border(b.Chip, r, g, bl, 1)
 	else
 		Polestar.Theme.Border(b, Polestar.Theme.Wash("border"))
 	end
@@ -206,6 +255,7 @@ local function paintTrees(config)
 			b:SetPoint("TOPLEFT", f.Body, "TOPLEFT", gx + n.col * PITCH, -(24 + HEAD_H + n.row * PITCH))
 			b:SetFrameLevel(f.Body:GetFrameLevel() + 2)
 			paintNode(b, config, n)
+			b.psTree = t.name -- the conditions name it ("Requires 10 points in Fire")
 			b:Show()
 			at[n.ID] = b
 			bottom = math.max(bottom, 24 + HEAD_H + n.row * PITCH + NODE)

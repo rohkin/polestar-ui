@@ -110,14 +110,37 @@ function C_Traits.GetNodeInfo(config, id)
 	return { ID = id, posX = (n[4] - 1) * 4000 + (n[6] - 1) * 600 + id % 7 * 9 - 27, posY = 1500 + (n[5] - 1) * 600 + id % 5 * 11 - 22,
 		entryIDs = { n[1] }, isVisible = true, isAvailable = spentBy(c, n[4]) >= (n[5] - 1) * 5,
 		meetsEdgeRequirements = meets, activeRank = learnt, currentRank = cur, ranksPurchased = cur, maxRanks = n[2],
-		visibleEdges = edges, groupIDs = { 1000 + n[4] }, activeEntry = cur > 0 and { entryID = n[1], rank = cur } or nil }
+		visibleEdges = edges, groupIDs = { 1000 + n[4] }, activeEntry = cur > 0 and { entryID = n[1], rank = cur } or nil,
+		nextEntry = cur < n[2] and { entryID = n[1], rank = cur + 1 } or nil, conditionIDs = { 5000 + id } }
+end
+-- A node's tier gate: 5 points a row in its tree, named by the tree passed in.
+function C_Traits.GetConditionInfo(config, cond, _, treeName)
+	local id = cond - 5000
+	local n = data.nodes[id]
+	local need = (n[5] - 1) * 5
+	if need == 0 then return { isGate = false, isMet = true, isSufficient = false, type = 0 } end
+	return { isGate = true, spentAmountRequired = need, isMet = spentBy(CONFIGS[config], n[4]) >= need, isSufficient = false, type = 1,
+		tooltipText = ("Requires %d points in %s"):format(need, treeName) }
 end
 function C_Traits.GetEntryInfo(config, entry) return { definitionID = entry, maxRanks = 1, conditionIDs = {} } end
 function C_Traits.GetDefinitionInfo(def) local n = data.nodes[byEntry[def]]; return n and { spellID = n[3] } end
 C_Spell = C_Spell or {}
 function C_Spell.GetSpellTexture(id) return 134400 end
 function C_Spell.GetSpellLink(id) return "|Hspell:" .. id .. "|h[" .. id .. "]|h" end
-function GameTooltip:SetTraitEntry(entry, rank) stub.tooltipEntry = entry end
+local spellName = {}
+for _, n in pairs(data.nodes) do spellName[n[3]] = n[7] end
+function C_Spell.GetSpellName(id) return spellName[id] end
+function C_Spell.GetSpellSubtext(id) return "Passive" end
+-- The tooltip helpers (GameTooltip_*), each a line; a trait entry's text as one line.
+function GameTooltip:AppendInfo(kind, entry, rank) self:AddLine(("[%s %d rank %d]"):format(kind, entry, rank)) end
+function GameTooltip_SetTitle(tip, text) tip:SetText(text) end
+function GameTooltip_AddBlankLineToTooltip(tip) tip:AddLine(" ") end
+function GameTooltip_AddHighlightLine(tip, text) tip:AddLine(text) end
+function GameTooltip_AddColoredLine(tip, text) tip:AddLine(text) end
+function GameTooltip_AddErrorLine(tip, text) tip:AddLine(text) end
+DISABLED_FONT_COLOR = { r = 0.5, g = 0.5, b = 0.5 }
+TALENT_BUTTON_TOOLTIP_RANK_FORMAT, TALENT_BUTTON_TOOLTIP_NEXT_RANK = "Rank %s/%s", "Next Rank:"
+GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP = "Requires the talents before it."
 DUAL_SPEC_PRIMARY, DUAL_SPEC_SECONDARY = "Primary", "Secondary"
 
 -- The game's window: addon code must never show or hide it (docs/CLIENT.md, rule 8).
