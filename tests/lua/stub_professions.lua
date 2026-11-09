@@ -38,3 +38,17 @@ ProfessionsFrame:Hide()
 function stub.bindingRun.TOGGLEPROFESSIONBOOK() ProfessionsFrame:Show() end
 ProfessionMicroButton = CreateFrame("Button", "ProfessionMicroButton", UIParent)
 ProfessionMicroButton.tooltipText = "Professions (K)"
+
+-- The stock page's card art (placeholder files in the preview): Tailoring's own
+-- card, the generic ones, and no card for Mining (it falls back to the generic).
+C_Texture = C_Texture or {}
+local atlasInfo = C_Texture.GetAtlasInfo
+local CARDS = { ["Profession-overview-Card-Tailoring"] = 5001, ["Profession-overview-Card"] = 5002,
+	["Profession-overview-card-generic-cooking"] = 5003, ["Profession-overview-card-generic-fishing"] = 5004,
+	["Profession-overview-card-generic-firstaid"] = 5005 }
+function C_Texture.GetAtlasInfo(atlas)
+	if CARDS[atlas] then
+		return { file = CARDS[atlas], width = 512, height = 256, leftTexCoord = 0, rightTexCoord = 1, topTexCoord = 0, bottomTexCoord = 0.5 }
+	end
+	return atlasInfo and atlasInfo(atlas)
+end

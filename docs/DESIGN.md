@@ -354,13 +354,22 @@ profession opens (`TRADE_SKILL_SHOW`): the crafting window is the game's.
 - **Main column:** title "Professions", subtitle what the player can do. The
   stock page's five slots as cards on the panel ground under two headings:
   Primary (one to a row: wide, short cards, the spells side by side, as the
-  stock page), then Secondary (Cooking, Fishing, First Aid, three
+  stock page and its art), then Secondary (Cooking, Fishing, First Aid, three
   to a row). A card: the profession's icon (40px on an inset well), its name in
   Title, its skill bar with the rank ("145/150 (+5)") above its right end, then
   its spells as the Spellbook's rows (`ns.SpellRow`: click casts through the
   secure button, drag, shift-click links, cooldown). An empty slot: the stock
   scroll icon desaturated, the slot's name and the stock "learn it" line in
-  textMuted. A primary's ✕ unlearns it (`C_SkillInfo.AbandonSkill`, not
+  textMuted. Behind each card, the stock page's card art, as the Talents
+  window's class art: at full strength under a wash of Polestar's sky at 55%,
+  cropped to the card's shape (the band 85% of the way down its height: the
+  scenes sit low) and 6% trimmed off each edge so the stock card's rounded
+  frame never shows, both fading to nothing over 64px at its sides. A primary
+  wears its profession's card (`Profession-overview-Card-<name>`, the client
+  name, as the stock page names it; the generic `Profession-overview-Card`
+  when there is none), a secondary its generic one
+  (`Profession-overview-card-generic-cooking`, `-fishing`, `-firstaid`); an
+  empty slot's art is greyed. A primary's ✕ unlearns it (`C_SkillInfo.AbandonSkill`, not
   protected), confirmed by `W.Modal` in danger.
 
 #### Professions (`ProfessionsFrame`) — Risk: medium

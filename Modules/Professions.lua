@@ -9,6 +9,7 @@ local NAME = "PolestarUIProfessions"
 local PAD, ICON, ROW_H, GAP = 16, 40, 44, 24
 -- As the stock page lays them out: a primary is a wide, short card, its two
 -- spells side by side; a secondary a narrow, tall one, its spells stacked.
+-- Their art is drawn for those shapes.
 local GROUPS = {
 	{ slots = { 1, 2 }, perRow = 1, spellCols = 2, height = PAD + ICON + 12 + ROW_H - 8 + PAD },
 	{ slots = { 3, 4, 5 }, perRow = 3, spellCols = 1, height = PAD + ICON + 12 + 2 * ROW_H - 8 + PAD },
@@ -31,10 +32,70 @@ local function slots()
 	return {
 		{ index = p1, primary = true, label = PROFESSIONS_FIRST_PROFESSION or "First Profession", text = missing },
 		{ index = p2, primary = true, label = PROFESSIONS_SECOND_PROFESSION or "Second Profession", text = missing },
-		{ index = cook, label = PROFESSIONS_COOKING or "Cooking", text = PROFESSIONS_COOKING_MISSING or "Learn it from a cooking trainer." },
-		{ index = fish, label = PROFESSIONS_FISHING or "Fishing", text = PROFESSIONS_FISHING_MISSING or "Learn it from a fishing trainer." },
-		{ index = faid, label = PROFESSIONS_FIRST_AID or "First Aid", text = PROFESSIONS_FIRST_AID_MISSING or "Learn it from a first aid trainer." },
+		{ index = cook, label = PROFESSIONS_COOKING or "Cooking", text = PROFESSIONS_COOKING_MISSING or "Learn it from a cooking trainer.", art = "cooking" },
+		{ index = fish, label = PROFESSIONS_FISHING or "Fishing", text = PROFESSIONS_FISHING_MISSING or "Learn it from a fishing trainer.", art = "fishing" },
+		{ index = faid, label = PROFESSIONS_FIRST_AID or "First Aid", text = PROFESSIONS_FIRST_AID_MISSING or "Learn it from a first aid trainer.", art = "firstaid" },
 	}
+end
+
+-- The stock page's card art behind each card, as the Talents window's class
+-- art: under a wash of Polestar's sky, both feathered out at the card's sides,
+-- the art cropped to the card's shape low in its height. Primaries wear their
+-- profession's card (named by its client name, as the stock page names it),
+-- secondaries their generic one; an empty slot its art greyed.
+local ART_ALPHA, TINT_ALPHA, FEATHER = 1, 0.55, 64
+local function cardAtlas(c)
+	local get = C_Texture and C_Texture.GetAtlasInfo
+	if not get then return end
+	local slot = c.psSlot
+	local name = slot.art and ("Profession-overview-card-generic-" .. slot.art)
+		or (slot.index and ("Profession-overview-Card-" .. (c.psName or "")))
+	return (name and get(name)) or get("Profession-overview-Card")
+end
+
+local function paintArt(c)
+	local info = c.psSlot and cardAtlas(c)
+	local w, h = c:GetWidth() - 2, c:GetHeight() - 2
+	local on = info ~= nil and w > 2 * FEATHER
+	for i = 1, 3 do
+		c.psArt[i]:SetShown(on)
+		c.psTint[i]:SetShown(on)
+	end
+	if not on then return end
+	local l, r, t, b = info.leftTexCoord, info.rightTexCoord, info.topTexCoord, info.bottomTexCoord
+	-- The stock card's own rounded frame is trimmed off every edge (the same
+	-- share of each side, so the aspect holds). Tunable live:
+	-- /run PolestarUI.ProfessionArtInset = 0.08
+	local inset = ns.ProfessionArtInset or 0.06
+	l, r, t, b = l + (r - l) * inset, r - (r - l) * inset, t + (b - t) * inset, b - (b - t) * inset
+	-- Cover: keep the art's aspect, cropping whichever side is too long.
+	local aspect = (h / w) / (info.height / info.width)
+	if aspect < 1 then
+		-- Which band of the art's height shows: 0 its top, 1 its bottom (the
+		-- cards' scenes sit low). Tunable live: /run PolestarUI.ProfessionArtFocus = 0.9
+		local span = (b - t) * aspect
+		t = t + (b - t - span) * (ns.ProfessionArtFocus or 0.85)
+		b = t + span
+	else
+		local mid, half = (l + r) / 2, (r - l) / aspect / 2
+		l, r = mid - half, mid + half
+	end
+	local stops = { { 0, 0 }, { FEATHER, 1 }, { w - FEATHER, 1 }, { w, 0 } }
+	local sr, sg, sb = Polestar.Theme.Color("sky")
+	for i = 1, 3 do
+		local x0, a0, x1, a1 = stops[i][1], stops[i][2], stops[i + 1][1], stops[i + 1][2]
+		local art, tint = c.psArt[i], c.psTint[i]
+		for _, p in ipairs({ art, tint }) do
+			p:ClearAllPoints()
+			p:SetPoint("TOPLEFT", c, "TOPLEFT", 1 + x0, -1)
+			p:SetPoint("BOTTOMRIGHT", c, "BOTTOMLEFT", 1 + x1, 1)
+		end
+		art:SetTexture(info.file)
+		art:SetTexCoord(l + (r - l) * x0 / w, l + (r - l) * x1 / w, t, b)
+		art:SetDesaturated(c.psSlot.index == nil)
+		art:SetGradient("HORIZONTAL", CreateColor(1, 1, 1, a0 * ART_ALPHA), CreateColor(1, 1, 1, a1 * ART_ALPHA))
+		tint:SetGradient("HORIZONTAL", CreateColor(sr, sg, sb, a0 * TINT_ALPHA), CreateColor(sr, sg, sb, a1 * TINT_ALPHA))
+	end
 end
 
 -- Unlearning, confirmed first, as the stock page's button.
@@ -51,6 +112,14 @@ end
 local function newCard()
 	local c = CreateFrame("Frame", nil, f.Body)
 	Polestar.Theme.Skin(c, "panel")
+	c.psArt, c.psTint = {}, {}
+	for i = 1, 3 do
+		c.psArt[i] = c:CreateTexture(nil, "BACKGROUND", nil, 2)
+		c.psTint[i] = c:CreateTexture(nil, "BACKGROUND", nil, 3)
+		c.psTint[i]:SetTexture("Interface\\Buttons\\WHITE8X8")
+	end
+	-- Repainted with the theme: the wash is Polestar's sky.
+	W.Painter(c.psTint[1], function() paintArt(c) end)
 	local well = CreateFrame("Frame", nil, c)
 	well:SetSize(ICON, ICON)
 	well:SetPoint("TOPLEFT", c, "TOPLEFT", PAD, -PAD)
@@ -82,7 +151,10 @@ end
 
 local function paintCard(c, slot, width, group)
 	c:SetSize(width, group.height)
+	c.psSlot = slot
 	local known = slot.index ~= nil
+	c.psName = known and GetProfessionInfo(slot.index) or nil
+	paintArt(c)
 	for _, r in ipairs(c.rows) do r:Hide() end
 	c.Unlearn:SetShown(known and slot.primary)
 	c.Bar:SetShown(known)
