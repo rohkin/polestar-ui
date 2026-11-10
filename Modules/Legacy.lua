@@ -955,7 +955,7 @@ end
 
 local function build()
 	-- One search box, for the page shown: the challenges, or the tree's talents.
-	f = W.Shell(NAME, { rail = true, searchPlaceholder = "Search", onSearch = function(text)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", rail = true, searchPlaceholder = "Search", onSearch = function(text)
 		text = text or ""
 		if section == "tree" then
 			if tree.query == text:lower() then return end

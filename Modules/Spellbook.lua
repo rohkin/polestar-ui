@@ -268,7 +268,7 @@ local function optionsMenu(self)
 end
 
 local function build()
-	f = W.Shell(NAME, { searchPlaceholder = "Search spells", onSearch = function(text)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", searchPlaceholder = "Search spells", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then M.Show() end
 	end })

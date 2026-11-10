@@ -454,7 +454,7 @@ end
 
 local function build()
 	-- Wider than the shell's 960: three four-column trees side by side.
-	f = W.Shell(NAME, { width = 1100, searchPlaceholder = "Search talents", onSearch = function(text)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 1100, searchPlaceholder = "Search talents", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then M.Show() end
 	end })

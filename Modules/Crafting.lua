@@ -583,7 +583,7 @@ local function filterMenu(anchor)
 end
 
 local function build()
-	f = W.Shell(NAME, { width = 760 + W.SHELL.rail, rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
 		query = (text or ""):lower()
 		if f and f:IsShown() then refresh() end
 	end })

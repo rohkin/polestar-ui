@@ -208,7 +208,8 @@ end
 -- (UpdateUIPanelPositions in UIParentPanelManager.lua): from the top left, in
 -- the order they opened, 32 apart, right of any stock panel open, and not
 -- draggable. When they do not fit (GetMaxUIPanelsWidth), the oldest closes,
--- unless it is the one just opened. We cannot place the stock panels (their
+-- unless it is the one just opened. Their size is Polestar's Menu scale
+-- (ui.menuScale), the player's to set. We cannot place the stock panels (their
 -- manager is forbidden to us, docs/CLIENT.md rule 1), so ours give way to
 -- them. A stock "center" panel closes ours itself: they are UISpecialFrames.
 local dock, stock, hooked, newest, listening, swap = {}, {}, {}, nil, false, nil
@@ -283,6 +284,10 @@ function ns.Dock(f)
 	f:HookScript("OnSizeChanged", function(self) if self:IsShown() then layout() end end)
 	if listening then return end
 	listening = true
+	-- After the shells' own listeners have applied the new scale.
+	Polestar.On("SETTING_CHANGED", function(path)
+		if path == "ui.menuScale" or path == "" or path == "ui" then layout() end
+	end)
 	-- Next frame: a stock window we replace is shown and hidden again at once
 	-- (ToggleCharacter), and must not push ours aside.
 	EventRegistry:RegisterCallback("UIParentPanelManager.ShowUIPanel", function(_, fr)

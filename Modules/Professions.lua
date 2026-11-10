@@ -292,7 +292,7 @@ end
 local function build()
 	-- No sidebar: one page, nothing to navigate; the band names the window.
 	-- The section rail holds the professions; Polestar's emblem stays off it.
-	f = W.Shell(NAME, { width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
 	ns.Dock(f)
 	f.Sidebar:Hide()
 	local holder = CreateFrame("Frame", nil, f)
