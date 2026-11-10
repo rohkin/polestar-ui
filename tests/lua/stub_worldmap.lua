@@ -47,7 +47,7 @@ function CreateFrame(kind, name, parent, template, ...)
 	local f = createFrame(kind, name, parent, template, ...)
 	if template == "PolestarUIMapCanvasTemplate" then
 		for k, v in pairs(Canvas) do f[k] = v end
-		f.providers, f.levels = {}, {}
+		f.providers, f.levels, f.events = {}, {}, {}
 		f:SetFrameStrata("MEDIUM") -- as the template sets it
 		f:Hide()
 		f.ScrollContainer = createFrame("ScrollFrame", nil, f)
@@ -65,3 +65,50 @@ WorldMapFrame = createFrame("Frame", "WorldMapFrame", UIParent)
 WorldMapFrame:Hide()
 stub.bindings.TOGGLEWORLDMAP = { "M" }
 function stub.bindingRun.TOGGLEWORLDMAP() WorldMapFrame:Show() end
+
+-- The quest log: two headers, Elwynn Forest's three quests (one done, one
+-- tracked) and Westfall's one, folded. Folding sends no event (rule 6).
+function Canvas:TriggerEvent(event, ...) self.events[#self.events + 1] = { event, ... } end
+local LOG = {
+	{ title = "Elwynn Forest", isHeader = true, isCollapsed = false },
+	{ title = "A Threat Within", questID = 783, level = 1 },
+	{ title = "Kobold Camp Cleanup", questID = 7, level = 2, goals = { { "Kobold Vermin slain: 4/10", false } } },
+	{ title = "Wolves Across the Border", questID = 33, level = 3, done = true },
+	{ title = "Westfall", isHeader = true, isCollapsed = true },
+	{ title = "The Defias Brotherhood", questID = 65, level = 14 },
+	{ title = "Hidden", questID = 99, level = 1, isHidden = true },
+}
+for i, q in ipairs(LOG) do q.questLogIndex = i end
+stub.watched = { [7] = true }
+function C_QuestLog.GetNumQuestLogEntries()
+	local n = 0
+	for _, q in ipairs(LOG) do if not q.isHeader then n = n + 1 end end
+	return #LOG, n
+end
+function C_QuestLog.GetInfo(i)
+	local q = LOG[i]
+	if not q then return nil end
+	local t = {}
+	for k, v in pairs(q) do t[k] = v end
+	return t
+end
+function C_QuestLog.GetMaxNumQuestsCanAccept() return 25 end
+function C_QuestLog.IsComplete(id) for _, q in ipairs(LOG) do if q.questID == id then return q.done or false end end return false end
+function C_QuestLog.IsQuestDisabledForSession() return false end
+function ExpandQuestHeader(i) LOG[i].isCollapsed = false end
+function CollapseQuestHeader(i) LOG[i].isCollapsed = true end
+function GetNumQuestLeaderBoards(i) return #(LOG[i].goals or {}) end
+function GetQuestLogLeaderBoard(n, i) local g = LOG[i].goals[n]; return g[1], "monster", g[2] end
+function QuestUtils_IsQuestWatched(id) return stub.watched[id] or false end
+function QuestMapQuestOptions_TrackQuest(id) stub.watched[id] = not stub.watched[id] or nil end
+function GetQuestUiMapID(id) return id == 65 and 52 or 37 end
+C_PlayerInfo = C_PlayerInfo or {}
+function C_PlayerInfo.GetContentDifficultyQuestForPlayer(id) return id == 65 and 4 or 1 end
+local DIFF = { [1] = { r = 0.25, g = 0.75, b = 0.25 }, [4] = { r = 1, g = 0.1, b = 0.1 } }
+function GetDifficultyColor(d) return DIFF[d] end
+ChatFrameUtil = { TryInsertQuestLinkForQuestID = function(id) if stub.chatOpen then stub.linked = id; return true end return false end }
+
+stub.bindings.TOGGLEQUESTLOG = { "L" }
+function stub.bindingRun.TOGGLEQUESTLOG() WorldMapFrame:Show() end
+QuestLogMicroButton = createFrame("Button", "QuestLogMicroButton", UIParent)
+QuestLogMicroButton.tooltipText = "Quest Log (L)"

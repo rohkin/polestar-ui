@@ -12,5 +12,6 @@
 			</ScrollFrame>
 		</Frames>
 	</Frame>
+	<Script file="QuestLog.lua"/>
 	<Script file="WorldMap.lua"/>
 </Ui>

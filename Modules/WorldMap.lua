@@ -13,6 +13,7 @@ local NAME = "PolestarUIWorldMap"
 local MAP_W, MAP_H = 852, 568
 local CONTINENT, ZONE = 2, 3 -- Enum.UIMapType
 local ZOOMS = { 1.5, 2.25, 3 }
+local QUEST_W = 320
 local f, canvas
 local M = {}
 
@@ -59,7 +60,8 @@ local function buildCanvas()
 	canvas = CreateFrame("Frame", NAME .. "Canvas", f.Main, "PolestarUIMapCanvasTemplate")
 	-- The template's MEDIUM strata would put the map under its own window.
 	canvas:SetFrameStrata(f:GetFrameStrata())
-	canvas:SetAllPoints(f.Content)
+	-- Any new size (the window's, the quest log opening): the map refitted.
+	canvas:HookScript("OnSizeChanged", function(self) self:OnFrameSizeChanged() end)
 	-- As the stock map: a click opens the zone under it, right-click goes out.
 	canvas:SetShouldZoomInOnClick(false)
 	canvas:SetShouldPanOnClick(false)
@@ -88,6 +90,19 @@ local function buildCanvas()
 	end
 end
 
+-- The quest log flyout, open or shut (remembered): the map ends at its left
+-- edge, and the window grows by its width unless it fills the screen.
+local function setQuests(on)
+	PolestarUIDB.mapQuests = on or nil
+	f.psQuests:SetShown(on)
+	canvas:ClearAllPoints()
+	canvas:SetPoint("TOPLEFT", f.Content, "TOPLEFT", 0, 0)
+	canvas:SetPoint("BOTTOMRIGHT", on and f.psQuests or f.Content, on and "BOTTOMLEFT" or "BOTTOMRIGHT", 0, 0)
+	if not f.psFull then f:SetSize(f.psSize[1] + (on and QUEST_W or 0), f.psSize[2]) end
+	W.Color(f.psQuestsButton.Label, on and "accent" or "text")
+	f.psQuestsButton.Arrow:SetTexture(Polestar.Theme.Media(on and "chevron-right" or "chevron-left"))
+end
+
 -- Full screen, as the stock map's maximise: the window fills the screen, out
 -- of the dock (ns.Dock skips psFull), until toggled back.
 local function setFull(on)
@@ -98,8 +113,8 @@ local function setFull(on)
 		f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, 0)
 		f:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", 0, 0)
 	else
-		f:SetSize(f.psSize[1], f.psSize[2])
 		f:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
+		setQuests(f.psQuests:IsShown()) -- its size again
 	end
 	local b = f.psFullButton
 	b.psIconName, b.psTip = on and "compact" or "window", on and "Back to a window" or "Full screen"
@@ -131,16 +146,35 @@ local function build()
 	f.psName:SetText("World Map")
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})
+	-- No body here: its scroll area would take the mouse wheel from the map
+	-- and the quest log over it.
+	f.Scroll:Hide()
 	buildCanvas()
 	hooksecurefunc(canvas, "OnMapChanged", function() M.Refresh() end)
 	f.psSize = { f:GetWidth(), f:GetHeight() }
 	f.psFullButton = W.IconButton(f.Header, "window", 28, "Full screen", function() setFull(not f.psFull) end, 14)
 	f.psFullButton:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -12, 12)
-	-- A new size: the band's sky cropped again, never stretched, and the map refitted.
+	-- The quest log's button, as the Spellbook's Options: a label and its arrow.
+	local qb = CreateFrame("Button", nil, f.Header)
+	qb:SetSize(88, 24)
+	qb:SetPoint("RIGHT", f.psFullButton, "LEFT", -8, 0)
+	W.Hover(qb)
+	qb.Label = W.Text(qb, "small", "text")
+	qb.Label:SetPoint("LEFT", qb, "LEFT", 10, 0)
+	qb.Label:SetText("Quests")
+	qb.Arrow = W.Tex(qb, "ARTWORK", "chevron-left", "textDim")
+	qb.Arrow:SetSize(12, 12)
+	qb.Arrow:SetPoint("RIGHT", qb, "RIGHT", -10, 0)
+	qb:SetScript("OnClick", function() setQuests(not f.psQuests:IsShown()) end)
+	f.psQuestsButton = qb
+	f.psQuests = ns.QuestLog(f, canvas, QUEST_W)
+	f.psQuests:SetPoint("TOPRIGHT", f.Content, "TOPRIGHT", 0, 0)
+	f.psQuests:SetPoint("BOTTOMRIGHT", f.Content, "BOTTOMRIGHT", 0, 0)
+	-- A new size: the band's sky cropped again, never stretched.
 	f:HookScript("OnSizeChanged", function(self, w)
 		self.Band:SetTexCoord(Polestar.Theme.BandCoords(w - W.SHELL.sidebar - 2, W.SHELL.header))
-		canvas:OnFrameSizeChanged()
 	end)
+	setQuests(PolestarUIDB.mapQuests and true or false)
 	if PolestarUIDB.mapFull then setFull(true) end
 	-- As the stock map opens: on the player's map, zoomed out, with its sounds.
 	f:HookScript("OnShow", function()
@@ -191,17 +225,31 @@ function M.Show()
 	M.Refresh()
 end
 
+-- The map key toggles the map; the quest log's, as the stock toggle, closes
+-- the map when the log shows in it, else opens both.
 function M.Toggle()
 	if f and f:IsShown() then f:Hide() else M.Show() end
 end
 
+function M.ToggleQuests()
+	if f and f:IsShown() and f.psQuests:IsShown() then
+		f:Hide()
+	else
+		M.Show()
+		setQuests(true)
+	end
+end
+
 function M.Enable()
-	-- The map key opens ours; the stock map is never touched (docs/CLIENT.md,
-	-- rule 8). The quest log key, the micro button, map links and the quest
-	-- tracker stay the game's until our quest log is built.
-	ns.Doors("WorldMap", { TOGGLEWORLDMAP = M.Toggle })
+	-- The map and quest log keys and the micro button open ours; the stock
+	-- map is never touched (docs/CLIENT.md, rule 8), a shift-click on the
+	-- micro button away. Map links and the quest tracker stay the game's.
+	ns.Doors("WorldMap", { TOGGLEWORLDMAP = M.Toggle, TOGGLEQUESTLOG = M.ToggleQuests }, QuestLogMicroButton, M.ToggleQuests)
 	Polestar.RegisterEvent("ZONE_CHANGED_NEW_AREA", M.Refresh)
 	Polestar.RegisterEvent("ZONE_CHANGED", M.Refresh)
+	local function quests() if f then f.psQuests.Paint() end end
+	Polestar.RegisterEvent("QUEST_LOG_UPDATE", quests)
+	Polestar.RegisterEvent("QUEST_WATCH_LIST_CHANGED", quests)
 end
 
 ns.Module("map", M)

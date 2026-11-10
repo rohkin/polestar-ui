@@ -516,10 +516,27 @@ zoom and click-to-open are the game's.
   (remembered; out of the dock while full).
 - **Zoom:** the canvas takes its zoom steps from the map art; where the art
   gives one (Forever's), ours adds 1.5×, 2.25× and 3×. Drag pans once zoomed.
-- **Doors:** `TOGGLEWORLDMAP` opens ours (`ns.Doors`). The quest log key,
-  the micro button, map links and the quest tracker stay the game's until
-  the quest log is built; then `TOGGLEQUESTLOG` and `QuestLogMicroButton`
-  (shift-click: the stock map) open ours too.
+- **Quest Log:** a 320 flyout right of the canvas, under the band, on the
+  sidebar ground, opened by a "Quests" button left of the full-screen
+  toggle (remembered). Windowed, the window grows by its width; full screen,
+  the map gives it room. Its head: "Quests" and the log's count over the
+  most it holds. The log as the stock panel lists it: header rows (label
+  face, chevron, count) fold through the client and redraw at once
+  (CLIENT.md, rule 6); hidden quests, tasks and unfinished bounties stay
+  out. A quest row: "[level] title" in Body in its difficulty colour
+  (legible), what is left under it in Small textDim (the unfinished
+  objectives, or the hand-in line once done), a check (success) when done
+  or a star (accent) when tracked. Hover lights its area on the map (the
+  canvas's `SetHighlightedQuestID`); a click shows its map with its area in
+  focus and selects it; shift-click tracks it (the stock toggle); with a
+  chat box open, a click links it. A search under the head (the sidebar's
+  search box) matches a quest's title or what is left of it; searching,
+  every match shows with its header open.
+- **Doors:** `TOGGLEWORLDMAP` toggles ours; `TOGGLEQUESTLOG` and
+  `QuestLogMicroButton` open it with the quest log, or close it when the
+  log shows, as the stock toggle (`ns.Doors`; shift-click on the micro
+  button: the stock map, for the quest details we do not show yet). Map
+  links and the quest tracker stay the game's.
 
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
