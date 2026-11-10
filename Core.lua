@@ -215,6 +215,13 @@ end
 local dock, stock, hooked, newest, listening, swap = {}, {}, {}, nil, false, nil
 function ns.Docked() return not PolestarUIDB.free end
 
+-- A window's width with its shown flyouts (ns.DockFlyout).
+local function footprint(f)
+	local w = f:GetWidth()
+	for _, o in ipairs(f.psFlyouts or {}) do if o:IsShown() then w = w + o:GetWidth() - o.psOverlap end end
+	return w
+end
+
 local function layout()
 	if not ns.Docked() then return end
 	local L, ui = GetUIPanelLayoutAttribute, UIParent:GetEffectiveScale()
@@ -231,7 +238,7 @@ local function layout()
 	for _, f in ipairs(dock) do if not f.psFull then docked[#docked + 1] = f end end
 	local right = x
 	for i, f in ipairs(docked) do
-		right = right + f:GetWidth() * f:GetScale() + (i > 1 and gap or 0)
+		right = right + footprint(f) * f:GetScale() + (i > 1 and gap or 0)
 	end
 	if right > GetMaxUIPanelsWidth() and docked[1] and docked[1] ~= newest then
 		docked[1]:Hide() -- its OnHide lays the rest out
@@ -247,7 +254,7 @@ local function layout()
 		y = math.min(y, -10)
 		f:ClearAllPoints()
 		f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x / s, y / s)
-		x = x + f:GetWidth() * s + gap
+		x = x + footprint(f) * s + gap
 	end
 end
 
@@ -256,6 +263,26 @@ local function undock(f)
 end
 
 ns.Relayout = layout
+
+-- A flyout hung off a docked window's right edge, outside it (the Character
+-- window's stats drawer), `overlap` px over its edge: while shown, the dock
+-- counts its width as the window's and the window keeps it on screen. A
+-- flyout inside the window (the map's quest log) needs none: the window
+-- grows, and the dock follows its size.
+function ns.DockFlyout(f, fly, overlap)
+	fly.psOverlap = overlap or 0
+	f.psFlyouts = f.psFlyouts or {}
+	table.insert(f.psFlyouts, fly)
+	local function changed()
+		f:SetClampRectInsets(0, footprint(f) - f:GetWidth(), 0, 0)
+		if f:IsShown() then layout() end
+	end
+	fly:HookScript("OnShow", changed)
+	fly:HookScript("OnHide", changed)
+	fly:HookScript("OnSizeChanged", changed)
+	-- Shown or hidden while the window was shut sends neither.
+	f:HookScript("OnShow", changed)
+end
 
 function ns.SetDocked(on)
 	PolestarUIDB.free = not on or nil

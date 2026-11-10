@@ -562,6 +562,8 @@ local function build()
 	for _, t in ipairs({ f.psName, f.psLine, f.psGuild }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
 	f.psGear = buildGear(f.Body, f.BodyWidth)
 	f.psStats = buildStats()
+	-- The dock makes room for the drawer, and the window keeps it on screen.
+	ns.DockFlyout(f, f.psStats, 1)
 	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
 	f.psPages = {}
 	for key, page in pairs(ns.CharacterPages) do
@@ -626,8 +628,6 @@ function refresh()
 	local stats = gear and statsShown()
 	f.psGear:SetShown(gear)
 	f.psStats:SetShown(stats)
-	-- The window keeps its drawer on screen too.
-	f:SetClampRectInsets(0, stats and STATS_W - 1 or 0, 0, 0)
 	f.psToggle:SetShown(gear)
 	f.psToggle.Label:SetText(stats and "Hide stats" or "Show stats")
 	f.psToggle.Arrow:SetTexture(Polestar.Theme.Media(stats and "chevron-left" or "chevron-right"))

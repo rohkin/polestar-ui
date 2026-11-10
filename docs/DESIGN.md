@@ -135,6 +135,10 @@ Polestar's: the band 0–112, the tab band 112–152, the hairline at 152, the 2
   the ✕ and Escape already close it.
 - **Opens where the stock window opened** (the stock UI panel's left slot), then
   remembers where the player dragged it (`PolestarUIDB.pos[name]`).
+- **Flyouts** (a drawer, a side panel) are part of their window to the
+  dock: one inside the window grows it (the map's quest log); one hung off
+  its right edge (the Stats drawer) is given to `ns.DockFlyout`, so the
+  dock makes room for it while it shows and the window keeps it on screen.
 - **Escape** closes it through `Polestar.CloseOnEscape`, which already skips
   `UISpecialFrames` under the gamepad UI.
 
