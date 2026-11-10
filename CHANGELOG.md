@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.3
+
+- Legacy: Forever's Legacy System window in Polestar's look, opened from its key, the achievements key and the Legacy micro button (shift-click for the game's own). Rewards, Challenges and the Tree on a rail on the left.
+- Reward Track: each reward at the legacy points it needs, the next one marked, with progress toward it.
+- Challenges: categories that fold as the game's do, search, and the game's Completed/Incomplete filters; each challenge's legacy points and the date earned; click for its objectives, shift-click to link it in chat or track it.
+- Legacy Tree: the Professions, Adventure and Progression trees; click to learn a rank, right-click to take one back, then Apply, Undo or Reset.
+- Crafting: an enchant gets an item slot, listing what it can go on (worn items marked); long recipe names take a second line.
+- Known: challenge links in chat still open the game's window.
+
 ## 0.0.2
 
 - Professions: a card per profession with its rank, its spells (click to open, drag to your bars) and the game's card art; unlearn a primary profession from its card.
