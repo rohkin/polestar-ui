@@ -235,6 +235,24 @@ one (`ns.ProfessionTabs` in Professions.lua).
 **Caught by:** the `professions` scene checks the main column is anchored to
 the window.
 
+## 13. A trait node's `canPurchaseRank` ignores its cost
+
+**What happened:** twice (Talents, then the Legacy tree), every open talent
+showed in full colour with no point to spend. The client's
+`canPurchaseRank` says whether a rank could go in, not whether the player
+can pay for it; the stock button also checks the cost against the points on
+hand (`TalentButtonSpendMixin:CanPurchaseRank`).
+
+**Rule:** a talent can take a point now only when `canPurchaseRank`, its
+prerequisites (`meetsEdgeRequirements`) and its cost
+(`C_Traits.GetNodeCost` against `GetTreeCurrencyInfo`'s quantities) all
+allow it. Colour, the click and the tooltip hint all follow that
+(`lit` in Talents.lua, `canTake` in Legacy.lua).
+
+**Caught by:** the stubs' `canPurchaseRank` ignores points as the client's
+does; the `talents-spend` and `legacy-tree` scenes check that with no point
+left an unlearnt talent is greyed and a click spends nothing.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

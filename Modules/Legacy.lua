@@ -575,27 +575,397 @@ end
 
 ---------------------------------------------------------------------------
 
--- The tree is not built yet: it points to the game's window (the Nothing
--- Lost Rule); opened from our code it would taint the micro buttons
--- (docs/CLIENT.md, rule 8).
-local function buildSoon(body, width)
-	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", W.SHELL.pad, 0)
-	v:SetWidth(width)
-	v.Text = W.Text(v, "body", "textDim")
-	v.Text:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -8)
-	v.Text:SetWidth(width)
-	v.Text:SetJustifyH("LEFT")
-	v.Text:SetWordWrap(true)
-	v.Text:SetText("Not in this window yet. Shift-click the Legacy button on your micro menu for the game's own.")
+---------------------------------------------------------------------------
+-- Legacy Tree: three trait trees (LegacyTreeData), one shown at a time, its
+-- points staged until Apply, as the stock page (LegacyTreeTraitPanelMixin).
+
+local TREES = {
+	{ id = LC.LEGACY_TREE_PROFESSIONS_ID or 1187, atlas = "UI-Legacy-Tree-Professions", name = LEGACY_TREE_PROFESSIONS or "Professions" },
+	{ id = LC.LEGACY_TREE_ADVENTURE_ID or 1188, atlas = "UI-Legacy-Tree-Adventure", name = LEGACY_TREE_ADVENTURE or "Adventure" },
+	{ id = LC.LEGACY_TREE_PROGRESSION_ID or 1189, atlas = "UI-Legacy-Tree-Progression", name = LEGACY_TREE_PROGRESSION or "Progression" },
+}
+local NODE, PITCH, TREE_HEAD = 40, 64, 72
+-- The tree shown, its search, and a commit under way (no changes until it ends).
+local tree = { idx = 1, query = "", committing = false }
+local treeNodes, treeLines, treeRows = {}, {}, {}
+
+local function num(v)
+	if v == nil or (issecretvalue and issecretvalue(v)) then return 0 end
 	return v
 end
 
+local function configOf(t) return C_Traits.GetConfigIDByTreeID(t.id) end
+
+-- The tree's points: { quantity (to spend), spent }.
+local function currencyOf(config, t)
+	local c = config and C_Traits.GetTreeCurrencyInfo(config, t.id, false)
+	return c and c[1]
+end
+
+-- One cell of the client's grid: the smallest step between positions,
+-- ignoring the few units the client nudges a node off it (as Talents.lua).
+local function cell(v)
+	table.sort(v)
+	local big, s = 0, nil
+	for i = 2, #v do big = math.max(big, v[i] - v[i - 1]) end
+	for i = 2, #v do
+		local d = v[i] - v[i - 1]
+		if d >= big / 4 and d > 0 and (not s or d < s) then s = d end
+	end
+	return s or 1
+end
+
+-- The tree's shown nodes, each with its column and row on that grid.
+local function readTree(config, t)
+	local list, xs, ys = {}, {}, {}
+	for _, id in ipairs(config and C_Traits.GetTreeNodes(t.id) or {}) do
+		local n = C_Traits.GetNodeInfo(config, id)
+		if n and n.isVisible then
+			list[#list + 1] = n
+			xs[#xs + 1], ys[#ys + 1] = n.posX, n.posY
+		end
+	end
+	local left, top = math.min(math.huge, unpack(xs)), math.min(math.huge, unpack(ys))
+	local sx, sy = cell(xs), cell(ys)
+	for _, n in ipairs(list) do
+		n.col = math.floor((n.posX - left) / sx + 0.5)
+		n.row = math.floor((n.posY - top) / sy + 0.5)
+	end
+	return list
+end
+
+-- The node's entry: the client's override name and icon, else its spell's.
+local function entryOf(config, n)
+	local entryID = n.activeEntry and n.activeEntry.entryID or (n.entryIDs and n.entryIDs[1])
+	local entry = entryID and C_Traits.GetEntryInfo(config, entryID)
+	local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID) or {}
+	local icon = def.overrideIcon or (def.spellID and C_Spell.GetSpellTexture(def.spellID))
+	local name = def.overrideName or (def.spellID and C_Spell.GetSpellName(def.spellID))
+	return icon, name, def.spellID
+end
+
+-- The points on hand, by trait currency, for the tree being painted.
+local treeOnHand = {}
+
+-- Whether a talent can take a point now, as the stock button reckons it
+-- (CanPurchaseRank): the client's canPurchaseRank says nothing of the cost,
+-- so its prerequisites are met and its cost is on hand too (as Talents.lua's lit).
+local function canTake(config, n)
+	if not (n.canPurchaseRank and n.meetsEdgeRequirements) then return false end
+	for _, c in ipairs(C_Traits.GetNodeCost(config, n.ID) or {}) do
+		if (treeOnHand[c.ID] or 0) < num(c.amount) then return false end
+	end
+	return true
+end
+
+-- The stock talent tooltip's lines: name, rank, this and the next rank's text,
+-- an unmet prerequisite; then what a click does now.
+local function nodeTip(b)
+	local n, tip = b.psInfo, GameTooltip
+	tip:SetOwner(b, "ANCHOR_RIGHT")
+	GameTooltip_SetTitle(tip, b.psName or "")
+	GameTooltip_AddHighlightLine(tip, TALENT_BUTTON_TOOLTIP_RANK_FORMAT:format(num(n.currentRank), num(n.maxRanks)))
+	local cur = n.activeEntry or n.nextEntry
+	if cur then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		tip:AppendInfo("GetTraitEntry", cur.entryID, cur.rank)
+	end
+	if n.nextEntry and num(n.ranksPurchased) > 0 then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		GameTooltip_AddHighlightLine(tip, TALENT_BUTTON_TOOLTIP_NEXT_RANK)
+		tip:AppendInfo("GetTraitEntry", n.nextEntry.entryID, n.nextEntry.rank)
+	end
+	if not n.meetsEdgeRequirements then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		GameTooltip_AddErrorLine(tip, GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP)
+	end
+	local hint = {}
+	if not tree.committing then
+		if canTake(b.psConfig, n) then hint[#hint + 1] = "Click to learn a rank." end
+		if n.canRefundRank and num(n.ranksPurchased) > 0 then hint[#hint + 1] = "Right-click to take one back." end
+	end
+	if b.psSpell then hint[#hint + 1] = "Shift-click to link it in chat." end
+	if #hint > 0 then ns.TooltipHint(table.concat(hint, " ")) end
+	tip:Show()
+end
+
+-- Click spends a rank, right-click takes one back (TalentButtonSpendMixin),
+-- staged on the config until Apply; redrawn at once (docs/CLIENT.md, rule 6).
+local function nodeClick(b, button)
+	if b.psSpell and IsModifiedClick("CHATLINK") then
+		ChatFrameUtil.InsertLink(C_Spell.GetSpellLink(b.psSpell))
+		return
+	end
+	local n = b.psInfo
+	if not n or tree.committing then return end
+	local op, sound
+	if button == "RightButton" then
+		if not (n.canRefundRank and num(n.ranksPurchased) > 0) then return end
+		op, sound = C_Traits.RefundRank, SOUNDKIT.UI_CLASS_TALENT_NODE_REFUND
+	else
+		if not canTake(b.psConfig, n) then return end
+		op, sound = C_Traits.PurchaseRank, SOUNDKIT.UI_CLASS_TALENT_NODE_SPEND
+	end
+	if not op(b.psConfig, n.ID) then
+		UIErrorsFrame:AddExternalErrorMessage(GENERIC_TRAIT_FRAME_INTERNAL_ERROR or "That cannot be changed now.")
+		return
+	end
+	PlaySound(sound)
+	refresh()
+	if GameTooltip:GetOwner() == b then nodeTip(b) end
+end
+
+local function newNode(parent)
+	local b = CreateFrame("Button", nil, parent)
+	b:SetSize(NODE, NODE)
+	Theme.Skin(b, "inset")
+	Theme.Border(b, Theme.Wash("border"))
+	b.Icon = ns.GameIcon(b)
+	b.Icon:SetPoint("TOPLEFT", 1, -1)
+	b.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	W.Hover(b)
+	-- Its ranks as the stock button shows them ("0/5"), on a solid chip over
+	-- the bottom-right corner, its hairline in the node's state colour.
+	b.Chip = CreateFrame("Frame", nil, b)
+	b.Chip:SetSize(30, 16)
+	b.Chip:SetPoint("CENTER", b, "BOTTOMRIGHT", -4, 2)
+	b.Chip:SetFrameLevel(b:GetFrameLevel() + 3)
+	local bg = b.Chip:CreateTexture(nil, "BACKGROUND")
+	bg:SetAllPoints()
+	W.Painter(bg, function(t) t:SetColorTexture(Theme.Color("bg")) end)
+	b.Rank = W.Text(b.Chip, "number", "text")
+	b.Rank:SetPoint("CENTER", 0, 0)
+	b:SetScript("OnEnter", nodeTip)
+	b:SetScript("OnLeave", W.HideTooltip)
+	b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	b:SetScript("OnClick", nodeClick)
+	return b
+end
+
+-- A talent's look, as the stock button reckons it: maxed in the accent,
+-- partly learnt in success, one that can take a point now in colour; the
+-- rest greyed, dimmer while a prerequisite is missing. Searching, a talent
+-- that does not match recedes. -> whether it matches.
+local function paintNode(b, config, n)
+	local icon, name, spell = entryOf(config, n)
+	b.psInfo, b.psConfig, b.psName, b.psSpell = n, config, name, spell
+	local rank, max = num(n.currentRank), num(n.maxRanks)
+	local on = rank > 0 or canTake(config, n)
+	b.Icon:SetTexture(icon or 134400)
+	b.Icon:SetDesaturated(not on)
+	b.Icon:SetAlpha(on and 1 or n.meetsEdgeRequirements and 0.75 or 0.4)
+	local q = tree.query
+	local function has(text)
+		return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:lower():find(q, 1, true)
+	end
+	local match = q == "" or has(name) or (spell and has(C_Spell.GetSpellDescription(spell))) or false
+	b:SetAlpha(match and 1 or 0.25)
+	b.Rank:SetText(("%d/%d"):format(rank, max))
+	local state = rank >= max and "accent" or rank > 0 and "success" or nil
+	W.Color(b.Rank, state or "text")
+	if state then
+		local r, g, bl = Theme.Color(state)
+		Theme.Border(b, r, g, bl, 1)
+		Theme.Border(b.Chip, r, g, bl, 1)
+	else
+		Theme.Border(b, Theme.Wash("border"))
+		Theme.Border(b.Chip, Theme.Wash("border"))
+	end
+	return match
+end
+
+local function buildTreePage(body, width)
+	local v = CreateFrame("Frame", nil, body)
+	v:SetPoint("TOPLEFT", body, "TOPLEFT", W.SHELL.pad, 0)
+	v:SetWidth(width)
+	-- The tree's heading: its art in a well, its name, the points in it.
+	v.Well = CreateFrame("Frame", nil, v)
+	v.Well:SetSize(48, 48)
+	v.Well:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -16)
+	Theme.Skin(v.Well, "inset")
+	Theme.Border(v.Well, Theme.Wash("border"))
+	v.Art = v.Well:CreateTexture(nil, "ARTWORK")
+	v.Art:SetPoint("TOPLEFT", 1, -1)
+	v.Art:SetPoint("BOTTOMRIGHT", -1, 1)
+	v.Name = W.Text(v, "heading", "text")
+	v.Name:SetPoint("BOTTOMLEFT", v.Well, "RIGHT", 12, 2)
+	v.Spent = W.Text(v, "small", "textDim")
+	v.Spent:SetPoint("TOPLEFT", v.Well, "RIGHT", 12, -4)
+	v.Grid = CreateFrame("Frame", nil, v)
+	v.Grid:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -(TREE_HEAD + 16))
+	v.Grid:SetSize(1, 1)
+	v.Empty = W.Text(v, "body", "textDim")
+	v.Empty:SetPoint("TOPLEFT", v.Grid, "TOPLEFT", 0, 0)
+	v.Empty:SetText("This tree is not open to you yet.")
+	return v
+end
+
+-- The tree: its heading, then its talents on the client's grid, centred in
+-- the page, with the client's edges between them (2px, the accent once met).
+-- -> height, config, currency, talents matching the search.
+local function paintTreePage(v)
+	local t = TREES[tree.idx]
+	local config = configOf(t)
+	local c = currencyOf(config, t)
+	treeOnHand = {}
+	for _, cur in ipairs(config and C_Traits.GetTreeCurrencyInfo(config, t.id, false) or {}) do
+		treeOnHand[cur.traitCurrencyID] = num(cur.quantity)
+	end
+	v.Art:SetAtlas(t.atlas)
+	v.Name:SetText(t.name)
+	local spent = c and num(c.spent) or 0
+	v.Spent:SetText(spent == 1 and "1 point in this tree" or ("%d points in this tree"):format(spent))
+	local list = readTree(config, t)
+	local cols = 0
+	for _, n in ipairs(list) do cols = math.max(cols, n.col) end
+	local gx = math.max(0, (f.BodyWidth - (NODE + cols * PITCH)) / 2)
+	local at, bottom, found = {}, 0, 0
+	for i, n in ipairs(list) do
+		local b = treeNodes[i] or newNode(v.Grid)
+		treeNodes[i] = b
+		b:ClearAllPoints()
+		b:SetPoint("TOPLEFT", v.Grid, "TOPLEFT", gx + n.col * PITCH, -n.row * PITCH)
+		b:SetFrameLevel(v.Grid:GetFrameLevel() + 2)
+		if paintNode(b, config, n) and tree.query ~= "" then found = found + 1 end
+		b:Show()
+		at[n.ID] = b
+		bottom = math.max(bottom, n.row * PITCH + NODE)
+	end
+	for i = #list + 1, #treeNodes do treeNodes[i]:Hide() end
+	local li = 0
+	for _, n in ipairs(list) do
+		for _, e in ipairs(n.visibleEdges or {}) do
+			local a, b = at[n.ID], at[e.targetNode]
+			if a and b then
+				li = li + 1
+				local l = treeLines[li] or v.Grid:CreateLine(nil, "BORDER")
+				treeLines[li] = l
+				l:SetThickness(2)
+				-- Edge to edge, so the line never crosses an icon: along a row
+				-- from side to side, down a column from bottom to top.
+				local from, to = "CENTER", "CENTER"
+				local p, q = a.psInfo, b.psInfo
+				if p.row == q.row then
+					from, to = p.col < q.col and "RIGHT" or "LEFT", p.col < q.col and "LEFT" or "RIGHT"
+				elseif p.col == q.col then
+					from, to = p.row < q.row and "BOTTOM" or "TOP", p.row < q.row and "TOP" or "BOTTOM"
+				end
+				l:SetStartPoint(from, a)
+				l:SetEndPoint(to, b)
+				if e.isActive then l:SetColorTexture(Theme.Color("accent")) else l:SetColorTexture(Theme.Wash("border")) end
+				l:Show()
+			end
+		end
+	end
+	for i = li + 1, #treeLines do treeLines[i]:Hide() end
+	v.Empty:SetShown(#list == 0)
+	local h = TREE_HEAD + 16 + math.max(bottom, 24)
+	v:SetHeight(h)
+	return h + 24, config, c, found
+end
+
+-- The trees in the sidebar under the search, each with its art and the
+-- points spent in it; the open one marked.
+local TREE_ROW = 44
+local function treeRow(i)
+	if treeRows[i] then return treeRows[i] end
+	local r = CreateFrame("Button", nil, f.NavScroll.Child)
+	r:SetHeight(TREE_ROW)
+	W.Hover(r)
+	r.Sel = r:CreateTexture(nil, "BACKGROUND")
+	r.Sel:SetTexture("Interface/Buttons/WHITE8X8")
+	r.Sel:SetAllPoints(r)
+	W.Painter(r.Sel, function(t) t:SetVertexColor(Theme.Wash("selected")) end)
+	r.Bar = W.Fill(r, "accent", "ARTWORK", 0)
+	r.Bar:ClearAllPoints()
+	r.Bar:SetPoint("TOPLEFT")
+	r.Bar:SetPoint("BOTTOMLEFT")
+	r.Bar:SetWidth(2)
+	r.Art = r:CreateTexture(nil, "ARTWORK")
+	r.Art:SetSize(28, 28)
+	r.Art:SetPoint("LEFT", r, "LEFT", W.SHELL.side, 0)
+	r.Count = W.Text(r, "number", "textMuted")
+	r.Count:SetPoint("RIGHT", r, "RIGHT", -W.SHELL.side, 0)
+	r.Label = W.Text(r, "body", "text")
+	r.Label:SetPoint("LEFT", r.Art, "RIGHT", 12, 0)
+	r.Label:SetJustifyH("LEFT")
+	r:SetScript("OnClick", function(self)
+		tree.idx = self.psIdx
+		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+		refresh()
+	end)
+	treeRows[i] = r
+	return r
+end
+
+local function paintTreeNav()
+	for i, t in ipairs(TREES) do
+		local r = treeRow(i)
+		r.psIdx = i
+		local on = i == tree.idx
+		r:ClearAllPoints()
+		r:SetPoint("TOPLEFT", f.NavScroll.Child, "TOPLEFT", 0, -(i - 1) * TREE_ROW)
+		r:SetPoint("TOPRIGHT", f.NavScroll.Child, "TOPRIGHT", 0, -(i - 1) * TREE_ROW)
+		r.Art:SetAtlas(t.atlas)
+		r.Label:SetText(t.name)
+		W.Color(r.Label, on and "text" or "navRest")
+		local c = currencyOf(configOf(t), t)
+		r.Count:SetText(c and num(c.spent) > 0 and num(c.spent) or "")
+		r.Sel:SetShown(on)
+		r.Bar:SetShown(on)
+		r:Show()
+	end
+	f.NavScroll.Child:SetWidth((f.psSidebar or W.SHELL.sidebar) - 1)
+	W.SetScrollContent(f.NavScroll, #TREES * TREE_ROW, W.ShellNavHeight(f))
+end
+
+-- Apply commits the staged points (C_Traits.CommitConfig, as the stock
+-- Apply): changes wait until TRAIT_CONFIG_UPDATED or CONFIG_COMMIT_FAILED, or
+-- six seconds at most, as the stock frame's backup timer.
+local function treeApply()
+	local config = configOf(TREES[tree.idx])
+	if not (config and C_Traits.ConfigHasStagedChanges(config)) or tree.committing then return end
+	PlaySound(SOUNDKIT.UI_CLASS_TALENT_APPLY_CHANGES)
+	if not C_Traits.CommitConfig(config) then
+		UIErrorsFrame:AddExternalErrorMessage(GENERIC_TRAIT_FRAME_INTERNAL_ERROR or "That cannot be changed now.")
+		return
+	end
+	tree.committing = true
+	C_Timer.After(6, function()
+		if tree.committing then
+			tree.committing = false
+			redraw()
+		end
+	end)
+	refresh()
+end
+
+local function treeUndo()
+	C_Traits.RollbackConfig(configOf(TREES[tree.idx]))
+	refresh()
+end
+
+-- Reset takes every point out of the tree (C_Traits.ResetTree, staged like
+-- the rest until Apply); its button asks for a second click first.
+local function treeReset()
+	local t = TREES[tree.idx]
+	C_Traits.ResetTree(configOf(t), t.id)
+	refresh()
+end
+
 local function build()
-	f = W.Shell(NAME, { rail = true, searchPlaceholder = "Search challenges", onSearch = function(text)
-		chal.query = text or ""
-		-- The client searches every category and answers with ACHIEVEMENT_SEARCH_UPDATED.
-		SetAchievementSearchString(chal.query)
+	-- One search box, for the page shown: the challenges, or the tree's talents.
+	f = W.Shell(NAME, { rail = true, searchPlaceholder = "Search", onSearch = function(text)
+		text = text or ""
+		if section == "tree" then
+			if tree.query == text:lower() then return end
+			tree.query = text:lower()
+		else
+			if chal.query == text then return end
+			chal.query = text
+			-- The client searches every category and answers with ACHIEVEMENT_SEARCH_UPDATED.
+			SetAchievementSearchString(chal.query)
+		end
 		redraw()
 	end })
 	-- The subject block names the window, in place of Polestar's lockup.
@@ -629,14 +999,14 @@ local function build()
 	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", filterMenu, 14)
 	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
 	Theme.Skin(f.psFilter, "editbox")
-	f.psPages = { track = buildTrack(f.Body, f.BodyWidth), challenges = buildChallenges(f.Body, f.BodyWidth), tree = buildSoon(f.Body, f.BodyWidth) }
+	f.psPages = { track = buildTrack(f.Body, f.BodyWidth), challenges = buildChallenges(f.Body, f.BodyWidth), tree = buildTreePage(f.Body, f.BodyWidth) }
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
 	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
 	Polestar.CloseOnEscape(NAME)
 end
 
--- The sidebar (the categories and their search) on Challenges only; the
--- other pages take its width. The main column hangs off the rail's edge
+-- The sidebar (the search, and the categories or the trees) on Challenges
+-- and the tree; the reward track takes its width. The main column hangs off the rail's edge
 -- then, never off the hidden sidebar (docs/CLIENT.md, rule 12).
 local function sidebar(on)
 	f.Sidebar:SetShown(on)
@@ -668,9 +1038,19 @@ end
 function refresh()
 	local pts = points()
 	f.psLine:SetText(("%d Legacy %s"):format(pts, pts == 1 and "Point" or "Points"))
-	local onChallenges = section == "challenges"
+	local onChallenges, onTree = section == "challenges", section == "tree"
 	paintRail()
-	sidebar(onChallenges)
+	sidebar(onChallenges or onTree)
+	-- The search row: the filter on Challenges only; each page keeps its own search.
+	local top = W.SHELL.header - 30
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + (onChallenges and 30 + 6 or 0)), -top)
+	f.psFilter:SetShown(onChallenges)
+	local want = onTree and tree.query or chal.query
+	if (f.Search:GetText() or ""):lower() ~= want:lower() then f.Search:SetText(want) end
+	for _, r in ipairs(heads) do if not onChallenges then r:Hide() end end
+	for _, r in ipairs(cats) do if not onChallenges then r:Hide() end end
+	for _, r in ipairs(treeRows) do r:SetShown(onTree) end
+	local foot = {}
 	local h = 40
 	for key, v in pairs(f.psPages) do v:SetShown(key == section) end
 	if onChallenges then
@@ -710,10 +1090,37 @@ function refresh()
 			W.ShellTitle(f, "Reward Track", ("%d legacy points. Earn more from challenges; each reward unlocks at the points shown."):format(pts))
 			h = paintTrack(f.psPages.track)
 		else
-			W.ShellTitle(f, "Legacy Tree", "Spend legacy points on lasting bonuses.")
+			paintTreeNav()
+			local found, config, c
+			h, config, c, found = paintTreePage(f.psPages.tree)
+			local left = c and num(c.quantity) or 0
+			local staged = config and not tree.committing and C_Traits.ConfigHasStagedChanges(config)
+			local sub
+			if tree.query ~= "" then
+				sub = found == 1 and "1 talent matches." or ("%d talents match."):format(found)
+			elseif tree.committing then
+				sub = "Applying your changes…"
+			else
+				sub = left == 0 and "No legacy points to spend. Earn more from challenges." or left == 1 and "1 legacy point to spend."
+					or ("%d legacy points to spend."):format(left)
+				if staged then sub = sub .. " Your changes are not applied yet." end
+			end
+			W.ShellTitle(f, "Legacy Tree", sub)
+			-- Apply, then Undo while something is staged, else Reset (the stock pair).
+			local any = false
+			for _, b in ipairs(treeNodes) do if b:IsShown() and num(b.psInfo.ranksPurchased) > 0 then any = true end end
+			foot = { { label = "Apply", onClick = treeApply, opts = { primary = true }, on = staged },
+				staged and { label = "Undo", onClick = treeUndo, on = true }
+				or { label = "Reset", onClick = treeReset, opts = { confirm = true }, on = any and not tree.committing } }
 		end
 	end
-	W.ShellFooter(f, {}, {})
+	W.ShellFooter(f, {}, foot)
+	-- Disabled as Polestar disables (faded to 45%), so the layout never moves.
+	for i, d in ipairs(foot) do
+		local b = f.footerButtons.right[i]
+		b:SetEnabled(d.on and true or false)
+		b:SetAlpha(d.on and 1 or 0.45)
+	end
 	W.ShellBody(f, h)
 end
 
@@ -744,9 +1151,17 @@ function M.Enable()
 	Polestar.RegisterEvent("MAJOR_FACTION_RENOWN_LEVEL_CHANGED", redraw)
 	Polestar.RegisterEvent("UPDATE_FACTION", redraw)
 	Polestar.RegisterEvent("PLAYER_ENTERING_WORLD", function() chal.stale = true; redraw() end)
-	for _, e in ipairs({ "ACHIEVEMENT_EARNED", "CRITERIA_UPDATE", "ACHIEVEMENT_SEARCH_UPDATED", "CONTENT_TRACKING_UPDATE" }) do
+	for _, e in ipairs({ "ACHIEVEMENT_EARNED", "CRITERIA_UPDATE", "ACHIEVEMENT_SEARCH_UPDATED", "CONTENT_TRACKING_UPDATE",
+		"TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED" }) do
 		Polestar.RegisterEvent(e, redraw)
 	end
+	-- A commit ends (applied or refused): the tree is open to changes again.
+	local function committed()
+		tree.committing = false
+		redraw()
+	end
+	Polestar.RegisterEvent("TRAIT_CONFIG_UPDATED", committed)
+	Polestar.RegisterEvent("CONFIG_COMMIT_FAILED", committed)
 end
 
 ns.Module("legacy", M)

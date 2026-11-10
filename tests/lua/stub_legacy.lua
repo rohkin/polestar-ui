@@ -114,3 +114,105 @@ function stub.bindingRun.TOGGLELEGACYSYSTEM() LegacySystemFrame:Show() end
 function stub.bindingRun.TOGGLEACHIEVEMENT() LegacySystemFrame:Show() end
 LegacyMicroButton = CreateFrame("Button", "LegacyMicroButton", UIParent)
 LegacyMicroButton.tooltipText = "Legacy (Shift-Y)"
+
+-- The legacy trees, laid out as the game's Professions and Adventure trees:
+-- { node, column, row, max ranks, name, edge to } on a grid in the client's
+-- units, a few off it as the client's are. Adventure has 3 of 5 in its first
+-- talent; 2 legacy points are left to spend (one currency for all trees).
+local TREE_NODES = {
+	[1187] = {
+		{ 1, 1, 0, 5, "Deft Hands" }, { 2, 0, 1, 5, "Gatherer's Eye" }, { 3, 1, 1, 2, "Spare Parts", 4 }, { 4, 2, 1, 1, "Master's Cache" },
+		{ 5, 0, 2, 5, "Quick Study", 6 }, { 6, 1, 2, 3, "Steady Work" }, { 7, 2, 2, 1, "Hidden One", 8 }, { 8, 3, 2, 1, "Hidden Two" }, { 9, 1, 3, 2, "Packhorse" },
+	},
+	[1188] = {
+		{ 21, 1, 0, 2, "Trailblazer" }, { 22, 0, 1, 5, "Hardy", 23 }, { 23, 1, 1, 5, "Seasoned" }, { 24, 2, 1, 1, "Hidden Path", 25 }, { 25, 3, 1, 1, "Hidden Road" },
+		{ 26, 0, 2, 5, "Swift Traveller" }, { 27, 1, 2, 3, "Keen Senses", 28 }, { 28, 2, 2, 1, "Last Stand" }, { 29, 1, 3, 2, "Second Wind" },
+	},
+	[1189] = {},
+}
+-- stub.treePoints: the legacy points earned for the trees (5).
+local function TREE_POINTS() return stub.treePoints or 5 end
+local nodeTree, nodeDef = {}, {}
+for tree, list in pairs(TREE_NODES) do for _, n in ipairs(list) do nodeTree[n[1]], nodeDef[n[1]] = tree, n end end
+stub.legacyRanks = { [26] = 3 }
+stub.legacyStaged = { [26] = 3 }
+local function staged(id) return stub.legacyStaged[id] or 0 end
+local function spentIn(tree)
+	local s = 0
+	for id, r in pairs(stub.legacyStaged) do if not tree or nodeTree[id] == tree then s = s + r end end
+	return s
+end
+
+function C_Traits.GetConfigIDByTreeID(tree) return 7 end
+function C_Traits.GetTreeCurrencyInfo(config, tree)
+	return { { traitCurrencyID = 4225, quantity = TREE_POINTS() - spentIn(), spent = spentIn(tree), maxQuantity = 65 } }
+end
+function C_Traits.GetTreeNodes(tree)
+	local ids = {}
+	for _, n in ipairs(TREE_NODES[tree] or {}) do ids[#ids + 1] = n[1] end
+	return ids
+end
+local function meets(id)
+	for src, n in pairs(nodeDef) do if n[6] == id and staged(src) == 0 then return false end end
+	return true
+end
+function C_Traits.GetNodeInfo(config, id)
+	local n = nodeDef[id]
+	local cur, learnt = staged(id), stub.legacyRanks[id] or 0
+	local edges = n[6] and { { targetNode = n[6], isActive = cur > 0 } } or {}
+	return { ID = id, posX = n[2] * 1800 + id % 3 * 7, posY = n[3] * 1500 - id % 4 * 9, isVisible = true, entryIDs = { 100 + id },
+		currentRank = cur, ranksPurchased = cur, maxRanks = n[4], meetsEdgeRequirements = meets(id), visibleEdges = edges,
+		-- As the client's: whether a rank can go in, its cost aside (GetNodeCost).
+		canPurchaseRank = cur < n[4], canRefundRank = cur > learnt,
+		activeEntry = cur > 0 and { entryID = 100 + id, rank = cur } or nil, nextEntry = cur < n[4] and { entryID = 100 + id, rank = cur + 1 } or nil }
+end
+function C_Traits.GetEntryInfo(config, entry) return { definitionID = entry } end
+function C_Traits.GetDefinitionInfo(def) return { overrideName = nodeDef[def - 100][5], overrideIcon = 1 } end
+function C_Traits.GetNodeCost(config, id) return { { ID = 4225, amount = 1 } } end
+function C_Traits.PurchaseRank(config, id)
+	local n = C_Traits.GetNodeInfo(config, id)
+	if not (n.canPurchaseRank and n.meetsEdgeRequirements and TREE_POINTS() - spentIn() > 0) then return false end
+	stub.legacyStaged[id] = staged(id) + 1
+	return true
+end
+function C_Traits.RefundRank(config, id)
+	if not C_Traits.GetNodeInfo(config, id).canRefundRank then return false end
+	stub.legacyStaged[id] = staged(id) - 1
+	return true
+end
+function C_Traits.ConfigHasStagedChanges(config)
+	for id in pairs(nodeDef) do if staged(id) ~= (stub.legacyRanks[id] or 0) then return true end end
+	return false
+end
+function C_Traits.RollbackConfig(config)
+	stub.legacyStaged = {}
+	for k, v in pairs(stub.legacyRanks) do stub.legacyStaged[k] = v end
+	return true
+end
+function C_Traits.ResetTree(config, tree)
+	for id in pairs(stub.legacyStaged) do if nodeTree[id] == tree then stub.legacyStaged[id] = 0 end end
+end
+-- The commit: applied when the client says so (TRAIT_CONFIG_UPDATED).
+function C_Traits.CommitConfig(config)
+	stub.legacyCommitting = true
+	return true
+end
+function stub.finishLegacyCommit()
+	stub.legacyRanks = {}
+	for k, v in pairs(stub.legacyStaged) do stub.legacyRanks[k] = v end
+	stub.legacyCommitting = nil
+	stub.fire("TRAIT_CONFIG_UPDATED", 7)
+end
+
+C_Spell = C_Spell or {}
+C_Spell.GetSpellTexture = C_Spell.GetSpellTexture or function() return 134400 end
+C_Spell.GetSpellName = C_Spell.GetSpellName or function() return nil end
+C_Spell.GetSpellDescription = C_Spell.GetSpellDescription or function() return "" end
+function GameTooltip:AppendInfo(kind, entry, rank) self:AddLine(("[%s %d rank %d]"):format(kind, entry, rank)) end
+GameTooltip_SetTitle = GameTooltip_SetTitle or function(tip, text) tip:SetText(text) end
+GameTooltip_AddBlankLineToTooltip = GameTooltip_AddBlankLineToTooltip or function(tip) tip:AddLine(" ") end
+GameTooltip_AddHighlightLine = GameTooltip_AddHighlightLine or function(tip, text) tip:AddLine(text) end
+GameTooltip_AddErrorLine = GameTooltip_AddErrorLine or function(tip, text) tip:AddLine(text) end
+TALENT_BUTTON_TOOLTIP_RANK_FORMAT, TALENT_BUTTON_TOOLTIP_NEXT_RANK = "Rank %s/%s", "Next Rank:"
+GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP = "Requires the talents before it."
+function UIErrorsFrame:AddExternalErrorMessage(msg) stub.uiError = msg end

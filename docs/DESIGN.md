@@ -482,8 +482,18 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   its legacy points (`GetTraitCurrencyForAchievement`) and the date earned. A
   click unfolds its objectives in two columns (a counted one as a skill bar);
   shift-click links it in chat, or tracks it with no chat box open.
-- **Legacy Tree:** not built yet; it says to shift-click the micro button for
-  the game's window (the Nothing Lost Rule).
+- **Legacy Tree:** three `C_Traits` trees (Professions, Adventure,
+  Progression; `C_Traits.GetConfigIDByTreeID`), one shown at a time. The
+  sidebar holds the search (the tree's talents: a talent that does not match
+  recedes) and the trees, each with its art and the points spent in it. The
+  page: the tree's heading (art, name, points in it), then its talents on the
+  client's grid (read off its positions, as Talents) centred in the page, each
+  with its ranks as the stock button shows them ("0/5") on a chip, and the
+  client's edges edge to edge, in the accent once met. Click spends a rank,
+  right-click takes one back, staged until Apply (`C_Traits.CommitConfig`,
+  changes held until `TRAIT_CONFIG_UPDATED` or `CONFIG_COMMIT_FAILED`). Footer:
+  Apply, then Undo while something is staged, else Reset (`C_Traits.ResetTree`,
+  on a second click). The subtitle says the points left to spend.
 
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
