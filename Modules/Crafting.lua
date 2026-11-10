@@ -587,6 +587,7 @@ local function build()
 		query = (text or ""):lower()
 		if f and f:IsShown() then refresh() end
 	end })
+	ns.Dock(f)
 	-- The subject block names the profession, in place of Polestar's lockup:
 	-- its name with the rank at the right end of its skill bar.
 	local holder = CreateFrame("Frame", nil, f)

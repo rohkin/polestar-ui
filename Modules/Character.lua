@@ -536,6 +536,7 @@ local refresh, statsShown -- below
 
 local function build()
 	f = W.Shell(NAME, {})
+	ns.Dock(f)
 	-- The subject block names the window, in place of Polestar's lockup.
 	-- Reparented, not hidden: the shell re-shows its version line on every show.
 	local holder = CreateFrame("Frame", nil, f)

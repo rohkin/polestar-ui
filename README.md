@@ -29,6 +29,7 @@ Download `Polestar_UI-<version>.zip` from [Releases](https://github.com/rohkin/p
 
 - `/pui` lists the modules; `/pui character` opens the Character window.
 - `/pui <module> off` (then `/reload`) gives the game's own window back.
+- The windows dock from the top left as the game's own do; `/pui dock off` lets you drag them anywhere.
 - With Forever's gamepad UI on, every module starts off and `/pui` is not registered.
 
 ## Development

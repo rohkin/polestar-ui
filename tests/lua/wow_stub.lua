@@ -889,6 +889,14 @@ end
 SlashCmdList = {}
 hash_SlashCmdList = {}
 UISpecialFrames = {}
+-- The panel manager as addon code sees it: its layout constants, the room it
+-- leaves (GetMaxUIPanelsWidth), and its show broadcasts.
+local panelLayout = { TOP_OFFSET = -116, LEFT_OFFSET = 16, PANEl_SPACING_X = 32 }
+function GetUIPanelLayoutAttribute(name) return panelLayout[name] end
+function GetMaxUIPanelsWidth() return UIParent:GetRight() - 80 end
+EventRegistry = { callbacks = {} }
+function EventRegistry:RegisterCallback(event, fn) self.callbacks[event] = self.callbacks[event] or {}; table.insert(self.callbacks[event], fn) end
+function EventRegistry:TriggerEvent(event, ...) for _, fn in ipairs(self.callbacks[event] or {}) do fn(self, ...) end end
 StaticPopupDialogs = {}
 function StaticPopup_Show(which, ...) table.insert(stub.popups, { which = which, args = { ... } }) end
 function StaticPopup_Hide() end

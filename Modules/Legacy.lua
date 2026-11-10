@@ -968,6 +968,7 @@ local function build()
 		end
 		redraw()
 	end })
+	ns.Dock(f)
 	-- The subject block names the window, in place of Polestar's lockup.
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()

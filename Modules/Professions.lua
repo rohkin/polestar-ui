@@ -178,7 +178,9 @@ function ns.LinkPlace(win)
 		end)
 	end
 	linked[#linked + 1] = win
+	win.psDockGroup = linked -- docked, they swap in one slot (ns.Dock)
 	win:HookScript("OnShow", function(self)
+		if ns.Docked() then return end -- the dock places it
 		local p = PolestarUIDB.pos.professions
 		for _, o in ipairs(linked) do
 			if o ~= self and o:IsShown() and o:GetLeft() then p = { o:GetLeft(), o:GetTop() } end
@@ -291,6 +293,7 @@ local function build()
 	-- No sidebar: one page, nothing to navigate; the band names the window.
 	-- The section rail holds the professions; Polestar's emblem stays off it.
 	f = W.Shell(NAME, { width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
+	ns.Dock(f)
 	f.Sidebar:Hide()
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()

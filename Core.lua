@@ -203,6 +203,102 @@ function ns.Doors(name, actions, micro, onMicro)
 	end)
 end
 
+-- Docking, the default (PolestarUIDB.free turns it off): our windows lay out
+-- as the stock panel manager lays out pushable "left" panels
+-- (UpdateUIPanelPositions in UIParentPanelManager.lua): from the top left, in
+-- the order they opened, 32 apart, right of any stock panel open, and not
+-- draggable. When they do not fit (GetMaxUIPanelsWidth), the oldest closes,
+-- unless it is the one just opened. We cannot place the stock panels (their
+-- manager is forbidden to us, docs/CLIENT.md rule 1), so ours give way to
+-- them. A stock "center" panel closes ours itself: they are UISpecialFrames.
+local dock, stock, hooked, newest, listening, swap = {}, {}, {}, nil, false, nil
+function ns.Docked() return not PolestarUIDB.free end
+
+local function layout()
+	if not ns.Docked() then return end
+	local L, ui = GetUIPanelLayoutAttribute, UIParent:GetEffectiveScale()
+	local gap, x = L("PANEl_SPACING_X"), L("LEFT_OFFSET")
+	for fr in pairs(stock) do
+		if fr:IsShown() and fr:GetRight() then
+			x = math.max(x, fr:GetRight() * fr:GetEffectiveScale() / ui + gap)
+		else
+			stock[fr] = nil
+		end
+	end
+	local right = x
+	for i, f in ipairs(dock) do
+		right = right + f:GetWidth() * f:GetScale() + (i > 1 and gap or 0)
+	end
+	if right > GetMaxUIPanelsWidth() and dock[1] and dock[1] ~= newest then
+		dock[1]:Hide() -- its OnHide lays the rest out
+		return
+	end
+	for _, f in ipairs(dock) do
+		local s = f:GetScale()
+		local h = f:GetHeight() * s
+		-- The stock clamp (ClampUIPanelY): bottom no lower than 140, top at least 10 down.
+		local y = L("TOP_OFFSET")
+		local bottom = UIParent:GetTop() + y - h
+		if bottom < 140 then y = y + 140 - bottom end
+		y = math.min(y, -10)
+		f:ClearAllPoints()
+		f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x / s, y / s)
+		x = x + f:GetWidth() * s + gap
+	end
+end
+
+local function undock(f)
+	for i = #dock, 1, -1 do if dock[i] == f then table.remove(dock, i) end end
+end
+
+function ns.SetDocked(on)
+	PolestarUIDB.free = not on or nil
+	layout()
+end
+
+function ns.Dock(f)
+	local startMoving = f.StartMoving
+	-- The shell's drag handles call f:StartMoving(); docked, the dock places it.
+	f.StartMoving = function(self) if not ns.Docked() then startMoving(self) end end
+	-- Windows sharing one place (psDockGroup, ns.LinkPlace) swap in place: one
+	-- shown as its partner hides, the same moment, takes the partner's slot.
+	f:HookScript("OnShow", function(self)
+		undock(self)
+		local g, at = self.psDockGroup, #dock + 1
+		if g then
+			for i, o in ipairs(dock) do if o.psDockGroup == g then at = i end end
+			if swap and swap.group == g and swap.time == GetTime() then at = math.min(at, swap.at) end
+		end
+		table.insert(dock, at, self)
+		newest = self
+		layout()
+	end)
+	f:HookScript("OnHide", function(self)
+		for i, o in ipairs(dock) do
+			if o == self and self.psDockGroup then swap = { group = self.psDockGroup, at = i, time = GetTime() } end
+		end
+		undock(self)
+		layout()
+	end)
+	f:HookScript("OnSizeChanged", function(self) if self:IsShown() then layout() end end)
+	if listening then return end
+	listening = true
+	-- Next frame: a stock window we replace is shown and hidden again at once
+	-- (ToggleCharacter), and must not push ours aside.
+	EventRegistry:RegisterCallback("UIParentPanelManager.ShowUIPanel", function(_, fr)
+		C_Timer.After(0, function()
+			if not (fr and fr:IsShown()) then return end
+			stock[fr], newest = true, fr
+			if not hooked[fr] then
+				hooked[fr] = true
+				-- A stock panel hidden by Hide() sends no HideUIPanel event.
+				fr:HookScript("OnHide", layout)
+			end
+			layout()
+		end)
+	end)
+end
+
 local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
 
 -- /pui <module> opens it; /pui <module> on|off takes effect after /reload.
@@ -210,8 +306,11 @@ if not Polestar.GamepadUI() then
 	SLASH_POLESTARUI1 = "/pui"
 	SlashCmdList.POLESTARUI = function(msg)
 		local key, state = (msg or ""):lower():match("^(%S*)%s*(%S*)")
-		if not ns.modules[key] then
-			say("modules: " .. table.concat(ns.order, ", ") .. " (/pui <module> [on|off])")
+		if key == "dock" then
+			if state == "on" or state == "off" then ns.SetDocked(state == "on") end
+			say("windows " .. (ns.Docked() and "dock as the game's do" or "move freely") .. " (/pui dock on|off)")
+		elseif not ns.modules[key] then
+			say("modules: " .. table.concat(ns.order, ", ") .. " (/pui <module> [on|off], /pui dock on|off)")
 		elseif state == "on" or state == "off" then
 			PolestarUIDB.modules[key] = state == "on"
 			say(key .. " " .. state .. ": /reload to apply.")
