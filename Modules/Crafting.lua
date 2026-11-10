@@ -532,7 +532,7 @@ function refresh()
 	local info = sel and byID[sel]
 	local linked, who = C_TradeSkillUI.IsTradeSkillLinked()
 	if info then
-		W.ShellTitle(f, info.name, linked and who and ("%s's recipe: you cannot craft it."):format(who) or info.psCategory)
+		W.ShellTitle(f, p.professionName, linked and who and ("%s's recipe: you cannot craft it."):format(who) or info.psCategory)
 		W.ShellBody(f, paintPage(info))
 	else
 		hidePage()
