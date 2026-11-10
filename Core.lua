@@ -226,15 +226,18 @@ local function layout()
 			stock[fr] = nil
 		end
 	end
+	-- A window filling the screen (the map's full screen) is out of the dock.
+	local docked = {}
+	for _, f in ipairs(dock) do if not f.psFull then docked[#docked + 1] = f end end
 	local right = x
-	for i, f in ipairs(dock) do
+	for i, f in ipairs(docked) do
 		right = right + f:GetWidth() * f:GetScale() + (i > 1 and gap or 0)
 	end
-	if right > GetMaxUIPanelsWidth() and dock[1] and dock[1] ~= newest then
-		dock[1]:Hide() -- its OnHide lays the rest out
+	if right > GetMaxUIPanelsWidth() and docked[1] and docked[1] ~= newest then
+		docked[1]:Hide() -- its OnHide lays the rest out
 		return
 	end
-	for _, f in ipairs(dock) do
+	for _, f in ipairs(docked) do
 		local s = f:GetScale()
 		local h = f:GetHeight() * s
 		-- The stock clamp (ClampUIPanelY): bottom no lower than 140, top at least 10 down.
@@ -252,6 +255,8 @@ local function undock(f)
 	for i = #dock, 1, -1 do if dock[i] == f then table.remove(dock, i) end end
 end
 
+ns.Relayout = layout
+
 function ns.SetDocked(on)
 	PolestarUIDB.free = not on or nil
 	layout()
@@ -260,7 +265,7 @@ end
 function ns.Dock(f)
 	local startMoving = f.StartMoving
 	-- The shell's drag handles call f:StartMoving(); docked, the dock places it.
-	f.StartMoving = function(self) if not ns.Docked() then startMoving(self) end end
+	f.StartMoving = function(self) if not ns.Docked() and not self.psFull then startMoving(self) end end
 	-- Windows sharing one place (psDockGroup, ns.LinkPlace) swap in place: one
 	-- shown as its partner hides, the same moment, takes the partner's slot.
 	f:HookScript("OnShow", function(self)

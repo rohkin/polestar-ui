@@ -1,0 +1,16 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- The game's own map canvas, as the zone map (BattlefieldMapFrame) builds
+	     it: MapCanvasMixin's OnLoad needs the scroll container already there,
+	     which a template made in Lua cannot give it. -->
+	<Frame name="PolestarUIMapCanvasTemplate" inherits="MapCanvasFrameTemplate" virtual="true">
+		<Frames>
+			<ScrollFrame parentKey="ScrollContainer" inherits="MapCanvasFrameScrollContainerTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT"/>
+					<Anchor point="BOTTOMRIGHT"/>
+				</Anchors>
+			</ScrollFrame>
+		</Frames>
+	</Frame>
+	<Script file="WorldMap.lua"/>
+</Ui>

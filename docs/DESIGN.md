@@ -495,9 +495,35 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   Apply, then Undo while something is staged, else Reset (`C_Traits.ResetTree`,
   on a second click). The subtitle says the points left to spend.
 
+#### World Map and Quest Log (`WorldMapFrame`, `QuestMapFrame`) — Risk: medium
+Forever loads the mainline map: the quest log is a panel inside
+`WorldMapFrame`, and other addons (Polestar's own map features, Mob Markers,
+OpenMap) draw on that frame's canvas by its global name. Pointing the global
+at ours would taint every Blizzard reader of it (`UpdateMicroButtons`, the
+action bars' spell flyout), so the stock map is never touched: it stays the
+map those addons draw on, and its hide runs `UpdateMicroButtons` (CLIENT.md,
+rule 8). Ours is a second map, built as the game builds its zone map
+(`BattlefieldMapFrame`): the game's `MapCanvasFrameTemplate` with the stock
+map's data providers and pin layers, so its art, fog, pins, player arrow,
+zoom and click-to-open are the game's.
+- **Shell:** the sidebar's width plus a canvas of 852×568 (the map art's
+  shape) under the band; no tabs, no footer. Subject block: the map icon,
+  "World Map", the player's zone.
+- **Sidebar:** "Where you are", then the maps above the shown one (to go
+  back out), then its zones (continents and zones only, by name).
+- **Header:** the shown map's name; the subtitle says how to move around it.
+  A full-screen toggle at the band's bottom right, as the stock maximise
+  (remembered; out of the dock while full).
+- **Zoom:** the canvas takes its zoom steps from the map art; where the art
+  gives one (Forever's), ours adds 1.5×, 2.25× and 3×. Drag pans once zoomed.
+- **Doors:** `TOGGLEWORLDMAP` opens ours (`ns.Doors`). The quest log key,
+  the micro button, map links and the quest tracker stay the game's until
+  the quest log is built; then `TOGGLEQUESTLOG` and `QuestLogMicroButton`
+  (shift-click: the stock map) open ours too.
+
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
-Quest log (medium), Social (low), Merchant (medium), Bank (medium), Mail (low),
+Social (low), Merchant (medium), Bank (medium), Mail (low),
 Auction (medium), Trainer (low), Gossip and Quest dialog (medium), Loot (high:
 `LootSlot`), Game menu (high: protected logout/exit), StaticPopup (high: never
 replaced, only restyled windows of our own call `W.Modal`).
