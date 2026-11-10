@@ -9,6 +9,7 @@ Still early: more windows are on the way. Done so far:
 - **Talents**: the three trees on the class's art, search, and points staged until you Apply.
 - **Professions**: a card per profession with its rank, spells and the game's card art.
 - **Crafting**: recipes by category with "Can make now" and "Recent", search and the game's filters, reagents, and Craft or Craft all; switch professions from the rail.
+- **Legacy**: the reward track, the challenges by category with search, filters and objectives, and the legacy tree with points staged until you Apply.
 
 ![Character window](screenshots/character.png)
 
