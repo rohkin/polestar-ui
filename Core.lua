@@ -60,7 +60,8 @@ end
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the
--- mouse leaves, the target moves (a scroll) or hides, or combat starts.
+-- mouse leaves, the target moves (a scroll, the dock sliding its window) or
+-- hides, or combat starts.
 -- A drag keeps it shown, and a press keeps it on the pressed target, until
 -- release (rule 9). `o`:
 --   enter(t), pickup(t): the target's hover and drag;
@@ -104,14 +105,14 @@ function ns.Overlay(name, o)
 			over:SetScript("OnUpdate", function(self)
 				local t = self.psTarget
 				if InCombatLockdown() then return end
-				if not t:IsVisible() or t:GetTop() ~= self.psTop or (o.stale and o.stale(t)) then self:Hide() end
+				if not t:IsVisible() or t:GetTop() ~= self.psTop or t:GetLeft() ~= self.psLeft or (o.stale and o.stale(t)) then self:Hide() end
 			end)
 			Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() over:Hide() end)
 			if o.setup then o.setup(over) end
 		end
 		if over.psPressed then return end
 		if over.psTarget and over.psTarget ~= t then over.psTarget:UnlockHighlight() end
-		over.psTarget, over.psTop = t, t:GetTop()
+		over.psTarget, over.psTop, over.psLeft = t, t:GetTop(), t:GetLeft()
 		local k = t:GetEffectiveScale() / UIParent:GetEffectiveScale()
 		over:ClearAllPoints()
 		over:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", t:GetLeft() * k, t:GetTop() * k)
