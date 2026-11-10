@@ -2,7 +2,8 @@
 -- the right of our World Map, listing the log as the stock panel
 -- (QuestMapFrame's QuestLogQuests_Update) lists it: foldable headers, each
 -- quest with its level, its title in its difficulty colour and what is left
--- of it. ns.QuestLog(window, canvas, width) -> the panel; panel.Paint().
+-- of it; a click opens its details in the list's place.
+-- ns.QuestLog(window, canvas, width) -> the panel; panel.Paint().
 
 local ADDON, ns = ...
 local W, Theme = Polestar.Widgets, Polestar.Theme
@@ -77,12 +78,13 @@ function ns.QuestLog(win, canvas, width)
 	local function questTip(r)
 		GameTooltip:SetOwner(r, "ANCHOR_LEFT")
 		GameTooltip:SetText(r.psTitle, 1, 1, 1, 1, true)
-		ns.TooltipHint("Click to show it on the map. Shift-click to " .. (QuestUtils_IsQuestWatched(r.psQuest) and "stop tracking it." or "track it."))
+		ns.TooltipHint("Click to open it and show it on the map. Shift-click to " .. (QuestUtils_IsQuestWatched(r.psQuest) and "stop tracking it." or "track it."))
 		GameTooltip:Show()
 	end
 
 	-- As the stock title button: a link into an open chat box, shift-click
-	-- tracks; a click shows the quest's map with its area in focus.
+	-- tracks; a click opens its details and shows the quest's map with its
+	-- area in focus.
 	local function questClick(r)
 		local id = r.psQuest
 		if ChatFrameUtil.TryInsertQuestLinkForQuestID(id) then return end
@@ -95,6 +97,7 @@ function ns.QuestLog(win, canvas, width)
 			local mapID = GetQuestUiMapID(id)
 			if mapID and mapID ~= 0 then canvas:SetMapID(mapID) end
 			canvas:TriggerEvent("SetFocusedQuestID", id)
+			return p.Open(id)
 		end
 		p.Paint()
 		if GameTooltip:GetOwner() == r then questTip(r) end
@@ -156,13 +159,18 @@ function ns.QuestLog(win, canvas, width)
 		return table.concat(t, "\n")
 	end
 
-	local function paintQuest(r, info)
-		r.psQuest, r.psTitle = info.questID, info.title
-		r.Name:SetText(("[%d] %s"):format(info.level or 0, info.title or ""))
+	-- "[level] title" in its difficulty colour, lifted to read.
+	local function questName(fs, info)
+		fs:SetText(("[%d] %s"):format(info.level or 0, info.title or ""))
 		local diff = C_PlayerInfo.GetContentDifficultyQuestForPlayer and C_PlayerInfo.GetContentDifficultyQuestForPlayer(info.questID)
 		local c = diff and GetDifficultyColor(diff)
-		W.Uncolor(r.Name)
-		if c then r.Name:SetTextColor(Theme.Legible(c.r, c.g, c.b)) else W.Color(r.Name, "text") end
+		W.Uncolor(fs)
+		if c then fs:SetTextColor(Theme.Legible(c.r, c.g, c.b)) else W.Color(fs, "text") end
+	end
+
+	local function paintQuest(r, info)
+		r.psQuest, r.psTitle = info.questID, info.title
+		questName(r.Name, info)
 		local done, watched = C_QuestLog.IsComplete(info.questID), QuestUtils_IsQuestWatched(info.questID)
 		r.Mark:SetShown(done or watched)
 		r.Mark:SetTexture(Theme.Media(done and "check" or "star"))
@@ -185,8 +193,14 @@ function ns.QuestLog(win, canvas, width)
 		return query == "" or (info.title or ""):lower():find(query, 1, true) or goals(info):lower():find(query, 1, true)
 	end
 
+	local detail, paintDetails -- the quest whose details show, if any
 	function p.Paint()
 		if not p:IsVisible() then return end
+		if detail then
+			-- Turned in or abandoned: back to the list.
+			if C_QuestLog.GetLogIndexForQuestID(detail) then return paintDetails(detail) end
+			return p.Close()
+		end
 		local groups, cur = {}, nil
 		for i = 1, C_QuestLog.GetNumQuestLogEntries() do
 			local info = C_QuestLog.GetInfo(i)
@@ -236,6 +250,320 @@ function ns.QuestLog(win, canvas, width)
 		p.Empty:SetShown(hi == 0 and ri == 0)
 		p.Scroll.Child:SetWidth(width - 1)
 		W.SetScrollContent(p.Scroll, y + 8, p:GetHeight() - TOP - 1)
+	end
+
+	-- The details (QuestMapFrame_ShowQuestDetails and QuestInfo's map
+	-- templates), in the list's place: back returns to the list as it was.
+	local TILE, FOOT, X = 32, W.SHELL.footer, W.SHELL.side
+	local d = CreateFrame("Frame", nil, p)
+	d:SetAllPoints(p)
+	d:Hide()
+	p.Details = d
+	d.Back = CreateFrame("Button", nil, d)
+	d.Back:SetPoint("TOPLEFT", d, "TOPLEFT", 1, 0)
+	d.Back:SetPoint("TOPRIGHT", d, "TOPRIGHT", 0, 0)
+	d.Back:SetHeight(HEAD)
+	W.Hover(d.Back)
+	local chev = W.Tex(d.Back, "ARTWORK", "chevron-left", "textDim")
+	chev:SetSize(12, 12)
+	chev:SetPoint("LEFT", d.Back, "LEFT", X - 1, 0)
+	d.Back.Label = W.Text(d.Back, "label", "textDim")
+	d.Back.Label:SetPoint("LEFT", chev, "RIGHT", 8, 0)
+	d.Back.Label:SetText("All quests")
+	d.Back:SetScript("OnClick", function() p.Close() end)
+	local dline = W.Divider(d)
+	dline:SetPoint("TOPLEFT", d, "TOPLEFT", 1, -HEAD)
+	dline:SetPoint("TOPRIGHT", d, "TOPRIGHT", 0, -HEAD)
+	d.Foot = CreateFrame("Frame", nil, d)
+	d.Foot:SetPoint("BOTTOMLEFT", d, "BOTTOMLEFT", 1, 0)
+	d.Foot:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", 0, 0)
+	d.Foot:SetHeight(FOOT)
+	W.Fill(d.Foot, "footer")
+	local fline = W.Divider(d.Foot)
+	fline:SetPoint("TOPLEFT", d.Foot, "TOPLEFT", 0, 0)
+	fline:SetPoint("TOPRIGHT", d.Foot, "TOPRIGHT", 0, 0)
+	d.Scroll = W.Scroll(d)
+	d.Scroll:SetPoint("TOPLEFT", d, "TOPLEFT", 1, -(HEAD + 1))
+	d.Scroll:SetPoint("BOTTOMRIGHT", d.Foot, "TOPRIGHT", 0, 0)
+	local child = d.Scroll.Child
+	d.Title = W.Text(child, "heading", "text")
+	d.Title:SetPoint("TOPLEFT", child, "TOPLEFT", X, -16)
+	d.Title:SetWidth(textW)
+	d.Title:SetWordWrap(true)
+
+	-- Pooled pieces, laid out top down from y; what a paint does not use hides.
+	local texts, used, checks, tiles, y, nCheck, nTile = {}, {}, {}, {}, 0, 0, 0
+	local function text(role, color, s, gap, indent)
+		used[role] = (used[role] or 0) + 1
+		texts[role] = texts[role] or {}
+		local t = texts[role][used[role]]
+		if not t then
+			t = W.Text(child, role, "text")
+			t:SetWordWrap(true)
+			t:SetSpacing(2)
+			texts[role][used[role]] = t
+		end
+		W.Color(t, color)
+		t:ClearAllPoints()
+		t:SetPoint("TOPLEFT", child, "TOPLEFT", X + (indent or 0), -(y + gap))
+		t:SetWidth(textW - (indent or 0))
+		t:SetText(s)
+		t:Show()
+		y = y + gap + math.ceil(t:GetStringHeight())
+		return t
+	end
+	-- A fact: its name, and its value at the right of the same line.
+	local function pair(label, value, color)
+		local l = text("body", "textDim", label, 8)
+		local v = text("number", color or "text", value, 0)
+		v:ClearAllPoints()
+		v:SetPoint("TOPRIGHT", l, "TOPRIGHT", 0, 0)
+		v:SetJustifyH("RIGHT")
+		y = y - math.ceil(v:GetStringHeight())
+	end
+	local function check(t)
+		nCheck = nCheck + 1
+		local c = checks[nCheck] or W.Tex(child, "ARTWORK", "check", "success")
+		checks[nCheck] = c
+		c:SetSize(12, 12)
+		c:ClearAllPoints()
+		c:SetPoint("TOPRIGHT", t, "TOPLEFT", -6, -1)
+		c:Show()
+	end
+
+	-- A reward (docs/DESIGN.md, "Reagent Tile", the flyout's full width): the
+	-- game's tooltip, as the stock reward button's, and its modified click.
+	local function tileTip(t)
+		if not t.psKind then return end
+		C_QuestLog.SetSelectedQuest(detail) -- the tooltip reads the selected quest
+		GameTooltip:SetOwner(t, "ANCHOR_RIGHT")
+		if t.psKind == "item" then
+			GameTooltip:SetQuestLogItem(t.psType, t.psIndex, nil, false)
+			GameTooltip_ShowCompareItem(GameTooltip)
+		elseif t.psKind == "currency" then
+			GameTooltip:SetQuestLogCurrency(t.psType, t.psIndex)
+		else
+			GameTooltip:SetSpellByID(t.psIndex, nil, true)
+		end
+		GameTooltip:Show()
+	end
+	local function tile(kind, type, index, name, icon, count, q, usable)
+		nTile = nTile + 1
+		local t = tiles[nTile]
+		if not t then
+			t = CreateFrame("Button", nil, child)
+			t:SetHeight(TILE)
+			W.Hover(t)
+			t.Well = CreateFrame("Frame", nil, t)
+			t.Well:SetSize(TILE, TILE)
+			t.Well:SetPoint("LEFT", t, "LEFT", 0, 0)
+			Theme.Skin(t.Well, "inset")
+			t.Icon = ns.GameIcon(t.Well)
+			t.Icon:SetPoint("TOPLEFT", 1, -1)
+			t.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+			t.Count = W.Text(t, "number", "text")
+			t.Count:SetPoint("RIGHT", t, "RIGHT", -8, 0)
+			t.Name = W.Text(t, "label", "text")
+			t.Name:SetPoint("LEFT", t.Well, "RIGHT", 8, 0)
+			t.Name:SetPoint("RIGHT", t.Count, "LEFT", -8, 0)
+			t:SetScript("OnEnter", tileTip)
+			t:SetScript("OnLeave", W.HideTooltip)
+			t:SetScript("OnClick", function(self)
+				if self.psKind == "item" and IsModifiedClick() then HandleModifiedItemClick(GetQuestLogItemLink(self.psType, self.psIndex)) end
+			end)
+			tiles[nTile] = t
+		end
+		t.psKind, t.psType, t.psIndex = kind, type, index
+		t.Icon:SetTexture(icon)
+		-- One the player cannot use, red as on the stock button.
+		if usable == false then t.Icon:SetVertexColor(0.9, 0, 0) else t.Icon:SetVertexColor(1, 1, 1) end
+		t.Name:SetText(name or RETRIEVING_ITEM_INFO or "")
+		t.Count:SetText(count and count > 1 and count or "")
+		-- The name in its quality colour, lifted; the border raw from uncommon up.
+		local c = q and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+		W.Uncolor(t.Name)
+		if c then t.Name:SetTextColor(Theme.Legible(c.r, c.g, c.b)) else W.Color(t.Name, "text") end
+		if c and q >= 2 then Theme.Border(t.Well, c.r, c.g, c.b, 1) else Theme.Border(t.Well, Theme.Wash("border")) end
+		t:ClearAllPoints()
+		t:SetPoint("TOPLEFT", child, "TOPLEFT", X, -(y + 6))
+		t:SetPoint("TOPRIGHT", child, "TOPRIGHT", -X, -(y + 6))
+		t:Show()
+		y = y + 6 + TILE
+	end
+	local function head(s) if s then text("label", "textDim", s, 14) end end
+
+	-- A spell reward's place and heading, by its kind (QuestInfo's
+	-- GetRewardSpellBucketType and its ordering).
+	local function spellKind(s)
+		local T = Enum.QuestCompleteSpellType
+		local k = (s.type and s.type ~= T.LegacyBehavior and s.type) or (s.isTradeskillSpell and T.Tradeskill)
+			or (s.isBoostSpell and T.Ability) or (s.garrFollowerID and T.Follower) or (s.isSpellLearned and T.Spell)
+			or (s.genericUnlock and T.Unlock) or T.Aura
+		local order = { T.Follower, T.Companion, T.Tradeskill, T.Ability, T.Aura, T.Spell, T.Unlock, T.QuestlineUnlock,
+			T.QuestlineReward, T.QuestlineUnlockPart, T.PossibleReward }
+		local heads = { REWARD_FOLLOWER, REWARD_COMPANION, REWARD_TRADESKILL_SPELL, REWARD_ABILITY, REWARD_AURA, REWARD_SPELL,
+			REWARD_UNLOCK, REWARD_QUESTLINE_UNLOCK, REWARD_QUESTLINE_REWARD, REWARD_QUESTLINE_UNLOCK_PART, REWARD_POSSIBLE_QUEST_REWARD }
+		for i, v in ipairs(order) do if v == k then return i, heads[i] end end
+		return #order + 1
+	end
+
+	-- The rewards in QuestInfo_ShowRewards' order: choices, spells, a title,
+	-- then what comes with them (experience, money, skill, items, currencies, honor).
+	local function rewards(id)
+		local items, choices, money, xp, honor, title, skillName, skillIcon, skillPoints = 0, 0, 0, 0, 0, nil, nil, nil, nil
+		if C_QuestLog.ShouldShowQuestRewards(id) then
+			items, choices = GetNumQuestLogRewards(), GetNumQuestLogChoices(id, true)
+			money, xp, honor, title = GetQuestLogRewardMoney(), GetQuestLogRewardXP(), GetQuestLogRewardHonor(), GetQuestLogRewardTitle()
+			skillName, skillIcon, skillPoints = GetQuestLogRewardSkillPoints()
+		end
+		local currencies = C_QuestInfoSystem.GetQuestRewardCurrencies(id) or {}
+		local spells = {}
+		for i, spellID in ipairs(C_QuestInfoSystem.GetQuestRewardSpells(id) or {}) do
+			local s = spellID and spellID > 0 and C_QuestInfoSystem.GetQuestRewardSpellInfo(id, spellID)
+			-- Only one the player can still learn, as the stock list.
+			if s and s.texture and not C_SpellBook.IsSpellInSpellBook(spellID, Enum.SpellBookSpellBank.Player, true)
+				and (not s.isBoostSpell or IsCharacterNewlyBoosted())
+				and (not s.garrFollowerID or not C_Garrison.IsFollowerCollected(s.garrFollowerID)) then
+				local order, h = spellKind(s)
+				s.spellID, s.head, s.order = spellID, h, order * 1000 + i
+				spells[#spells + 1] = s
+			end
+		end
+		if items + choices + #currencies + #spells == 0 and money == 0 and xp == 0 and honor == 0 and not title and not skillPoints then return end
+		text("heading", "text", "Rewards", 24)
+		if choices > 0 then
+			head(choices == 1 and REWARD_ITEMS_ONLY or REWARD_CHOICES)
+			-- Items and currencies are counted apart, as the tooltips index them.
+			local ni, nc = 0, 0
+			for i = 1, choices do
+				if GetQuestLogChoiceInfoLootType(i) == 1 then
+					local c = C_QuestLog.GetQuestRewardCurrencyInfo(id, i, true)
+					nc = nc + 1
+					if c then tile("currency", "choice", nc, c.name, c.texture, c.totalRewardAmount, c.quality) end
+				else
+					local name, icon, n, q, usable = GetQuestLogChoiceInfo(i)
+					ni = ni + 1
+					tile("item", "choice", ni, name, icon, n, q, usable)
+				end
+			end
+		end
+		table.sort(spells, function(a, b) return a.order < b.order end)
+		local lastHead
+		for _, s in ipairs(spells) do
+			if s.head ~= lastHead and not s.hideSpellLearnText then head(s.head) end
+			lastHead = s.head
+			tile("spell", nil, s.spellID, s.name, s.texture)
+		end
+		if title then
+			head(REWARD_TITLE)
+			text("body", "text", title, 6)
+		end
+		if items + #currencies > 0 or money > 0 or xp > 0 or honor > 0 or skillPoints then
+			head((choices > 0 or #spells > 0 or title) and REWARD_ITEMS or REWARD_ITEMS_ONLY)
+			if xp > 0 then pair("Experience", BreakUpLargeNumbers(xp)) end
+			if money > 0 then pair("Money", GetMoneyString(money)) end
+			if skillPoints then tile(nil, nil, nil, skillName, skillIcon, skillPoints) end
+			for i = 1, items do
+				local name, icon, n, q, usable = GetQuestLogRewardInfo(i)
+				tile("item", "reward", i, name, icon, n, q, usable)
+			end
+			for i, c in ipairs(currencies) do tile("currency", "reward", i, c.name, c.texture, c.totalRewardAmount, c.quality) end
+			if honor > 0 then pair(HONOR or "Honor", BreakUpLargeNumbers(honor)) end
+		end
+	end
+
+	-- Abandon, as QuestMapQuestOptions_AbandonQuest and its popup's accept,
+	-- confirmed by our own dialog: StaticPopup is never driven from our code.
+	local function abandon(id)
+		local old = C_QuestLog.GetSelectedQuest()
+		C_QuestLog.SetSelectedQuest(id)
+		C_QuestLog.SetAbandonQuest()
+		local names = {}
+		for _, itemID in ipairs(C_QuestLog.GetAbandonQuestItems() or {}) do names[#names + 1] = C_Item.GetItemNameByID(itemID) end
+		local title = QuestUtils_GetQuestName(C_QuestLog.GetAbandonQuest())
+		C_QuestLog.SetSelectedQuest(old)
+		W.Modal({
+			title = ("Abandon %s?"):format(title),
+			text = #names > 0 and ("Its progress is lost, and these items with it: %s."):format(table.concat(names, ", ")) or "Its progress is lost.",
+			action = "Abandon",
+			danger = true,
+			onAccept = function()
+				C_QuestLog.AbandonQuest()
+				PlaySound(SOUNDKIT.IG_QUEST_LOG_ABANDON_QUEST)
+			end,
+		})
+	end
+	d.Abandon = W.Button(d.Foot, "Abandon", function() abandon(detail) end, { danger = true })
+	d.Abandon:SetPoint("LEFT", d.Foot, "LEFT", X, 0)
+	-- Track and Share: the stock toggles (the client says when too many are tracked).
+	d.Track = W.Button(d.Foot, "Track", function()
+		QuestMapQuestOptions_TrackQuest(detail)
+		p.Paint()
+	end)
+	d.Track:SetPoint("RIGHT", d.Foot, "RIGHT", -X, 0)
+	d.Share = W.Button(d.Foot, "Share", function() QuestMapQuestOptions_ShareQuest(detail) end)
+	d.Share:SetPoint("RIGHT", d.Track, "LEFT", -8, 0)
+
+	function paintDetails(id)
+		-- The stock details read the selected quest.
+		C_QuestLog.SetSelectedQuest(id)
+		local index = C_QuestLog.GetLogIndexForQuestID(id)
+		local info = C_QuestLog.GetInfo(index) or { questID = id }
+		used, nCheck, nTile = {}, 0, 0
+		questName(d.Title, info)
+		y = 16 + math.ceil(d.Title:GetStringHeight())
+		local description, summary = GetQuestLogQuestText()
+		if summary and summary ~= "" then text("body", "text", summary, 8) end
+		-- Every objective, a finished one checked and muted (QuestInfo_ShowObjectives).
+		local gap = 10
+		local waypoint = C_QuestLog.GetNextWaypointText(id)
+		if waypoint then
+			text("body", "textDim", WAYPOINT_OBJECTIVE_FORMAT_OPTIONAL:format(waypoint), gap, 18)
+			gap = 4
+		end
+		for i = 1, GetNumQuestLeaderBoards(index) or 0 do
+			local s, kind, finished = GetQuestLogLeaderBoard(i, index)
+			if kind ~= "spell" and kind ~= "log" then
+				local t = text("body", finished and "textMuted" or "textDim", (s and s ~= "") and s or kind, gap, 18)
+				if finished then check(t) end
+				gap = 4
+			end
+		end
+		local need = C_QuestLog.GetRequiredMoney()
+		if need > 0 then pair("Required money", GetMoneyString(need), need > GetMoney() and "danger" or "text") end
+		local group = C_QuestLog.GetSuggestedGroupSize(id)
+		if group > 0 then text("small", "textDim", QUEST_SUGGESTED_GROUP_NUM:format(group), 8) end
+		if description and description ~= "" then
+			text("heading", "text", "Description", 24)
+			text("body", "textDim", description, 8)
+		end
+		rewards(id)
+		for role, l in pairs(texts) do for i = (used[role] or 0) + 1, #l do l[i]:Hide() end end
+		for i = nCheck + 1, #checks do checks[i]:Hide() end
+		for i = nTile + 1, #tiles do tiles[i]:Hide() end
+		child:SetWidth(width - 1)
+		W.SetScrollContent(d.Scroll, y + 16, p:GetHeight() - HEAD - 1 - FOOT)
+		-- The actions, as QuestMapFrame_UpdateQuestDetailsButtons allows them.
+		local disabled, watched = C_QuestLog.IsQuestDisabledForSession(id), QuestUtils_IsQuestWatched(id)
+		W.SetButtonText(d.Track, watched and "Untrack" or "Track")
+		d.Track:SetEnabled((watched and QuestUtil.CanRemoveQuestWatch()) or (not watched and not disabled))
+		d.Share:SetShown(not disabled and C_QuestLog.IsPushableQuest(id) and IsInGroup())
+		d.Abandon:SetEnabled(not disabled and C_QuestLog.CanAbandonQuest(id))
+	end
+
+	local listParts = { p.Title, p.Count, p.Search, line, p.Scroll }
+	function p.Open(id)
+		detail = id
+		for _, r in ipairs(listParts) do r:Hide() end
+		d:Show()
+		W.ScrollTo(d.Scroll, 0)
+		p.Paint()
+	end
+	function p.Close()
+		detail = nil
+		d:Hide()
+		for _, r in ipairs(listParts) do r:Show() end
+		p.Paint()
 	end
 
 	p:SetScript("OnShow", p.Paint)

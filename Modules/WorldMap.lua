@@ -250,6 +250,8 @@ function M.Enable()
 	local function quests() if f then f.psQuests.Paint() end end
 	Polestar.RegisterEvent("QUEST_LOG_UPDATE", quests)
 	Polestar.RegisterEvent("QUEST_WATCH_LIST_CHANGED", quests)
+	-- A reward's item, loaded after the details first showed it.
+	Polestar.RegisterEvent("GET_ITEM_INFO_RECEIVED", function() if f and f.psQuests.Details:IsShown() then quests() end end)
 end
 
 ns.Module("map", M)

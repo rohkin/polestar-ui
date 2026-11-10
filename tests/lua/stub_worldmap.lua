@@ -72,7 +72,13 @@ function Canvas:TriggerEvent(event, ...) self.events[#self.events + 1] = { event
 local LOG = {
 	{ title = "Elwynn Forest", isHeader = true, isCollapsed = false },
 	{ title = "A Threat Within", questID = 783, level = 1 },
-	{ title = "Kobold Camp Cleanup", questID = 7, level = 2, goals = { { "Kobold Vermin slain: 4/10", false } } },
+	{ title = "Kobold Camp Cleanup", questID = 7, level = 2, goals = { { "Kobold Vermin slain: 4/10", false }, { "Kobold camp found", true } },
+		summary = "Kill 10 Kobold Vermin, then return to Marshal McBride.",
+		text = "Your first task is one of cleansing. A clan of kobolds has infested the woods to the north. Go there and fight the Kobold Vermin you find.",
+		money = 1250, xp = 450, pushable = true,
+		rewards = { { "Militia Buckler", 134955, 1, 2, true, 101 } },
+		choices = { { "Militia Dagger", 135641, 1, 1, true, 102 }, { "Kobold Ear Charm", 133345, 2, 3, false, 103 } },
+		spells = { 8921 } },
 	{ title = "Wolves Across the Border", questID = 33, level = 3, done = true },
 	{ title = "Westfall", isHeader = true, isCollapsed = true },
 	{ title = "The Defias Brotherhood", questID = 65, level = 14 },
@@ -107,6 +113,54 @@ function C_PlayerInfo.GetContentDifficultyQuestForPlayer(id) return id == 65 and
 local DIFF = { [1] = { r = 0.25, g = 0.75, b = 0.25 }, [4] = { r = 1, g = 0.1, b = 0.1 } }
 function GetDifficultyColor(d) return DIFF[d] end
 ChatFrameUtil = { TryInsertQuestLinkForQuestID = function(id) if stub.chatOpen then stub.linked = id; return true end return false end }
+
+-- The details read the selected quest, as the client's quest log functions do.
+local selected, abandoning = 0, nil
+local function sel() for _, q in ipairs(LOG) do if q.questID == selected then return q end end return {} end
+function C_QuestLog.SetSelectedQuest(id) selected = id end
+function C_QuestLog.GetSelectedQuest() return selected end
+function C_QuestLog.GetLogIndexForQuestID(id) for i, q in ipairs(LOG) do if q.questID == id then return i end end end
+function GetQuestLogQuestText() return sel().text or "", sel().summary or "" end
+function C_QuestLog.GetNextWaypointText() return nil end
+function C_QuestLog.GetRequiredMoney() return 0 end
+function C_QuestLog.GetSuggestedGroupSize() return 0 end
+function C_QuestLog.ShouldShowQuestRewards() return true end
+function GetNumQuestLogRewards() return #(sel().rewards or {}) end
+function GetNumQuestLogChoices() return #(sel().choices or {}) end
+function GetQuestLogRewardMoney() return sel().money or 0 end
+function GetQuestLogRewardXP() return sel().xp or 0 end
+function GetQuestLogRewardHonor() return 0 end
+function GetQuestLogRewardTitle() return nil end
+function GetQuestLogRewardSkillPoints() return nil end
+function GetQuestLogRewardInfo(i) return unpack(sel().rewards[i]) end
+function GetQuestLogChoiceInfo(i) return unpack(sel().choices[i]) end
+function GetQuestLogChoiceInfoLootType() return 0 end
+function GetMoneyString(m) return ("%ds %dc"):format(math.floor(m / 100), m % 100) end
+C_QuestInfoSystem = {
+	GetQuestRewardCurrencies = function() return {} end,
+	GetQuestRewardSpells = function(id) return id == selected and sel().spells or {} end,
+	GetQuestRewardSpellInfo = function(_, spellID) return { name = "Healing Touch", texture = 136041, isSpellLearned = true, type = 0, spellID = spellID } end,
+}
+Enum.QuestCompleteSpellType = { LegacyBehavior = 0, Follower = 1, Tradeskill = 2, Ability = 3, Aura = 4, Spell = 5, Unlock = 6, Companion = 7, QuestlineUnlock = 8, QuestlineReward = 9, QuestlineUnlockPart = 10, PossibleReward = 11 }
+C_SpellBook = C_SpellBook or {}
+C_SpellBook.IsSpellInSpellBook = C_SpellBook.IsSpellInSpellBook or function() return false end
+REWARD_CHOICES, REWARD_ITEMS, REWARD_ITEMS_ONLY, REWARD_SPELL = "You will be able to choose one of these rewards:", "You will also receive:", "You will receive:", "You will learn:"
+function GameTooltip.SetQuestLogItem(self, kind, i) self.lines = { "quest log " .. kind .. " " .. i } end
+function GameTooltip_ShowCompareItem() end
+QuestUtil = { CanRemoveQuestWatch = function() return true end }
+function C_QuestLog.IsPushableQuest(id) return sel().questID == id and sel().pushable or false end
+function C_QuestLog.CanAbandonQuest() return true end
+function IsInGroup() return stub.inGroup or false end
+function QuestMapQuestOptions_ShareQuest(id) stub.shared = id end
+-- Abandoning: the quest set aside, then dropped from the log on AbandonQuest.
+function C_QuestLog.SetAbandonQuest() abandoning = selected end
+function C_QuestLog.GetAbandonQuest() return abandoning end
+function C_QuestLog.GetAbandonQuestItems() return {} end
+function QuestUtils_GetQuestName(id) for _, q in ipairs(LOG) do if q.questID == id then return q.title end end return "" end
+function C_QuestLog.AbandonQuest()
+	for i, q in ipairs(LOG) do if q.questID == abandoning then table.remove(LOG, i); stub.abandoned = abandoning break end end
+	for i, q in ipairs(LOG) do q.questLogIndex = i end
+end
 
 stub.bindings.TOGGLEQUESTLOG = { "L" }
 function stub.bindingRun.TOGGLEQUESTLOG() WorldMapFrame:Show() end

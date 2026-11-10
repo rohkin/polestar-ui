@@ -532,14 +532,36 @@ zoom and click-to-open are the game's.
   objectives, or the hand-in line once done), a check (success) when done
   or a star (accent) when tracked. Hover lights its area on the map (the
   canvas's `SetHighlightedQuestID`); a click shows its map with its area in
-  focus and selects it; shift-click tracks it (the stock toggle); with a
-  chat box open, a click links it. A search under the head (the sidebar's
-  search box) matches a quest's title or what is left of it; searching,
-  every match shows with its header open.
+  focus, selects it and opens its details; shift-click tracks it (the stock
+  toggle); with a chat box open, a click links it. A search under the head
+  (the sidebar's search box) matches a quest's title or what is left of it;
+  searching, every match shows with its header open.
+- **Quest details:** in the flyout's place, as the stock details page
+  (`QuestMapFrame_ShowQuestDetails`, QuestInfo's map templates; the quest
+  selected through `C_QuestLog.SetSelectedQuest`, as the stock reads it).
+  Its head: a chevron and "All quests" (label textDim), back to the list
+  with its scroll and search. Scrolling: the title as on the row, in Heading;
+  the objectives summary in Body; every objective in Body, textDim, a
+  finished one textMuted with a check (success) before it; required money
+  and group size when there are any; "Description" (Heading) and the quest
+  text; "Rewards" (Heading) in the stock order and with the stock lines
+  (label textDim): the choices, the spells (by kind), a title, then
+  experience and money as facts (the value in Number at the right), a
+  skill, items, currencies and honor. A reward is a Reagent Tile at the
+  flyout's width, with the stock reward's tooltip
+  (`GameTooltip:SetQuestLogItem`, `SetQuestLogCurrency`, `SetSpellByID`)
+  and its modified click; one the player cannot use has a red icon. A
+  footer at the bottom: Abandon (danger) at the left, Share (only when the
+  stock button is enabled: pushable, in a group) and Track/Untrack at the
+  right. Track and Share are the stock helpers; Abandon runs the stock
+  steps (`SetSelectedQuest`, `SetAbandonQuest`, then `AbandonQuest` on
+  accept), confirmed by `W.Modal` in danger naming any items lost with it,
+  never the stock popup. Redrawn on `QUEST_LOG_UPDATE` (and as a reward's
+  item loads); back to the list when the quest leaves the log.
 - **Doors:** `TOGGLEWORLDMAP` toggles ours; `TOGGLEQUESTLOG` and
   `QuestLogMicroButton` open it with the quest log, or close it when the
   log shows, as the stock toggle (`ns.Doors`; shift-click on the micro
-  button: the stock map, for the quest details we do not show yet). Map
+  button: the stock map). Map
   links and the quest tracker stay the game's.
 
 #### Later windows
