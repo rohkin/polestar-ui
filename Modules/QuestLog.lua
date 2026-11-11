@@ -391,7 +391,10 @@ function ns.QuestLog(win, canvas, width)
 		local c = q and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
 		W.Uncolor(t.Name)
 		if c then t.Name:SetTextColor(Theme.Legible(c.r, c.g, c.b)) else W.Color(t.Name, "text") end
-		if c and q >= 2 then Theme.Border(t.Well, c.r, c.g, c.b, 1) else Theme.Border(t.Well, Theme.Wash("border")) end
+		-- OVERLAY: above the icon, which at a scaled pixel grid can cover the top line.
+		local br, bg, bb, ba = 0, 0, 0, 1
+		if c and q >= 2 then br, bg, bb = c.r, c.g, c.b else br, bg, bb, ba = Theme.Wash("border") end
+		Theme.Border(t.Well, br, bg, bb, ba, "OVERLAY")
 		t:ClearAllPoints()
 		t:SetPoint("TOPLEFT", child, "TOPLEFT", X, -(y + 6))
 		t:SetPoint("TOPRIGHT", child, "TOPRIGHT", -X, -(y + 6))
