@@ -866,13 +866,13 @@ function GameTooltip.GetOwner(self) return self.owner end
 -- its nine pieces (a dark centre, grey edges), and GameTooltipTemplate's
 -- health bar. SharedTooltip_SetBackdropStyle lays the layout again, as the
 -- client's (SharedTooltipTemplates.lua): an embedded tooltip hides it.
-do
-	local n = CreateFrame("Frame", nil, GameTooltip)
-	n:SetAllPoints(GameTooltip)
+local function tooltipArt(tip)
+	local n = CreateFrame("Frame", nil, tip)
+	n:SetAllPoints(tip)
 	-- useParentLevel puts its art under the tooltip's text; the preview orders
 	-- whole frames, so a level under the tooltip's draws it so.
 	n.level = 0
-	GameTooltip.NineSlice = n
+	tip.NineSlice = n
 	local edges = { TopEdge = { "TOPLEFT", "TOPRIGHT", "height" }, BottomEdge = { "BOTTOMLEFT", "BOTTOMRIGHT", "height" },
 		LeftEdge = { "TOPLEFT", "BOTTOMLEFT", "width" }, RightEdge = { "TOPRIGHT", "BOTTOMRIGHT", "width" } }
 	for _, k in ipairs({ "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }) do
@@ -888,9 +888,32 @@ do
 	end
 	n.Center:SetAllPoints(n)
 	n.Center:SetColorTexture(0.02, 0.02, 0.05, 0.92)
-	GameTooltip.StatusBar = CreateFrame("StatusBar", "GameTooltipStatusBar", GameTooltip)
-	GameTooltip.StatusBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-TargetingFrame-BarFill")
-	GameTooltip.StatusBar:Hide()
+end
+tooltipArt(GameTooltip)
+GameTooltip.StatusBar = CreateFrame("StatusBar", "GameTooltipStatusBar", GameTooltip)
+GameTooltip.StatusBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-TargetingFrame-BarFill")
+GameTooltip.StatusBar:Hide()
+-- A comparison tooltip (ShoppingTooltipTemplate, GameTooltip.xml), made by a
+-- test (a frame made here would renumber the preview's objects): the stock
+-- art and the "Equipped" plate above it, its atlas then the gold label.
+function stub.withShoppingTooltip()
+	local tip = CreateFrame("GameTooltip", "ShoppingTooltip1", UIParent)
+	tip.lines = {}
+	tooltipArt(tip)
+	tip.StatusBar = false -- none on this template (a stub frame answers any key)
+	local h = CreateFrame("Frame", nil, tip)
+	h:SetSize(100, 22)
+	h:SetPoint("BOTTOMLEFT", tip, "TOPLEFT", 0, -1)
+	h:Hide()
+	local art = h:CreateTexture(nil, "BACKGROUND")
+	art:SetAllPoints(h)
+	art:SetColorTexture(0.1, 0.08, 0.04, 0.95)
+	h.Label = h:CreateFontString(nil, "ARTWORK")
+	h.Label:SetFontObject(GameTooltipText)
+	h.Label:SetPoint("CENTER", h, "CENTER", 0, 0)
+	h.Label:SetTextColor(1, 0.82, 0)
+	tip.CompareHeader = h
+	return tip
 end
 function SharedTooltip_SetBackdropStyle(self, style, embedded)
 	if embedded or rawget(self, "IsEmbedded") then self.NineSlice:Hide() else self.NineSlice:Show() end

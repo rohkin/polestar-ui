@@ -631,15 +631,18 @@ and `GameSmallHeaderTooltip` (`Modules/Tooltips.lua`).
   hairline, square, in place of the stock border (its NineSlice's pieces
   faded out). Ours lies on the NineSlice, so an embedded tooltip, whose art
   the game hides, shows none.
+- **"Equipped" plate:** the comparison tooltips' header plate
+  (`CompareHeader`, ShoppingTooltipTemplate) on the same ground and
+  hairline, its stock atlas faded out, the label (the game's text, font
+  object `GameTooltipText`) in `text` in place of gold.
 - **Health bar:** the stock bar, flat (the white texture) on a shade track at
   60%; its colour stays the game's.
 - **Type:** the tooltip font objects (`GameTooltipHeaderText`,
   `GameTooltipText`, `GameTooltipTextSmall`) in Polestar's face (heading, body
   and small weights) at the game's sizes. Line colours stay the game's
   (quality, red requirements).
-- **Not changed:** the comparison's "Equipped" header plate, the item
-  tooltip's border (the stock one shows no quality colour), special styles'
-  overlays (`TopOverlay`, `BottomOverlay`).
+- **Not changed:** the item tooltip's border (the stock one shows no quality
+  colour), special styles' overlays (`TopOverlay`, `BottomOverlay`).
 - **Switch:** `/pui tooltips on|off`, live: off gives back the stock pieces,
   bar texture and fonts at once. No window, so no "..." menu and no
   stock-side button.

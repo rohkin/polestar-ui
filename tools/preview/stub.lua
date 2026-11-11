@@ -512,6 +512,7 @@ end
 
 function preview.enableTooltips()
 	tipInstall(GameTooltip)
+	if ShoppingTooltip1 then tipInstall(ShoppingTooltip1) end
 	local create = CreateFrame
 	CreateFrame = function(kind, ...)
 		local f = create(kind, ...)
