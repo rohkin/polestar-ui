@@ -11,7 +11,7 @@ local W = Polestar.Widgets
 local NAME = "PolestarUIWorldMap"
 -- The canvas keeps the shape of the map art (1002x668).
 local MAP_W, MAP_H = 852, 568
-local CONTINENT, ZONE = 2, 3 -- Enum.UIMapType
+local CONTINENT, ZONE, DUNGEON, MICRO = 2, 3, 4, 5 -- Enum.UIMapType
 local ZOOMS = { 1.5, 2.25, 3 }
 local QUEST_W = 320
 local f, canvas
@@ -213,6 +213,30 @@ function M.Refresh()
 	table.sort(zones, function(a, b) return a.label < b.label end)
 	if #up > 0 and #zones > 0 then items[#items + 1] = { separator = true } end
 	for _, item in ipairs(zones) do items[#items + 1] = item end
+	-- Its dungeons and caves, as the stock nav bar's dropdown lists them (a
+	-- cave has no entrance pin to click); a map of floors once, by its first.
+	local dungeons, seen = {}, {}
+	for _, c in ipairs(C_Map.GetMapChildrenInfo(id, nil, false) or {}) do
+		if (c.mapType == DUNGEON or c.mapType == MICRO) and C_Map.IsMapValidForNavBarDropdown(c.mapID) then
+			local g = C_Map.GetMapGroupID(c.mapID)
+			local first = g and (C_Map.GetMapGroupMembersInfo(g) or {})[1]
+			local key = first and first.mapID or c.mapID
+			if not seen[key] then
+				seen[key] = true
+				dungeons[#dungeons + 1] = { key = key, label = (C_Map.GetMapInfo(key) or c).name, icon = "icon-dungeon" }
+			end
+		end
+	end
+	table.sort(dungeons, function(a, b) return a.label < b.label end)
+	if #dungeons > 0 then items[#items + 1] = { separator = true } end
+	for _, item in ipairs(dungeons) do items[#items + 1] = item end
+	-- A map of several levels lists them, in the order the client gives, as the stock floor dropdown does.
+	local group = C_Map.GetMapGroupID(id)
+	local floors = group and C_Map.GetMapGroupMembersInfo(group)
+	if floors and #floors > 0 then
+		items[#items + 1] = { separator = true }
+		for _, fl in ipairs(floors) do items[#items + 1] = { key = fl.mapID, label = fl.name, icon = "layers" } end
+	end
 	W.ShellNav(f, items, id, function(k) canvas:SetMapID(k) end)
 	f.psLine:SetText(GetZoneText() or "")
 	W.ShellTitle(f, info.name, #zones > 0 and "Click a zone to open it; right-click the map to go back out. Scroll to zoom."

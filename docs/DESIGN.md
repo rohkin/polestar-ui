@@ -514,7 +514,11 @@ zoom and click-to-open are the game's.
   shape) under the band; no tabs, no footer. Subject block: the map icon,
   "World Map", the player's zone.
 - **Sidebar:** "Where you are", then the maps above the shown one (to go
-  back out), then its zones (continents and zones only, by name).
+  back out), then its zones (continents and zones only, by name). A map of several floors (a map group) ends with a
+  section of them, in the client's order, the shown floor selected.
+  Between the zones and the floors, the dungeons and caves in it that the
+  stock nav bar's dropdown lists (`IsMapValidForNavBarDropdown`; a map of
+  floors once, by its first), with `icon-dungeon`.
 - **Header:** the shown map's name; the subtitle says how to move around it.
   A full-screen toggle at the band's bottom right, as the stock maximise
   (remembered; out of the dock while full).

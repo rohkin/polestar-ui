@@ -11,14 +11,24 @@ local MAPS = {
 	[52] = { mapID = 52, name = "Westfall", mapType = 3, parentMapID = 13 },
 	[47] = { mapID = 47, name = "Duskwood", mapType = 3, parentMapID = 13 },
 	[1429] = { mapID = 1429, name = "Fargodeep Mine", mapType = 4, parentMapID = 37 },
+	[1430] = { mapID = 1430, name = "Fargodeep Mine, Lower", mapType = 4, parentMapID = 37 },
+	[291] = { mapID = 291, name = "The Deadmines", mapType = 4, parentMapID = 52 },
 }
+-- Fargodeep Mine is a map group of two floors, as the client gives them.
+local GROUP = { { mapID = 1429, relativeHeightIndex = 0, name = "Upper Level" }, { mapID = 1430, relativeHeightIndex = 1, name = "Lower Level" } }
 C_Map = C_Map or {}
 function C_Map.GetMapInfo(id) return MAPS[id] end
+function C_Map.GetMapGroupID(id) return (id == 1429 or id == 1430) and 7 or nil end
+function C_Map.GetMapGroupMembersInfo(g) return g == 7 and GROUP or nil end
 function C_Map.GetMapChildrenInfo(id)
 	local t = {}
 	for _, m in pairs(MAPS) do if m.parentMapID == id then t[#t + 1] = m end end
 	return t
 end
+-- The stock nav bar's dropdown lists the cave's floors (once a scene sets
+-- stub.caveListed, so the other scenes draw as before), never the Deadmines
+-- (which the nav bar leaves out).
+function C_Map.IsMapValidForNavBarDropdown(id) return stub.caveListed and (id == 1429 or id == 1430) or false end
 MapUtil = { GetDisplayableMapForPlayer = function() return 37 end }
 function GetZoneText() return "Elwynn Forest" end
 C_QuestLog = C_QuestLog or {}
