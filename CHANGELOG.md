@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.4
+
+- World Map: the game's map in Polestar's look, opened from the map key. The sidebar lists the maps above, the zones, a zone's dungeons and caves, and a map's floors; zoom steps and full screen.
+- Quest log: a flyout beside the map, from the quest log key and micro button (shift-click for the game's map). Headers that fold, search, each quest's level (elite marked +), difficulty colour and objectives, and the map's filter menu, kept in step with the game's map.
+- Quest details: click a quest for its objectives, text and rewards (experience with its share of your level), with Track, Share and Abandon.
+- Tooltips: the game's own tooltips in Polestar's look, with every line other addons add to them.
+- Chat: the game's own chat windows, tabs and input line in Polestar's look, at your chat opacity.
+- Switch a window between Polestar's and the game's at once: "Use game window" in its "..." menu, the Polestar button above the game's window, or `/pui <window> on|off` (crafting after `/reload`). `/pui tooltips` and `/pui chat` switch the same way.
+- The windows dock from the top left as the game's own do (`/pui dock off` frees them) and follow Polestar's Menu scale, its slider in each header.
+- Crafting: the window is titled by its profession.
+- Known: map and quest links, the quest tracker and the game's other ways to the map still open the game's map.
+
 ## 0.0.3
 
 - Legacy: Forever's Legacy System window in Polestar's look, opened from its key, the achievements key and the Legacy micro button (shift-click for the game's own). Rewards, Challenges and the Tree on a rail on the left.
