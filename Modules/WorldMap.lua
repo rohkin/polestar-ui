@@ -58,6 +58,8 @@ end
 
 local function buildCanvas()
 	canvas = CreateFrame("Frame", NAME .. "Canvas", f.Main, "PolestarUIMapCanvasTemplate")
+	-- Polestar draws its map features (nav pins, routes, zone levels) on this canvas too.
+	if Polestar and Polestar.MapCanvas and Polestar.MapCanvas.Add then Polestar.MapCanvas.Add(canvas) end
 	-- The template's MEDIUM strata would put the map under its own window.
 	canvas:SetFrameStrata(f:GetFrameStrata())
 	-- Any new size (the window's, the quest log opening): the map refitted.
