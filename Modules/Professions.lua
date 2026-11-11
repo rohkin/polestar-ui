@@ -294,6 +294,7 @@ local function build()
 	-- The section rail holds the professions; Polestar's emblem stays off it.
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
 	ns.Dock(f)
+	ns.WindowMenu(f, "professions")
 	f.Sidebar:Hide()
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
@@ -351,7 +352,7 @@ end
 function M.Enable()
 	-- The professions key and micro button open ours; the stock window, whose
 	-- show touches the micro buttons, is never touched (docs/CLIENT.md, rule 8).
-	ns.Doors("Professions", { TOGGLEPROFESSIONBOOK = M.Toggle }, ProfessionMicroButton, M.Toggle)
+	ns.Doors("professions", "Professions", { TOGGLEPROFESSIONBOOK = M.Toggle }, ProfessionMicroButton, M.Toggle)
 	local function changed() if f and f:IsShown() then refresh() end end
 	Polestar.RegisterEvent("SKILL_LINES_CHANGED", changed)
 	Polestar.RegisterEvent("SPELLS_CHANGED", changed)
@@ -365,5 +366,8 @@ function M.Enable()
 	-- A profession opened: the crafting window (Crafting.lua) takes over.
 	Polestar.RegisterEvent("TRADE_SKILL_SHOW", function() if f then f:Hide() end end)
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+function M.stock() return ProfessionsFrame and ProfessionsFrame.BookPage and ProfessionsFrame.BookPage:IsShown() and ProfessionsFrame end
 
 ns.Module("professions", M)

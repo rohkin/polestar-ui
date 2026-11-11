@@ -969,6 +969,7 @@ local function build()
 		redraw()
 	end })
 	ns.Dock(f)
+	ns.WindowMenu(f, "legacy")
 	-- The subject block names the window, in place of Polestar's lockup.
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
@@ -1145,7 +1146,7 @@ function M.Enable()
 	-- The legacy and achievements keys and the micro button open ours; the
 	-- stock window, whose show touches the micro buttons, is never touched
 	-- (docs/CLIENT.md, rule 8). Challenge links stay the game's.
-	ns.Doors("Legacy", {
+	ns.Doors("legacy", "Legacy", {
 		TOGGLELEGACYSYSTEM = function() M.Toggle() end,
 		TOGGLEACHIEVEMENT = function() M.Toggle("challenges") end,
 	}, LegacyMicroButton, function() M.Toggle() end)
@@ -1164,5 +1165,8 @@ function M.Enable()
 	Polestar.RegisterEvent("TRAIT_CONFIG_UPDATED", committed)
 	Polestar.RegisterEvent("CONFIG_COMMIT_FAILED", committed)
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+function M.stock() return LegacySystemFrame end
 
 ns.Module("legacy", M)

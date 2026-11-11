@@ -273,6 +273,7 @@ local function build()
 		if f:IsShown() then M.Show() end
 	end })
 	ns.Dock(f)
+	ns.WindowMenu(f, "spellbook")
 	-- The subject block names the window, in place of Polestar's lockup.
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
@@ -353,7 +354,7 @@ function M.Enable()
 	-- The spellbook keys and micro button open ours; the stock window is never
 	-- touched (docs/CLIENT.md, rule 8). A spell link and a new-spell toast stay
 	-- the game's.
-	ns.Doors("Spellbook", { TOGGLESPELLBOOK = function() M.Toggle() end, TOGGLEPETBOOK = function() M.Toggle("pet") end },
+	ns.Doors("spellbook", "Spellbook", { TOGGLESPELLBOOK = function() M.Toggle() end, TOGGLEPETBOOK = function() M.Toggle("pet") end },
 		SpellbookMicroButton, function() M.Toggle() end)
 	local function changed() if f and f:IsShown() then refresh() end end
 	Polestar.RegisterEvent("SPELLS_CHANGED", changed)
@@ -365,5 +366,8 @@ function M.Enable()
 	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", changed)
 	Polestar.RegisterEvent("UNIT_PET", function(_, unit) if unit == "player" then changed() end end)
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+function M.stock() return PlayerSpellsFrame and PlayerSpellsFrame.SpellBookFrame:IsShown() and PlayerSpellsFrame end
 
 ns.Module("spellbook", M)

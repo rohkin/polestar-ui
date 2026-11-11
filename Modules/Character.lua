@@ -537,6 +537,7 @@ local refresh, statsShown -- below
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
 	ns.Dock(f)
+	ns.WindowMenu(f, "character")
 	-- The subject block names the window, in place of Polestar's lockup.
 	-- Reparented, not hidden: the shell re-shows its version line on every show.
 	local holder = CreateFrame("Frame", nil, f)
@@ -676,7 +677,9 @@ function M.Enable()
 	-- When a spell waits for an item (an enchant), the game opens the sheet
 	-- through ShowCharacterFrameIfMatchesContext: it means "show", but finding
 	-- the stock frame hidden it toggles, which would close ours.
+	-- Switched off (Core.lua, ns.Switch), the hook stays and does nothing.
 	hooksecurefunc("ToggleCharacter", function(key, onlyShow)
+		if not ns.Enabled("character") then return end
 		if CharacterFrame and CharacterFrame:IsShown() then CharacterFrame:Hide() end
 		local forContext = debugstack and debugstack():find("ShowCharacterFrameIfMatchesContext", 1, true)
 		M.Toggle(key, onlyShow or forContext ~= nil)
@@ -740,5 +743,8 @@ function M.Enable()
 		if unit == "player" and f and f:IsShown() and f.psGear:IsShown() then showModel() end
 	end)
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+function M.stock() return CharacterFrame end
 
 ns.Module("character", M)

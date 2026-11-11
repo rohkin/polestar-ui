@@ -85,8 +85,20 @@ How a stock element is replaced, for every module.
    (`ProfessionsFrame`: the trade skill). Its open is stopped at the game's
    event routing (`GameEvent.UnregisterInternalEvent`), the one stock event we
    unregister; `/reload` with the module off routes it again.
-3. **Off is off.** `/pui <module> off` and a `/reload` give the stock window back
-   untouched, since nothing was changed on it.
+3. **Off is off, and live.** Each window is Polestar's or the game's, saved per
+   window (`PolestarUIDB.modules`, on by default) and switched by
+   `/pui <window> on|off` (bare `/pui` lists them), the "Use game window" entry
+   of the window's own menu (the "..." left of ✕, Polestar's `W.ShowMenu`), or a
+   small "Polestar" button of ours above the stock window's top right corner
+   while that one is in use (`ns.Switch` in Core.lua). The switch is live: off,
+   ours closes and its doors step aside (`ns.Doors` binds and overlays only a
+   module that is on; Character's toggle hook stays and does nothing); on, they
+   come back. Never in combat (override bindings and secure buttons cannot
+   change then): it is refused with a message. Crafting alone goes off only
+   after `/reload`: its stock routing, routed again from our code, would open
+   the stock window tainted. The stock-side button reads the stock frame
+   (shown, rect, strata) and nothing else: it hangs on UIParent, placed by
+   position, never anchored to it (CLIENT.md, rule 10).
 4. **With the gamepad UI on** (`Polestar.GamepadUI()`), a module whose stock
    frame the smart navigation focuses stays off by default, and no slash command
    is registered. (A setting to turn a module on anyway comes with Options.)

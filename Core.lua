@@ -12,7 +12,9 @@ PolestarUI = ns
 
 ns.modules, ns.order = {}, {}
 
--- A module: { Enable = fn (once, at login), Show = fn(...) }, keyed by its
+-- A module: { Enable = fn (once, at login or when switched on), Show = fn(...),
+-- stock = fn (the stock window it replaces, when that is the one shown),
+-- reloadOff = true (switching it off waits for /reload) }, keyed by its
 -- slash-command name.
 function ns.Module(key, m)
 	ns.modules[key] = m
@@ -37,7 +39,10 @@ Polestar.OnLogin(function()
 	PolestarUIDB.pos = PolestarUIDB.pos or {}
 	PolestarUICharDB = PolestarUICharDB or {}
 	for _, key in ipairs(ns.order) do
-		if ns.Enabled(key) then ns.modules[key].Enable() end
+		if ns.Enabled(key) then
+			ns.modules[key].psStarted = true
+			ns.modules[key].Enable()
+		end
 	end
 end)
 
@@ -133,28 +138,33 @@ end
 -- combat), and an invisible secure button of ours lies over the micro button
 -- while it is shown and enabled: a click opens ours, a shift-click clicks the
 -- micro button from secure code, which opens the stock window untainted.
--- `actions` maps a binding name to its click.
+-- `actions` maps a binding name to its click. Only a module switched on
+-- (ns.Enabled(`module`)) takes its doors; switched off, they are the game's.
 local keyOwner, keyButtons, keySig = CreateFrame("Frame"), {}, nil
 local function bindKeys()
 	if InCombatLockdown() then return end -- PLAYER_REGEN_ENABLED binds them
 	local sig = {}
-	for action in pairs(keyButtons) do sig[#sig + 1] = action .. "=" .. table.concat({ GetBindingKey(action) }, ",") end
+	for action, d in pairs(keyButtons) do
+		if ns.Enabled(d.module) then sig[#sig + 1] = action .. "=" .. table.concat({ GetBindingKey(action) }, ",") end
+	end
 	table.sort(sig)
 	sig = table.concat(sig, ";")
 	-- Only on a change: setting overrides fires UPDATE_BINDINGS again.
 	if sig == keySig then return end
 	keySig = sig
 	ClearOverrideBindings(keyOwner)
-	for action, name in pairs(keyButtons) do
-		for _, key in ipairs({ GetBindingKey(action) }) do SetOverrideBindingClick(keyOwner, false, key, name) end
+	for action, d in pairs(keyButtons) do
+		if ns.Enabled(d.module) then
+			for _, key in ipairs({ GetBindingKey(action) }) do SetOverrideBindingClick(keyOwner, false, key, d.name) end
+		end
 	end
 end
 
-function ns.Doors(name, actions, micro, onMicro)
+function ns.Doors(module, name, actions, micro, onMicro)
 	for action, fn in pairs(actions) do
 		local b = CreateFrame("Button", "PolestarUI" .. name .. action, UIParent)
 		b:SetScript("OnClick", function() fn() end)
-		keyButtons[action] = b:GetName()
+		keyButtons[action] = { module = module, name = b:GetName() }
 	end
 	if not keySig then
 		Polestar.RegisterEvent("UPDATE_BINDINGS", bindKeys)
@@ -183,7 +193,7 @@ function ns.Doors(name, actions, micro, onMicro)
 	-- only (a secure button cannot be shown or moved in combat).
 	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
 		if InCombatLockdown() then return end
-		local on = micro:IsVisible() and micro:IsEnabled()
+		local on = ns.Enabled(module) and micro:IsVisible() and micro:IsEnabled()
 		if on then
 			local k = micro:GetEffectiveScale() / UIParent:GetEffectiveScale()
 			local x, y, w, h = micro:GetLeft() * k, micro:GetBottom() * k, micro:GetWidth() * k, micro:GetHeight() * k
@@ -338,8 +348,98 @@ end
 
 local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
 
--- /pui <module> opens it; /pui <module> on|off takes effect after /reload.
+-- A window as Polestar's (on) or the game's (off), saved per window in
+-- PolestarUIDB.modules. Live: switched off, ours closes and its doors (keys,
+-- micro button, toggle hook) are the game's again at once; switched on, they
+-- are ours (Enable runs the first time). A module whose stock routing we
+-- stopped (reloadOff) is the game's again only after /reload. Never in
+-- combat: the doors' override bindings and secure buttons cannot change then.
+function ns.Switch(key, on)
+	local m = ns.modules[key]
+	if InCombatLockdown() then return say("windows cannot switch in combat; try again after it.") end
+	PolestarUIDB.modules[key] = on
+	if on and not m.psStarted then
+		m.psStarted = true
+		m.Enable()
+	elseif not on and m.reloadOff and m.psStarted then
+		return say(key .. ": the game's window after /reload.")
+	end
+	if not on and m.psFrame then m.psFrame:Hide() end
+	bindKeys()
+	say(key .. ": " .. (on and "Polestar's " or "the game's ") .. "window" .. " (/pui " .. key .. (on and " off" or " on") .. " to switch back).")
+end
+
+local function stateOf(key)
+	if ns.Enabled(key) then return "on" end
+	return ns.modules[key].reloadOff and ns.modules[key].psStarted and "off after /reload" or "off"
+end
+
+-- The window's menu ("..."), Polestar's own (W.ShowMenu, as on the guide
+-- window), left of the close button; the Menu scale slider moves left of it.
+function ns.WindowMenu(f, key)
+	local W = Polestar.Widgets
+	local m = ns.modules[key]
+	m.psFrame = f
+	local b = W.IconButton(f.Header, "menu", 28, "Menu", function(self)
+		if W.MenuShown(self) then return W.HideMenu() end
+		W.ShowMenu(self, {
+			{ text = "Use game window", icon = "window", onClick = function() ns.Switch(key, false) end,
+				tip = (m.reloadOff and "After /reload, the game's own window opens in its place." or "The game's own window opens in its place.")
+					.. " Type /pui " .. key .. " on to come back." },
+		})
+	end, 14)
+	local t = f.HeaderTools
+	local function place()
+		b:ClearAllPoints()
+		if f.Close:IsShown() then
+			b:SetPoint("RIGHT", f.Close, "LEFT", -4, 0)
+		else
+			b:SetPoint("TOPRIGHT", f.Header, "TOPRIGHT", -W.SHELL.pad, -12)
+		end
+		t:ClearAllPoints()
+		t:SetPoint("RIGHT", b, "LEFT", -14, 0)
+	end
+	hooksecurefunc(t, "Place", place) -- the shell places the slider again on a theme change
+	place()
+	f.psMenu = b
+end
+
 if not Polestar.GamepadUI() then
+	-- On a stock window shown in place of ours (switched off), a small button
+	-- of ours above its top right corner switches back. It is ours, on
+	-- UIParent, placed by position: nothing is added to, hooked on or anchored
+	-- to the stock frame, which is only read (docs/CLIENT.md, rule 10). Not
+	-- shown when there is no room above it (a maximised map).
+	local stockButtons = {}
+	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
+		for _, key in ipairs(ns.order) do
+			local m, b = ns.modules[key], stockButtons[key]
+			local fr = PolestarUIDB and not ns.Enabled(key) and m.stock and m.stock()
+			local k = fr and fr:IsVisible() and fr:GetTop() and fr:GetEffectiveScale() / UIParent:GetEffectiveScale()
+			if k and (fr:GetTop() * k + 30 <= UIParent:GetTop()) then
+				if not b then
+					b = Polestar.Widgets.Button(UIParent, "Polestar", function() ns.Switch(key, true) end, { height = 22, icon = "emblem" })
+					b:HookScript("OnEnter", function(self)
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:SetText("Use Polestar's window")
+						ns.TooltipHint("Its keys and micro button open Polestar's window in place of this one. Or type /pui " .. key .. " on.")
+						GameTooltip:Show()
+					end)
+					b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+					stockButtons[key] = b
+				end
+				b:ClearAllPoints()
+				b:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", fr:GetRight() * k, fr:GetTop() * k + 4)
+				b:SetFrameStrata(fr:GetFrameStrata())
+				b:Show()
+			elseif b then
+				b:Hide()
+			end
+		end
+	end)
+
+	-- /pui lists the windows and whether each is Polestar's; /pui <window>
+	-- on|off switches it, /pui <window> opens ours.
 	SLASH_POLESTARUI1 = "/pui"
 	SlashCmdList.POLESTARUI = function(msg)
 		local key, state = (msg or ""):lower():match("^(%S*)%s*(%S*)")
@@ -347,10 +447,10 @@ if not Polestar.GamepadUI() then
 			if state == "on" or state == "off" then ns.SetDocked(state == "on") end
 			say("windows " .. (ns.Docked() and "dock as the game's do" or "move freely") .. " (/pui dock on|off)")
 		elseif not ns.modules[key] then
-			say("modules: " .. table.concat(ns.order, ", ") .. " (/pui <module> [on|off], /pui dock on|off)")
+			say("windows (on: Polestar's, off: the game's). /pui <window> on|off, /pui dock on|off")
+			for _, k in ipairs(ns.order) do say("  " .. k .. ": " .. stateOf(k)) end
 		elseif state == "on" or state == "off" then
-			PolestarUIDB.modules[key] = state == "on"
-			say(key .. " " .. state .. ": /reload to apply.")
+			ns.Switch(key, state == "on")
 		else
 			ns.Show(key)
 		end

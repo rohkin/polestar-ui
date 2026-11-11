@@ -588,6 +588,7 @@ local function build()
 		if f and f:IsShown() then refresh() end
 	end })
 	ns.Dock(f)
+	ns.WindowMenu(f, "crafting")
 	-- The subject block names the profession, in place of Polestar's lockup:
 	-- its name with the rank at the right end of its skill bar.
 	local holder = CreateFrame("Frame", nil, f)
@@ -782,5 +783,11 @@ function M.Enable()
 	end
 	Theme.OnChanged(changed)
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+-- Off waits for /reload: routing TRADE_SKILL_SHOW back to the stock window
+-- from our code would open it from tainted code (docs/CLIENT.md, rule 11).
+function M.stock() return ProfessionsFrame and not (ProfessionsFrame.BookPage and ProfessionsFrame.BookPage:IsShown()) and ProfessionsFrame end
+M.reloadOff = true
 
 ns.Module("crafting", M)

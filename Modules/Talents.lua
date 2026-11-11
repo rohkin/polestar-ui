@@ -459,6 +459,7 @@ local function build()
 		if f:IsShown() then M.Show() end
 	end })
 	ns.Dock(f)
+	ns.WindowMenu(f, "talents")
 	-- The subject block names the window, in place of Polestar's lockup.
 	-- Reparented, not hidden: the shell re-shows its version line on every show.
 	local holder = CreateFrame("Frame", nil, f)
@@ -595,7 +596,7 @@ function M.Enable()
 	-- Not before the first talent point, as the stock micro button stays
 	-- disabled until then (its overlay then hands it the click).
 	local function toggle() if C_SpecializationInfo.HasPlayerEarnedATalentPoint() then M.Toggle() end end
-	ns.Doors("Talents", { TOGGLETALENTS = toggle }, TalentMicroButton, M.Toggle)
+	ns.Doors("talents", "Talents", { TOGGLETALENTS = toggle }, TalentMicroButton, M.Toggle)
 	local function changed() if f and f:IsShown() and not InCombatLockdown() then refresh() end end
 	-- A commit ends (applied or refused): changes are open again.
 	local function committed()
@@ -609,5 +610,8 @@ function M.Enable()
 		Polestar.RegisterEvent(e, changed)
 	end
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+function M.stock() return PlayerSpellsFrame and PlayerSpellsFrame.TalentsFrame:IsShown() and PlayerSpellsFrame end
 
 ns.Module("talents", M)

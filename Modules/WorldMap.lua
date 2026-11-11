@@ -125,6 +125,7 @@ end
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.sidebar + 2 + MAP_W, height = W.SHELL.header + 2 + MAP_H })
 	ns.Dock(f)
+	ns.WindowMenu(f, "map")
 	-- The subject block names the window, in place of Polestar's lockup.
 	local holder = CreateFrame("Frame", nil, f)
 	holder:Hide()
@@ -268,7 +269,7 @@ function M.Enable()
 	-- The map and quest log keys and the micro button open ours; the stock
 	-- map is never touched (docs/CLIENT.md, rule 8), a shift-click on the
 	-- micro button away. Every other door stays the game's (docs/CLIENT.md, rule 14).
-	ns.Doors("WorldMap", { TOGGLEWORLDMAP = M.Toggle, TOGGLEQUESTLOG = M.ToggleQuests }, QuestLogMicroButton, M.ToggleQuests)
+	ns.Doors("map", "WorldMap", { TOGGLEWORLDMAP = M.Toggle, TOGGLEQUESTLOG = M.ToggleQuests }, QuestLogMicroButton, M.ToggleQuests)
 	Polestar.RegisterEvent("ZONE_CHANGED_NEW_AREA", M.Refresh)
 	Polestar.RegisterEvent("ZONE_CHANGED", M.Refresh)
 	local function quests() if f then f.psQuests.Paint() end end
@@ -279,5 +280,8 @@ function M.Enable()
 	-- A reward's item, loaded after the details first showed it.
 	Polestar.RegisterEvent("GET_ITEM_INFO_RECEIVED", function() if f and f.psQuests.Details:IsShown() then quests() end end)
 end
+
+-- The stock window, for the button that switches back to ours (Core.lua).
+function M.stock() return WorldMapFrame end
 
 ns.Module("map", M)

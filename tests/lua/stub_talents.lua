@@ -195,8 +195,13 @@ DUAL_SPEC_PRIMARY, DUAL_SPEC_SECONDARY = "Primary", "Secondary"
 -- The game's window: addon code must never show or hide it (docs/CLIENT.md, rule 8).
 PlayerSpellsFrame = CreateFrame("Frame", "PlayerSpellsFrame", UIParent)
 PlayerSpellsFrame:Hide()
+-- Where the panel manager puts it, its talents tab inside (the switch-back button reads both).
+PlayerSpellsFrame:SetSize(800, 560)
+PlayerSpellsFrame.x, PlayerSpellsFrame.y = 16, 100
+PlayerSpellsFrame.TalentsFrame = CreateFrame("Frame", nil, PlayerSpellsFrame)
+PlayerSpellsFrame.TalentsFrame:Hide()
 function PlayerSpellsFrame.Hide() error("addon code hid PlayerSpellsFrame", 2) end
-function stub.bindingRun.TOGGLETALENTS() PlayerSpellsFrame:Show() end
+function stub.bindingRun.TOGGLETALENTS() PlayerSpellsFrame:Show(); PlayerSpellsFrame.TalentsFrame:Show() end
 TalentMicroButton = CreateFrame("Button", "TalentMicroButton", UIParent)
 TalentMicroButton.tooltipText = "Talents (N)"
 -- High in its bar, as the micro menu sits: the overlay must land above it.
