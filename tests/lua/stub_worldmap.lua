@@ -48,6 +48,7 @@ function Canvas:SetMapID(id) if id ~= self.mapID then self.mapID = id; self:OnMa
 function Canvas:GetMapID() return self.mapID end
 function Canvas:OnMapChanged() end
 function Canvas:ResetZoom() self.zoomedOut = true end
+function Canvas:RefreshAllDataProviders() self.refreshed = (self.refreshed or 0) + 1 end
 -- The map art's one zoom step, as Forever's art gives it.
 function Canvas:OnFrameSizeChanged() self.ScrollContainer:CreateZoomLevels() end
 local function oneStep(self) self.zoomLevels = { { scale = 0.8, layerIndex = 1 } } end
@@ -180,3 +181,26 @@ stub.bindings.TOGGLEQUESTLOG = { "L" }
 function stub.bindingRun.TOGGLEQUESTLOG() WorldMapFrame:Show() end
 QuestLogMicroButton = createFrame("Button", "QuestLogMicroButton", UIParent)
 QuestLogMicroButton.tooltipText = "Quest Log (L)"
+
+-- The map's filters (the stock tracking menu's): its CVars, on as the
+-- preview draws, and the low-level quests' tracking filter.
+for _, k in ipairs({ "questPOI", "showQuestLevel", "showQuestDifficultyColor", "contentTrackingFilter", "showQuestObjectivesInLog" }) do stub.cvars[k] = "1" end
+Enum.MinimapTrackingFilter.TrivialQuests = 1024
+stub.trivialOut = true
+C_Minimap = { IsFilteredOut = function(id) return id == 1024 and stub.trivialOut end, SetTracking = function(i, on) if i == 9 then stub.trivialOut = not on end end }
+MinimapUtil = { GetFilterIndexForFilterID = function(id) return id == 1024 and 9 or nil end }
+SHOW_QUEST_OBJECTIVES_ON_MAP_TEXT, SHOW_QUEST_LEVELS, MAP_QUEST_DIFFICULTY_TEXT = "Quest Objectives", "Show Quest Levels", "Quest Difficulty Color"
+MINIMAP_TRACKING_TRIVIAL_QUESTS, CONTENT_TRACKING_MAP_TOGGLE = "Low-Level Quests", "Tracked Items"
+WORLD_MAP_FILTER_TITLE_SHOW_MAP, WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG, QUEST_LOG_SHOW_OBJECTIVES = "Show on Map:", "Show in Quest Log:", "Quest Objectives"
+-- A context menu: its tag and entries, as the generator describes them.
+MenuUtil = { CreateContextMenu = function(owner, gen)
+	local m = { owner = owner, items = {} }
+	local root = {
+		SetTag = function(_, tag) m.tag = tag end,
+		CreateTitle = function(_, text) m.items[#m.items + 1] = { title = text } end,
+		CreateCheckbox = function(_, text, get, set) m.items[#m.items + 1] = { text = text, get = get, set = set } end,
+		QueueSpacer = function() end, QueueDivider = function() end,
+	}
+	gen(owner, root)
+	stub.menu = m
+end }

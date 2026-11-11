@@ -2,7 +2,8 @@
 -- the right of our World Map, listing the log as the stock panel
 -- (QuestMapFrame's QuestLogQuests_Update) lists it: foldable headers, each
 -- quest with its level, its title in its difficulty colour and what is left
--- of it; a click opens its details in the list's place.
+-- of it (each as the map's filters say); a click opens its details in the
+-- list's place.
 -- ns.QuestLog(window, canvas, width) -> the panel; panel.Paint().
 
 local ADDON, ns = ...
@@ -28,8 +29,50 @@ function ns.QuestLog(win, canvas, width)
 		query = (text or ""):lower()
 		p.Paint()
 	end)
-	p.Search:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side, -HEAD)
+	p.Search:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side + 30 + 6, -HEAD)
 	p.Search:SetPoint("TOPRIGHT", p, "TOPRIGHT", -W.SHELL.side, -HEAD)
+	-- Left of the search, as Forever's map filter button sits left of the stock
+	-- log's: the stock map's filter menu (WorldMapTrackingOptionsButtonMixin:
+	-- SetupMenu, the filters Forever builds), then the log's own as the stock
+	-- menu adds it when the two are one. The same CVars and tracking filter, so
+	-- a change shows in both maps; under the stock tag, so other addons'
+	-- entries (Menu.ModifyMenu) join ours. Each change redraws at once (rule 6).
+	local TRIVIAL = Enum.MinimapTrackingFilter and Enum.MinimapTrackingFilter.TrivialQuests
+	local FILTERS = {
+		{ SHOW_QUEST_OBJECTIVES_ON_MAP_TEXT, "questPOI" },
+		{ SHOW_QUEST_LEVELS, "showQuestLevel" },
+		{ MAP_QUEST_DIFFICULTY_TEXT, "showQuestDifficultyColor" },
+		-- Straight to the tracking filter: the Settings proxy the stock menu
+		-- writes through only reads it back, and stays untouched by our code.
+		{ MINIMAP_TRACKING_TRIVIAL_QUESTS, get = function() return not C_Minimap.IsFilteredOut(TRIVIAL) end, set = function(on)
+			local i = MinimapUtil.GetFilterIndexForFilterID(TRIVIAL)
+			if i then C_Minimap.SetTracking(i, on) end
+		end },
+		{ CONTENT_TRACKING_MAP_TOGGLE, "contentTrackingFilter" },
+	}
+	local function checkbox(root, text, cvar, get, set)
+		get = get or function() return GetCVarBool(cvar) end
+		set = set or function(on) SetCVar(cvar, on and "1" or "0") end
+		root:CreateCheckbox(text, get, function()
+			set(not get())
+			canvas:RefreshAllDataProviders()
+			p.Paint()
+		end)
+	end
+	p.Filter = W.IconButton(p, "sliders", 30, "Filters", function(self)
+		MenuUtil.CreateContextMenu(self, function(_, root)
+			root:SetTag("MENU_WORLD_MAP_TRACKING")
+			root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_MAP)
+			for _, f in ipairs(FILTERS) do checkbox(root, f[1], f[2], f.get, f.set) end
+			root:QueueSpacer()
+			root:QueueDivider()
+			root:QueueSpacer()
+			root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG)
+			checkbox(root, QUEST_LOG_SHOW_OBJECTIVES, "showQuestObjectivesInLog")
+		end)
+	end, 14)
+	p.Filter:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side, -HEAD)
+	Theme.Skin(p.Filter, "editbox")
 	local line = W.Divider(p)
 	line:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -TOP)
 	line:SetPoint("TOPRIGHT", p, "TOPRIGHT", 0, -TOP)
@@ -159,10 +202,11 @@ function ns.QuestLog(win, canvas, width)
 		return table.concat(t, "\n")
 	end
 
-	-- "[level] title" in its difficulty colour, lifted to read.
+	-- "[level] title" in its difficulty colour, lifted to read; the level and
+	-- the colour as the map's filters say.
 	local function questName(fs, info)
-		fs:SetText(("[%d] %s"):format(info.level or 0, info.title or ""))
-		local diff = C_PlayerInfo.GetContentDifficultyQuestForPlayer and C_PlayerInfo.GetContentDifficultyQuestForPlayer(info.questID)
+		fs:SetText(GetCVarBool("showQuestLevel") and ("[%d] %s"):format(info.level or 0, info.title or "") or info.title or "")
+		local diff = GetCVarBool("showQuestDifficultyColor") and C_PlayerInfo.GetContentDifficultyQuestForPlayer and C_PlayerInfo.GetContentDifficultyQuestForPlayer(info.questID)
 		local c = diff and GetDifficultyColor(diff)
 		W.Uncolor(fs)
 		if c then fs:SetTextColor(Theme.Legible(c.r, c.g, c.b)) else W.Color(fs, "text") end
@@ -176,7 +220,7 @@ function ns.QuestLog(win, canvas, width)
 		r.Mark:SetTexture(Theme.Media(done and "check" or "star"))
 		W.Color(r.Mark, done and "success" or "accent")
 		r.Name:SetWidth(textW - ((done or watched) and 14 + 8 or 0))
-		local g = goals(info)
+		local g = GetCVarBool("showQuestObjectivesInLog") and goals(info) or ""
 		r.Goals:SetText(g)
 		r.Goals:SetShown(g ~= "")
 		local h = 8 + math.ceil(r.Name:GetStringHeight()) + (g ~= "" and 4 + math.ceil(r.Goals:GetStringHeight()) or 0) + 10
@@ -567,7 +611,7 @@ function ns.QuestLog(win, canvas, width)
 		d.Abandon:SetEnabled(not disabled and C_QuestLog.CanAbandonQuest(id))
 	end
 
-	local listParts = { p.Title, p.Count, p.Search, line, p.Scroll }
+	local listParts = { p.Title, p.Count, p.Filter, p.Search, line, p.Scroll }
 	function p.Open(id)
 		detail = id
 		for _, r in ipairs(listParts) do r:Hide() end
