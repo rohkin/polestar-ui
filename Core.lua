@@ -4,7 +4,8 @@
 -- Taint: Forever's gamepad UI reads parts of the default UI from secure code,
 -- so nothing here writes into Blizzard frames; our windows are our own, and a
 -- stock window is closed the moment the game opens it (docs/DESIGN.md, "The
--- Replacement Contract"). With the gamepad UI on, every module starts off and
+-- Replacement Contract"). The exception is the tooltips,
+-- restyled in place (Modules/Tooltips.lua). With the gamepad UI on, every module starts off and
 -- no slash command is registered.
 
 local ADDON, ns = ...
@@ -14,7 +15,9 @@ ns.modules, ns.order = {}, {}
 
 -- A module: { Enable = fn (once, at login or when switched on), Show = fn(...),
 -- stock = fn (the stock window it replaces, when that is the one shown),
--- reloadOff = true (switching it off waits for /reload) }, keyed by its
+-- reloadOff = true (switching it off waits for /reload), Apply = fn (a module
+-- with no window: switched on or off again live, it restyles or restores),
+-- noun = what it switches ("window" when not given) }, keyed by its
 -- slash-command name.
 function ns.Module(key, m)
 	ns.modules[key] = m
@@ -363,10 +366,12 @@ function ns.Switch(key, on)
 		m.Enable()
 	elseif not on and m.reloadOff and m.psStarted then
 		return say(key .. ": the game's window after /reload.")
+	elseif m.Apply and m.psStarted then
+		m.Apply()
 	end
 	if not on and m.psFrame then m.psFrame:Hide() end
 	bindKeys()
-	say(key .. ": " .. (on and "Polestar's " or "the game's ") .. "window" .. " (/pui " .. key .. (on and " off" or " on") .. " to switch back).")
+	say(key .. ": " .. (on and "Polestar's " or "the game's ") .. (m.noun or "window") .. " (/pui " .. key .. (on and " off" or " on") .. " to switch back).")
 end
 
 local function stateOf(key)

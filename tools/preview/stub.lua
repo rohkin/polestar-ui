@@ -395,9 +395,10 @@ local function tipLayout(tt)
 			pool[i] = row
 		end
 		local r = rows[i]
-		local size = i == 1 and 14 or 12
+		-- The client's tooltip font objects (the first line the header's).
+		local font = i == 1 and GameTooltipHeaderText or GameTooltipText
 		for _, fs in ipairs({ row.left, row.right }) do
-			fs:SetFont(STANDARD_TEXT_FONT, size, "")
+			fs:SetFontObject(font)
 			fs:SetShadowOffset(1, -1)
 			fs:SetShadowColor(0, 0, 0, 1)
 			fs.width = nil
@@ -457,18 +458,21 @@ local function tipInstall(tt)
 	tt.strata = "TOOLTIP"
 	tt.clamped = true
 	tt.shown = false
-	local bg = M.CreateTexture(tt, nil, "BACKGROUND", nil, -8)
-	bg.points = {}
-	M.SetPoint(bg, "TOPLEFT", tt, "TOPLEFT", 0, 0)
-	M.SetPoint(bg, "BOTTOMRIGHT", tt, "BOTTOMRIGHT", 0, 0)
-	bg:SetColorTexture(0.02, 0.02, 0.05, 0.92)
-	local edges = { { "TOPLEFT", "TOPRIGHT", 0, 1 }, { "BOTTOMLEFT", "BOTTOMRIGHT", 0, 1 }, { "TOPLEFT", "BOTTOMLEFT", 1, 0 }, { "TOPRIGHT", "BOTTOMRIGHT", 1, 0 } }
-	for _, e in ipairs(edges) do
-		local t = M.CreateTexture(tt, nil, "BORDER")
-		M.SetPoint(t, e[1], tt, e[1], 0, 0)
-		M.SetPoint(t, e[2], tt, e[2], 0, 0)
-		if e[3] == 1 then t.width = 1 else t.height = 1 end
-		t:SetColorTexture(0.45, 0.46, 0.52, 1)
+	-- A tooltip with the stock art (wow_stub.lua's NineSlice) needs no ground.
+	if not tt.NineSlice then
+		local bg = M.CreateTexture(tt, nil, "BACKGROUND", nil, -8)
+		bg.points = {}
+		M.SetPoint(bg, "TOPLEFT", tt, "TOPLEFT", 0, 0)
+		M.SetPoint(bg, "BOTTOMRIGHT", tt, "BOTTOMRIGHT", 0, 0)
+		bg:SetColorTexture(0.02, 0.02, 0.05, 0.92)
+		local edges = { { "TOPLEFT", "TOPRIGHT", 0, 1 }, { "BOTTOMLEFT", "BOTTOMRIGHT", 0, 1 }, { "TOPLEFT", "BOTTOMLEFT", 1, 0 }, { "TOPRIGHT", "BOTTOMRIGHT", 1, 0 } }
+		for _, e in ipairs(edges) do
+			local t = M.CreateTexture(tt, nil, "BORDER")
+			M.SetPoint(t, e[1], tt, e[1], 0, 0)
+			M.SetPoint(t, e[2], tt, e[2], 0, 0)
+			if e[3] == 1 then t.width = 1 else t.height = 1 end
+			t:SetColorTexture(0.45, 0.46, 0.52, 1)
+		end
 	end
 	local function row(left, lc, right, rc, wrap)
 		tt.tipRows[#tt.tipRows + 1] = { left = tostring(left or ""), lc = lc, right = right ~= nil and tostring(right) or nil, rc = rc or { 1, 1, 1 }, wrap = wrap and true or false }

@@ -278,6 +278,27 @@ and opens the stock map; never hide it after the game opened it.
 **Caught by:** the map scenes' stub `WorldMapFrame` is only ever shown by the
 game's own bindings; no scene hides it.
 
+## 15. A stock frame other code writes into is restyled, never replaced
+
+**What the source says:** `GameTooltip` is filled by secure code (action
+buttons, spell flyouts, the world map) and by every addon that adds a line.
+A tooltip of ours in its place loses their lines; a stock function or method
+replaced, or a key written on the tooltip or its NineSlice, taints what the
+secure code reads next.
+
+**Rule:** restyle such a frame only through widget calls that write no Lua
+value on it: fade its art's pieces (`SetAlpha` on the NineSlice's pieces),
+add textures of our own to it (kept in a weak table keyed by the frame, never
+as a key on it), set a status bar's texture or a font object's face. Re-apply
+in a post-hook on what resets the style (`hooksecurefunc`
+on `SharedTooltip_SetBackdropStyle`, which every hide runs), never by
+replacing it. Read no line or value of the tooltip: in combat they can be
+secret (rule 3).
+
+**Caught by:** the `tooltips` scene: another addon's hook adds its line, the
+look holds through a style reset (embedded and back), and switched off, the
+stock art and fonts are back.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

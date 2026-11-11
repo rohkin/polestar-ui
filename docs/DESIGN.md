@@ -67,6 +67,9 @@ How a stock element is replaced, for every module.
 1. **Our frames are our own.** We never add children, scripts or hooks to a
    Blizzard frame, and never call a Blizzard frame's methods except the ones in
    step 2. We build our own window, named `PolestarUI<Element>`.
+   **Except** the tooltips: other addons write into the stock
+   ones, so they are restyled in place (Tooltips, below; CLIENT.md,
+   rule 15).
 2. **The stock way in opens ours, and the stock window closes.** Keybindings and
    micro buttons call stock toggles (`ToggleCharacter`, `ToggleProfessionsBook`,
    `ProfessionsFrame_LoadUI`). We follow them with `hooksecurefunc` (a post-hook
@@ -614,6 +617,32 @@ the tooltip, XP bar and error text (low).
 HUD elements cast no window shadow and carry no band: they sit on the world, so
 they follow Polestar's Transparent guide-window rules (outlined text, faint
 tracks), with a panel ground only where the player turns it on.
+
+#### Tooltips (`GameTooltip` and the stock tooltips) — Risk: low
+
+Built first of the HUD. The game's own tooltips, restyled in place and never
+replaced: other addons add their lines to them (`AddLine`,
+`TooltipDataProcessor`), so their text, lines and layout stay the game's.
+Covered: `GameTooltip`, `ItemRefTooltip`, `ShoppingTooltip1/2`,
+`ItemRefShoppingTooltip1/2`, `EmbeddedItemTooltip`, `GameNoHeaderTooltip`
+and `GameSmallHeaderTooltip` (`Modules/Tooltips.lua`).
+- **Ground:** Polestar's window ground (`bg`, at Polestar's Background
+  opacity, like the windows) and a 1px border
+  hairline, square, in place of the stock border (its NineSlice's pieces
+  faded out). Ours lies on the NineSlice, so an embedded tooltip, whose art
+  the game hides, shows none.
+- **Health bar:** the stock bar, flat (the white texture) on a shade track at
+  60%; its colour stays the game's.
+- **Type:** the tooltip font objects (`GameTooltipHeaderText`,
+  `GameTooltipText`, `GameTooltipTextSmall`) in Polestar's face (heading, body
+  and small weights) at the game's sizes. Line colours stay the game's
+  (quality, red requirements).
+- **Not changed:** the comparison's "Equipped" header plate, the item
+  tooltip's border (the stock one shows no quality colour), special styles'
+  overlays (`TopOverlay`, `BottomOverlay`).
+- **Switch:** `/pui tooltips on|off`, live: off gives back the stock pieces,
+  bar texture and fonts at once. No window, so no "..." menu and no
+  stock-side button.
 
 ## Components
 

@@ -862,6 +862,39 @@ function GameTooltip.AddLine(self, text) table.insert(self.lines, tostring(text)
 function GameTooltip.AddDoubleLine(self, l, r) table.insert(self.lines, tostring(l) .. " | " .. tostring(r)) end
 function GameTooltip.SetText(self, text) self.lines = { tostring(text) } end
 function GameTooltip.GetOwner(self) return self.owner end
+-- Its art (SharedTooltipArtTemplate): the NineSlice on the tooltip's level,
+-- its nine pieces (a dark centre, grey edges), and GameTooltipTemplate's
+-- health bar. SharedTooltip_SetBackdropStyle lays the layout again, as the
+-- client's (SharedTooltipTemplates.lua): an embedded tooltip hides it.
+do
+	local n = CreateFrame("Frame", nil, GameTooltip)
+	n:SetAllPoints(GameTooltip)
+	-- useParentLevel puts its art under the tooltip's text; the preview orders
+	-- whole frames, so a level under the tooltip's draws it so.
+	n.level = 0
+	GameTooltip.NineSlice = n
+	local edges = { TopEdge = { "TOPLEFT", "TOPRIGHT", "height" }, BottomEdge = { "BOTTOMLEFT", "BOTTOMRIGHT", "height" },
+		LeftEdge = { "TOPLEFT", "BOTTOMLEFT", "width" }, RightEdge = { "TOPRIGHT", "BOTTOMRIGHT", "width" } }
+	for _, k in ipairs({ "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }) do
+		local t = n:CreateTexture(nil, k == "Center" and "BACKGROUND" or "BORDER")
+		n[k] = t
+		local e = edges[k]
+		if e then
+			t:SetPoint(e[1], n, e[1], 0, 0)
+			t:SetPoint(e[2], n, e[2], 0, 0)
+			t[e[3]] = 1
+			t:SetColorTexture(0.45, 0.46, 0.52, 1)
+		end
+	end
+	n.Center:SetAllPoints(n)
+	n.Center:SetColorTexture(0.02, 0.02, 0.05, 0.92)
+	GameTooltip.StatusBar = CreateFrame("StatusBar", "GameTooltipStatusBar", GameTooltip)
+	GameTooltip.StatusBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-TargetingFrame-BarFill")
+	GameTooltip.StatusBar:Hide()
+end
+function SharedTooltip_SetBackdropStyle(self, style, embedded)
+	if embedded or rawget(self, "IsEmbedded") then self.NineSlice:Hide() else self.NineSlice:Show() end
+end
 DEFAULT_CHAT_FRAME = CreateFrame("Frame", "ChatFrame1", UIParent)
 function DEFAULT_CHAT_FRAME.AddMessage(_, msg) table.insert(stub.messages, tostring(msg)) end
 ColorPickerFrame = CreateFrame("Frame", "ColorPickerFrame", UIParent)
@@ -878,6 +911,9 @@ GameFontHighlightSmall = FontObject(STANDARD_TEXT_FONT, 10)
 GameFontNormalLarge = FontObject(STANDARD_TEXT_FONT, 16)
 GameFontDisable = FontObject(STANDARD_TEXT_FONT, 12)
 ChatFontNormal = FontObject(STANDARD_TEXT_FONT, 14)
+GameTooltipHeaderText = FontObject(STANDARD_TEXT_FONT, 14)
+GameTooltipText = FontObject(STANDARD_TEXT_FONT, 12)
+GameTooltipTextSmall = FontObject(STANDARD_TEXT_FONT, 10)
 NumberFontNormal = FontObject(STANDARD_TEXT_FONT, 12, "OUTLINE")
 function CreateFont(name)
 	local o = FontObject(STANDARD_TEXT_FONT, 12)
