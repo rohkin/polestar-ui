@@ -253,6 +253,31 @@ allow it. Colour, the click and the tooltip hint all follow that
 does; the `talents-spend` and `legacy-tree` scenes check that with no point
 left an unlearnt talent is greyed and a click spends nothing.
 
+## 14. Never hide the stock world map after the game opened it
+
+**What the source says:** the game opens `WorldMapFrame` through doors only
+its own code knows: quest tracker clicks and "Show on map", world quest and
+bonus objective clicks, map, event and world quest links, `/mappin`, the
+minimap's zone text, NPC map interactions (`WORLD_MAP_OPEN`, registered on
+`WorldMapFrame` itself) and the spirit healer. None goes through `GameEvent`,
+and a link handler cannot be registered twice (`LinkUtil`'s `assertsafe`).
+The only way to take them is a post-hook that hides the stock map, which runs
+`WorldMapMixin:OnHide` as our code: `MapCanvasMixin.OnHide` and every data
+provider's `OnHide`, `QuestMapFrame_OnHide`, `OnUIClose`,
+`C_Map.CloseWorldMapInteraction` and `UpdateMicroButtons`
+(`Blizzard_WorldMap.lua`). That leaves tainted canvas, provider and quest log
+state behind, which the stock map's own `OnShow` and pin setup
+(`SetPassThroughButtons`) read when the game opens it in combat;
+`MaximizeUIPanel` and `RestoreUIPanelArea` do nothing from tainted code; and
+the open and close sounds play and the read emote flickers.
+
+**Rule:** take only the doors that run no stock code (keys and the micro
+button, `ns.Doors`). Every door only the game's code knows stays the game's,
+and opens the stock map; never hide it after the game opened it.
+
+**Caught by:** the map scenes' stub `WorldMapFrame` is only ever shown by the
+game's own bindings; no scene hides it.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with

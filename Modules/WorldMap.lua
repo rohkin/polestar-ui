@@ -267,7 +267,7 @@ end
 function M.Enable()
 	-- The map and quest log keys and the micro button open ours; the stock
 	-- map is never touched (docs/CLIENT.md, rule 8), a shift-click on the
-	-- micro button away. Map links and the quest tracker stay the game's.
+	-- micro button away. Every other door stays the game's (docs/CLIENT.md, rule 14).
 	ns.Doors("WorldMap", { TOGGLEWORLDMAP = M.Toggle, TOGGLEQUESTLOG = M.ToggleQuests }, QuestLogMicroButton, M.ToggleQuests)
 	Polestar.RegisterEvent("ZONE_CHANGED_NEW_AREA", M.Refresh)
 	Polestar.RegisterEvent("ZONE_CHANGED", M.Refresh)

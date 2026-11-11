@@ -565,8 +565,11 @@ zoom and click-to-open are the game's.
 - **Doors:** `TOGGLEWORLDMAP` toggles ours; `TOGGLEQUESTLOG` and
   `QuestLogMicroButton` open it with the quest log, or close it when the
   log shows, as the stock toggle (`ns.Doors`; shift-click on the micro
-  button: the stock map). Map
-  links and the quest tracker stay the game's.
+  button: the stock map). Every other door stays the game's and opens the
+  stock map (CLIENT.md, rule 14): the objective tracker's quest clicks and
+  "Show on map", world quest and bonus objective clicks, map, event and
+  world quest links, `/mappin`, the minimap's zone text, NPC map
+  interactions (`WORLD_MAP_OPEN`) and the spirit healer.
 
 #### Later windows
 Each gets its entry before it is built. Planned order and Risk:
