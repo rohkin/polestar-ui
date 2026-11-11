@@ -626,11 +626,12 @@ replaced: other addons add their lines to them (`AddLine`,
 Covered: `GameTooltip`, `ItemRefTooltip`, `ShoppingTooltip1/2`,
 `ItemRefShoppingTooltip1/2`, `EmbeddedItemTooltip`, `GameNoHeaderTooltip`
 and `GameSmallHeaderTooltip` (`Modules/Tooltips.lua`).
-- **Ground:** Polestar's window ground (`bg`, at Polestar's Background
-  opacity, like the windows) and a 1px border
-  hairline, square, in place of the stock border (its NineSlice's pieces
-  faded out). Ours lies on the NineSlice, so an embedded tooltip, whose art
-  the game hides, shows none.
+- **Ground:** Polestar's window ground (`bg`) a touch more see-through than
+  the windows: Polestar's Background opacity times 0.85 (0.80 at the default
+  0.94), so the slider still scales it. A 1px border hairline, square, in
+  place of the stock border (its NineSlice's pieces faded out). Ours lies on
+  the NineSlice, so an embedded tooltip, whose art the game hides, shows
+  none.
 - **"Equipped" plate:** the comparison tooltips' header plate
   (`CompareHeader`, ShoppingTooltipTemplate) on the same ground and
   hairline, its stock atlas faded out, the label (the game's text, font

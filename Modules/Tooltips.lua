@@ -64,10 +64,11 @@ local function look(tip)
 	return l
 end
 
--- The ground, shared by the tooltips and the "Equipped" plate.
+-- The ground a touch more see-through than the windows' (the player's
+-- Background opacity still scales it): 0.80 at the default 0.94.
 local function paintGround(l, on, f)
 	local r, g, b = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha())
+	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha() * 0.85)
 	l.fill:SetShown(on)
 	local px = Theme.Pixel(f)
 	for i, t in ipairs(l.edges) do
