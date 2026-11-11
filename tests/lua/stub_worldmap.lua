@@ -90,13 +90,14 @@ local LOG = {
 		rewards = { { "Militia Buckler", 134955, 1, 2, true, 101 } },
 		choices = { { "Militia Dagger", 135641, 1, 1, true, 102 }, { "Kobold Ear Charm", 133345, 2, 3, false, 103 } },
 		spells = { 8921 } },
-	{ title = "Wolves Across the Border", questID = 33, level = 3, done = true },
+	{ title = "Wolves Across the Border", questID = 33, level = 3, done = true, elite = true },
 	{ title = "Westfall", isHeader = true, isCollapsed = true },
 	{ title = "The Defias Brotherhood", questID = 65, level = 14 },
 	{ title = "Hidden", questID = 99, level = 1, isHidden = true },
 }
 for i, q in ipairs(LOG) do q.questLogIndex = i end
 stub.watched = { [7] = true }
+function C_QuestLog.IsEliteQuest(id) for _, q in ipairs(LOG) do if q.questID == id then return q.elite or false end end return false end
 function C_QuestLog.GetNumQuestLogEntries()
 	local n = 0
 	for _, q in ipairs(LOG) do if not q.isHeader then n = n + 1 end end

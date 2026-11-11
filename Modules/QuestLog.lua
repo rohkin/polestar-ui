@@ -205,7 +205,7 @@ function ns.QuestLog(win, canvas, width)
 	-- "[level] title" in its difficulty colour, lifted to read; the level and
 	-- the colour as the map's filters say.
 	local function questName(fs, info)
-		fs:SetText(GetCVarBool("showQuestLevel") and ("[%d] %s"):format(info.level or 0, info.title or "") or info.title or "")
+		fs:SetText(GetCVarBool("showQuestLevel") and ("[%d%s] %s"):format(info.level or 0, C_QuestLog.IsEliteQuest(info.questID) and "+" or "", info.title or "") or info.title or "")
 		local diff = GetCVarBool("showQuestDifficultyColor") and C_PlayerInfo.GetContentDifficultyQuestForPlayer and C_PlayerInfo.GetContentDifficultyQuestForPlayer(info.questID)
 		local c = diff and GetDifficultyColor(diff)
 		W.Uncolor(fs)
