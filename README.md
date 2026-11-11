@@ -11,6 +11,7 @@ Still early: more windows are on the way. Done so far:
 - **Crafting**: recipes by category with "Can make now" and "Recent", search and the game's filters, reagents, and Craft or Craft all; switch professions from the rail.
 - **Legacy**: the reward track, the challenges by category with search, filters and objectives, and the legacy tree with points staged until you Apply.
 - **Tooltips**: the game's own tooltips in Polestar's look, with every line other addons add to them.
+- **Chat**: the game's own chat windows, tabs and input line in Polestar's look, at your chat opacity, with every line other addons add.
 
 ![Character window](screenshots/character.png)
 
@@ -32,6 +33,7 @@ Download `Polestar_UI-<version>.zip` from [Releases](https://github.com/rohkin/p
 - `/pui <window> off`, or "Use game window" in the window's "..." menu, gives the game's own window back at once (crafting after `/reload`); `/pui <window> on`, or the Polestar button above the game's window, brings ours back. Not in combat.
 - The windows dock from the top left as the game's own do; `/pui dock off` lets you drag them anywhere.
 - `/pui tooltips off` gives the game's tooltips their own look back at once; `/pui tooltips on` restyles them again.
+- `/pui chat off` gives the chat windows their own look back at once; `/pui chat on` restyles them again.
 - With Forever's gamepad UI on, every module starts off and `/pui` is not registered.
 
 ## Development

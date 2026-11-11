@@ -4,8 +4,8 @@
 -- Taint: Forever's gamepad UI reads parts of the default UI from secure code,
 -- so nothing here writes into Blizzard frames; our windows are our own, and a
 -- stock window is closed the moment the game opens it (docs/DESIGN.md, "The
--- Replacement Contract"). The exception is the tooltips,
--- restyled in place (Modules/Tooltips.lua). With the gamepad UI on, every module starts off and
+-- Replacement Contract"). The exceptions are the tooltips and the chat,
+-- restyled in place (Modules/Tooltips.lua, Modules/Chat.lua). With the gamepad UI on, every module starts off and
 -- no slash command is registered.
 
 local ADDON, ns = ...

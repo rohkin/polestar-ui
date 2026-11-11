@@ -295,9 +295,20 @@ on `SharedTooltip_SetBackdropStyle`, which every hide runs), never by
 replacing it. Read no line or value of the tooltip: in combat they can be
 secret (rule 3).
 
+Art the game itself fades (the chat windows' ground and border, whose
+alpha `FCF_SetWindowAlpha` and the mouse-over fades write) cannot be faded
+with `SetAlpha`: the next fade writes over it. Hide the pieces the game only
+fades while shown, empty a piece whose alpha must stay live
+(`SetTexture(nil)` on the chat ground), and copy its alpha onto ours from a
+frame of our own (`Modules/Chat.lua`). A frame other code types into (the
+chat edit box: slash commands, macros) gets no script hook; read its state
+(`HasFocus`) from our own frame.
+
 **Caught by:** the `tooltips` scene: another addon's hook adds its line, the
 look holds through a style reset (embedded and back), and switched off, the
-stock art and fonts are back.
+stock art and fonts are back. The `chat` scene: a filtered message and
+another addon's `AddMessage` line show, a new whisper window is restyled,
+our ground follows the window alpha, and switched off, the stock art is back.
 
 ## Reading errors from the game
 

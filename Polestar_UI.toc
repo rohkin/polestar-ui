@@ -19,3 +19,4 @@ Modules\Crafting.lua
 Modules\Legacy.lua
 Modules\WorldMap.xml
 Modules\Tooltips.lua
+Modules\Chat.lua

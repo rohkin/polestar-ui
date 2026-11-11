@@ -67,8 +67,8 @@ How a stock element is replaced, for every module.
 1. **Our frames are our own.** We never add children, scripts or hooks to a
    Blizzard frame, and never call a Blizzard frame's methods except the ones in
    step 2. We build our own window, named `PolestarUI<Element>`.
-   **Except** the tooltips: other addons write into the stock
-   ones, so they are restyled in place (Tooltips, below; CLIENT.md,
+   **Except** the tooltips and the chat: other addons write into the stock
+   ones, so they are restyled in place (Tooltips and Chat, below; CLIENT.md,
    rule 15).
 2. **The stock way in opens ours, and the stock window closes.** Keybindings and
    micro buttons call stock toggles (`ToggleCharacter`, `ToggleProfessionsBook`,
@@ -643,6 +643,34 @@ and `GameSmallHeaderTooltip` (`Modules/Tooltips.lua`).
 - **Switch:** `/pui tooltips on|off`, live: off gives back the stock pieces,
   bar texture and fonts at once. No window, so no "..." menu and no
   stock-side button.
+
+#### Chat (`ChatFrame1`..`ChatFrameN`, the whisper windows) — Risk: medium
+
+The game's own chat windows, restyled in place and never replaced: addons
+write into them (`AddMessage`, message event filters, chat mods), and the
+edit box runs secure slash commands and macros, so frames, text, fonts,
+positions and sizes all stay the game's (`Modules/Chat.lua`). Covered: every
+window in `CHAT_FRAMES` (the whisper windows as they open), its button frame,
+tab and edit box, and the combat log's filter strip.
+- **Ground:** Polestar's window ground (`bg` at the Background opacity
+  setting) and a 1px `border` hairline, in place of the stock border (its
+  pieces hidden) and ground (emptied). The game still writes the player's
+  chat opacity and the mouse-over fade into its own ground's alpha; ours
+  copies that alpha each frame, so the player's opacity scales Polestar's
+  ground (0 is see-through, 1 is Polestar's ground). The player's window
+  colour is kept for when it is switched off.
+- **Tabs:** Polestar's panel (panel ground, hairline) under the game's label,
+  the accent bar under the selected one, the hover wash. The new-message
+  glow and the tab's fading stay the game's.
+- **Edit box:** Polestar's input (shade ground at 35%, hairline), the
+  accent hairline while typing.
+- **Combat log:** its filter strip's black band faded, a divider under it.
+- **Not changed:** fonts and text colours (the chat font size is the
+  player's), the side buttons' icons (menu, channels, voice, social), the
+  scroll bar, the resize grip, minimised windows and the dock's overflow
+  list.
+- **Switch:** `/pui chat on|off`, live: off gives back every stock piece at
+  once.
 
 ## Components
 

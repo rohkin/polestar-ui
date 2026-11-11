@@ -897,6 +897,11 @@ function SharedTooltip_SetBackdropStyle(self, style, embedded)
 end
 DEFAULT_CHAT_FRAME = CreateFrame("Frame", "ChatFrame1", UIParent)
 function DEFAULT_CHAT_FRAME.AddMessage(_, msg) table.insert(stub.messages, tostring(msg)) end
+-- FloatingChatFrame.lua's list and the calls Modules/Chat.lua hooks; the
+-- chat windows themselves are stub_chat.lua's.
+CHAT_FRAMES = {}
+function FCF_OpenTemporaryWindow() end
+function FCFTab_UpdateColors() end
 ColorPickerFrame = CreateFrame("Frame", "ColorPickerFrame", UIParent)
 function ColorPickerFrame.SetupColorPickerAndShow(self, info) self.info = info; self:Show() end
 function ColorPickerFrame.GetColorRGB() return 1, 1, 1 end
