@@ -10,6 +10,8 @@
 					<Anchor point="BOTTOMRIGHT"/>
 				</Anchors>
 			</ScrollFrame>
+			<!-- OnLoad's EvaluateLockReasons indexes it; without it OnLoad stops there. -->
+			<Frame parentKey="BorderFrame" setAllPoints="true"/>
 		</Frames>
 	</Frame>
 	<Script file="QuestLog.lua"/>
