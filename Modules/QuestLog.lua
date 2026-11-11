@@ -312,6 +312,14 @@ function ns.QuestLog(win, canvas, width)
 		y = y + gap + math.ceil(t:GetStringHeight())
 		return t
 	end
+	-- What reward XP is worth of the player's level, as "35% of level 12";
+	-- nil where the game shows no XP bar (max level, XP turned off).
+	local function levelShare(xp)
+		local max = UnitXPMax("player")
+		if not (max and max > 0 and GameRulesUtil.CanShowExperienceBar()) then return end
+		local pct = xp / max * 100
+		return ("%s of level %d"):format(pct < 1 and "<1%" or math.floor(pct) .. "%", UnitLevel("player"))
+	end
 	-- A fact: its name, and its value at the right of the same line.
 	local function pair(label, value, color)
 		local l = text("body", "textDim", label, 8)
@@ -460,7 +468,12 @@ function ns.QuestLog(win, canvas, width)
 		end
 		if items + #currencies > 0 or money > 0 or xp > 0 or honor > 0 or skillPoints then
 			head((choices > 0 or #spells > 0 or title) and REWARD_ITEMS or REWARD_ITEMS_ONLY)
-			if xp > 0 then pair("Experience", BreakUpLargeNumbers(xp)) end
+			if xp > 0 then
+				pair("Experience", BreakUpLargeNumbers(xp) .. " XP")
+				-- The share under the amount, softer, at the right like the value.
+				local share = levelShare(xp)
+				if share then text("small", "textMuted", share, 2):SetJustifyH("RIGHT") end
+			end
 			if money > 0 then pair("Money", GetMoneyString(money)) end
 			if skillPoints then tile(nil, nil, nil, skillName, skillIcon, skillPoints) end
 			for i = 1, items do

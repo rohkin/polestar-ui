@@ -145,6 +145,10 @@ function GetQuestLogRewardSkillPoints() return nil end
 function GetQuestLogRewardInfo(i) return unpack(sel().rewards[i]) end
 function GetQuestLogChoiceInfo(i) return unpack(sel().choices[i]) end
 function GetQuestLogChoiceInfoLootType() return 0 end
+-- The player's level takes 1,280 XP (450 is 35% of it); at the level cap the game shows no XP bar.
+function UnitXP() return 300 end
+function UnitXPMax() return stub.xpMax or 1280 end
+GameRulesUtil = { CanShowExperienceBar = function() return not stub.maxLevel end }
 function GetMoneyString(m) return ("%ds %dc"):format(math.floor(m / 100), m % 100) end
 C_QuestInfoSystem = {
 	GetQuestRewardCurrencies = function() return {} end,

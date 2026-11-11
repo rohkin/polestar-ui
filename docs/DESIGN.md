@@ -550,7 +550,9 @@ zoom and click-to-open are the game's.
   and group size when there are any; "Description" (Heading) and the quest
   text; "Rewards" (Heading) in the stock order and with the stock lines
   (label textDim): the choices, the spells (by kind), a title, then
-  experience and money as facts (the value in Number at the right), a
+  experience and money as facts (the value in Number at the right;
+  experience reads "450 XP" and adds its share of the player's level under it,
+  right-aligned in small textMuted, "35% of level 24", unless the game shows no XP bar), a
   skill, items, currencies and honor. A reward is a Reagent Tile at the
   flyout's width, with the stock reward's tooltip
   (`GameTooltip:SetQuestLogItem`, `SetQuestLogCurrency`, `SetSpellByID`)
