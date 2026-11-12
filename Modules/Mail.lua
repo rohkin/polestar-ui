@@ -23,8 +23,14 @@ local paint, codLine -- below
 -- Taking: money and items, one per MAIL_INBOX_UPDATE
 ---------------------------------------------------------------------------
 
+local failed = {} -- item IDs Open all could not take (MAIL_FAILED), skipped as the stock loop does
+
 local function stopTaking()
-	if taking == "all" then C_Mail.SetOpeningAll(false) end
+	if taking == "all" then
+		C_Mail.SetOpeningAll(false)
+		failed = {}
+		if f and f:IsShown() then paint() end
+	end
 	taking = nil
 end
 
@@ -40,7 +46,11 @@ local function takeNext()
 		if taking ~= "all" or not (gm or price > 0) then
 			if money > 0 then return TakeInboxMoney(i) end
 			for a = 1, RECEIVE do
-				if HasInboxItem(i, a) then return TakeInboxItem(i, a) end
+				if HasInboxItem(i, a) and not (taking == "all" and failed[select(2, GetInboxItem(i, a))]) then
+					-- Open all stops with the bags full, as the stock loop.
+					if taking == "all" and C_Container.CalculateTotalNumberOfFreeBagSlots() == 0 then return stopTaking() end
+					return TakeInboxItem(i, a)
+				end
 			end
 		end
 	end
@@ -49,7 +59,10 @@ end
 
 local function startTaking(what)
 	taking = what
-	if what == "all" then C_Mail.SetOpeningAll(true) end
+	if what == "all" then
+		C_Mail.SetOpeningAll(true)
+		paint()
+	end
 	takeNext()
 end
 
@@ -78,6 +91,19 @@ local function closing()
 	local isInvoice = select(5, GetInboxText(open))
 	if isInvoice and GetInboxInvoiceInfo(open) == "seller_temp_invoice" then return end
 	if money == 0 and not items and textCreated then DeleteInboxItem(open) end
+end
+
+-- Fetches the inbox, at most as often as the client allows (MailMixin:RefreshInbox).
+local queued
+function M.RefreshInbox()
+	if queued then return end
+	local can, wait = C_Mail.CanCheckInbox()
+	if can then return CheckInbox() end
+	queued = true
+	C_Timer.After(wait, function()
+		queued = nil
+		M.RefreshInbox()
+	end)
 end
 
 function M.Open(i)
@@ -402,8 +428,12 @@ local function paintInbox()
 		r:Show()
 	end
 	for i = n + 1, #rows do rows[i]:Hide() end
-	W.ShellTitle(f, "Inbox", n == 0 and "No mail." or n == 1 and "1 letter." or n .. " letters.")
-	W.ShellFooter(f, { { label = "Open all", onClick = function() startTaking("all") end } }, {})
+	-- Over 50, the rest wait at the mailbox (the stock InboxTooMuchMail).
+	local _, total = GetInboxNumItems()
+	W.ShellTitle(f, "Inbox", total > n and ("%d of %d letters. The rest arrive as you make room."):format(n, total)
+		or n == 0 and "No mail." or n == 1 and "1 letter." or n .. " letters.")
+	W.ShellFooter(f, { { label = taking == "all" and "Opening..." or "Open all", onClick = function() startTaking("all") end } }, {})
+	ns.SetEnabled(f.footerButtons.left[1], taking ~= "all" and n > 0)
 	return 16 + n * (ROW + 4) + 12
 end
 
@@ -650,7 +680,7 @@ local function build()
 	-- guild roster asked for (the To list reads it).
 	f:HookScript("OnShow", function()
 		C_ChatInfo.PerformEmote("READ", nil, true)
-		CheckInbox()
+		M.RefreshInbox()
 		if IsInGuild() and GetNumGuildMembers() == 0 then C_GuildInfo.GuildRoster() end
 	end)
 	f:HookScript("OnHide", function()
@@ -695,6 +725,9 @@ function M.Enable()
 	ns.Interaction("mail", { Enum.PlayerInteractionType.MailInfo }, { frame = NAME, close = CloseMail, bags = true })
 	local function shown() return f and f:IsShown() end
 	Polestar.RegisterEvent("MAIL_INBOX_UPDATE", function()
+		-- Room made under 50 with more waiting: fetch them (InboxMixin:Update).
+		local n, total = GetInboxNumItems()
+		if shown() and n ~= total and n < (MAX_INBOX_SIZE or 50) then M.RefreshInbox() end
 		if taking and not C_Mail.IsCommandPending() then takeNext() end
 		if shown() then paint() end
 	end)
@@ -712,9 +745,15 @@ function M.Enable()
 		sending = nil
 		if shown() then canSend() end
 	end)
-	Polestar.RegisterEvent("MAIL_FAILED", function()
+	Polestar.RegisterEvent("MAIL_FAILED", function(_, itemID)
 		sending = nil
-		stopTaking()
+		-- Open all goes on past an item it could not take; one letter's take stops.
+		if taking == "all" and itemID then
+			failed[itemID] = true
+			C_Timer.After(0.15, function() if taking == "all" and not C_Mail.IsCommandPending() then takeNext() end end)
+		else
+			stopTaking()
+		end
 		if shown() then canSend() end
 	end)
 	Polestar.RegisterEvent("MAIL_OPEN_ALL_CANCELED", stopTaking)

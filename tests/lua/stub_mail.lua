@@ -28,7 +28,9 @@ local function itemCount(l)
 	return n > 0 and n or nil
 end
 
-function GetInboxNumItems() return #stub.inbox, #stub.inbox end
+-- The server holds stub.waiting more than the inbox shows.
+stub.waiting = 0
+function GetInboxNumItems() return #stub.inbox, #stub.inbox + stub.waiting end
 function GetInboxHeaderInfo(i)
 	local l = letter(i)
 	if not l then return end
@@ -50,6 +52,12 @@ function InboxItemCanDelete(i) return letter(i)[10] end
 
 stub.checked, stub.taken, stub.returned, stub.deleted = 0, {}, {}, {}
 function CheckInbox() stub.checked = stub.checked + 1 end
+stub.canCheck = true
+C_Mail = C_Mail or {}
+function C_Mail.CanCheckInbox() return stub.canCheck, 2 end
+stub.freeSlots = 10
+C_Container = C_Container or {}
+function C_Container.CalculateTotalNumberOfFreeBagSlots() return stub.freeSlots end
 -- Each take: { letter, attachment or "money" }; a COD is paid on the first item.
 function TakeInboxMoney(i)
 	local l = letter(i)
