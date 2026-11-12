@@ -8,6 +8,18 @@ local function calls(name) local n, last = 0 for _, c in ipairs(stub.questCalls)
 local function tile(name) return look(f.Body, name):GetParent() end
 local function marks(name) local t = tile(name) return t.Up:IsShown(), t.Coin:IsShown(), t.Ring[1]:IsShown(), t.Sel:IsShown() end
 
+-- Another addon's handler, run after ours, turns in at once: the quest's
+-- text goes, with no QUEST_FINISHED; ours closes by the next frame.
+local auto = CreateFrame("Frame")
+auto:RegisterEvent("QUEST_COMPLETE")
+auto:SetScript("OnEvent", function() GetQuestReward(0); stub.quest.title = nil end)
+stub.fire("QUEST_COMPLETE")
+stub.advance(0.05)
+assert(not PolestarUIQuestDialog:IsShown(), "open on a quest another addon turned in")
+auto:UnregisterEvent("QUEST_COMPLETE")
+stub.quest.title = "Kobold Camp Cleanup"
+stub.questCalls = {}
+
 -- Verdicts not all in: arrows and the coin, no best yet.
 stub.verdicts.complete = false
 stub.fire("QUEST_COMPLETE")

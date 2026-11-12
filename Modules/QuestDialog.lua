@@ -380,9 +380,20 @@ local function build()
 	Polestar.CloseOnEscape(NAME)
 end
 
+-- The dialog still on: an addon whose handler runs before ours (Polestar's
+-- automation, Questie) may accept or turn in at once, and the dialog ends,
+-- QUEST_FINISHED and all, before our open handler; the quest's text goes with it.
+local function live() return page == "greeting" or (GetTitleText() or "") ~= "" end
+
+-- Hidden once the dialog is over, painted only while it is not.
+local function refresh()
+	if not (f and f:IsShown()) then return end
+	if live() then paint() else f:Hide() end
+end
+
 -- Shown only on the game's open events: away from a quest giver there is nothing to show.
 function M.Show()
-	if not page then return end
+	if not (page and live()) then return refresh() end
 	if not f then build() end
 	fading = page == "detail" and GetCVar("instantQuestText") == "0" and 0 or nil
 	paint()
@@ -397,6 +408,8 @@ function M.Show()
 	end
 	W.ScrollTo(f.Scroll, 0)
 	f:Show()
+	-- An addon's handler run after ours, or the client, may end it within the frame.
+	C_Timer.After(0, refresh)
 end
 
 -- An offer the stock frame does not show (QuestFrame_OnEvent): one an item
@@ -430,12 +443,12 @@ function M.Enable()
 	end)
 	-- Late item data, the quest log and the NPC's portrait redraw the open page.
 	for _, e in ipairs({ "QUEST_ITEM_UPDATE", "QUEST_LOG_UPDATE", "GET_ITEM_INFO_RECEIVED", "LEARNED_SPELL_IN_SKILL_LINE", "UNIT_PORTRAIT_UPDATE", "PORTRAITS_UPDATED" }) do
-		Polestar.RegisterEvent(e, function() if f and f:IsShown() then paint() end end)
+		Polestar.RegisterEvent(e, refresh)
 	end
 	-- Polestar's verdicts and its mark setting redraw the marks.
 	if Polestar.On then
 		for _, msg in ipairs({ "GEAR_UPDATED", "SETTING_CHANGED", "POLESTAR_HIDDEN" }) do
-			Polestar.On(msg, function() if f and f:IsShown() then paint() end end)
+			Polestar.On(msg, refresh)
 		end
 	end
 end

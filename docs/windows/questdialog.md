@@ -6,6 +6,11 @@ route: ours unregisters the four open events on `QuestFrame` (a widget call,
 no Lua value written; client rule 15's exception allows it, for these open
 events only) and answers them. Off waits for `/reload`. Polestar's reward
 marks (`QoL.Rewards`, feature-detected) sit on our choices.
+- **Ended by another addon:** Polestar's automation and Questie answer the
+  open events in handlers that run before ours. `QuestFrame` registers before
+  any addon, so it always shows first and its `QUEST_FINISHED` hides it; ours
+  can get `QUEST_FINISHED` before it shows. So ours never shows, and closes on
+  any repaint and one frame after it opens, once `GetTitleText()` is empty.
 - **Shell:** plain, 640×600. Band: the quest NPC's portrait and name
   (`questnpc`, the quest book with none, as `QuestFrame_SetPortrait`). A
   friendship NPC's standing heads the body (`ns.FriendshipBar`, Core.lua).

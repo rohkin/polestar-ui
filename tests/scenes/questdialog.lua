@@ -14,6 +14,22 @@ assert(PolestarUI.modules.questdialog.reloadOff, "switching off does not wait fo
 PolestarUI.Show("questdialog")
 assert(not (PolestarUIQuestDialog and PolestarUIQuestDialog:IsShown()), "opened away from a quest giver")
 
+-- Another addon's handler, run before ours, accepts at once: the client ends
+-- the dialog (QUEST_FINISHED) and the quest's text goes, before ours opens.
+local auto = CreateFrame("Frame")
+table.insert(stub.frames, 1, table.remove(stub.frames))
+auto:RegisterEvent("QUEST_DETAIL")
+auto:SetScript("OnEvent", function()
+	AcceptQuest()
+	stub.quest.title = ""
+	stub.fire("QUEST_FINISHED")
+end)
+stub.fire("QUEST_DETAIL", 0)
+assert(not (PolestarUIQuestDialog and PolestarUIQuestDialog:IsShown()), "open on a quest another addon accepted")
+auto:UnregisterEvent("QUEST_DETAIL")
+stub.quest.title = "Kobold Camp Cleanup"
+stub.questCalls = {}
+
 -- A PvP offer asks first; cancelling declines it.
 stub.quest.pvp = true
 stub.fire("QUEST_DETAIL", 0)
