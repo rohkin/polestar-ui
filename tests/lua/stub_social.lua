@@ -170,24 +170,56 @@ end
 function BNAcceptFriendInvite(id) stub.accepted = id; answer(id) end
 function BNDeclineFriendInvite(id) stub.declined = id; answer(id) end
 
--- Recent allies, presorted by the client; stub.alliesReady = false while it loads.
+-- Recent allies, presorted by the client (pinned first); stub.alliesReady = false
+-- while it loads. Pins change through SetRecentAllyPinned (stub.pinned records it);
+-- the search keeps the allies a status or category filter asks for (stub.allySearch).
 local CLASS_IDS = { [1] = "WARRIOR", [4] = "ROGUE", [8] = "MAGE" }
-C_CreatureInfo = { GetClassInfo = function(id) local f = CLASS_IDS[id]; return f and { classFile = f, className = CLASSES[f] } end }
+C_CreatureInfo = {
+	GetClassInfo = function(id) local f = CLASS_IDS[id]; return f and { classFile = f, className = CLASSES[f] } end,
+	GetRaceInfo = function(id) return id and { raceName = "Human" } end,
+	GetFactionInfo = function(id) return id and { name = "Alliance" } end,
+}
+function SecondsToTime(s) return ("%d days"):format(math.floor(s / 86400)) end
+Enum.RecentAlliesInteractionCategoryFilter = { Professions = 0, PvP = 1, Raiding = 2, Dungeons = 3, Delves = 4, Questing = 5 }
 stub.alliesReady = true
+local ALLIES = {
+	{ characterData = { guid = "Player-ROGUE-20", name = "Vessa", fullName = "Vessa-Realm", level = 23, classID = 4, raceID = 1 },
+		stateData = { isOnline = true, currentLocation = "The Deadmines", pinExpirationDate = GetServerTime() + 20 * 86400 },
+		interactionData = { note = "Great tank", interactions = { { description = "Grouped in The Deadmines", timestamp = time() - 86400, category = 3 } } } },
+	{ characterData = { guid = "Player-MAGE-21", name = "Orrin", fullName = "Orrin-Realm", level = 21, classID = 8, raceID = 1 },
+		stateData = { isOnline = false },
+		interactionData = { interactions = { { description = "Grouped in Westfall", timestamp = time() - 2 * 86400, category = 5 } } } },
+}
 C_RecentAllies = {
 	IsSystemEnabled = function() return true end,
 	IsRecentAllyDataReady = function() return stub.alliesReady end,
 	-- Restricted to the game's code: addon code may not call it.
 	TryRequestRecentAlliesData = function() stub.forbidden = "TryRequestRecentAlliesData" end,
-	GetRecentAllies = function()
-		return {
-			{ characterData = { guid = "Player-ROGUE-20", name = "Vessa", fullName = "Vessa-Realm", level = 23, classID = 4 },
-				stateData = { isOnline = true, currentLocation = "The Deadmines" },
-				interactionData = { interactions = { { description = "Grouped in The Deadmines" } } } },
-			{ characterData = { guid = "Player-MAGE-21", name = "Orrin", fullName = "Orrin-Realm", level = 21, classID = 8 },
-				stateData = { isOnline = false },
-				interactionData = { interactions = { { description = "Grouped in Westfall" } } } },
-		}
+	GetRecentAllies = function() return ALLIES end,
+	IsInteractionCategoryFilterSupportedForCurrentGameType = function(v) return v ~= Enum.RecentAlliesInteractionCategoryFilter.Delves end,
+	SearchRecentAllies = function(info)
+		stub.allySearch = info
+		local out = {}
+		for _, a in ipairs(ALLIES) do
+			local st, ok = a.stateData, true
+			if info.isOnline or info.isOffline or info.isAFK or info.isDND then
+				ok = (info.isOnline and st.isOnline) or (info.isOffline and not st.isOnline) or false
+			end
+			if ok and #info.interactionCategoryFilters > 0 then
+				ok = false
+				for _, c in ipairs(info.interactionCategoryFilters) do
+					for _, i in ipairs(a.interactionData.interactions) do if i.category == c then ok = true end end
+				end
+			end
+			if ok then out[#out + 1] = a end
+		end
+		return out
+	end,
+	SetRecentAllyPinned = function(guid, on)
+		stub.pinned = { guid, on }
+		for _, a in ipairs(ALLIES) do
+			if a.characterData.guid == guid then a.stateData.pinExpirationDate = on and GetServerTime() + 3 * 86400 or nil end
+		end
 	end,
 }
 function UnitPopup_OpenMenu(which, context) stub.popup = { which, context.name } end

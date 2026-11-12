@@ -58,7 +58,17 @@ Nothing Lost Rule, said in the Options menu).
   where they are and how you met. `TryRequestRecentAlliesData` is restricted
   (addon code may not call it): until the data is ready the page says to
   load it in the game's window (/friends, its Recent Allies tab), and
-  `RECENT_ALLIES_DATA_READY` fills it.
+  `RECENT_ALLIES_DATA_READY` fills it. As the stock tab: the folding groups
+  "Legacy friends", "Pinned" and "Recent allies" (online/total), a presence
+  pip and the invite "+", the pin mark in the client icon's slot (the stock
+  atlases; red when the pin nears its end, faint when unpinned), whose click
+  pins or unpins (`C_RecentAllies.SetRecentAllyPinned`); "Friend request
+  sent" when one went this session. The tooltip is the stock card's: level
+  and class, race, faction, where, the note ("Note: ..."; set from the
+  right-click menu, as stock), the latest activity and when. The Filter
+  button shows here too, with the stock tab's own menu: Status (Online,
+  Away, Busy, Offline) and Categories this game type supports, through
+  `C_RecentAllies.SearchRecentAllies`; each list keeps its own picks.
 - **Ignored:** the stock ignore list (its Battle.net bar menu's Ignore List)
   in full: "Ignored players (2)", then "Blocked Battle.net invites (1)"
   (`BNGetBlockedInfo`), each row with an ✕ (`C_FriendList.DelIgnore`,

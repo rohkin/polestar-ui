@@ -10,7 +10,9 @@ local NAME = "PolestarUISocial"
 local ROW_H, HEAD_H, RAID_H, COL_GAP = 44, 32, 28, 24
 
 local f, page, query = nil, "friends", ""
-local collapsed, filters, lastSearch = {}, {}, nil
+local collapsed, lastSearch = {}, nil
+-- Each list's own filter picks, as the stock Friends and Recent Allies tabs keep them.
+local filterSets = { friends = {}, allies = {} }
 local M = {}
 local rows, groups = {}, {}
 
@@ -73,12 +75,12 @@ end
 local function searchInfo()
 	local info, on = { searchText = "", tags = {} }, false
 	for _, o in ipairs(STATUS) do
-		info[o[1]] = filters[o[1]] or false
+		info[o[1]] = filterSets.friends[o[1]] or false
 		on = on or info[o[1]]
 	end
 	for _, list in ipairs({ INTERESTS, ROLES }) do
 		for _, t in ipairs(list) do
-			local v = filters[t[1]] and tagValue(t)
+			local v = filterSets.friends[t[1]] and tagValue(t)
 			if v then info.tags[#info.tags + 1] = v; on = true end
 		end
 	end
@@ -182,24 +184,78 @@ local function requests()
 	return list
 end
 
+-- The stock Recent Allies tab's filter (Status, Categories), handed to
+-- C_RecentAllies.SearchRecentAllies.
+local ALLY_STATUS = { { "isOnline", "Online" }, { "isAFK", "Away" }, { "isDND", "Busy" }, { "isOffline", "Offline" } }
+local CATEGORIES = { { "Professions" }, { "PvP" }, { "Raiding" }, { "Dungeons" }, { "Delves" }, { "Questing" } }
+
+-- A category's enum value, nil when this game type has none.
+local function categoryValue(t)
+	local E = Enum.RecentAlliesInteractionCategoryFilter
+	local v = E and E[t[1]]
+	local ok = C_RecentAllies.IsInteractionCategoryFilterSupportedForCurrentGameType
+	if v == nil or (ok and not ok(v)) then return end
+	return v
+end
+
+local function allyData()
+	local set, info, on = filterSets.allies, { searchText = "", interactionCategoryFilters = {} }, false
+	for _, o in ipairs(ALLY_STATUS) do
+		info[o[1]] = set[o[1]] or false
+		on = on or info[o[1]]
+	end
+	for _, c in ipairs(CATEGORIES) do
+		local v = set[c[1]] and categoryValue(c)
+		if v then info.interactionCategoryFilters[#info.interactionCategoryFilters + 1] = v; on = true end
+	end
+	if on then return C_RecentAllies.SearchRecentAllies(info) end
+	return C_RecentAllies.GetRecentAllies()
+end
+
+-- A pin near its end shows the stock card's red pin and says when it ends.
+local function pinEnding(t)
+	local days = Constants and Constants.RecentAlliesConsts and Constants.RecentAlliesConsts.PIN_EXPIRATION_WARNING_DAYS or 7
+	return t and (t - GetServerTime()) / 86400 <= days
+end
+
 -- Recent allies (C_RecentAllies, presorted by the client: pinned, online, latest).
 local function allies()
 	local list = {}
 	if not C_RecentAllies.IsRecentAllyDataReady() then return list end
-	for _, a in ipairs(C_RecentAllies.GetRecentAllies() or {}) do
-		local c, st = a.characterData, a.stateData
+	for _, a in ipairs(allyData() or {}) do
+		local c, st, it = a.characterData, a.stateData, a.interactionData or {}
 		local cls = C_CreatureInfo.GetClassInfo(c.classID)
-		local recent = a.interactionData and a.interactionData.interactions and a.interactionData.interactions[1]
+		local recent = it.interactions and it.interactions[1]
 		local parts = { detail(c.level, cls and cls.className, st.isOnline and st.currentLocation, st.isOnline and cls and cls.classFile) }
-		if recent and recent.description and recent.description ~= "" then parts[2] = recent.description end
-		local full = c.fullName
-		list[#list + 1] = { name = c.name or full, online = st.isOnline, class = cls and cls.classFile,
-			sub = table.concat(parts, " · "),
+		if recent and recent.description and recent.description ~= "" then parts[#parts + 1] = recent.description end
+		if st.friendRequestSentThisSession then parts[#parts + 1] = "Friend request sent" end
+		local full, pinned = c.fullName, st.pinExpirationDate ~= nil
+		list[#list + 1] = { name = c.name or full, title = full, online = st.isOnline, class = cls and cls.classFile,
+			sub = table.concat(parts, " · "), guid = c.guid, pinned = pinned, pinUntil = st.pinExpirationDate,
+			legacy = pinned and st.isConvertedLegacyFriend, canInvite = st.isOnline,
+			status = not st.isOnline and "offline" or st.isAFK and "away" or st.isDND and "busy" or "online",
 			whisper = function() ChatFrameUtil.SendTell(full) end,
 			invite = function() C_PartyInfo.InviteUnit(full) end,
 			menu = function()
 				UnitPopup_OpenMenu(st.isOnline and "RECENT_ALLY" or "RECENT_ALLY_OFFLINE",
 					{ recentAllyData = a, name = full, guid = c.guid, isOffline = not st.isOnline })
+			end,
+			-- The stock card's tooltip: level and class, race, faction, where, note, latest activity.
+			tip = function()
+				local tok = st.isOnline and "text" or "textMuted"
+				tipLine(("Level %d %s"):format(c.level or 0, cls and cls.className or ""), tok)
+				local race = C_CreatureInfo.GetRaceInfo and C_CreatureInfo.GetRaceInfo(c.raceID)
+				local faction = C_CreatureInfo.GetFactionInfo and C_CreatureInfo.GetFactionInfo(c.raceID)
+				if race then tipLine(race.raceName, tok) end
+				if faction then tipLine(faction.name, tok) end
+				if st.currentLocation then tipLine(st.currentLocation, tok) end
+				if it.note and it.note ~= "" then tipLine("Note: " .. it.note, st.isOnline and "accent" or "textMuted") end
+				if recent then
+					GameTooltip:AddLine(" ")
+					local when = recent.timestamp and FriendsFrame_GetLastOnline and (" · %s ago"):format(FriendsFrame_GetLastOnline(recent.timestamp)) or ""
+					tipLine("Recent activity" .. when, st.isOnline and "accent" or "textMuted")
+					tipLine(recent.description or "", tok)
+				end
 			end }
 	end
 	return list
@@ -257,6 +313,12 @@ local FRIEND_HEADS = {
 local IGNORE_HEADS = {
 	{ key = "ign", test = function(e) return e.unignore end, label = function(_, n) return ("Ignored players (%d)"):format(n) end },
 	{ key = "blk", label = function(_, n) return ("Blocked Battle.net invites (%d)"):format(n) end },
+}
+-- The stock Recent Allies tab's groups: legacy friends kept pinned, pinned, the rest.
+local ALLY_HEADS = {
+	{ key = "legacy", test = function(e) return e.legacy end, label = function(on, n) return ("Legacy friends %d/%d"):format(on, n) end },
+	{ key = "pinned", test = function(e) return e.pinned end, label = function(on, n) return ("Pinned %d/%d"):format(on, n) end },
+	{ key = "recent", label = function(on, n) return ("Recent allies %d/%d"):format(on, n) end },
 }
 local REQUEST_HEADS = { { key = "recv", label = function(_, n) return ("Received (%d)"):format(n) end } }
 
@@ -331,6 +393,33 @@ local function newRow(panel, i)
 	r.Client = r:CreateTexture(nil, "ARTWORK")
 	r.Client:SetSize(20, 20)
 	r.Client:SetPoint("RIGHT", r.Invite, "LEFT", -6, 0)
+	-- A recent ally's pin in the client icon's slot: the stock card's pin mark,
+	-- and a click pins or unpins (C_RecentAllies.SetRecentAllyPinned).
+	r.Pin = CreateFrame("Button", nil, r)
+	r.Pin:SetSize(20, 20)
+	r.Pin:SetPoint("RIGHT", r.Invite, "LEFT", -6, 0)
+	r.Pin.Icon = r.Pin:CreateTexture(nil, "ARTWORK")
+	r.Pin.Icon:SetAllPoints()
+	r.Pin:SetScript("OnClick", function(self)
+		local e = self:GetParent().psEntry
+		C_RecentAllies.SetRecentAllyPinned(e.guid, not e.pinned)
+		M.Show() -- at once (docs/CLIENT.md, rule 6)
+	end)
+	r.Pin:SetScript("OnEnter", function(self)
+		local e = self:GetParent().psEntry
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		if e.pinned then
+			GameTooltip:SetText("Pinned")
+			local left = e.pinUntil and math.max(e.pinUntil - GetServerTime(), 1)
+			tipLine(pinEnding(e.pinUntil) and left and ("The pin ends in %s."):format(SecondsToTime(left, true)) or "Kept in your recent allies.", "text")
+			ns.TooltipHint("Click to unpin.")
+		else
+			GameTooltip:SetText("Pin")
+			tipLine("Keep this ally in your recent allies.", "text")
+		end
+		GameTooltip:Show()
+	end)
+	r.Pin:SetScript("OnLeave", W.HideTooltip)
 	r.Fav = r:CreateTexture(nil, "ARTWORK")
 	r.Fav:SetSize(14, 14)
 	r.Remove = W.IconButton(r, "close", 24, "Stop ignoring", function(self)
@@ -416,6 +505,12 @@ local function paintRows(list)
 			r.Client:SetAlpha(e.faded and 0.6 or 1)
 		end
 		r.Client:SetShown(client and true or false)
+		r.Pin:SetShown(e.guid ~= nil)
+		if e.guid then
+			r.Pin.Icon:SetAtlas(pinEnding(e.pinUntil) and "friendslist-recentallies-pin" or "friendslist-recentallies-pin-yellow")
+			r.Pin.Icon:SetDesaturated(not e.pinned)
+			r.Pin:SetAlpha(e.pinned and 1 or 0.35)
+		end
 		r.Fav:SetShown(e.favorite or false)
 		if e.favorite then
 			r.Fav:SetAtlas(e.online and "friends-icon-favorites" or "friends-icon-favorites-dis")
@@ -552,15 +647,15 @@ local function ignorePlayer()
 	e:SetFocus()
 end
 
--- The filter menu: the stock list's Status and Tags submenus in one list;
--- a pick keeps it open.
+-- The filter menu: the stock list's submenus in one list (Friends: Status
+-- and Tags; Recent allies: Status and Categories); a pick keeps it open.
 local function filterItems()
-	local items = {}
-	local function section(title, list, always)
+	local items, filters = {}, filterSets[page]
+	local function section(title, list, valid)
 		local any = false
 		for _, o in ipairs(list) do
 			local k = o[1]
-			if always or tagValue(o) ~= nil then
+			if not valid or valid(o) ~= nil then
 				if not any then
 					if #items > 0 then items[#items + 1] = { separator = true } end
 					items[#items + 1] = { text = title, disabled = true }
@@ -574,14 +669,19 @@ local function filterItems()
 			end
 		end
 	end
-	section("Status", STATUS, true)
-	if not C_BattleNet.AreFriendTagsEnabled or C_BattleNet.AreFriendTagsEnabled() then
-		section("Interests", INTERESTS)
-		section("Roles", ROLES)
+	if page == "allies" then
+		section("Status", ALLY_STATUS)
+		section("Categories", CATEGORIES, categoryValue)
+	else
+		section("Status", STATUS)
+		if not C_BattleNet.AreFriendTagsEnabled or C_BattleNet.AreFriendTagsEnabled() then
+			section("Interests", INTERESTS, tagValue)
+			section("Roles", ROLES, tagValue)
+		end
 	end
 	if next(filters) then
 		items[#items + 1] = { separator = true }
-		items[#items + 1] = { text = "Clear filters", onClick = function() filters = {}; M.Show() end }
+		items[#items + 1] = { text = "Clear filters", onClick = function() filterSets[page] = {}; M.Show() end }
 	end
 	return items
 end
@@ -720,11 +820,12 @@ local function refresh()
 	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.Color(f.psDot, statusColor())
 	local st, n = f.psStatus, 0
-	for _ in pairs(filters) do n = n + 1 end
+	local filtered = filterSets[page] ~= nil
+	for _ in pairs(filterSets[page] or {}) do n = n + 1 end
 	W.SetIconState(f.psFilter, n > 0)
 	f.psFilter.psTip = n > 0 and ("Filter (%d on)"):format(n) or "Filter"
-	f.psFilter:SetShown(page == "friends")
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + (page == "friends" and 36 or 0)), -(W.SHELL.header - 30))
+	f.psFilter:SetShown(filtered)
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + (filtered and 36 or 0)), -(W.SHELL.header - 30))
 	st.Label:SetText(BNConnected() and battleTag() or "Battle.net offline")
 	st:SetEnabled(BNConnected())
 	st.Arrow:SetShown(BNConnected())
@@ -757,8 +858,9 @@ local function refresh()
 		if page == "friends" then list = grouped(list, FRIEND_HEADS) end
 		if page == "requests" then list = grouped(list, REQUEST_HEADS) end
 		if page == "ignored" then list = grouped(list, IGNORE_HEADS) end
+		if page == "allies" then list = grouped(list, ALLY_HEADS) end
 		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
-		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab." or (query ~= "" or next(filters)) and "No one matches." or p[3])
+		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab." or (query ~= "" or n > 0) and "No one matches." or p[3])
 		h = paintRows(list)
 	end
 	W.ShellBody(f, h)
