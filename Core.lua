@@ -287,6 +287,15 @@ function ns.TextField(parent, w, letters)
 	return e
 end
 
+-- Coins as plain text for a label or dialog line ("1g 2s 3c", units above
+-- the largest left out), as Polestar's own Restock label writes them.
+function ns.Coins(c)
+	local g, s = math.floor(c / 10000), math.floor(c / 100) % 100
+	if g > 0 then return ("%dg %ds %dc"):format(g, s, c % 100) end
+	if s > 0 then return ("%ds %dc"):format(s, c % 100) end
+	return ("%dc"):format(c % 100)
+end
+
 -- A numeric editbox in the Polestar look; done(box) runs as it loses focus.
 local function numberBox(parent, width, letters, done)
 	local Theme, W = Polestar.Theme, Polestar.Widgets

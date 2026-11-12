@@ -50,6 +50,7 @@ Widgets
 - `ns.ItemGrid(parent, cols, size, gap)`: frame; `grid.Layout(n)` shows n wells, returns them, fits height.
 - `ns.QualityRGB(q)`: item quality as r,g,b or nil.
 - `ns.SubjectBlock(f)`: sidebar head replacing Polestar's lockup; returns `{icon, name, line}`.
+- `ns.Coins(copper)`: coins as plain text ("1g 2s 3c") for labels and dialogs.
 - `ns.Money(parent)` / `ns.SetMoney(m, copper, colorToken?)`: coin line as `GetMoneyString` writes it.
 - `ns.TextField(parent, w, letters?)`: one-line edit box (Enter and Escape leave it).
 - `ns.SetEnabled(button, on)`: enable and fade to 45% as Polestar does.

@@ -48,13 +48,7 @@ local rows = {}
 local M = {}
 local paint
 
--- Coins as plain text, as Merchant.lua writes them.
-local function coins(c)
-	local g, s = math.floor(c / 10000), math.floor(c / 100) % 100
-	if g > 0 then return ("%dg %ds %dc"):format(g, s, c % 100) end
-	if s > 0 then return ("%ds %dc"):format(s, c % 100) end
-	return ("%dc"):format(c % 100)
-end
+local coins = ns.Coins
 
 local function sorts()
 	local S = Enum.AuctionHouseSortOrder
