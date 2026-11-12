@@ -332,7 +332,7 @@ local function buildGear(body, width)
 	end)
 	m:HookScript("OnLeave", W.HideTooltip)
 	text:SetFrameLevel(m:GetFrameLevel() + 10)
-	v.Model = m
+	v.Model, v.Text = m, text
 	return v
 end
 
@@ -341,8 +341,22 @@ end
 -- shortcut: one factor for every race (a troll fits at 1.35); derive it from the well's aspect if a race still clips.
 local BACK_OFF, ZOOM_OUT = 1.35, 2
 
+-- The pet's own scene (PaperDollFrame_SetPet), while the Pet pane shows.
+local DEFAULT_PET_SCENE = 1156
+local function showPet(scene)
+	if not scene.TransitionToModelSceneID then return end
+	local id = C_PetInfo and C_PetInfo.GetPetUIModelSceneID and C_PetInfo.GetPetUIModelSceneID()
+	scene:ReleaseAllActors()
+	scene:TransitionToModelSceneID((id and id ~= 0) and id or DEFAULT_PET_SCENE, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
+	local actor = scene:GetActorByTag("pet")
+	if actor then actor:SetModelByUnitCreatureDisplayID("pet") end
+end
+
+local petShown -- below: the Pet pane is the one shown
+
 local function showModel()
 	local scene = f.psGear.Model
+	if petShown() then return showPet(scene) end
 	ModelSceneUtil.SetUpCharacterSheetScene(scene)
 	local cam = scene.GetActiveCamera and scene:GetActiveCamera()
 	if cam and cam.GetMaxZoomDistance and cam:GetMaxZoomDistance() then
@@ -602,6 +616,61 @@ ns.CharacterPanes.stats = { page = "PaperDollFrame", label = "Stats", order = 1,
 	build = statsView, paint = function(sf) paintStats(sf, "player") end }
 ns.CharacterStatsView = statsView
 
+-- The pet (HasPetUI): its level, family and loyalty, its happiness (a
+-- hunter's pet), its experience, then its stats as the stock Pet pane
+-- reads them (PAPERDOLL_STATCATEGORIES for "pet"). While it shows, the model
+-- well holds the pet and the gear slots step aside, as on the stock sheet.
+local PET_TOP = 96
+local HAPPY = { PET_HAPPINESS1 or "Unhappy", PET_HAPPINESS2 or "Content", PET_HAPPINESS3 or "Happy" }
+ns.CharacterPanes.pet = { page = "PaperDollFrame", label = PET or "Pet", order = 4, shown = function() return HasPetUI() and true or false end,
+	build = function(holder)
+		local sf = statsView(holder)
+		local v = sf.Child
+		sf.Level = W.Text(v, "label", "text")
+		sf.Level:SetPoint("TOPLEFT", v, "TOPLEFT", 24, 0)
+		sf.Level:SetWidth(STATS_W - 48)
+		sf.Level:SetJustifyH("LEFT")
+		sf.Happy = W.Text(v, "small", "textDim")
+		sf.Happy:SetPoint("TOPLEFT", sf.Level, "BOTTOMLEFT", 0, -6)
+		sf.XP = W.Text(v, "number", "textDim")
+		sf.XP:SetPoint("TOPRIGHT", v, "TOPLEFT", STATS_W - 24, -48)
+		sf.XPBar = W.ProgressLine(v, 2)
+		sf.XPBar:SetPoint("TOPLEFT", v, "TOPLEFT", 24, -66)
+		sf.XPBar:SetWidth(STATS_W - 48)
+		-- The happiness tooltip (PetHappinessIndicatorMixin:OnEnter).
+		sf.HappyHit = CreateFrame("Frame", nil, v)
+		sf.HappyHit:SetAllPoints(sf.Happy)
+		sf.HappyHit:EnableMouse(true)
+		sf.HappyHit:SetScript("OnEnter", function(self)
+			local h, dmg, rate = C_PetInfo.GetPetHappiness()
+			if not h then return end
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(HAPPY[h] or "")
+			GameTooltip:AddLine((PET_DAMAGE_PERCENTAGE or "Damage: %d%%"):format(dmg or 0), 1, 1, 1)
+			if (rate or 0) < 0 then GameTooltip:AddLine(LOSING_LOYALTY or "Losing loyalty", 1, 1, 1)
+			elseif (rate or 0) > 0 then GameTooltip:AddLine(GAINING_LOYALTY or "Gaining loyalty", 1, 1, 1) end
+			local diet = C_PetInfo.GetPetFoodTypes and C_PetInfo.GetPetFoodTypes() or {}
+			GameTooltip:AddLine((PET_DIET_TEMPLATE or "Diet: %s"):format(#diet > 0 and table.concat(diet, PET_FOOD_DELIMIT or ", ") or (NONE or "None")), 1, 1, 1)
+			GameTooltip:Show()
+		end)
+		sf.HappyHit:SetScript("OnLeave", W.HideTooltip)
+		return sf
+	end,
+	paint = function(sf)
+		local text = (UNIT_TYPE_LEVEL_TEMPLATE or "Level %d %s"):format(UnitLevel("pet"), UnitCreatureFamily("pet") or "")
+		local loyalty = C_PetInfo.GetPetLoyalty and C_PetInfo.GetPetLoyalty()
+		if loyalty and loyalty ~= "" then text = text .. " (" .. loyalty .. ")" end
+		sf.Level:SetText(text)
+		local h = select(2, HasPetUI()) and C_PetInfo.GetPetHappiness()
+		sf.Happy:SetText(h and HAPPY[h] or "")
+		local cur, max = GetPetExperience()
+		sf.XP:SetShown(max > 0)
+		sf.XPBar:SetShown(max > 0)
+		sf.XP:SetText(("XP %s / %s"):format(BreakUpLargeNumbers(cur), BreakUpLargeNumbers(max)))
+		if max > 0 then W.SetProgress(sf.XPBar, cur / max, STATS_W - 48) end
+		paintStats(sf, "pet", PET_TOP)
+	end }
+
 -- The section's panes in order: { key, ... }.
 local function panesOf(page)
 	local list = {}
@@ -671,6 +740,7 @@ local function currentPane()
 	return list[1], list
 end
 function ns.CharacterPane() return f and f.psStats:IsShown() and currentPane() end
+function petShown() return section == "PaperDollFrame" and f.psStats:IsShown() and currentPane() == "pet" end
 
 -- Shows the section's chosen pane, with tabs on the Character page.
 local function paintDrawer()
@@ -785,6 +855,11 @@ function refresh()
 	f.psStats:SetShown(panes and statsShown())
 	local h = 0
 	if gear then
+		-- The Pet pane puts the pet in the well, the slots aside (the ammo
+		-- tile goes with the ranged slot it sits on).
+		local pet = petShown()
+		f.psGear.Text:SetShown(not pet)
+		for _, s in ipairs(slots) do if s.psSide then s:SetShown(not pet) end end
 		paintGear()
 		showModel()
 		h = f.psGear:GetHeight() + 24
@@ -894,6 +969,9 @@ function M.Enable()
 		end
 	end)
 	Polestar.RegisterEvent("UNIT_INVENTORY_CHANGED", function(_, unit) if unit == "player" then changed() end end)
+	-- The pet: its pane comes and goes with it (UNIT_PET), and its stats change.
+	Polestar.RegisterEvent("UNIT_PET", function(_, unit) if unit == "player" and f and f:IsShown() then refresh() end end)
+	for _, e in ipairs({ "PET_STATS_UPDATE", "UNIT_PET_EXPERIENCE", "UNIT_HAPPINESS" }) do Polestar.RegisterEvent(e, changed) end
 	-- A new look (gear, form) rebuilds the scene, as the stock sheet does.
 	Polestar.RegisterEvent("UNIT_MODEL_CHANGED", function(_, unit)
 		if unit == "player" and f and f:IsShown() and f.psGear:IsShown() then showModel() end

@@ -326,3 +326,15 @@ function ClearCursor() stub.cursorFits = nil end
 function PutItemInBackpack() stub.toBags = true; stub.cursorFits = nil end
 function PutItemInBag(id) stub.toBags = id; stub.cursorFits = nil end
 function GameTooltip.SetBagItem(self, bag, slot) self.lines = { "Bag item " .. bag .. "/" .. slot } end
+
+-- A hunter's pet (stub.pet): a level 23 wolf, content, halfway to 24, with
+-- the stock Pet categories filled for it.
+function HasPetUI() if stub.pet then return true, true end return false, false end
+function UnitCreatureFamily(unit) return "Wolf" end
+function GetPetExperience() return 1450, 2900 end
+UNIT_TYPE_LEVEL_TEMPLATE, PET = "Level %d %s", "Pet"
+C_PetInfo = { GetPetLoyalty = function() return "Loyalty Level 3" end, GetPetHappiness = function() return 2, 100, 1 end,
+	GetPetFoodTypes = function() return { "Meat", "Fish" } end }
+PAPERDOLL_STATINFO.PET_ARMOR = stat("Armor", "812")
+PAPERDOLL_STATINFO.PET_DAMAGE = stat("Damage", "32 - 41")
+table.insert(PAPERDOLL_STATCATEGORIES, { categoryName = "Combat", unit = "pet", stats = { { stat = "PET_ARMOR" }, { stat = "PET_DAMAGE" } } })
