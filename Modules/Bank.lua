@@ -278,9 +278,10 @@ local function build()
 		onSearch = function(text) C_Container.SetItemSearch(text or "") end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "bank")
+	-- The banker's portrait, as the stock frame's (SetPortraitToUnit), and "Bank".
 	local b = ns.SubjectBlock(f)
-	b.icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
-	b.name:SetText("Bank")
+	f.psSubject = b
+	b.name:SetText(BANK or "Bank")
 	money = ns.Money(f.Sidebar)
 	money:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -6)
 	f.psStripLabel = W.Text(f.Body, "small", "textDim")
@@ -309,6 +310,7 @@ end
 -- tabs under its heading and "Buy a tab" while one can be bought.
 local function navigation()
 	local NAMES = { [CHAR] = "Bank", [ACCT] = "Warband bank" }
+	-- The stock page tabs' icons (BankPageTabTemplate's iconTexture1, accountBankIconTexture1).
 	local ICONS = { [CHAR] = "Interface\\Icons\\INV_SideTab_Bank_c60", [ACCT] = "Interface\\Icons\\UI_Warbands" }
 	local nav, cur, curType, curLabel = {}, nil, nil, nil
 	for _, t in ipairs({ CHAR, ACCT }) do
@@ -350,6 +352,7 @@ end
 
 function paint()
 	local t, label = navigation()
+	SetPortraitTexture(f.psSubject.icon, "npc")
 	ns.SetMoney(money, GetMoney())
 	W.ShellTabs(f, nil)
 	local bags = bagMode()

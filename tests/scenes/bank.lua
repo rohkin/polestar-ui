@@ -28,6 +28,7 @@ local labels = {}
 for _, b in ipairs(f.navButtons) do if b:IsShown() then labels[#labels + 1] = b.Label:GetText() end end
 assert(table.concat(labels, ",") == "Bank,Warband bank", "nav: " .. table.concat(labels, ","))
 assert(f.Title:GetText() == "Bank" and tostring(f.Subtitle:GetText()) == "35 of 42 slots free.", "the bank, its free slots")
+assert(f.psSubject.icon:GetTexture() == 132355 and f.psSubject.name:GetText() == "Bank", "the banker's portrait")
 local wells = { f.psGrid:GetChildren() }
 assert(#wells == 42 and wells[42]:IsShown() and f.psGrid:GetHeight() == 4 * 40 - 4, "both bags' 42 slots, 11 to a row")
 assert(tostring(wells[5].psCount:GetText()) == "20" and wells[6].Icon.desaturated, "count, locked")
