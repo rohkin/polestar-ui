@@ -269,7 +269,29 @@ pages.ReputationFrame = pageOf(function(v)
 end)
 
 ---------------------------------------------------------------------------
--- Currency: the client's currency list, its headers as groups.
+-- Currency: the client's currency list, its headers as groups (the client
+-- keeps the unused ones in its Unused group). A click chooses one for the
+-- drawer's details; shift-click links it while typing in chat, else shows it
+-- on the backpack (or stops), as the stock list does.
+
+local currencySel -- the chosen currency's name (its index moves as groups fold)
+function ns.CharacterCurrency()
+	for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
+		local d = C_CurrencyInfo.GetCurrencyListInfo(i)
+		if d and not d.isHeader and d.name == currencySel then return i, d end
+	end
+end
+
+local function currencyClick(self)
+	local i, d = self.psIndex, self.psData
+	if IsModifiedClick("CHATLINK") and HandleModifiedItemClick(C_CurrencyInfo.GetCurrencyListLink(i)) then return end
+	if IsModifiedClick("TOKENWATCHTOGGLE") then
+		-- shortcut: no cap on watched currencies (the stock one reads the backpack's width); add one if the backpack overflows.
+		C_CurrencyInfo.SetCurrencyBackpack(i, not d.isShowInBackpack)
+		return fold(function() end)
+	end
+	choose(function() currencySel = d.name end)
+end
 
 local currencySpec = {
 	height = ROW_H,
@@ -282,14 +304,18 @@ local currencySpec = {
 		r.Value = W.Text(r, "number", "text")
 		r.Value:SetPoint("RIGHT", r, "RIGHT", -12, 0)
 		r.Name:SetPoint("RIGHT", r.Value, "LEFT", -12, 0)
+		selWash(r)
+		r:SetScript("OnClick", currencyClick)
 		r:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 			GameTooltip:SetCurrencyToken(self.psIndex)
+			ns.TooltipHint("Click for its details. Shift-click to show it on your backpack, or to link it while you type in chat.")
 			GameTooltip:Show()
 		end)
 	end,
 	draw = function(r, d)
-		r.psIndex = d.index
+		r.psIndex, r.psData = d.index, d
+		r.Sel:SetShown(d.name == currencySel)
 		r.Icon:SetTexture(d.iconFileID)
 		r.Name:SetText(d.name)
 		local q = BreakUpLargeNumbers(d.quantity)
@@ -299,6 +325,14 @@ local currencySpec = {
 }
 
 pages.TokenFrame = pageOf(function(v)
+	-- The first currency is chosen when none is (SelectFirstCurrencyIfNoneSelected).
+	if not ns.CharacterCurrency() then
+		currencySel = nil
+		for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
+			local d = C_CurrencyInfo.GetCurrencyListInfo(i)
+			if d and not d.isHeader then currencySel = d.name break end
+		end
+	end
 	local groups, cur, n = {}, nil, 0
 	for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
 		local d = C_CurrencyInfo.GetCurrencyListInfo(i)

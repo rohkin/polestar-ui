@@ -157,12 +157,18 @@ C_Reputation = { GetNumFactions = function() return #FACTIONS end, GetFactionDat
 
 local CURRENCIES = {
 	{ name = "Player vs. Player", isHeader = true, isHeaderExpanded = true },
-	{ name = "Honor Points", isHeader = false, quantity = 1240, maxQuantity = 75000, iconFileID = 1455894 },
+	{ name = "Honor Points", isHeader = false, quantity = 1240, maxQuantity = 75000, iconFileID = 1455894, currencyID = 1901,
+		canEarnPerWeek = true, maxWeeklyQuantity = 15000, quantityEarnedThisWeek = 3200, isShowInBackpack = true },
 	{ name = "Arena Points", isHeader = false, quantity = 0, maxQuantity = 0, iconFileID = 1455894 },
 	{ name = "Miscellaneous", isHeader = true, isHeaderExpanded = true },
 	{ name = "Darkmoon Prize Ticket", isHeader = false, quantity = 12, maxQuantity = 0, iconFileID = 134481 },
 }
-C_CurrencyInfo = { GetCurrencyListSize = function() return #CURRENCIES end, GetCurrencyListInfo = function(i) return CURRENCIES[i] end }
+-- Details, links and the toggles: stub.unused, stub.backpack = { index, on }.
+C_CurrencyInfo = { GetCurrencyListSize = function() return #CURRENCIES end, GetCurrencyListInfo = function(i) return CURRENCIES[i] end,
+	GetCurrencyDescription = function(id) return id == 1901 and "Earned in battlegrounds and world PvP; spent with the honor vendors." or "" end,
+	GetCurrencyListLink = function(i) return "|Hcurrency:" .. i .. "|h[" .. CURRENCIES[i].name .. "]|h" end,
+	SetCurrencyUnused = function(i, on) CURRENCIES[i].isTypeUnused = on; stub.unused = { i, on } end,
+	SetCurrencyBackpack = function(i, on) CURRENCIES[i].isShowInBackpack = on; stub.backpack = { i, on } end }
 -- Folding hides the header's currencies from the list, as the client does,
 -- and sends no event.
 local hidden = {}

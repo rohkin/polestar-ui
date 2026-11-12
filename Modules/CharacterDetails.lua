@@ -144,3 +144,44 @@ ns.CharacterPanes.reputation = { page = "ReputationFrame", label = REPUTATION or
 		end, REPUTATION_SHOW_AS_XP or "Shows it on your experience bar.")
 		sf.Finish()
 	end }
+
+---------------------------------------------------------------------------
+-- Currency: the chosen currency's amount, description and caps, and the
+-- stock checkboxes: Unused (to the client's Unused group) and Show on
+-- backpack. Moving a currency to another character of the account stays in
+-- the game's window.
+
+ns.CharacterPanes.currency = { page = "TokenFrame", label = CURRENCY or "Currency", order = 1,
+	build = function(holder) return detailView(holder, 2) end,
+	paint = function(sf)
+		sf.Begin()
+		local i, d = ns.CharacterCurrency()
+		if not d then
+			sf.psTitle = CURRENCY or "Currency"
+			return sf.Finish("Choose a currency to see its details.")
+		end
+		local c = sf.c
+		sf.psTitle = d.name
+		local desc = d.currencyID and C_CurrencyInfo.GetCurrencyDescription and C_CurrencyInfo.GetCurrencyDescription(d.currencyID)
+		if desc and desc ~= "" then c.text("body", "textDim", desc, 0) end
+		c.pair("You have", BreakUpLargeNumbers(d.quantity))
+		if (d.maxQuantity or 0) > 0 then c.pair(CURRENCY_DETAIL_TOTAL_CAP_LABEL or "Total maximum", BreakUpLargeNumbers(d.maxQuantity)) end
+		if d.canEarnPerWeek and (d.maxWeeklyQuantity or 0) > 0 then
+			c.pair(CURRENCY_DETAIL_WEEKLY_CAP_LABEL or "Weekly maximum",
+				BreakUpLargeNumbers(d.quantityEarnedThisWeek or 0) .. " / " .. BreakUpLargeNumbers(d.maxWeeklyQuantity))
+		end
+		if d.isAccountTransferable then
+			local lost = d.transferPercentage and (100 - d.transferPercentage) or 0
+			if lost > 0 and CURRENCY_TRANSFER_LOSS then c.text("small", "textDim", CURRENCY_TRANSFER_LOSS:format(math.ceil(lost)), 10) end
+			c.text("small", "textMuted", "Transfers between characters are in the game's Currency window.", 10)
+		elseif d.isAccountWide then
+			c.text("small", "success", ACCOUNT_LEVEL_CURRENCY or "Account-wide", 10)
+		end
+		if d.discovered ~= false then
+			sf.check(1, UNUSED or "Unused", d.isTypeUnused, true, function(on) C_CurrencyInfo.SetCurrencyUnused(i, on) end,
+				TOKEN_MOVE_TO_UNUSED or "Moves it to the Unused group.")
+			sf.check(2, SHOW_ON_BACKPACK or "Show on Backpack", d.isShowInBackpack, true, function(on) C_CurrencyInfo.SetCurrencyBackpack(i, on) end,
+				TOKEN_SHOW_ON_BACKPACK or "Shows it on your backpack.")
+		end
+		sf.Finish()
+	end }
