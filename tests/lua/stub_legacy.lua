@@ -5,7 +5,7 @@
 local REWARDS = {
 	[15] = { { name = "Holstered Replica Ironforge Air Rifle", description = "A toy for every character.", icon = 1 } },
 	[25] = { { name = "Spectral Bear Cub", description = "A companion pet.", icon = 1 } },
-	[40] = { { name = "Spectral Bear Tabard", description = "Worn proudly.", icon = 1 } },
+	[40] = { { name = "Spectral Bear Tabard", description = "", icon = 1 } }, -- no description: its name centred
 	[55] = { { name = "Reins of the Spectral Bear", description = "A mount for every character.", icon = 1 }, { name = "Title: the Enduring", description = "", icon = 1 } },
 }
 

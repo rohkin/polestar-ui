@@ -9,6 +9,7 @@ assert(f.Title:GetText() == "Warrior", "not the class category: " .. f.Title:Get
 local v = f.psPages.challenges
 local function shown() local t = {} for _, r in ipairs(v.rows) do if r:IsShown() then t[#t + 1] = r end end return t end
 assert(#shown() == 3, "rows")
+assert(shown()[1].Name.wrap == false, "challenge names never wrap") -- the preview stub keeps SetWordWrap as .wrap
 local function cat(n) for _, b in ipairs({ f.NavScroll.Child:GetChildren() }) do if b:IsShown() and b.psCat and b.psCat.name == n then return b end end end
 local groups, kids = 0, {}
 for _, b in ipairs({ f.NavScroll.Child:GetChildren() }) do if b:IsShown() and b.psCat then if b.psGroup then groups = groups + 1 elseif b.psGroup == nil then kids[#kids + 1] = b.psCat.name end end end
