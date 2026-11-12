@@ -12,6 +12,7 @@ local NODE, PITCH, HEAD_H = 40, 52, 48
 local f, group = nil, nil -- group: the spec group shown (1 Primary, 2 Secondary)
 local query, found = "", 0 -- the sidebar search, and the talents it matched
 local committing = false -- Apply runs as a cast: no changes until it ends
+local activating -- the spec group being switched to (a cast), until it ends
 local M = {}
 local nodes, lines = {}, {}
 
@@ -215,6 +216,21 @@ end
 
 local function undo()
 	C_Traits.RollbackConfig(configOf(group))
+	M.Show()
+end
+
+-- Activate makes the spec shown the active one, as the stock ActivateButton
+-- (C_SpecializationInfo.SetActiveSpecGroup): a cast, ended by
+-- ACTIVE_TALENT_GROUP_CHANGED, or after 10 seconds at most (interrupted).
+local function activate()
+	activating = group
+	C_SpecializationInfo.SetActiveSpecGroup(group)
+	C_Timer.After(10, function()
+		if activating then
+			activating = nil
+			if f:IsShown() then M.Show() end
+		end
+	end)
 	M.Show()
 end
 
@@ -531,6 +547,8 @@ local function refresh()
 	local sub
 	if query ~= "" then
 		sub = found == 1 and "1 talent matches." or ("%d talents match."):format(found)
+	elseif activating then
+		sub = "Switching to this spec…"
 	elseif not active then
 		sub = "Not your active spec."
 	elseif committing then
@@ -542,15 +560,22 @@ local function refresh()
 	W.ShellTitle(f, "Talents", sub)
 	W.ShellTabs(f, nil)
 	-- Apply and Undo always there, so the layout never moves; disabled as
-	-- Polestar disables (faded to 45%) while nothing is staged. The right side
-	-- lays out from the edge.
-	W.ShellFooter(f, {}, { { label = "Apply", onClick = apply, opts = { primary = true } }, { label = "Undo", onClick = undo } })
+	-- Polestar disables (faded to 45%) while nothing is staged. On the spec
+	-- that is not active, Activate takes Apply's place, as the stock frame's
+	-- ActivateButton. The right side lays out from the edge.
+	local first = active and { label = "Apply", onClick = apply, opts = { primary = true } }
+		or { label = TALENT_SPEC_ACTIVATE or "Activate", onClick = activate, opts = { primary = true } }
+	W.ShellFooter(f, {}, { first, { label = "Undo", onClick = undo } })
 	-- A disabled one says why in its tooltip; Apply also waits on the
 	-- client's CanChangeTalents, as the stock Apply does.
 	local why = not active and "Not your active spec" or committing and "Applying your talents…" or nil
 	local can, canAdd, err = C_ClassTalents.CanChangeTalents()
 	local apply_, undo_ = f.footerButtons.right[1], f.footerButtons.right[2]
-	reason(apply_, why or (not staged and "Nothing to apply") or (not (can or canAdd) and (err or "Talents cannot be changed now")) or nil)
+	if active then
+		reason(apply_, why or (not staged and "Nothing to apply") or (not (can or canAdd) and (err or "Talents cannot be changed now")) or nil)
+	else
+		reason(apply_, activating and "Switching to this spec…" or (InCombatLockdown() and "Not in combat") or nil)
+	end
 	reason(undo_, why or (not staged and "Nothing to undo") or nil)
 	paintArt() -- the footer sets the content's height
 	W.ShellBody(f, height)
@@ -581,10 +606,15 @@ function M.Enable()
 		committing = false
 		if f and f:IsShown() then refresh() end
 	end
+	-- The spec switch ends: the spec it went to is shown, now the active one.
+	Polestar.RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED", function()
+		activating = nil
+		if f and f:IsShown() then group = activeGroup(); refresh() end
+	end)
 	Polestar.RegisterEvent("TRAIT_CONFIG_UPDATED", committed)
 	Polestar.RegisterEvent("CONFIG_COMMIT_FAILED", committed)
 	for _, e in ipairs({ "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
-		"ACTIVE_COMBAT_CONFIG_CHANGED", "ACTIVE_TALENT_GROUP_CHANGED", "PLAYER_REGEN_ENABLED" }) do
+		"ACTIVE_COMBAT_CONFIG_CHANGED", "PLAYER_REGEN_ENABLED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 end

@@ -121,20 +121,20 @@
 <image x="1085" y="111" width="12" height="12" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAgklEQVR4nO3PsQ2AIBAF0NvGVehZia0o7dzB0i1M9Ei4xBjQi8DF4r/kOj//SwAA8Hvzska+nS+QUvo2ZyK14Ac833G5oMiEW8bTVxye8p+oRhTKU3aiFvyA04yolDvq4W3E0HJRG2FSLiojbMrFw4jx5aIwwq5c5BFbPttyAADo6QRluyYSkOoYCQAAAABJRU5ErkJggg=="/>
 <g transform="translate(1022 121.96) scale(0.005371)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-321" x="0"/><use href="#gInter-Mediumttf-843" x="1570"/><use href="#gInter-Mediumttf-889" x="2836"/><use href="#gInter-Mediumttf-689" x="3533"/><use href="#gInter-Mediumttf-790" x="4049"/><use href="#gInter-Mediumttf-773" x="5286"/><use href="#gInter-Mediumttf-871" x="6518"/></g>
 <g transform="translate(1021 120.96) scale(0.005371)" fill="rgb(247,248,253)" fill-opacity="1"><use href="#gInter-Mediumttf-321" x="0"/><use href="#gInter-Mediumttf-843" x="1570"/><use href="#gInter-Mediumttf-889" x="2836"/><use href="#gInter-Mediumttf-689" x="3533"/><use href="#gInter-Mediumttf-790" x="4049"/><use href="#gInter-Mediumttf-773" x="5286"/><use href="#gInter-Mediumttf-871" x="6518"/></g>
-<rect x="1023" y="665" width="72" height="28" fill="rgb(230,186,102)" fill-opacity="0.45"/>
-<rect x="1023" y="665" width="72" height="1" fill="rgb(230,186,102)" fill-opacity="0.45"/>
-<rect x="1023" y="692" width="72" height="1" fill="rgb(230,186,102)" fill-opacity="0.45"/>
-<rect x="1023" y="666" width="1" height="26" fill="rgb(230,186,102)" fill-opacity="0.45"/>
-<rect x="1094" y="666" width="1" height="26" fill="rgb(230,186,102)" fill-opacity="0.45"/>
-<rect x="1024" y="666" width="70" height="1" fill="rgb(255,255,255)" fill-opacity="0.25"/>
-<g transform="translate(1042.37 683.32) scale(0.005859)" fill="rgb(10,13,20)" fill-opacity="0.45"><use href="#gInter-Mediumttf-2" x="0"/><use href="#gInter-Mediumttf-843" x="1452"/><use href="#gInter-Mediumttf-843" x="2718"/><use href="#gInter-Mediumttf-736" x="3984"/><use href="#gInter-Mediumttf-998" x="4500"/></g>
-<rect x="943" y="665" width="72" height="28" fill="rgb(35,42,63)" fill-opacity="0.45"/>
-<rect x="943" y="665" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.05"/>
-<rect x="943" y="692" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.05"/>
-<rect x="943" y="666" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.05"/>
-<rect x="1014" y="666" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.05"/>
-<g transform="translate(964.62 684.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.16"><use href="#gInter-Mediumttf-424" x="0"/><use href="#gInter-Mediumttf-773" x="1516"/><use href="#gInter-Mediumttf-597" x="2748"/><use href="#gInter-Mediumttf-790" x="4014"/></g>
-<g transform="translate(963.62 683.32) scale(0.005859)" fill="rgb(247,248,253)" fill-opacity="0.45"><use href="#gInter-Mediumttf-424" x="0"/><use href="#gInter-Mediumttf-773" x="1516"/><use href="#gInter-Mediumttf-597" x="2748"/><use href="#gInter-Mediumttf-790" x="4014"/></g>
+<rect x="1016" y="665" width="79" height="28" fill="rgb(230,186,102)" fill-opacity="1"/>
+<rect x="1016" y="665" width="79" height="1" fill="rgb(230,186,102)" fill-opacity="1"/>
+<rect x="1016" y="692" width="79" height="1" fill="rgb(230,186,102)" fill-opacity="1"/>
+<rect x="1016" y="666" width="1" height="26" fill="rgb(230,186,102)" fill-opacity="1"/>
+<rect x="1094" y="666" width="1" height="26" fill="rgb(230,186,102)" fill-opacity="1"/>
+<rect x="1017" y="666" width="77" height="1" fill="rgb(255,255,255)" fill-opacity="0.55"/>
+<g transform="translate(1031.81 683.32) scale(0.005859)" fill="rgb(10,13,20)" fill-opacity="1"><use href="#gInter-Mediumttf-2" x="0"/><use href="#gInter-Mediumttf-586" x="1452"/><use href="#gInter-Mediumttf-889" x="2634"/><use href="#gInter-Mediumttf-689" x="3331"/><use href="#gInter-Mediumttf-980" x="3847"/><use href="#gInter-Mediumttf-507" x="5024"/><use href="#gInter-Mediumttf-889" x="6187"/><use href="#gInter-Mediumttf-614" x="6884"/></g>
+<rect x="936" y="665" width="72" height="28" fill="rgb(35,42,63)" fill-opacity="0.45"/>
+<rect x="936" y="665" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.05"/>
+<rect x="936" y="692" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.05"/>
+<rect x="936" y="666" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.05"/>
+<rect x="1007" y="666" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.05"/>
+<g transform="translate(957.62 684.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.16"><use href="#gInter-Mediumttf-424" x="0"/><use href="#gInter-Mediumttf-773" x="1516"/><use href="#gInter-Mediumttf-597" x="2748"/><use href="#gInter-Mediumttf-790" x="4014"/></g>
+<g transform="translate(956.62 683.32) scale(0.005859)" fill="rgb(247,248,253)" fill-opacity="0.45"><use href="#gInter-Mediumttf-424" x="0"/><use href="#gInter-Mediumttf-773" x="1516"/><use href="#gInter-Mediumttf-597" x="2748"/><use href="#gInter-Mediumttf-790" x="4014"/></g>
 <rect x="934" y="53.5" width="64" height="3" fill="rgb(255,255,255)" fill-opacity="0.12"/>
 <rect x="934" y="53.5" width="27.43" height="3" fill="rgb(230,186,102)" fill-opacity="1"/>
 <image x="957.57" y="50.5" width="9" height="9" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA2klEQVR4nNWX3Q3DIAyEmYDdWIFZWIEVMgu7eAD3BaVGxRJFVE1awrUn3UsiuC/hz5i/Et+yE0dxEpM4V1N9Vt45M1PSoRWHGrIfNNU21nwj6cCfDB6BePOJ+PE790mO5oykwTYxXL2ZI+K5X947vgv3F4ar/avwMttpAUDJsCOAsCBcHUYAtBCA+nC3MFztWoAIAIgtQAIAJNT4q6kFyACA/FMA8CGAT0L4MsRuRIB58LwVVwD4YYQ9jisEriBpIHAlmYqRRamKkWW5ipEXExUjr2a9GHE5vVp3wPUyjgOUBtcAAAAASUVORK5CYII="/>

@@ -75,6 +75,12 @@ function C_SpecializationInfo.GetCombatConfigIDForSpecGroup(g) return 10 + g end
 -- stub.noPoints: a character who has not earned a talent point yet.
 function C_SpecializationInfo.HasPlayerEarnedATalentPoint() return not stub.noPoints end
 function GetNumSpecGroups() return stub.dual and 2 or 1 end
+-- Switching spec is a cast: stub.switching until stub.finishSwitch() ends it, as ACTIVE_TALENT_GROUP_CHANGED does.
+function C_SpecializationInfo.SetActiveSpecGroup(g) stub.switching = g end
+function stub.finishSwitch()
+	stub.specGroup, stub.switching = stub.switching, nil
+	stub.fire("ACTIVE_TALENT_GROUP_CHANGED", stub.specGroup)
+end
 
 C_Traits = {}
 function C_Traits.GetConfigInfo(config) return CONFIGS[config] and { ID = config, treeIDs = { TREE } } end
