@@ -551,7 +551,7 @@ local function paintSend()
 	send.COD:Refresh()
 	local price = GetSendMailPrice()
 	ns.SetMoney(send.Postage, price, price > GetMoney() and "danger" or nil)
-	W.ShellTitle(f, "Send mail", "Click a well with an item on the cursor to attach it.")
+	W.ShellTitle(f, "Send mail", n == 0 and "No attachments." or ("%d of %d attachments."):format(n, SEND))
 	W.ShellFooter(f, {}, { { label = "Send", onClick = function()
 		sending = true
 		canSend()
@@ -609,7 +609,13 @@ local function buildSend()
 		well:SetScript("OnReceiveDrag", function() ClickSendMailItemButton(i) end)
 		well:HookScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-			if HasSendMailItem(i) then GameTooltip:SetSendMailItem(i) else GameTooltip:SetText("Attachment") end
+			if HasSendMailItem(i) then
+				GameTooltip:SetSendMailItem(i)
+				ns.TooltipHint("Right-click to take it back out.")
+			else
+				GameTooltip:SetText("Attachment")
+				ns.TooltipHint("Drop an item here, or right-click one in your bags, to attach it.")
+			end
 			GameTooltip:Show()
 		end)
 		well:HookScript("OnLeave", function() GameTooltip:Hide() end)

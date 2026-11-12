@@ -14,6 +14,7 @@ assert(send:IsShown() and not inbox:IsShown(), "the pages did not switch")
 assert(stub.sendShowing, "the bags' right-click does not attach")
 local sendBtn = f.footerButtons.right[1]
 assert(not sendBtn:IsEnabled() and not send.COD:IsEnabled(), "Send or COD on with nothing filled")
+assert(tostring(f.Subtitle:GetText()) == "No attachments.", "the status: " .. tostring(f.Subtitle:GetText()))
 
 -- To: typing "a" lists Anduin, Arator, Arthas; a pick fills the field.
 send.To:SetText("a")
@@ -39,6 +40,7 @@ wells[2]:Click()
 stub.fire("MAIL_SEND_INFO_UPDATE")
 assert(tostring(wells[1].psCount:GetText()) == "20" and stub.sendItems[2], "attached")
 assert(tostring(send.Subject:GetText()) == "Runecloth (20)" and sendBtn:IsEnabled() and send.COD:IsEnabled(), "the subject not filled from the item")
+assert(tostring(f.Subtitle:GetText()) == "2 of 12 attachments.", "the status: " .. tostring(f.Subtitle:GetText()))
 -- Dropped on the page: the first free well.
 stub.cursor = stub.mailItem("Thorium Bar", 12359, 133221, 5, 1)
 stub.RunScript(send, "OnMouseUp")
