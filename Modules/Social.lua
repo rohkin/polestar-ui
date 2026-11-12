@@ -643,7 +643,7 @@ local function paintRows(list)
 	p:SetHeight(math.max(1, y))
 	p:SetShown(#list > 0)
 	f.psEmpty:SetShown(#list == 0)
-	return 24 + y + 24
+	return 8 + y + 24
 end
 
 ---------------------------------------------------------------------------
@@ -1101,7 +1101,7 @@ local function build()
 	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -(W.SHELL.header - 30))
 	Theme.Skin(f.psFilter, "editbox")
 	f.psPanel = CreateFrame("Frame", nil, f.Body)
-	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -8) -- as the Characters page: no strip above the list
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
