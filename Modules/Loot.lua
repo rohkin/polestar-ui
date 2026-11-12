@@ -31,6 +31,21 @@ local function enter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	if t == Enum.LootSlotType.Currency then GameTooltip:SetLootCurrency(r.psSlot) else GameTooltip:SetLootItem(r.psSlot) end
 	GameTooltip:Show()
+	-- The dress-up cursor while its modifier is down, as the stock row.
+	if CursorUpdate then CursorUpdate(r) end
+end
+
+local function leave()
+	W.HideTooltip()
+	if ResetCursor then ResetCursor() end
+end
+
+-- As the stock row's OnUpdate: the tooltip again while it is ours (a
+-- modifier pressed shows the comparison), and the cursor kept in step.
+local function update(r)
+	if GameTooltip:GetOwner() ~= r then return end
+	enter(r)
+	if CursorOnUpdate then CursorOnUpdate(r) end
 end
 
 -- As the stock row: a modified click links (Polestar's HandleModifiedItemClick hook sees it), else loots.
@@ -107,7 +122,8 @@ local function newRow(n)
 	end
 	r:SetScript("OnClick", click)
 	r:SetScript("OnEnter", enter)
-	r:SetScript("OnLeave", W.HideTooltip)
+	r:SetScript("OnLeave", leave)
+	r:SetScript("OnUpdate", update)
 	rows[n] = r
 	return r
 end

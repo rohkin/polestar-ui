@@ -98,3 +98,11 @@ function stub.openLoot(auto)
 	for _, s in ipairs(stub.loot) do s.gone = nil end
 	stub.fire("LOOT_OPENED", auto or false, false)
 end
+
+-- The quest marks the stock row draws (FrameXML's globals).
+TEXTURE_ITEM_QUEST_BANG = TEXTURE_ITEM_QUEST_BANG or "Interface/ContainerFrame/UI-Icon-QuestBang"
+TEXTURE_ITEM_QUEST_BORDER = TEXTURE_ITEM_QUEST_BORDER or "Interface/ContainerFrame/UI-Icon-QuestBorder"
+-- The stock row's cursor (InputUtil): the dress-up one while its modifier is down.
+function CursorUpdate(r) stub.cursorShape = IsModifiedClick("DRESSUP") and "inspect" or nil end
+CursorOnUpdate = CursorUpdate
+function ResetCursor() stub.cursorShape = nil end

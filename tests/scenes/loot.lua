@@ -38,6 +38,14 @@ assert(rows[4].Name:GetText() == "Cloak of the Fallen" and rows[4]:IsShown(), "i
 assert(not rows[2].Quest:IsShown(), "a plain item marked")
 assert(rows[5].Quest:IsShown() and rows[5].Quest.texture == TEXTURE_ITEM_QUEST_BORDER or tostring(rows[5].Quest.texture):find("QuestBorder"), "quest item not bordered")
 assert(rows[6].Quest:IsShown() and tostring(rows[6].Quest.texture):find("QuestBang"), "a quest starter has no bang")
+-- Hovered, the tooltip follows the modifiers as the stock row's (redrawn each frame) and so does the cursor.
+stub.RunScript(rows[2], "OnEnter")
+stub.keys.shift = true
+stub.advance(0.1)
+assert(GameTooltip:GetOwner() == rows[2] and stub.cursorShape == "inspect", "no dress-up cursor while hovered")
+stub.keys.shift = false
+stub.RunScript(rows[2], "OnLeave")
+assert(not GameTooltip:IsShown() and stub.cursorShape == nil, "the cursor not reset")
 stub.keys.shift = true
 stub.RunScript(rows[2], "OnClick", "LeftButton")
 stub.keys.shift = false
