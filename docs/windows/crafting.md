@@ -28,8 +28,12 @@ it from tainted code.
 - **Subject block:** the profession's icon, name in Title, and its 2px skill
   bar under it with the rank ("112/150") above the bar's right end.
 - **Sidebar:** the search (shell's own) and the filter, then the learnt recipes under their
-  categories in the client's order, "Can make now" (nothing missing, no
-  cooldown) and "Recent" (the last 8 crafted here, kept per character) first.
+  categories in the client's order, "Favorites" (the client's,
+  `PROFESSIONS_CATEGORY_FAVORITE`, as the stock list groups them), "Can make
+  now" (nothing missing, no cooldown) and "Recent" (the last 8 crafted here,
+  kept per character) first. A recipe row's right-click is the stock list's
+  menu: "Set favorite" or "Remove favorite" (`SetRecipeFavorite`; a learnt
+  recipe of the player's own).
   A category is a heading row with its count; a click folds it. Under it, one
   recipe row per recipe, its name in the client's difficulty colour
   (`DIFFICULT_`, `FAIR_`, `EASY_`, `TRIVIAL_DIFFICULTY_COLOR`, lifted to read).
@@ -54,7 +58,10 @@ it from tainted code.
   another player's recipes or when the client cannot link it
   (`CanTradeSkillListLink`).
   - *Recipe page:* the product as a 40px tile with its name in its quality
-    colour (legible) and "Makes 2" when it makes more than one, the recipe's
+    colour (legible) and "Makes 2" when it makes more than one, the stock
+    page's favorite star at the row's right end (a 24px `star` icon button,
+    in the accent while the recipe is a favorite; not for another player's
+    recipes), the recipe's
     description in textDim, the reagents under a "Reagents" heading as reagent
     tiles (two columns, 8px apart), then the tools and places line ("Requires
     Moonwell"), the cooldown and the game's own reason in Note (warning while

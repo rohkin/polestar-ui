@@ -80,8 +80,12 @@ function T.GetCategoryInfo(id) return { categoryID = id, name = CATEGORIES[id][1
 function T.GetRecipeInfo(id)
 	local r = byID[id]
 	return { recipeID = id, name = r[2], categoryID = r[3], relativeDifficulty = r[4], icon = 134400,
-		learned = r[7] ~= false, craftable = true, disabled = false, isDummyRecipe = false }
+		learned = r[7] ~= false, craftable = true, disabled = false, isDummyRecipe = false, favorite = stub.favorites[id] or false }
 end
+-- Favorites (Linen Bag one already), kept by the client.
+stub.favorites = { [3755] = true }
+function T.IsRecipeFavorite(id) return stub.favorites[id] or false end
+function T.SetRecipeFavorite(id, on) stub.favorites[id] = on or nil end
 function T.GetCraftableCount(id)
 	local n = math.huge
 	for _, g in ipairs(byID[id][6]) do n = math.min(n, math.floor(C_Item.GetItemCount(g[1]) / g[2])) end

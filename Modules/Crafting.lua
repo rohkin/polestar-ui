@@ -105,9 +105,24 @@ local function sections()
 	for _, id in ipairs(recent()) do
 		if byID[id] and #last.recipes < RECENT then table.insert(last.recipes, byID[id]) end
 	end
+	-- Favorites first, as the stock list groups them (not while searching).
+	local fav = { key = "fav", label = PROFESSIONS_CATEGORY_FAVORITE or "Favorites", recipes = {} }
+	for _, c in ipairs(list) do
+		for _, r in ipairs(c.recipes) do if r.favorite then table.insert(fav.recipes, r) end end
+	end
 	table.insert(list, 1, last)
 	table.insert(list, 1, make)
+	table.insert(list, 1, fav)
 	return list, byID
+end
+
+-- A recipe made a favorite or not, as the stock star and the list's
+-- right-click menu (C_TradeSkillUI.SetRecipeFavorite); redrawn at once
+-- (docs/CLIENT.md, rule 6).
+local function setFavorite(id, on)
+	C_TradeSkillUI.SetRecipeFavorite(id, on)
+	PlaySound(SOUNDKIT.UI_PROFESSION_TRACK_RECIPE_CHECKBOX)
+	refresh()
 end
 
 local function insertLink(link)
@@ -194,8 +209,17 @@ local function recipeRow(i)
 	-- A long name (an enchant's) takes a second line, as the shell's nav rows.
 	r.Name:SetWordWrap(true)
 	r.Name:SetMaxLines(2)
-	r:SetScript("OnClick", function(self)
+	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	r:SetScript("OnClick", function(self, button)
 		local id = self.psRecipe.recipeID
+		-- Right-click: the stock list's menu, Set or Remove favorite (a learnt recipe of ours).
+		if button == "RightButton" then
+			if W.MenuShown(self) then return W.HideMenu() end
+			if not self.psRecipe.learned or viewing() then return end
+			local on = C_TradeSkillUI.IsRecipeFavorite(id)
+			return W.ShowMenu(self, { { text = on and (BATTLE_PET_UNFAVORITE or "Remove favorite") or (BATTLE_PET_FAVORITE or "Set favorite"),
+				onClick = function() setFavorite(id, not on) end } }, { minWidth = 160 })
+		end
 		if IsModifiedClick("CHATLINK") then return insertLink(C_TradeSkillUI.GetRecipeLink(id)) end
 		if id ~= sel then qty, target = 1, nil end
 		sel, selKey = id, self.psKey
@@ -356,7 +380,15 @@ local function paintPage(info)
 	-- With a "Makes" line the name sits above the well's middle.
 	p.Name:ClearAllPoints()
 	p.Name:SetPoint(made and "BOTTOMLEFT" or "LEFT", p.Well, "RIGHT", 12, made and 1 or 0)
-	p.Name:SetPoint("RIGHT", p, "RIGHT", 0, 0)
+	p.Name:SetPoint("RIGHT", p, "RIGHT", -32, 0)
+	-- The favorite star, as the stock page's (not for another player's recipes).
+	local fav = info.learned and not viewing()
+	p.Fav:SetShown(fav)
+	if fav then
+		local on = C_TradeSkillUI.IsRecipeFavorite(id)
+		W.SetIconState(p.Fav, on)
+		p.Fav.psTip = on and (BATTLE_PET_UNFAVORITE or "Remove favorite") or (BATTLE_PET_FAVORITE or "Set favorite")
+	end
 	p:ClearAllPoints()
 	p:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
 	p:SetWidth(w)
@@ -664,6 +696,10 @@ local function build()
 			insertLink(C_TradeSkillUI.GetRecipeLink(self.psRecipe))
 		end
 	end)
+	p.Fav = W.IconButton(p, "star", 24, "Set favorite", function()
+		setFavorite(sel, not C_TradeSkillUI.IsRecipeFavorite(sel))
+	end, 14)
+	p.Fav:SetPoint("RIGHT", p, "RIGHT", 0, 0)
 	f.psProduct = p
 	f.psDesc = W.Text(f.Body, "default", "textDim")
 	f.psDesc:SetJustifyH("LEFT")
