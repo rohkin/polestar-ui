@@ -23,8 +23,8 @@ Nothing Lost Rule, said in the Options menu).
   list (the stock Battle.net bar menu's Ignore List).
 - **Band:** the page title; on Friends the subtitle is "5 of 8 friends
   online", on the other pages one line saying what the page is. Options
-  (the Nothing Lost Rule: Quick Join, Recruit a Friend and the raid's
-  groups stay on the game's window) is the band's only button.
+  (the Nothing Lost Rule: Quick Join and Recruit a Friend, where the game
+  has them, stay on the game's window) is the band's only button.
 - **Sidebar:** the shell's search ("Search for keywords"; names and
   Battle.net character names) and, on Friends, a Filter icon button ending
   the search row as in Crafting (accent while a filter is on). Its menu is
@@ -91,9 +91,28 @@ Nothing Lost Rule, said in the Options menu).
   `C_BattleNet.SetBlocked(id, false)`). Footer: "Ignore player", the stock
   Block button: a friendly player targeted is ignored at once, else a name
   dialog (`ADD_IGNORE`'s).
-- **Raid:** the eight groups as two columns of row panels (name, class
-  colour, role), read only; the stock drag between groups and the raid
-  ready check stay on the stock tab (pointed to in Options).
+- **Raid:** the stock Raid tab (`RaidFrameSocialView.lua`). Out of a raid:
+  what a raid is and "Convert to raid" (`C_PartyInfo.ConvertToRaid`, on
+  when `AllowedToDoPartyConversion(true)`); in a story raid the stock tab's
+  "unavailable" line. In one: a bar with the stock All assist box (the
+  leader's; `SetEveryoneIsAssistant`) and the role counts ("2 Tanks · 4
+  Healers · 6 Damage"); the eight groups two to a row, as the stock grid
+  lays them, each a row panel of five: name in class colour (danger when
+  dead, textMuted offline), "25 Mage", the leader / assistant atlas before
+  the name and the main tank / main assist atlas at the right, where the
+  ready check's answer shows while one runs (`GetReadyCheckStatus`,
+  `READY_CHECK_*_TEXTURE`). A hovered player gets a secure button of ours
+  (`ns.Overlay`, `type1 = target`): a click targets as the stock
+  `SecureUnitButton` does, a right-click opens the game's `RAID` menu
+  (promote, main tank, remove...), and the leader or an assistant drags a
+  player onto another (`SwapRaidSubgroup`) or into a group with room
+  (`SetRaidSubgroup`), redrawn at once; out of combat only (the button
+  hides in combat). Footer: "Raid info" (the stock side window, on while
+  saved: `GetSavedInstanceInfo`, world bosses, "Resets in 3 days" or
+  "Expired", Extend / Unextend / Reactivate where
+  `C_RaidLocks.IsRaidLockExtendFeatureSupported`; "Groups" goes back),
+  then "Ready check" (`DoReadyCheck`, leader or assistant; the stock raid
+  manager's) and "Convert to party" (`AllowedToDoPartyConversion(false)`).
 - **Taint:** no protected or restricted calls (`C_FriendList`,
   `BNSendWhisper`, `C_PartyInfo.InviteUnit` are not; never
   `C_RecentAllies.TryRequestRecentAlliesData`). Battle.net names and notes

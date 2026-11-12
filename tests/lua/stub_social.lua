@@ -137,23 +137,49 @@ function FriendsFrame_BattlenetInviteByIndex(i) stub.invited = i end
 function FriendsFrame_ShowDropdown(name, connected) stub.popup = { "FRIEND", name } end
 function FriendsFrame_ShowBNDropdown(name, connected) stub.popup = { "BN_FRIEND", name } end
 
--- A raid of twelve over three groups: { name, group, class, role, online }
+-- A raid of twelve over three groups: { name, group, class, combat role, online, rank, raid role, dead }.
+-- The player leads; stub.notLeader makes her a plain member. Moves and swaps
+-- change the roster (stub.moved records the last). stub.ready: unit -> ready check answer.
 TANK, HEALER, DAMAGER = "Tank", "Healer", "Damage"
 local RAID = {
-	{ "Testchar", 1, "WARRIOR", "TANK" }, { "Aelric", 1, "PALADIN", "HEALER" }, { "Brannoc", 1, "PRIEST", "HEALER" },
+	{ "Testchar", 1, "WARRIOR", "TANK", true, 2, "MAINTANK" }, { "Aelric", 1, "PALADIN", "HEALER", true, 1 }, { "Brannoc", 1, "PRIEST", "HEALER" },
 	{ "Corwyn", 1, "ROGUE", "DAMAGER" }, { "Thessaly", 1, "DRUID", "DAMAGER" },
-	{ "Garrick", 2, "WARRIOR", "TANK" }, { "Hollis", 2, "MAGE", "DAMAGER" }, { "Ingra", 2, "HUNTER", "DAMAGER" },
+	{ "Garrick", 2, "WARRIOR", "TANK", true, 0, "MAINASSIST" }, { "Hollis", 2, "MAGE", "DAMAGER", true, 0, nil, true }, { "Ingra", 2, "HUNTER", "DAMAGER" },
 	{ "Jessamy", 2, "PRIEST", "HEALER", false },
 	{ "Kael", 3, "MAGE", "DAMAGER" }, { "Lorne", 3, "ROGUE", "DAMAGER" }, { "Maelis", 3, "DRUID", "HEALER" },
 }
 stub.raid = true
+stub.ready = {}
 function IsInRaid() return stub.raid end
 function GetNumGroupMembers() return stub.raid and #RAID or 0 end
 function GetRaidRosterInfo(i)
 	local m = RAID[i]
 	if not m then return end
-	return m[1], 0, m[2], 25, CLASSES[m[3]], m[3], "", m[5] ~= false, false, nil, false, m[4]
+	return m[1], m[6] or 0, m[2], 25, CLASSES[m[3]], m[3], "", m[5] ~= false, m[8] or false, m[7], false, m[4]
 end
+function UnitIsGroupLeader() return stub.raid and not stub.notLeader end
+function UnitIsGroupAssistant() return false end
+function IsEveryoneAssistant() return stub.allAssist or false end
+function GetReadyCheckStatus(unit) return stub.ready[unit] end
+READY_CHECK_READY_TEXTURE, READY_CHECK_NOT_READY_TEXTURE, READY_CHECK_WAITING_TEXTURE = "ReadyCheck-Ready", "ReadyCheck-NotReady", "ReadyCheck-Waiting"
+function SetRaidSubgroup(i, g) RAID[i][2] = g; stub.moved = { "set", i, g } end
+function SwapRaidSubgroup(a, b) RAID[a][2], RAID[b][2] = RAID[b][2], RAID[a][2]; stub.moved = { "swap", a, b } end
+function DoReadyCheck() stub.readyCheck = true end
+function RequestRaidInfo() stub.raidInfoAsked = true end
+C_PartyInfo.SetEveryoneIsAssistant = function(on) stub.allAssist = on end
+C_PartyInfo.ConvertToRaid = function() stub.converted = "raid" end
+C_PartyInfo.ConvertToParty = function() stub.converted = "party" end
+C_PartyInfo.AllowedToDoPartyConversion = function(toRaid) return toRaid end
+-- Saved instances: { name, reset, locked, extended, difficulty }; world bosses: { name, reset }.
+local SAVED = { { "Molten Core", 3 * 86400, true, false, "40 Player" }, { "Onyxia's Lair", 0, false, false, "40 Player" } }
+local BOSSES = { { "Azuregos", 86400 } }
+function GetNumSavedInstances() return #SAVED end
+function GetSavedInstanceInfo(i) local v = SAVED[i]; return v[1], i, v[2], 9, v[3], v[4], 0, true, 40, v[5], 0, 0, false end
+function GetNumSavedWorldBosses() return #BOSSES end
+function GetSavedWorldBossInfo(i) local v = BOSSES[i]; return v[1], i, v[2] end
+C_RaidLocks = { IsRaidLockExtendFeatureSupported = function() return true end }
+function SetSavedInstanceExtend(i, on) SAVED[i][4] = on; stub.extended = { i, on } end
+function GameTooltip.SetUnit(self, unit) self.unit = unit end
 
 -- Pending Battle.net friend requests: stub.accepted / stub.declined record the
 -- answer, stub.blocked the blocked account, stub.reported the report asked for.

@@ -1,6 +1,6 @@
 -- The Social (docs/windows/social.md): the stock FriendsFrame's Contacts and
--- Raid tabs in a Polestar shell. Quick Join, Recruit a Friend and the raid's
--- drag and ready check stay on the stock window.
+-- Raid tabs in a Polestar shell. Quick Join and Recruit a Friend, where the
+-- game has them, stay on the stock window.
 
 local ADDON, ns = ...
 local W = Polestar.Widgets
@@ -523,6 +523,9 @@ local function newRow(panel, i)
 		M.Show()
 	end, { primary = true })
 	r.Accept:SetWidth(84)
+	r.Act = W.Button(r, "", function(self) self:GetParent().psEntry.actFn() end)
+	r.Act:SetWidth(100)
+	r.Act:SetPoint("RIGHT", r, "RIGHT", -12, 0)
 	r.Accept:SetPoint("RIGHT", r.Decline, "LEFT", -8, 0)
 	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	r:SetScript("OnClick", function(self, button)
@@ -577,7 +580,7 @@ local function paintRows(list)
 		r.Sub:SetText(sub)
 		W.Color(r.Sub, e.online and "textDim" or "textMuted")
 		r.Sub:SetShown(sub ~= "")
-		local right = e.request and 200 or e.status and 80 or 64
+		local right = e.request and 200 or e.act and 124 or e.status and 80 or 64
 		r.Name:ClearAllPoints()
 		r.Name:SetPoint(sub ~= "" and "BOTTOMLEFT" or "LEFT", r, "LEFT", e.head and 36 or 16, sub ~= "" and 1 or 0)
 		r.Name:SetPoint("RIGHT", r, "RIGHT", -right, 0)
@@ -603,6 +606,11 @@ local function paintRows(list)
 		r.Remove:SetShown(e.unignore ~= nil or e.unblock ~= nil)
 		r.Remove.psTip = e.unblock and "Unblock invites" or "Stop ignoring"
 		r.Accept:SetShown(e.request ~= nil)
+		r.Act:SetShown(e.act ~= nil)
+		if e.act then
+			W.SetButtonText(r.Act, e.act)
+			ns.SetEnabled(r.Act, not e.actOff)
+		end
 		r.Decline:SetShown(e.request ~= nil)
 		r:Show()
 	end
@@ -614,14 +622,77 @@ local function paintRows(list)
 end
 
 ---------------------------------------------------------------------------
--- Raid: the eight groups in two columns, read only.
+-- Raid: the stock Raid tab (RaidFrameSocialView.lua). Eight groups, two to a
+-- row as the stock grid lays them; each player's name in class colour (red
+-- dead, faint offline), level and class, the leader or assistant mark, the
+-- main tank or assist mark, and the ready check's answer in that slot while
+-- one runs. A hovered player has a secure button of ours over it
+-- (ns.Overlay): a click targets, as the stock SecureUnitButton does, a
+-- right-click opens the game's RAID menu, and the leader or an assistant
+-- drags a player onto another (SwapRaidSubgroup) or into a group with room
+-- (SetRaidSubgroup). Out of combat only: the button hides in combat.
+
+local raidRows, dragFrom, raidInfo = {}, nil, false
+
+local function canArrange() return UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") end
+
+-- The row or group under the mouse at a drop.
+local function dropOn()
+	for _, r in ipairs(raidRows) do
+		if r:IsShown() and r.psMember and r:IsMouseOver() then return r, nil end
+	end
+	for i, g in ipairs(groups) do
+		if g.Panel:IsShown() and g.Panel:IsMouseOver() then return nil, i end
+	end
+end
+
+local function drop()
+	local from = dragFrom
+	dragFrom = nil
+	if not from or InCombatLockdown() or not canArrange() then return end
+	local r, gi = dropOn()
+	if r and r.psMember.sub ~= from.sub then
+		SwapRaidSubgroup(from.id, r.psMember.id)
+	elseif gi and gi ~= from.sub and (groups[gi].psCount or 0) < 5 then
+		SetRaidSubgroup(from.id, gi)
+	end
+	M.Show() -- at once (docs/CLIENT.md, rule 6)
+end
+
+local overRaid = ns.Overlay("PolestarUISocialRaidUnit", {
+	enter = function(r)
+		local m = r.psMember
+		if not m then return end
+		GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
+		GameTooltip:SetUnit(m.unit)
+		ns.TooltipHint(canArrange() and "Click to target. Drag to another group. Right-click for more." or "Click to target. Right-click for more.")
+		GameTooltip:Show()
+	end,
+	pickup = function(r) if r.psMember and canArrange() then dragFrom = r.psMember end end,
+	setup = function(over)
+		over:HookScript("OnDragStop", drop)
+		over:HookScript("PostClick", function(self, button)
+			local m = self.psTarget and self.psTarget.psMember
+			if button == "RightButton" and m then UnitPopup_OpenMenu("RAID", { unit = m.unit, name = m.name }) end
+		end)
+	end,
+	attrs = function(over, r)
+		local m = r.psMember
+		over:SetAttribute("type1", m and "target" or nil)
+		over:SetAttribute("unit", m and m.unit or nil)
+	end,
+	stale = function(r) return not r.psMember end,
+})
+
+local READY = { ready = "READY_CHECK_READY_TEXTURE", notready = "READY_CHECK_NOT_READY_TEXTURE", waiting = "READY_CHECK_WAITING_TEXTURE" }
 
 local function raidGroup(i)
 	local g = groups[i]
 	if g then return g end
 	g = { Head = W.SectionHeader(f.Body, { plain = true }), Panel = W.RowPanel(f.Body), rows = {} }
+	g.Panel:EnableMouse(true)
 	for k = 1, 5 do
-		local r = CreateFrame("Frame", nil, g.Panel)
+		local r = CreateFrame("Button", nil, g.Panel)
 		r:SetHeight(RAID_H)
 		r:SetPoint("TOPLEFT", g.Panel, "TOPLEFT", 0, -(k - 1) * RAID_H)
 		r:SetPoint("RIGHT", g.Panel, "RIGHT", 0, 0)
@@ -630,53 +701,141 @@ local function raidGroup(i)
 			d:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
 			d:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
 		end
+		W.Hover(r)
+		r.Lead = r:CreateTexture(nil, "ARTWORK")
+		r.Lead:SetSize(12, 12)
+		r.Lead:SetPoint("LEFT", r, "LEFT", 8, 0)
+		r.Mark = r:CreateTexture(nil, "ARTWORK")
+		r.Mark:SetSize(14, 14)
+		r.Mark:SetPoint("RIGHT", r, "RIGHT", -8, 0)
 		r.Role = W.Text(r, "small", "textDim")
-		r.Role:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+		r.Role:SetPoint("RIGHT", r, "RIGHT", -28, 0)
 		r.Name = W.Text(r, "label", "text")
-		r.Name:SetPoint("LEFT", r, "LEFT", 12, 0)
-		r.Name:SetPoint("RIGHT", r.Role, "LEFT", -8, 0)
+		r.Name:SetPoint("LEFT", r, "LEFT", 24, 0)
+		r.Name:SetPoint("RIGHT", r.Role, "LEFT", -6, 0)
 		r.Name:SetJustifyH("LEFT")
+		r:SetScript("OnEnter", function(self) if self.psMember then overRaid(self) end end)
 		g.rows[k] = r
+		raidRows[#raidRows + 1] = r
 	end
 	groups[i] = g
 	return g
 end
 
+local function raidBar()
+	if f.psRaidBar then return f.psRaidBar end
+	local b = CreateFrame("Frame", nil, f.Body)
+	b:SetHeight(24)
+	-- The stock All Assist box: everyone an assistant, the leader's to set.
+	b.All = W.Checkbox(b, function(self)
+		C_PartyInfo.SetEveryoneIsAssistant(self:GetChecked() and true or false)
+		M.Show()
+	end)
+	b.All:SetPoint("LEFT", b, "LEFT", 0, 0)
+	if b.All.SetMotionScriptsWhileDisabled then b.All:SetMotionScriptsWhileDisabled(true) end
+	b.All:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText("All assist")
+		tipLine("Makes every raid member an assistant.", "text")
+		if not self:IsEnabled() then tipLine("Only the raid leader can set this.", "danger") end
+		GameTooltip:Show()
+	end)
+	b.All:SetScript("OnLeave", W.HideTooltip)
+	b.AllText = W.Text(b, "label", "text")
+	b.AllText:SetPoint("LEFT", b.All, "RIGHT", 8, 0)
+	b.AllText:SetText("All assist")
+	-- The stock role counts.
+	b.Counts = W.Text(b, "label", "textDim")
+	b.Counts:SetPoint("RIGHT", b, "RIGHT", 0, 0)
+	f.psRaidBar = b
+	return b
+end
+
 local function paintRaid()
-	local members = {}
+	local members, roles = {}, { TANK = 0, HEALER = 0, DAMAGER = 0 }
 	for i = 1, 8 do members[i] = {} end
-	if IsInRaid() then
-		for i = 1, GetNumGroupMembers() do
-			local name, _, sub, _, _, class, _, online, _, _, _, role = GetRaidRosterInfo(i)
-			if name and members[sub] then
-				local m = members[sub]
-				m[#m + 1] = { name = keep("raid" .. i, name) or "", class = class, online = online, role = role }
-			end
+	for i = 1, GetNumGroupMembers() do
+		local name, rank, sub, level, class, file, _, online, dead, role, _, combat = GetRaidRosterInfo(i)
+		if name and members[sub] and #members[sub] < 5 then
+			local m = members[sub]
+			m[#m + 1] = { id = i, unit = "raid" .. i, name = keep("raid" .. i, name) or "", rank = rank, sub = sub, level = level,
+				className = class, class = file, online = online, dead = dead, role = role }
+			if roles[combat] then roles[combat] = roles[combat] + 1 end
 		end
 	end
+	local bar = raidBar()
+	bar:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	bar:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	bar.All:SetChecked(IsEveryoneAssistant())
+	ns.SetEnabled(bar.All, UnitIsGroupLeader("player"))
+	bar.Counts:SetText(("%d Tanks · %d Healers · %d Damage"):format(roles.TANK, roles.HEALER, roles.DAMAGER))
+	bar:Show()
 	local col = (f.BodyWidth - COL_GAP) / 2
-	local y = { 24, 24 }
+	local top, y = 24 + 24 + 16, 0
 	for i = 1, 8 do
-		local g, c = raidGroup(i), i <= 4 and 1 or 2
-		local x = W.SHELL.pad + (c - 1) * (col + COL_GAP)
+		local g, c = raidGroup(i), (i - 1) % 2
+		local x = W.SHELL.pad + c * (col + COL_GAP)
+		y = top + math.floor((i - 1) / 2) * (W.PLAIN_SECTION_H + 5 * RAID_H + 16)
 		W.SetSection(g.Head, ("Group %d"):format(i))
 		g.Head:SetWidth(col)
-		g.Head:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y[c])
+		g.Head:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
 		g.Panel:SetWidth(col)
-		g.Panel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -(y[c] + W.PLAIN_SECTION_H))
+		g.Panel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -(y + W.PLAIN_SECTION_H))
 		g.Panel:SetHeight(5 * RAID_H)
+		g.psCount = #members[i]
 		for k, r in ipairs(g.rows) do
 			local m = members[i][k]
+			r.psMember = m
 			r.Name:SetText(m and m.name or "")
-			if m then paintName(r.Name, m.class, not m.online) end
-			r.Role:SetText(m and m.role and m.role ~= "NONE" and _G[m.role] or "")
+			if m then
+				W.Uncolor(r.Name)
+				if not m.online then W.Color(r.Name, "textMuted")
+				elseif m.dead then W.Color(r.Name, "danger")
+				else paintName(r.Name, m.class) end
+			end
+			r.Role:SetText(m and m.level and m.level > 0 and ("%d %s"):format(m.level, m.className or "") or m and m.className or "")
+			r.Lead:SetShown(m ~= nil and (m.rank or 0) > 0)
+			if m and (m.rank or 0) > 0 then r.Lead:SetAtlas(m.rank == 1 and "friends-icon-raidAssist" or "friends-icon-raidLead") end
+			-- The ready check's answer takes the main tank / assist mark's slot while it runs.
+			local ready = m and GetReadyCheckStatus(m.unit)
+			if ready then
+				r.Mark:SetTexture(_G[READY[ready]])
+			elseif m and m.role == "MAINTANK" then r.Mark:SetAtlas("RaidFrame-Icon-MainTank")
+			elseif m and m.role == "MAINASSIST" then r.Mark:SetAtlas("RaidFrame-Icon-MainAssist") end
+			r.Mark:SetShown(ready ~= nil or (m ~= nil and (m.role == "MAINTANK" or m.role == "MAINASSIST")))
+			r:EnableMouse(m ~= nil)
 		end
 		g.Head:Show()
 		g.Panel:Show()
-		y[c] = y[c] + W.PLAIN_SECTION_H + 5 * RAID_H + 16
 	end
-	return math.max(y[1], y[2]) + 8
+	return y + W.PLAIN_SECTION_H + 5 * RAID_H + 24
 end
+
+-- The stock Raid Info side window: saved instances and world bosses, when
+-- each resets, and Extend where the game has lock extending.
+local function raidLocks()
+	local list = {}
+	local canExtend = C_RaidLocks and C_RaidLocks.IsRaidLockExtendFeatureSupported and C_RaidLocks.IsRaidLockExtendFeatureSupported()
+	for i = 1, GetNumSavedInstances() do
+		local name, _, reset, _, locked, extended, _, _, _, difficulty, _, _, extendDisabled = GetSavedInstanceInfo(i)
+		local on = locked or extended
+		local e = { name = name or "", online = on,
+			sub = (difficulty or "") .. " · " .. (on and ("Resets in %s"):format(SecondsToTime(reset, true)) or "Expired") .. (extended and " · Extended" or "") }
+		if canExtend then
+			e.act = extended and "Unextend" or locked and "Extend" or "Reactivate"
+			e.actOff = extendDisabled
+			e.actFn = function() SetSavedInstanceExtend(i, not extended); RequestRaidInfo(); M.Show() end
+		end
+		list[#list + 1] = e
+	end
+	for i = 1, GetNumSavedWorldBosses() do
+		local name, _, reset = GetSavedWorldBossInfo(i)
+		list[#list + 1] = { name = name or "", online = true, sub = ("World boss · Resets in %s"):format(SecondsToTime(reset, true)) }
+	end
+	return list
+end
+
+local function hasLocks() return GetNumSavedInstances() + GetNumSavedWorldBosses() > 0 end
 
 ---------------------------------------------------------------------------
 -- The window.
@@ -684,7 +843,7 @@ end
 -- The Nothing Lost Rule: what stays on the stock window, and the way to it.
 local optionsItems = {
 	{ text = "Game's window: the friends button by the chat, or /friends", disabled = true },
-	{ text = "There: Quick Join, Recruit a Friend, and the raid's groups and ready check", disabled = true },
+	{ text = "There: Quick Join and Recruit a Friend, where the game has them", disabled = true },
 }
 
 -- A one-line field for a modal's body; Enter takes the modal's action.
@@ -933,7 +1092,8 @@ local PAGES = {
 	allies = { "Recent allies", "Players you grouped or played with lately.", "No recent allies yet." },
 	requests = { "Friend requests", "Players who asked to be your friend.", "No friend requests." },
 	ignored = { "Ignored", "You see nothing these players say.", "You ignore no one." },
-	raid = { "Raid", "Your raid by group. To move players, see Options.", nil },
+	raid = { "Raid", "Your raid by group.", nil },
+	raidinfo = { "Raid info", "Your saved instances and when they reset.", "You are saved to no instance." },
 }
 
 -- The stock Friend Requests tab's one-time notice: a Real ID friend sees
@@ -951,6 +1111,7 @@ end
 
 local function refresh()
 	if page == "allies" and not alliesOn() then page = "friends" end
+	if page ~= "raid" then raidInfo = false end
 	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {}, requests = requests() }
 	local _, bnOnline = BNGetNumFriends()
 	local online = C_FriendList.GetNumOnlineFriends() + bnOnline
@@ -974,34 +1135,59 @@ local function refresh()
 	nav[#nav + 1] = { key = "ignored", label = "Ignored", icon = "close", count = #lists.ignored }
 	nav[#nav + 1] = { key = "raid", label = "Raid", icon = "bolt", count = IsInRaid() and GetNumGroupMembers() or 0 }
 	W.ShellNav(f, nav, page, function(k) page = k; M.Show() end)
-	local p = PAGES[page]
+	local p = PAGES[page == "raid" and raidInfo and "raidinfo" or page]
 	W.ShellTitle(f, p[1], p[2] or ("%d of %d friends online"):format(online, nFriends))
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, page == "raid" and {} or page == "ignored" and {
+	local lead = UnitIsGroupLeader("player")
+	W.ShellFooter(f, page == "raid" and {
+		-- The stock Raid Info button: on while there are saved instances.
+		{ label = raidInfo and "Groups" or "Raid info", onClick = function() raidInfo = not raidInfo; M.Show() end },
+	} or {}, page == "raid" and (not IsInRaid() and {
+		{ label = "Convert to raid", onClick = function() C_PartyInfo.ConvertToRaid(); M.Show() end, opts = { primary = true } },
+	} or {
+		{ label = "Ready check", onClick = function() DoReadyCheck() end, opts = { primary = true } },
+		{ label = "Convert to party", onClick = function() C_PartyInfo.ConvertToParty(); M.Show() end },
+	}) or page == "ignored" and {
 		{ label = "Ignore player", onClick = ignorePlayer, opts = { primary = true } },
 	} or {
 		{ label = "Add friend", onClick = addFriend, opts = { primary = true } },
 		{ label = "Send message", onClick = function() ChatFrameUtil.OpenChat(SLASH_WHISPER1 .. " ") end },
 	})
+	local fb = f.footerButtons
+	-- Footer buttons are pooled: one greyed on another page comes back on.
+	for _, side in pairs(fb) do for _, b in ipairs(side) do ns.SetEnabled(b, true) end end
 	if page ~= "raid" then
-		ns.SetEnabled(f.footerButtons.right[1], page == "ignored" or not C_SocialRestrictions.IsFriendsDisabled(), "Adding friends is disabled.")
+		ns.SetEnabled(fb.right[1], page == "ignored" or not C_SocialRestrictions.IsFriendsDisabled(), "Adding friends is disabled.")
+	elseif not IsInRaid() then
+		ns.SetEnabled(fb.right[1], C_PartyInfo.AllowedToDoPartyConversion(true), "Only a party's leader can make it a raid.")
+		ns.SetEnabled(fb.left[1], raidInfo or hasLocks(), "You are saved to no instance.")
+	else
+		ns.SetEnabled(fb.right[1], lead or UnitIsGroupAssistant("player"), "Only the leader or an assistant can start a ready check.")
+		ns.SetEnabled(fb.right[2], C_PartyInfo.AllowedToDoPartyConversion(false), "Only the leader of a raid of five or fewer can make it a party.")
+		ns.SetEnabled(fb.left[1], raidInfo or hasLocks(), "You are saved to no instance.")
 	end
+	if f.psRaidBar then f.psRaidBar:Hide() end
 	for _, g in ipairs(groups) do g.Head:Hide(); g.Panel:Hide() end
 	local h
-	if page == "raid" then
+	local story = DifficultyUtil and DifficultyUtil.InStoryRaid and DifficultyUtil.InStoryRaid()
+	if page == "raid" and not raidInfo then
 		f.psPanel:Hide()
-		f.psEmpty:SetText("You are not in a raid.")
-		f.psEmpty:SetShown(not IsInRaid())
-		h = IsInRaid() and paintRaid() or 60
+		-- The stock tab is off in a story raid; out of a raid it explains raids.
+		f.psEmpty:SetText(story and "The raid list is unavailable in story raids."
+			or "You are not in a raid. A raid holds up to forty players in eight groups: the party's leader can make the party a raid.")
+		f.psEmpty:SetShown(story or not IsInRaid())
+		h = IsInRaid() and not story and paintRaid() or 80
 	else
 		local list = {}
-		for _, e in ipairs(lists[page]) do if matches(e) then list[#list + 1] = e end end
+		local src = page == "raid" and raidLocks() or lists[page]
+		for _, e in ipairs(src) do if matches(e) then list[#list + 1] = e end end
 		if page == "friends" then list = grouped(list, FRIEND_HEADS) end
 		if page == "requests" then list = grouped(list, REQUEST_HEADS) end
 		if page == "ignored" then list = grouped(list, IGNORE_HEADS) end
 		if page == "allies" then list = grouped(list, ALLY_HEADS) end
 		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
-		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab." or (query ~= "" or n > 0) and "No one matches." or p[3])
+		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab."
+			or (query ~= "" or n > 0) and page ~= "raid" and "No one matches." or p[3])
 		h = paintRows(list)
 	end
 	W.ShellBody(f, h)
@@ -1012,6 +1198,7 @@ function M.Show(key)
 	page = key or page
 	-- No TryRequestRecentAlliesData: it is restricted to the game's code; the
 	-- stock Recent Allies tab asks, and RECENT_ALLIES_DATA_READY fills ours.
+	if page == "raid" then RequestRaidInfo() end
 	refresh()
 	f:Show()
 	if page == "requests" then realIDWarning() end
@@ -1032,6 +1219,8 @@ function M.Enable()
 	})
 	local function changed() if f and f:IsShown() then refresh() end end
 	for _, ev in ipairs({ "FRIENDLIST_UPDATE", "IGNORELIST_UPDATE", "BN_DISCONNECTED", "BN_INFO_CHANGED", "GROUP_ROSTER_UPDATE", "PLAYER_REGEN_ENABLED",
+		"RAID_ROSTER_UPDATE", "PARTY_LEADER_CHANGED", "PLAYER_ROLES_ASSIGNED", "UNIT_CONNECTION", "UNIT_LEVEL",
+		"READY_CHECK", "READY_CHECK_CONFIRM", "READY_CHECK_FINISHED", "UPDATE_INSTANCE_INFO",
 		"BN_FRIEND_INVITE_ADDED", "BN_FRIEND_INVITE_REMOVED", "BN_FRIEND_INVITE_LIST_INITIALIZED", "RECENT_ALLIES_CACHE_UPDATE", "RECENT_ALLIES_DATA_READY" }) do
 		Polestar.RegisterEvent(ev, changed)
 	end
