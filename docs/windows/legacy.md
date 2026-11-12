@@ -8,10 +8,12 @@ point. `TOGGLEACHIEVEMENT` (which Forever routes to the challenges) opens ours
 on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
 - **Shell:** 960×680 with a section rail (as the Professions windows), headed
   by the Legacy emblem: Rewards, Challenges and Tree, with the stock tabs'
-  game icons. The sidebar shows on Challenges only (subject block: the Legacy
-  emblem, "Legacy", the player's legacy points, the track's renown level; the
-  search; the categories); the other pages take its width, the main column
-  hung off the rail (CLIENT.md, rule 12).
+  game icons (`ns.GameIcon`), the rail tooltip saying what the page is for.
+  The sidebar shows on Challenges and the Tree: the subject block (the
+  Legacy emblem atlas, "Legacy", and the player's legacy points, "3 Legacy
+  Points"), then the search, then the categories (Challenges) or the trees
+  (Tree). The Reward Track takes its width, the main column hung off the
+  rail (CLIENT.md, rule 12).
 - **Reward Track:** progress toward the next reward (a skill bar, points over
   the reward's points), then a row panel, one row per reward level: the points
   it needs, the reward's game icon, its name and description
