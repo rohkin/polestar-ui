@@ -7,7 +7,7 @@ ours takes it, so the game calls ours for every gossip its custom handlers
 manager's `HideUIPanel` of ours does nothing from our code, CLIENT.md rule
 1). Off waits for `/reload`. Polestar's gossip automation runs on the
 events and is unaffected.
-- **Shell:** plain, 560×560, no tabs, no sidebar. Band: the NPC's portrait
+- **Shell:** plain, 640×560, no tabs, no sidebar. Band: the NPC's portrait
   (`SetPortraitTexture`, the quest book when there is no NPC, as the stock
   `SetPortraitToUnit`) in a 48px well, the NPC's name beside it.
 - **Body:** a friendship NPC's standing first (`NPCFriendshipStatusBarMixin`:

@@ -168,7 +168,7 @@ local function refresh()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, sidebar = 0 })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 560, sidebar = 0 })
 	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "gossip")
