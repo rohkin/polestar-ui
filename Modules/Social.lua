@@ -319,16 +319,8 @@ local function addFriend()
 	if not f.psAdd then
 		local body = CreateFrame("Frame", nil, f)
 		body:SetSize(352, 30)
-		local e = CreateFrame("EditBox", nil, body)
+		local e = ns.TextField(body, 352)
 		e:SetAllPoints(body)
-		e:SetAutoFocus(false)
-		e:SetTextInsets(10, 10, 0, 0)
-		Theme.Font(e, "label")
-		W.Color(e, "text")
-		Theme.Skin(e, "editbox")
-		e:SetScript("OnEditFocusGained", function(self) Theme.SetFocused(self, true) end)
-		e:SetScript("OnEditFocusLost", function(self) Theme.SetFocused(self, false) end)
-		e:SetScript("OnEscapePressed", e.ClearFocus)
 		e:SetScript("OnEnterPressed", function() PolestarModal.Box.Action:Click() end)
 		body.Box = e
 		f.psAdd = body

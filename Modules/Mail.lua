@@ -230,22 +230,6 @@ end
 -- Send
 ---------------------------------------------------------------------------
 
-local function field(parent, w, letters)
-	local e = CreateFrame("EditBox", nil, parent)
-	e:SetSize(w, 30)
-	e:SetAutoFocus(false)
-	e:SetMaxLetters(letters)
-	e:SetTextInsets(10, 10, 0, 0)
-	Theme.Font(e, "label")
-	W.Color(e, "text")
-	Theme.Skin(e, "editbox")
-	e:SetScript("OnEditFocusGained", function(self) Theme.SetFocused(self, true) end)
-	e:SetScript("OnEditFocusLost", function(self) Theme.SetFocused(self, false) end)
-	e:SetScript("OnEscapePressed", e.ClearFocus)
-	e:SetScript("OnEnterPressed", e.ClearFocus)
-	return e
-end
-
 local function caption(parent, text, x, y)
 	local t = W.Text(parent, "small", "textDim")
 	t:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y)
@@ -351,10 +335,10 @@ local function buildSend()
 	local y = 24
 	caption(send, "To", x, y)
 	caption(send, "Subject", x + 236, y)
-	send.To = field(send, 220, 77)
+	send.To = ns.TextField(send, 220, 77)
 	send.To:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
 	send.To:HookScript("OnTextChanged", function(self, user) if user then suggest(self) end end)
-	send.Subject = field(send, w - 236, 64)
+	send.Subject = ns.TextField(send, w - 236, 64)
 	send.Subject:SetPoint("TOPLEFT", send, "TOPLEFT", x + 236, -(y + 18))
 	y = y + 18 + 30 + 20
 	caption(send, "Message", x, y)

@@ -250,6 +250,24 @@ function ns.SetMoney(m, copper, color)
 	m:SetWidth(x)
 end
 
+-- A one-line text box in the Polestar look, `w` wide; Enter and Escape leave it.
+function ns.TextField(parent, w, letters)
+	local Theme, W = Polestar.Theme, Polestar.Widgets
+	local e = CreateFrame("EditBox", nil, parent)
+	e:SetSize(w, 30)
+	e:SetAutoFocus(false)
+	if letters then e:SetMaxLetters(letters) end
+	e:SetTextInsets(10, 10, 0, 0)
+	Theme.Font(e, "label")
+	W.Color(e, "text")
+	Theme.Skin(e, "editbox")
+	e:SetScript("OnEditFocusGained", function(self) Theme.SetFocused(self, true) end)
+	e:SetScript("OnEditFocusLost", function(self) Theme.SetFocused(self, false) end)
+	e:SetScript("OnEscapePressed", e.ClearFocus)
+	e:SetScript("OnEnterPressed", e.ClearFocus)
+	return e
+end
+
 -- A numeric editbox in the Polestar look; done(box) runs as it loses focus.
 local function numberBox(parent, width, letters, done)
 	local Theme, W = Polestar.Theme, Polestar.Widgets
