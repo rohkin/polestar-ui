@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.5
+
+- Chat: each chat window is one Polestar window, its tabs as the header and the input line as the footer. The side buttons, scroll bar, resize grip, minimised windows, the dock's overflow list, the chat's right-click menus and chat bubbles (outside instances) take Polestar's look too.
+- Tooltips: the comparison tooltips' "Equipped" plate in Polestar's look; tooltips a little more see-through than the windows, following the Background opacity.
+- World Map: Polestar draws its map features on our map, when the Polestar version installed supports it.
+- Releases upload to CurseForge.
+
 ## 0.0.4
 
 - World Map: the game's map in Polestar's look, opened from the map key. The sidebar lists the maps above, the zones, a zone's dungeons and caves, and a map's floors; zoom steps and full screen.
