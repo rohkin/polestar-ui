@@ -960,7 +960,9 @@ function ns.Dock(f)
 	-- (ToggleCharacter), and must not push ours aside.
 	EventRegistry:RegisterCallback("UIParentPanelManager.ShowUIPanel", function(_, fr)
 		C_Timer.After(0, function()
-			if not (fr and fr:IsShown()) then return end
+			-- A frame with no panel area is only shown, never placed (a bag
+			-- addon's bags): it is no panel, and pushes ours nowhere.
+			if not (fr and fr:IsShown() and fr:GetAttribute("UIPanelLayout-defined")) then return end
 			stock[fr], newest = true, fr
 			if not hooked[fr] then
 				hooked[fr] = true

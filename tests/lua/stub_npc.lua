@@ -85,6 +85,14 @@ function CloseAllBags(frame)
 	return true
 end
 
+-- ShowUIPanel (UIParentPanelManager.lua): a frame with no panel area (a bag
+-- addon's bags, Baganator's BagShow) is only shown, then broadcast as any panel.
+function ShowUIPanel(frame)
+	if frame:IsShown() then return end
+	frame:Show()
+	EventRegistry:TriggerEvent("UIParentPanelManager.ShowUIPanel", frame)
+end
+
 -- Money: 123g 45s 67c.
 stub.money = 1234567
 function GetMoney() return stub.money end

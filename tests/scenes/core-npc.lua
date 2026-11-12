@@ -1,7 +1,7 @@
 --@ title: Core: an NPC window
 --@ roots: PolestarUITestNPC
 --@ stubs: stub_npc.lua
--- The NPC windows' shared parts on a test window. ns.Interaction: the stock route stopped (TRAINER_SHOW opens nothing), the interaction opens ours and the bags, never the stock window; the player closing ours ends the interaction once, the game ending it closes ours without ending it again, the bags close with it; off waits for /reload. ns.SubjectBlock heads the sidebar; W.ShellTabs switches its pages. ns.ItemGrid with ns.PaintItem shows the backpack (C_Container): quality borders from uncommon up, stack counts, a locked item desaturated, an unusable one red. ns.Money writes coins as the game does (units at zero left out), in a colour token.
+-- The NPC windows' shared parts on a test window. ns.Interaction: the stock route stopped (TRAINER_SHOW opens nothing), the interaction opens ours and the bags, never the stock window; the player closing ours ends the interaction once, the game ending it closes ours without ending it again, the bags close with it; docked, a bag addon's own bags (shown with ShowUIPanel, no panel) push it nowhere; off waits for /reload. ns.SubjectBlock heads the sidebar; W.ShellTabs switches its pages. ns.ItemGrid with ns.PaintItem shows the backpack (C_Container): quality borders from uncommon up, stack counts, a locked item desaturated, an unusable one red. ns.Money writes coins as the game does (units at zero left out), in a colour token.
 local ns, W = PolestarUI, Polestar.Widgets
 local T = Enum.PlayerInteractionType
 local M, f, tab, grid, money = {}, nil, "buy", nil, {}
@@ -61,6 +61,26 @@ stub.endInteraction(T.Trainer)
 assert(not PolestarUITestNPC:IsShown(), "the game's end did not close ours")
 assert(stub.npcClosed.CloseTrainer == 1, "the game's end was ended again")
 assert(not stub.bagsOpen, "bags left open")
+
+-- A bag addon's own bags (Baganator's auto-open): ShowUIPanel on the
+-- interaction, a frame the panel manager does not place, at the right; hidden
+-- as the interaction ends. Docked, ours must not give way to it.
+local bag = CreateFrame("Frame", "TestBagAddon", UIParent)
+bag:SetSize(400, 500)
+bag.x = 1400
+bag:Hide()
+local bagEvents = CreateFrame("Frame")
+bagEvents:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+bagEvents:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
+bagEvents:SetScript("OnEvent", function(_, e) if e == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then ShowUIPanel(bag) else bag:Hide() end end)
+ns.Dock(PolestarUITestNPC)
+stub.interact(T.Trainer)
+stub.advance(0.1)
+assert(bag:IsShown() and PolestarUITestNPC:IsShown() and stub.bagsOpen, "the bag addon's bags closed ours, and the bags with it")
+assert(stub.npcClosed.CloseTrainer == 1, "the visit was ended")
+PolestarUITestNPC:Hide()
+assert(not bag:IsShown(), "the bag addon's bags left open")
+bagEvents:UnregisterAllEvents()
 
 stub.interact(T.Trainer)
 f.tabButtons[2]:Click()

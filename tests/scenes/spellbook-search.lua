@@ -14,6 +14,7 @@ assert(not w.moving, "docked window drags")
 local p = CreateFrame("Frame", "StockPanel", UIParent)
 p:SetSize(384, 400)
 p.x = 16
+p:SetAttribute("UIPanelLayout-defined", true)
 p:Show()
 EventRegistry:TriggerEvent("UIParentPanelManager.ShowUIPanel", p)
 stub.advance(0.1)
