@@ -1150,10 +1150,24 @@ local function buildSell()
 	s.Well:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	s.Well:SetScript("OnClick", function(_, button) if button == "RightButton" then setItem(nil) else take() end end)
 	s.Well:SetScript("OnReceiveDrag", take)
+	-- The item's tooltip, and how the well takes and gives back an item.
+	s.Well:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		local link = sell.loc and sell.loc:IsValid() and C_Item.GetItemLink(sell.loc)
+		if link then GameTooltip:SetHyperlink(link) else GameTooltip:SetText(AUCTION_HOUSE_SELL_FRAME_ERROR_ITEM or "Choose an item to sell.", 1, 1, 1) end
+		ns.TooltipHint(link and "Right-click to clear it." or "Drop an item from your bags here, or right-click it in your bags.")
+		GameTooltip:Show()
+	end)
+	s.Well:SetScript("OnLeave", W.HideTooltip)
 	s.Name = W.Text(s, "label", "text")
 	s.Name:SetPoint("BOTTOMLEFT", s.Well, "RIGHT", 12, 2)
 	s.Line = W.Text(s, "small", "textDim")
 	s.Line:SetPoint("TOPLEFT", s.Well, "RIGHT", 12, -4)
+	for _, t in ipairs({ s.Name, s.Line }) do
+		t:SetPoint("RIGHT", s, "RIGHT", -W.SHELL.pad, 0)
+		t:SetJustifyH("LEFT")
+		t:SetWordWrap(false)
+	end
 	local y = 24 + 56 + 24
 	s.QuantityCaption = caption(s, AUCTION_HOUSE_QUANTITY_LABEL or "Quantity", x, y)
 	s.Stepper = ns.Stepper(s, { get = function() return sell.n end, set = function(n) sell.n = n; paint() end,
