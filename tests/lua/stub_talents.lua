@@ -180,7 +180,19 @@ local spellName = {}
 for _, n in pairs(data.nodes) do spellName[n[3]] = n[7] end
 function C_Spell.GetSpellName(id) return spellName[id] end
 function C_Spell.GetSpellDescription(id) return "Increases the damage of " .. (spellName[id] or "") .. "." end
-function C_Spell.GetSpellSubtext(id) return "Passive" end
+-- A one-rank talent is an active spell (Presence of Mind, Ice Block), the rest passive.
+local maxRanks = {}
+for _, n in pairs(data.nodes) do maxRanks[n[3]] = n[2] end
+function C_Spell.IsSpellPassive(id) return maxRanks[id] ~= 1 end
+function C_Spell.GetSpellSubtext(id) return C_Spell.IsSpellPassive(id) and "Passive" or "" end
+-- The client blocks a spell pickup from addon code in combat (ADDON_ACTION_BLOCKED).
+function C_Spell.PickupSpell(id)
+	if stub.inCombat then
+		stub.blocked = stub.blocked or {}
+		return table.insert(stub.blocked, "PickupSpell")
+	end
+	stub.pickedSpell = id
+end
 -- The tooltip helpers (GameTooltip_*), each a line; a trait entry's text as one line.
 function GameTooltip:AppendInfo(kind, entry, rank) self:AddLine(("[%s %d rank %d]"):format(kind, entry, rank)) end
 function GameTooltip_SetTitle(tip, text) tip:SetText(text) end

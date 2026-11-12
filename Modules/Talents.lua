@@ -90,6 +90,18 @@ local function readTrees(config)
 	return trees
 end
 
+-- A learnt talent that is not passive drags its spell, as the stock button
+-- (TalentButtonBaseMixin:OnDragStart).
+local function draggable(b)
+	return b.psSpell and (b.psRank or 0) > 0 and not C_Spell.IsSpellPassive(b.psSpell)
+end
+
+-- The client blocks a spell pickup from addon code in combat (docs/CLIENT.md, rule 4).
+local function nodeDrag(b)
+	if InCombatLockdown() or not draggable(b) then return end
+	C_Spell.PickupSpell(b.psSpell)
+end
+
 local function nodeEnter(b)
 	-- The stock talent tooltip's lines (TalentDisplayMixin:SetTooltipInternal,
 	-- Camelot's overrides): name, rank, subtext, this rank's and the next
@@ -142,6 +154,7 @@ local function nodeEnter(b)
 		if n.canPurchaseRank then hint[#hint + 1] = "Click to learn a rank." end
 		if n.canRefundRank and num(n.ranksPurchased) > 0 then hint[#hint + 1] = "Right-click to take one back." end
 	end
+	if draggable(b) then hint[#hint + 1] = "Drag it to an action bar." end
 	if b.psSpell then hint[#hint + 1] = "Shift-click to link it in chat." end
 	if #hint > 0 then ns.TooltipHint(table.concat(hint, " ")) end
 	tip:Show()
@@ -229,6 +242,8 @@ local function newNode(parent)
 	b:SetScript("OnLeave", W.HideTooltip)
 	b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	b:SetScript("OnClick", nodeClick)
+	b:RegisterForDrag("LeftButton")
+	b:SetScript("OnDragStart", nodeDrag)
 	return b
 end
 
