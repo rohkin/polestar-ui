@@ -243,13 +243,9 @@ end)
 local currencySpec = {
 	height = ROW_H,
 	new = function(r)
-		-- The icon inset 1px in a hairline, as a gear slot tile.
-		r.IconFrame = CreateFrame("Frame", nil, r)
-		r.IconFrame:SetSize(18, 18)
+		-- The icon inset 1px in a hairline well, as a gear slot tile.
+		r.IconFrame, r.Icon = ns.ItemWell(r, 18)
 		r.IconFrame:SetPoint("LEFT", r, "LEFT", 15, 0)
-		r.Icon = ns.GameIcon(r.IconFrame)
-		r.Icon:SetPoint("TOPLEFT", 1, -1)
-		r.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
 		r.Name = W.Text(r, "label", "text")
 		r.Name:SetPoint("LEFT", r.IconFrame, "RIGHT", 7, 0)
 		r.Value = W.Text(r, "number", "text")
@@ -264,7 +260,6 @@ local currencySpec = {
 	draw = function(r, d)
 		r.psIndex = d.index
 		r.Icon:SetTexture(d.iconFileID)
-		Theme.Border(r.IconFrame, Theme.Wash("border"))
 		r.Name:SetText(d.name)
 		local q = BreakUpLargeNumbers(d.quantity)
 		if d.maxQuantity and d.maxQuantity > 0 then q = q .. " / " .. BreakUpLargeNumbers(d.maxQuantity) end

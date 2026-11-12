@@ -202,15 +202,10 @@ overSlot = ns.Overlay("PolestarUICharacterSlot", {
 -- for text on its right, "right" for text on its left, "below"; nil for none.
 local function newSlot(parent, name, layer, side, size)
 	local id, empty = C_PaperDollInfo.GetInventorySlotInfo(name)
-	local s = CreateFrame("Button", nil, parent)
+	local s = ns.ItemWell(parent, size or SLOT, "Button")
 	s:SetID(id)
-	s:SetSize(size or SLOT, size or SLOT)
 	s.psEmpty = empty
 	s.psLabel = _G[name:upper()] or name
-	W.Fill(s, "scrim", "BACKGROUND", 0)
-	s.Icon = ns.GameIcon(s)
-	s.Icon:SetPoint("TOPLEFT", 1, -1)
-	s.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
 	-- Polestar's bag upgrade arrow, top-left as on every item it marks.
 	s.psUp = W.Tex(s, "OVERLAY", "qol-upgrade", "success")
 	s.psUp:SetSize(18, 18)
