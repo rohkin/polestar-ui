@@ -30,9 +30,9 @@ function GetInboxNumItems() return #stub.inbox, #stub.inbox end
 function GetInboxHeaderInfo(i)
 	local l = letter(i)
 	if not l then return end
-	local first
-	for a = 1, 16 do if l[12][a] then first = l[12][a][4]; break end end
-	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, false, true, l[9], first
+	local first, link
+	for a = 1, 16 do if l[12][a] then first, link = l[12][a][4], "item:" .. l[12][a][2]; break end end
+	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, false, true, l[9], first, link
 end
 function GetInboxText(i)
 	stub.inbox[i][8] = true
@@ -60,6 +60,13 @@ function TakeInboxItem(i, a)
 	l[6] = 0
 	l[12][a] = nil
 	table.insert(stub.taken, { i, a })
+end
+-- Shift-click: everything the letter holds, at once.
+function AutoLootMailItem(i)
+	local l = letter(i)
+	table.insert(stub.taken, { i, "all" })
+	stub.money, l[5] = stub.money + l[5], 0
+	l[12] = {}
 end
 function ReturnInboxItem(i) table.insert(stub.returned, table.remove(stub.inbox, i)[3]) end
 function DeleteInboxItem(i) table.insert(stub.deleted, table.remove(stub.inbox, i)[3]) end
@@ -114,3 +121,20 @@ function GetGuildRosterInfo(i) return GUILD[i] end
 C_GuildInfo = C_GuildInfo or {}
 function C_GuildInfo.GuildRoster() stub.rosterAsked = true end
 function Ambiguate(name) return (name:gsub("%-.*", "")) end
+
+-- Shift is the auto-loot toggle (MAILAUTOLOOTTOGGLE).
+function IsModifiedClick(what) return IsShiftKeyDown() and (what == nil or what == "MAILAUTOLOOTTOGGLE") end
+-- An attachment's quality by its link, from the inbox.
+C_Item = C_Item or {}
+function C_Item.GetItemQualityByID(link)
+	local id = tonumber(tostring(link):match("item:(%d+)"))
+	for _, l in ipairs(stub.inbox) do
+		for a = 1, 16 do if l[12][a] and l[12][a][2] == id then return l[12][a][5] end end
+	end
+end
+function GameTooltip:SetInboxItem(i, a)
+	local it = letter(i)[12][a or 1]
+	if not it then for k = 1, 16 do it = it or letter(i)[12][k] end end
+	self:SetText(it and it[1] or "")
+end
+function GameTooltip:SetSendMailItem(i) self:SetText(stub.sendItems[i][1]) end

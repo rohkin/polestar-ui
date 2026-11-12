@@ -164,11 +164,40 @@ end
 -- Inbox
 ---------------------------------------------------------------------------
 
+-- A row's tooltip, as the stock inbox's (InboxFrameItem_OnEnter): its one
+-- item, or how many; the money it holds or asks (COD); when it goes.
+local function rowTip(r)
+	local i = r.psIndex
+	local _, _, _, _, money, price, days, items = GetInboxHeaderInfo(i)
+	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
+	if items == 1 then GameTooltip:SetInboxItem(i) elseif items then GameTooltip:SetText(("Multiple items (%d)"):format(items)) else GameTooltip:SetText(r.Subject:GetText() or "") end
+	if money > 0 then GameTooltip:AddLine("Enclosed money: " .. ns.Coins(money)) end
+	if price > 0 then
+		local r2, g, b = Theme.Color(price > GetMoney() and "danger" or "text")
+		GameTooltip:AddLine("COD: " .. ns.Coins(price), r2, g, b)
+	end
+	local dr, dg, db = Theme.Color("textDim")
+	GameTooltip:AddLine((InboxItemCanDelete(i) and "Deleted in %s" or "Returned in %s"):format(r.Days:GetText():lower()), dr, dg, db)
+	ns.TooltipHint(price > 0 and "Click to open it." or "Click to open it. Shift-click takes all of it.")
+	GameTooltip:Show()
+end
+
 local function row(i)
 	if rows[i] then return rows[i] end
 	local r = CreateFrame("Button", nil, f.psInbox)
 	r:SetSize(f.BodyWidth, ROW)
 	W.Hover(r)
+	-- The open letter's row: the selection wash and the accent bar.
+	r.Sel = r:CreateTexture(nil, "BACKGROUND")
+	r.Sel:SetTexture("Interface\\Buttons\\WHITE8X8")
+	r.Sel:SetAllPoints(r)
+	W.Painter(r.Sel, function(t) t:SetVertexColor(Theme.Wash("selected")) end)
+	r.Bar = r:CreateTexture(nil, "ARTWORK")
+	r.Bar:SetTexture("Interface\\Buttons\\WHITE8X8")
+	r.Bar:SetWidth(2)
+	r.Bar:SetPoint("TOPLEFT")
+	r.Bar:SetPoint("BOTTOMLEFT")
+	W.Color(r.Bar, "accent")
 	r.Well = ns.ItemWell(r, 36)
 	r.Well:SetPoint("LEFT", r, "LEFT", 8, 0)
 	local textW = f.BodyWidth - (8 + 36 + 12) - 200
@@ -185,14 +214,24 @@ local function row(i)
 	r.COD = W.Text(r, "small", "danger")
 	r.COD:SetPoint("RIGHT", r.Money, "LEFT", -6, 0)
 	r.COD:SetText("COD")
-	r:SetScript("OnClick", function(self) M.Open(self.psIndex) end)
+	r:SetScript("OnClick", function(self)
+		local i = self.psIndex
+		-- Shift-click takes everything, as the stock MAILAUTOLOOTTOGGLE (never a COD's).
+		if IsModifiedClick("MAILAUTOLOOTTOGGLE") and select(6, GetInboxHeaderInfo(i)) == 0 then AutoLootMailItem(i) end
+		M.Open(i)
+	end)
+	r:SetScript("OnEnter", rowTip)
+	r:SetScript("OnLeave", W.HideTooltip)
 	rows[i] = r
 	return r
 end
 
 local function daysLeft(d)
+	if d < 1 then
+		local h = math.floor(d * 24)
+		return h < 1 and "Under an hour" or h == 1 and "1 hour" or h .. " hours"
+	end
 	local n = math.floor(d)
-	if d < 1 then return "Under a day" end
 	return n == 1 and "1 day" or n .. " days"
 end
 
@@ -200,15 +239,21 @@ local function paintInbox()
 	local n = GetInboxNumItems()
 	local pad = W.SHELL.pad
 	for i = 1, n do
-		local package, stationery, sender, subject, money, price, days, _, read, _, _, _, gm, first = GetInboxHeaderInfo(i)
+		local package, stationery, sender, subject, money, price, days, _, read, _, _, _, gm, first, firstLink = GetInboxHeaderInfo(i)
 		local r = row(i)
 		r.psIndex = i
 		r:SetPoint("TOPLEFT", f.psInbox, "TOPLEFT", pad - 8, -(16 + (i - 1) * (ROW + 4)))
-		ns.PaintItem(r.Well, { icon = package and not gm and package or stationery, count = first, desat = read })
+		ns.PaintItem(r.Well, { icon = package and not gm and package or stationery, count = first, desat = read,
+			quality = firstLink and C_Item.GetItemQualityByID(firstLink) })
+		-- Unread letters stand out, read ones fade, as on the stock inbox.
 		r.Sender:SetText(sender or "Unknown")
+		W.Color(r.Sender, read and "textDim" or "text")
 		r.Subject:SetText(subject or "")
+		W.Color(r.Subject, read and "textMuted" or "textDim")
+		r.Sel:SetShown(open == i)
+		r.Bar:SetShown(open == i)
 		r.Days:SetText(daysLeft(days))
-		W.Color(r.Days, days < 3 and "warning" or "textDim")
+		W.Color(r.Days, days < 1 and "danger" or days < 3 and "warning" or "textDim")
 		r.Money:SetShown(money > 0 or price > 0)
 		r.COD:SetShown(price > 0)
 		ns.SetMoney(r.Money, price > 0 and price or money, price > 0 and "danger" or nil)
