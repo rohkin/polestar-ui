@@ -11,6 +11,8 @@ Enum.AuctionHouseSortOrder = { Price = 0, Name = 1, Level = 2, Bid = 3, Buyout =
 Enum.ItemCommodityStatus = { Unknown = 0, Item = 1, Commodity = 2 }
 Enum.AuctionStatus = { Active = 0, Sold = 1 }
 Enum.AuctionHouseTimeLeftBand = { Short = 0, Medium = 1, Long = 2, VeryLong = 3 }
+Enum.AuctionHouseFilter = { None = 0, UncollectedOnly = 1, UsableOnly = 2, CurrentExpansionOnly = 3, UpgradesOnly = 4, ExactMatch = 5, PoorQuality = 6, CommonQuality = 7, UncommonQuality = 8, RareQuality = 9, EpicQuality = 10, LegendaryQuality = 11, ArtifactQuality = 12, LegendaryCraftedItemOnly = 13 }
+Enum.AuctionHouseFilterCategory = { Uncategorized = 0, Equipment = 1, Rarity = 2 }
 -- The item classes the stock categories name (ItemConstantsDocumentation.lua).
 Enum.ItemClass = { Consumable = 0, Container = 1, Weapon = 2, Armor = 4, Projectile = 6, Tradegoods = 7, Recipe = 9, Quiver = 11, Questitem = 12, Miscellaneous = 15 }
 Enum.ItemWeaponSubclass = { Axe1H = 0, Axe2H = 1, Bows = 2, Guns = 3, Mace1H = 4, Mace2H = 5, Polearm = 6, Sword1H = 7, Sword2H = 8, Staff = 10, Unarmed = 13, Generic = 14, Dagger = 15, Thrown = 16, Crossbow = 18, Wand = 19, Fishingpole = 20 }
@@ -102,6 +104,10 @@ function AH.CloseAuctionHouse()
 	stub.endInteraction(T.Auctioneer)
 end
 AH.MakeItemKey = key
+-- Forever's filter groups (as Classic's: usable, then the rarities to Legendary).
+function AH.GetFilterGroups()
+	return { { category = 1, filters = { 2, 4 } }, { category = 2, filters = { 6, 7, 8, 9, 10, 11 } } }
+end
 function AH.GetAuctionItemSubClasses(c) return stub.ahSubclasses[c] or {} end
 function AH.GetItemKeyInfo(k)
 	local it = stub.ahItems[k.itemID]
@@ -131,7 +137,10 @@ end
 local function search(k)
 	if stub.ahItems[k.itemID][4] then stub.fire("COMMODITY_SEARCH_RESULTS_UPDATED", k.itemID) else stub.fire("ITEM_SEARCH_RESULTS_UPDATED", k) end
 end
-function AH.SendSearchQuery(k) search(k) end
+function AH.SendSearchQuery(k, sorts, separate, minLevel, maxLevel)
+	stub.searchQuery = { key = k, sorts = sorts, minLevel = minLevel, maxLevel = maxLevel }
+	search(k)
+end
 function AH.SendSellSearchQuery(k) search(k) end
 function AH.GetNumCommoditySearchResults(id) return #(stub.commodity[id] or {}) end
 function AH.GetCommoditySearchResultInfo(id, i)

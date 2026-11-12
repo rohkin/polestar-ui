@@ -170,6 +170,124 @@ local function caption(parent, text, x, y)
 end
 
 ---------------------------------------------------------------------------
+-- The search options, as the stock filter dropdown's (AuctionHouseSearchBar):
+-- a level range and the client's filter groups, kept per character as the
+-- stock g_auctionHouseFilters. They go with the next search.
+
+local FILTER_NAMES = {
+	UncollectedOnly = AUCTION_HOUSE_FILTER_UNCOLLECTED_ONLY or "Uncollected only",
+	UsableOnly = AUCTION_HOUSE_FILTER_USABLE_ONLY or "Usable only",
+	CurrentExpansionOnly = AUCTION_HOUSE_FILTER_CURRENTEXPANSION_ONLY or "Current expansion only",
+	UpgradesOnly = AUCTION_HOUSE_FILTER_UPGRADES_ONLY or "Upgrades only",
+	ExactMatch = "Exact match",
+	LegendaryCraftedItemOnly = AUCTION_HOUSE_FILTER_RUNECARVING or "Legendary crafted only",
+}
+local QUALITY_FILTERS = { PoorQuality = 0, CommonQuality = 1, UncommonQuality = 2, RareQuality = 3, EpicQuality = 4, LegendaryQuality = 5, ArtifactQuality = 6 }
+local GROUP_NAMES = { Equipment = AUCTION_HOUSE_FILTER_CATEGORY_EQUIPMENT or "Equipment", Rarity = AUCTION_HOUSE_FILTER_CATEGORY_RARITY or "Rarity" }
+
+local function enumName(t, v)
+	for k, x in pairs(t or {}) do if x == v then return k end end
+end
+
+-- AUCTION_HOUSE_DEFAULT_FILTERS: every rarity on, every other filter off.
+local function defaultFilter(v) return QUALITY_FILTERS[enumName(Enum.AuctionHouseFilter, v) or ""] ~= nil end
+
+local function options()
+	local o = PolestarUICharDB.auctionFilters
+	if not o then
+		o = { minLevel = 0, maxLevel = 0, filters = {} }
+		PolestarUICharDB.auctionFilters = o
+	end
+	return o
+end
+
+local function filterOn(v)
+	local on = options().filters[v]
+	if on == nil then return defaultFilter(v) end
+	return on
+end
+
+local function filtered()
+	local o = options()
+	if o.minLevel ~= 0 or o.maxLevel ~= 0 then return true end
+	for v, on in pairs(o.filters) do if on ~= defaultFilter(v) then return true end end
+	return false
+end
+
+local function filterList()
+	local out = {}
+	for _, g in ipairs(AH.GetFilterGroups() or {}) do
+		for _, v in ipairs(g.filters) do if filterOn(v) then out[#out + 1] = v end end
+	end
+	return out
+end
+
+local function filterLabel(v)
+	local name = enumName(Enum.AuctionHouseFilter, v) or ""
+	local q = QUALITY_FILTERS[name]
+	if not q then return FILTER_NAMES[name] or name end
+	local text = _G["ITEM_QUALITY" .. q .. "_DESC"] or name
+	local r, g, b = ns.QualityRGB(q)
+	if r then
+		r, g, b = Polestar.Theme.Legible(r, g, b)
+		text = ("|cff%02x%02x%02x%s|r"):format(r * 255, g * 255, b * 255, text)
+	end
+	return text
+end
+
+local levelBox
+local function levelRange()
+	if not levelBox then
+		levelBox = CreateFrame("Frame", nil, UIParent)
+		levelBox:SetSize(200, 30)
+		levelBox.Min = ns.TextField(levelBox, 64, 3)
+		levelBox.Min:SetNumeric(true)
+		levelBox.Min:SetPoint("LEFT", levelBox, "LEFT", 0, 0)
+		local dash = W.Text(levelBox, "label", "textDim")
+		dash:SetPoint("LEFT", levelBox.Min, "RIGHT", 10, 0)
+		dash:SetText("\226\128\147")
+		levelBox.Max = ns.TextField(levelBox, 64, 3)
+		levelBox.Max:SetNumeric(true)
+		levelBox.Max:SetPoint("LEFT", dash, "RIGHT", 10, 0)
+	end
+	local o = options()
+	levelBox.Min:SetText(o.minLevel > 0 and o.minLevel or "")
+	levelBox.Max:SetText(o.maxLevel > 0 and o.maxLevel or "")
+	ask({ title = AUCTION_HOUSE_FILTER_DROP_DOWN_LEVEL_RANGE or "Level range", text = "The levels the next search keeps to (empty: any).",
+		action = "Set", onAccept = function()
+			o.minLevel, o.maxLevel = tonumber(levelBox.Min:GetText()) or 0, tonumber(levelBox.Max:GetText()) or 0
+			paint()
+		end }, levelBox)
+end
+
+local function filterMenu(anchor)
+	if W.MenuShown(anchor) then return W.HideMenu() end
+	local o = options()
+	local range = (o.minLevel > 0 or o.maxLevel > 0) and ("%s\226\128\147%s"):format(o.minLevel > 0 and o.minLevel or "1", o.maxLevel > 0 and o.maxLevel or "")
+	local items = { { text = ("%s: %s"):format(AUCTION_HOUSE_FILTER_DROP_DOWN_LEVEL_RANGE or "Level range", range or "any"), onClick = levelRange } }
+	for _, g in ipairs(AH.GetFilterGroups() or {}) do
+		items[#items + 1] = { separator = true }
+		local head = GROUP_NAMES[enumName(Enum.AuctionHouseFilterCategory, g.category) or ""]
+		if head then items[#items + 1] = { text = head, disabled = true } end
+		for _, v in ipairs(g.filters) do
+			items[#items + 1] = { text = filterLabel(v), checked = filterOn(v), onClick = function()
+				o.filters[v] = not filterOn(v)
+				paint()
+				filterMenu(anchor)
+			end }
+		end
+	end
+	if filtered() then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Reset filters", onClick = function()
+			PolestarUICharDB.auctionFilters = nil
+			paint()
+		end }
+	end
+	W.ShowMenu(anchor, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 200 })
+end
+
+---------------------------------------------------------------------------
 -- Buy: the browse, then an item's listings.
 
 -- The category picked, deepest first (nil: all).
@@ -186,11 +304,14 @@ local function browse()
 	tab, view, searched = "buy", nil, true
 	local c = picked()
 	paint()
-	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(), itemClassFilters = c and c.filters or {} })
+	local o = options()
+	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(), itemClassFilters = c and c.filters or {},
+		filters = filterList(), minLevel = o.minLevel, maxLevel = o.maxLevel })
 end
 
 local function research()
-	if view then AH.SendSearchQuery(view.key, sorts(), true) end
+	-- An item's auctions keep to the level range, as the stock QueryItem.
+	if view then AH.SendSearchQuery(view.key, sorts(), true, options().minLevel, options().maxLevel) end
 end
 
 local function open(key)
@@ -566,6 +687,12 @@ local function build()
 	f.psMoney = money
 	-- Enter searches: each query counts against the client's throttle, so not per keystroke.
 	f.Search:HookScript("OnEnterPressed", browse)
+	-- The search options at the end of the search row, lit while one is set.
+	local top = W.SHELL.header - 30
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Search options", filterMenu, 14)
+	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
+	Polestar.Theme.Skin(f.psFilter, "editbox")
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	local strip = CreateFrame("Frame", nil, f.Body)
 	strip:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
@@ -632,6 +759,7 @@ function paint()
 		paint()
 	end)
 	paintNav()
+	W.SetIconState(f.psFilter, filtered())
 	ns.SetMoney(money, GetMoney())
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
