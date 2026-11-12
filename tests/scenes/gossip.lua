@@ -1,7 +1,7 @@
 --@ title: Gossip
 --@ roots: PolestarUIGossip
 --@ stubs: stub_npc.lua, stub_gossip.lua
--- Ours is the manager's base handler: a gossip opens ours, never the stock window; the NPE guide's kit still goes to its own handler. The NPC's name heads the band, the greeting under it, then the options in the game's order (orderIndex) with their icons and key numbers; a quest option is marked. Closing ours ends the gossip once; GOSSIP_CLOSED closes ours without ending it again. A vendor option hands on to the merchant's interaction; a lone option the NPC skips to is taken at once. Keys 1-9 pick a row, other keys go on to the game. Off waits for /reload.
+-- Ours is the manager's base handler: a gossip opens ours, never the stock window; the NPE guide's kit still goes to its own handler. The NPC's name heads the band, the greeting under it, then the options in the game's order (orderIndex) with their icons and key numbers; a quest option is marked (and one that plays a movie); the NPC's portrait beside its name, as the stock frame's. Closing ours ends the gossip once; GOSSIP_CLOSED closes ours without ending it again. A vendor option hands on to the merchant's interaction; a lone option the NPC skips to is taken at once. Keys 1-9 pick a row, other keys go on to the game. Off waits for /reload.
 local f
 -- The vendor's window: an interaction of its own, so whichever window takes the merchant's does not matter here.
 local VENDOR = 999
@@ -11,7 +11,7 @@ RegisterPlayerInteraction(VENDOR, { frame = "TestVendorFrame" })
 local opts = {
 	{ name = "Train me.", icon = 132058, orderIndex = 2, gossipOptionID = 12 },
 	{ name = "Let me browse your goods.", icon = 132060, orderIndex = 1, gossipOptionID = 11, opens = VENDOR },
-	{ name = "What happened to the mine?", icon = 132053, orderIndex = 3, gossipOptionID = 13, flags = 1 },
+	{ name = "What happened to the mine?", icon = 132053, orderIndex = 3, gossipOptionID = 13, flags = 3 },
 }
 local function talk(kit)
 	stub.talk({ name = "Innkeeper Farley", text = "Welcome to the Lion's Pride Inn. Rest your bones by the fire, and mind the gnoll stories; half of them are true.", options = opts }, kit)
@@ -33,7 +33,8 @@ assert(f:IsShown() and not GossipFrame:IsShown(), "ours closed or the stock wind
 assert(f.Title:GetText() == "Innkeeper Farley", "the NPC's name is not the title")
 local r = f.psRows
 assert(r[1].Text:GetText() == "Let me browse your goods." and r[2].Text:GetText() == "Train me.", "options not in orderIndex order")
-assert(r[3].Text:GetText() == "(Quest) What happened to the mine?", "the quest option is not marked")
+assert(r[3].Text:GetText() == "(Quest) (Play Movie) What happened to the mine?", "the quest option is not marked: " .. r[3].Text:GetText())
+assert(f.psPortraitIcon.texture == 132355, "no portrait")
 assert(r[1].Icon.texture == 132060 and tostring(r[1].Key:GetText()) == "1", "icon or key number")
 
 -- The player closing ours ends the gossip once.

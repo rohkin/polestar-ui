@@ -56,8 +56,8 @@ function GetAvailableQuestInfo(i) return false, 0, false, false, stub.quest.avai
 function SelectActiveQuest(i) call("SelectActiveQuest", i) end
 function SelectAvailableQuest(i) call("SelectAvailableQuest", i) end
 QuestUtil = QuestUtil or {}
-function QuestUtil.GetQuestIconActiveForQuestID(_, done) return done and "Interface/GossipFrame/ActiveQuestIcon" or "Interface/GossipFrame/IncompleteQuestIcon", false end
-function QuestUtil.GetQuestIconOfferForQuestID() return "Interface/GossipFrame/AvailableQuestIcon", false end
+QuestUtil.GetQuestIconActiveForQuestID = QuestUtil.GetQuestIconActiveForQuestID or function(_, done) return done and "Interface/GossipFrame/ActiveQuestIcon" or "Interface/GossipFrame/IncompleteQuestIcon", false end
+QuestUtil.GetQuestIconOfferForQuestID = QuestUtil.GetQuestIconOfferForQuestID or function() return "Interface/GossipFrame/AvailableQuestIcon", false end
 
 -- The quest giver's answers: each recorded; the server's reply is the scene's to fire.
 function AcceptQuest() call("AcceptQuest") end

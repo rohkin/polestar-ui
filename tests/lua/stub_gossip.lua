@@ -88,16 +88,26 @@ function C_GossipInfo.CloseGossip()
 	stub.fire("GOSSIP_CLOSED", false)
 end
 
--- The stock quest icons (QuestUtils.lua): file paths here, atlases for the newer kinds.
+-- The stock quest icons (QuestUtils.lua's ForQuestID kinds, which look the
+-- quest up first): file paths here, atlases for the newer kinds.
 QuestUtil = QuestUtil or {}
-function QuestUtil.GetQuestIconOffer(isLegendary, frequency, isRepeatable)
+function QuestUtil.GetQuestIconOfferForQuestID(questID, isLegendary, frequency, isRepeatable)
 	if isRepeatable or (frequency or 0) > 0 then return "Interface\\GossipFrame\\DailyQuestIcon", false end
 	return "Interface\\GossipFrame\\AvailableQuestIcon", false
 end
-function QuestUtil.GetQuestIconActive(isComplete)
+function QuestUtil.GetQuestIconActiveForQuestID(questID, isComplete)
 	return isComplete and "Interface\\GossipFrame\\ActiveQuestIcon" or "Interface\\GossipFrame\\IncompleteQuestIcon", false
 end
 
 Enum.GossipOptionRecFlags = { QuestLabelPrepend = 1, PlayMovieLabelPrepend = 2 }
 GOSSIP_OPTION_PREPEND = "%s %s"
-QUEST_PREPEND = "(Quest)"
+QUEST_PREPEND, PLAY_MOVIE_PREPEND = "(Quest)", "(Play Movie)"
+
+-- The NPC's portrait (SetPortraitToUnit), when there is an NPC.
+function UnitExists(unit) return UnitName(unit) ~= nil end
+function SetPortraitTexture(tex, unit) tex:SetTexture(132355) end
+
+-- A friendship NPC (stub.talk's friend = FriendshipReputationInfo, ranks), as
+-- NPCFriendshipStatusBarMixin reads it for the NPC talked to (factionID 0).
+function C_GossipInfo.GetFriendshipReputation() return g.friend or { friendshipFactionID = 0, standing = 0, maxRep = 0, reactionThreshold = 0, reaction = "", text = "", texture = 0, reversedColor = false } end
+function C_GossipInfo.GetFriendshipReputationRanks() return g.ranks or { currentLevel = 0, maxLevel = 0 } end
