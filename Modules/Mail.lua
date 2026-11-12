@@ -250,7 +250,9 @@ local function paintLetter()
 	if not letter:IsShown() then return end
 	local _, stationery, sender, subject, money, price, _, _, _, _, textCreated, canReply = GetInboxHeaderInfo(open)
 	-- No reply to the game's letters, to oneself, or without a sender.
-	ns.SetEnabled(letter.Reply, sender and canReply and sender ~= ns.Clean(UnitName("player")))
+	local own = sender and sender == ns.Clean(UnitName("player"))
+	ns.SetEnabled(letter.Reply, sender and canReply and not own, not sender and "This letter has no sender."
+		or own and "You sent this letter yourself." or "This letter cannot be answered.")
 	letter.Sender:SetText(sender or "Unknown")
 	letter.Subject:SetText(subject or "")
 	-- Reading the text marks the letter read, as the stock open does.
@@ -320,7 +322,7 @@ local function paintLetter()
 		letter.MoneyLabel:SetPoint("TOPLEFT", letter, "TOPLEFT", 24, -y)
 		ns.SetMoney(letter.Money, price > 0 and price or money, price > 0 and "danger" or nil)
 	end
-	ns.SetEnabled(letter.Take, money > 0 or select(8, GetInboxHeaderInfo(open)) ~= nil)
+	ns.SetEnabled(letter.Take, money > 0 or select(8, GetInboxHeaderInfo(open)) ~= nil, "Nothing left to take.")
 	local deletes = InboxItemCanDelete(open)
 	W.SetButtonText(letter.Discard, deletes and "Delete" or "Return")
 	letter.Discard.psDanger = deletes
@@ -433,7 +435,7 @@ local function paintInbox()
 	W.ShellTitle(f, "Inbox", total > n and ("%d of %d letters. The rest arrive as you make room."):format(n, total)
 		or n == 0 and "No mail." or n == 1 and "1 letter." or n .. " letters.")
 	W.ShellFooter(f, { { label = taking == "all" and "Opening..." or "Open all", onClick = function() startTaking("all") end } }, {})
-	ns.SetEnabled(f.footerButtons.left[1], taking ~= "all" and n > 0)
+	ns.SetEnabled(f.footerButtons.left[1], taking ~= "all" and n > 0, taking == "all" and "Opening your mail now." or "No mail to open.")
 	return 16 + n * (ROW + 4) + 12
 end
 
@@ -519,7 +521,9 @@ local function canSend()
 	if tab ~= "send" or not b then return end
 	local over = cod and copper > MAX_COD
 	send.CODError:SetShown(over)
-	ns.SetEnabled(b, not sending and (send.To:GetText() or "") ~= "" and (send.Subject:GetText() or "") ~= "" and not over)
+	local why = sending and "Sending..." or (send.To:GetText() or "") == "" and "Enter who to send it to."
+		or (send.Subject:GetText() or "") == "" and "Enter a subject." or over and send.CODError:GetText() or nil
+	ns.SetEnabled(b, not why, why)
 end
 
 local function paintSend()
@@ -548,6 +552,7 @@ local function paintSend()
 	end
 	send.psNoItems = n == 0
 	send.MoneyCaption:SetText(cod and "COD amount" or "Money to send")
+	send.COD.psTip = send.psNoItems and "Attach an item to send it cash on delivery." or nil
 	send.COD:Refresh()
 	local price = GetSendMailPrice()
 	ns.SetMoney(send.Postage, price, price > GetMoney() and "danger" or nil)
@@ -630,6 +635,8 @@ local function buildSend()
 	send.COD = W.Switch(send, function() return cod end, function(v) cod = v; paintSend() end)
 	send.COD:SetPoint("LEFT", send.Money, "RIGHT", 24, 0)
 	W.SetDisabledWhen(send.COD, function() return send.psNoItems end)
+	-- Off without an item, saying why.
+	send.COD:SetMotionScriptsWhileDisabled(true)
 	local codText = W.Text(send, "label", "text")
 	codText:SetPoint("LEFT", send.COD, "RIGHT", 8, 0)
 	codText:SetText("Cash on delivery")

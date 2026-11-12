@@ -10,7 +10,7 @@ assert(not L:IsShown(), "a letter open at the start")
 
 -- Reply to Thrall: Send with his name and "RE:", sent as a reply to his letter.
 rows[4]:Click()
-assert(not L.Reply:IsEnabled(), "a GM's letter can be answered")
+assert(not L.Reply:IsEnabled() and L.Reply.psReason == "This letter cannot be answered.", "a GM's letter can be answered")
 rows[2]:Click()
 assert(L.Reply:IsEnabled(), "Reply off")
 L.Reply:Click()

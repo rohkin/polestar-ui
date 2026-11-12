@@ -56,7 +56,7 @@ assert(#stub.taken == 3 and not stub.openingAll, "taken with the bags full")
 stub.freeSlots = 10
 PolestarUIMail.footerButtons.left[1]:Click()
 assert(stub.taken[4][2] == 1 and tostring(PolestarUIMail.footerButtons.left[1].Label:GetText()) == "Opening..."
-	and not PolestarUIMail.footerButtons.left[1]:IsEnabled(), "Open all not shown at work")
+	and not PolestarUIMail.footerButtons.left[1]:IsEnabled() and PolestarUIMail.footerButtons.left[1].psReason == "Opening your mail now.", "Open all not shown at work")
 stub.fire("MAIL_FAILED", 4306)
 stub.advance(0.2)
 assert(stub.taken[5][2] == 2 and stub.openingAll, "a failed item stopped Open all")
