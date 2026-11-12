@@ -412,10 +412,10 @@ local function currencies()
 end
 
 -- Polestar's Restock (QoL/Restock.lua), when this Polestar exports it: what a
--- press buys here and its total.
+-- press buys here and its total. None while Polestar is hidden, as its own button.
 local function restock()
 	local R = Polestar.QoL and Polestar.QoL.Restock
-	if not (R and R.Plan and R.Run) then return end
+	if not (R and R.Plan and R.Run) or (Polestar.Hidden and Polestar.Hidden()) then return end
 	local plan = R.Plan()
 	if #plan == 0 then return end
 	local total, lines = 0, {}
@@ -565,6 +565,7 @@ function M.Enable()
 	if Polestar.On then
 		Polestar.On("RESTOCK_CHANGED", changed)
 		Polestar.On("SETTING_CHANGED", changed)
+		Polestar.On("POLESTAR_HIDDEN", changed)
 	end
 end
 

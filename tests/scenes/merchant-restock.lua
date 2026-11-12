@@ -27,3 +27,13 @@ assert(not w.Footer:IsShown(), "no export, yet a button")
 stub.restock({ { i = 3, id = 4540, name = "Tough Hunk of Bread", need = 10, items = 10, cost = 250, price = 25, perStack = 1 } })
 stub.fire("MERCHANT_UPDATE")
 assert(tostring(w.footerButtons.right[1].Label:GetText()) == "Restock (2s 50c)", "the plan back")
+
+-- Polestar hidden: no Restock button, as Polestar's own; shown again through POLESTAR_HIDDEN.
+local hidden = true
+Polestar.Hidden = function() return hidden end
+Polestar.Fire("POLESTAR_HIDDEN", true)
+assert(not w.Footer:IsShown(), "Restock kept while Polestar is hidden")
+hidden = false
+Polestar.Fire("POLESTAR_HIDDEN", false)
+assert(w.footerButtons.right[1]:IsShown() and tostring(w.footerButtons.right[1].Label:GetText()) == "Restock (2s 50c)", "Restock did not come back")
+Polestar.Hidden = nil
