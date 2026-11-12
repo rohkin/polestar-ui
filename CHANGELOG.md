@@ -5,6 +5,7 @@
 - Social: friends, Battle.net friends, ignored players and the raid in Polestar's look, from the social keys. Click whispers, double-click invites, right-click opens the game's menu; add a friend by name or BattleTag. Quick Join and Recruit a Friend stay in the game's window (the chat's friends button).
 - Bank: the banker's Character and Warband tabs in Polestar's look, with search, Deposit all, money in and out, buying a tab, and right-click to your bags. Tab settings stay in the game's bank.
 - Mail: the mailbox in Polestar's look: the inbox, a letter beside it with Take, Return and Delete, Open all, cash on delivery that asks first, and a send page with attachments, money and COD.
+- Gossip: talking to an NPC opens Polestar's window: the greeting, quests to hand in and take, and the options with their icons; keys 1-9 pick. A vendor with one option opens straight away, as before.
 
 ## 0.0.5
 
