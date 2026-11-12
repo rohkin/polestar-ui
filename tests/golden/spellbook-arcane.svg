@@ -154,6 +154,7 @@
 <rect x="301" y="292" width="36" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
 <rect x="301" y="258" width="1" height="34" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
 <rect x="336" y="258" width="1" height="34" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
+<image x="331" y="255" width="8" height="8" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA3klEQVR4nNWXyw3DIBBEqcC90QKHVEILtOAiUgGV7GVrQM6isBJBRLETzMQjzcUWzLP5LeZSovvNioM4ilmcirk8y++sGSnpcBH7ErLtNJc2i/lF0oE7GNwDceYb0fN3boMczBFJg3VguHo1e0Rjv7x1+BTuTgxXu3fhebbzBICcsfQA/IRwte8B8EQAbsPtxHC1rQECACDUABEAEFHjr+YaIAEA0l8BwIcAPgnhyxC7EQHmwetWXADghxH2OC4QuIKkgsCVZCpCFqUqQpblKkJeTFSEvJq1IsTl9Gw9AHBCmYlbaMZ3AAAAAElFTkSuQmCC" clip-path="url(#p0c1)"/>
 <rect x="640" y="169" width="36" height="36" fill="rgb(0,0,5)" fill-opacity="0.25" clip-path="url(#p0c1)"/>
 <rect x="640" y="169" width="36" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
 <rect x="640" y="204" width="36" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>

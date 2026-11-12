@@ -93,3 +93,9 @@ function PlayerSpellsFrame.Hide() error("addon code hid PlayerSpellsFrame", 2) e
 function stub.bindingRun.TOGGLESPELLBOOK() PlayerSpellsFrame:Show() end
 SpellbookMicroButton = CreateFrame("Button", "SpellbookMicroButton", UIParent)
 SpellbookMicroButton.tooltipText = "Spellbook & Abilities (P)"
+-- The action bars, as ActionButtonUtil reads them: Blink is on none.
+ActionButtonUtil = { ActionBarActionStatus = { NotMissing = 1, MissingFromAllBars = 2, OnInactiveBonusBar = 3, OnDisabledActionBar = 4 } }
+function ActionButtonUtil.GetActionBarStatusForSpell(id) return id == 107 and 2 or 1 end
+function ActionButtonUtil.GetActionBarStatusForPetAction() return 1 end
+function ActionButtonUtil.GetActionBarStatusForFlyout() return 1 end
+TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR = "Not on your action bars"

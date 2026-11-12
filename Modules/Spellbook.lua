@@ -150,9 +150,38 @@ local function castable(s)
 	return not s.info.isPassive and t == Enum.SpellBookItemType.Spell and not s.info.isOffSpec
 end
 
+-- Whether a spell is on none of the action bars, as the stock book marks it
+-- (ActionButtonUtil's status, as SpellSearchUtil reads it). Stock code reads
+-- the bars, so only out of combat; in combat the last answer stays
+-- (docs/CLIENT.md, rule 3).
+local unplaced = {}
+local function missing(s)
+	local U = ActionButtonUtil
+	local info = s.info
+	local key = s.bank .. ":" .. s.slot
+	if InCombatLockdown() or not (U and U.ActionBarActionStatus) then return unplaced[key] or false end
+	local t, status = info.itemType, nil
+	if info.isPassive or info.isOffSpec or t == Enum.SpellBookItemType.FutureSpell then
+		status = nil
+	elseif t == Enum.SpellBookItemType.Spell and U.GetActionBarStatusForSpell then
+		local auto = C_Spell.IsAutoAttackSpell and (C_Spell.IsAutoAttackSpell(info.spellID) or C_Spell.IsRangedAutoAttackSpell(info.spellID))
+		if not auto then status = U.GetActionBarStatusForSpell(info.actionID, true, false) end
+	elseif t == Enum.SpellBookItemType.PetAction and U.GetActionBarStatusForPetAction then
+		status = U.GetActionBarStatusForPetAction(info.actionID)
+	elseif t == FLYOUT and U.GetActionBarStatusForFlyout then
+		status = U.GetActionBarStatusForFlyout(info.actionID)
+	end
+	unplaced[key] = status == U.ActionBarActionStatus.MissingFromAllBars
+	return unplaced[key]
+end
+
 local function rowEnter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	GameTooltip:SetSpellBookItem(r.psSpell.slot, r.psSpell.bank)
+	if missing(r.psSpell) then
+		local c = LIGHTBLUE_FONT_COLOR
+		GameTooltip:AddLine(TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR or "Not on your action bars", c and c.r or 0.5, c and c.g or 0.75, c and c.b or 1, true)
+	end
 	if r.psSpell.info.itemType == FLYOUT then
 		ns.TooltipHint((open[r.psSpell.info.actionID] and "Click to hide its spells. " or "Click to show its spells. ")
 			.. "Drag it to an action bar. Shift-click to link it in chat.")
@@ -221,6 +250,13 @@ local function newRow(parent)
 	r.Well = well
 	r.Cooldown = CreateFrame("Cooldown", nil, well, "CooldownFrameTemplate")
 	r.Cooldown:SetAllPoints(r.Icon)
+	-- On no action bar: a dot in the accent on the well's corner, as the
+	-- stock book's highlight.
+	r.Unplaced = r.Well:CreateTexture(nil, "OVERLAY")
+	r.Unplaced:SetSize(8, 8)
+	r.Unplaced:SetPoint("CENTER", r.Well, "TOPRIGHT", -2, -2)
+	r.Unplaced:SetTexture(Polestar.Theme.Media("circle"))
+	W.Color(r.Unplaced, "accent")
 	r.Name = W.Text(r, "label", "text")
 	r.Sub = W.Text(r, "small", "textDim")
 	r.Sub:SetPoint("TOPLEFT", well, "RIGHT", 12, -3)
@@ -281,6 +317,7 @@ local function paintRow(r, s)
 	else
 		Polestar.Theme.Border(r.Well, Polestar.Theme.Wash("border"))
 	end
+	r.Unplaced:SetShown(missing(s))
 	paintCooldown(r)
 end
 
@@ -458,6 +495,14 @@ function M.Enable()
 	local function changed() if f and f:IsShown() then refresh() end end
 	Polestar.RegisterEvent("SPELLS_CHANGED", changed)
 	Polestar.RegisterEvent("PET_BAR_UPDATE", changed) -- autocast turned on or off
+	-- A spell placed on a bar or taken off; bars change in bursts (a page,
+	-- a stance): one redraw a frame.
+	local pending
+	Polestar.RegisterEvent("ACTIONBAR_SLOT_CHANGED", function()
+		if pending or not (f and f:IsShown()) then return end
+		pending = true
+		C_Timer.After(0, function() pending = nil; changed() end)
+	end)
 	Polestar.RegisterEvent("SPELL_UPDATE_COOLDOWN", function()
 		if not (f and f:IsShown()) then return end
 		for _, row in ipairs(rows) do if row:IsShown() then paintCooldown(row) end end

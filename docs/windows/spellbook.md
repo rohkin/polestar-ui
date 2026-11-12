@@ -35,6 +35,13 @@ Talents window's.
   "Passive", or for a spell not learned yet "Learn at level 26" with the name
   in textMuted and the icon desaturated. With no second line the name sits on
   the well's middle. Lower ranks and flyouts follow the stock settings.
+- **Not on a bar:** a spell on none of the action bars (as the stock book
+  reads it, `ActionButtonUtil`'s status; never a passive, a future spell or
+  an auto attack) has an 8px dot in the accent on its well's top-right
+  corner, in place of the stock book's highlight, and the stock tooltip line
+  (`TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR`, light blue). Read out of combat
+  (stock code reads the bars); in combat the last answer stays. Redrawn on
+  `ACTIONBAR_SLOT_CHANGED`, once a frame.
 - **Assisted combat:** where the client has an assisted combat spell
   (`AssistedCombatManager`'s action spell, which the stock book shows above
   its pages), it is the first row under General.

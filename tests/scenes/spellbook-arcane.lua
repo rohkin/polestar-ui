@@ -12,3 +12,8 @@ local o = PolestarUISpellbookCast
 assert(o and o:IsShown() and o:GetAttribute("type1") == "spell" and o:GetAttribute("spell") == 107, "no cast")
 stub.RunScript(byName["Arcane Mind"], "OnEnter")
 assert(o:GetAttribute("type1") == nil, "passive casts")
+-- On no action bar: a dot on the well's corner and the stock tooltip line, as the stock book marks it; a passive never.
+assert(byName["Blink"].Unplaced:IsShown() and not byName["Arcane Intellect"].Unplaced:IsShown() and not byName["Arcane Mind"].Unplaced:IsShown(), "unplaced dot")
+stub.RunScript(byName["Blink"], "OnEnter")
+local said = table.concat(GameTooltip.lines, "/")
+assert(said:find("Not on your action bars"), "no unplaced line: " .. said)
