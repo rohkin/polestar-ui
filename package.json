@@ -4,6 +4,8 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "test": "node --test --test-reporter=dot \"tests/*.test.js\"",
-    "preview": "node tools/preview.js"
+    "preview": "node tools/preview.js",
+    "link": "node tools/link.js link",
+    "unlink": "node tools/link.js unlink"
   }
 }
