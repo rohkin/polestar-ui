@@ -115,6 +115,12 @@ function SendMail(to, subject, body, replyID)
 	stub.sendItems = {}
 end
 stub.mailItem = item
+-- The Send page tells the client the bags' right-click attaches (SetSendMailShowing).
+stub.sendShowing = false
+function SetSendMailShowing(v) stub.sendShowing = v end
+function CursorHasItem() return stub.cursor ~= nil end
+-- A trial account cannot send mail.
+function GameLimitedMode_IsActive() return stub.trial or false end
 
 -- The read emote (the stock show performs it, the hide cancels it).
 C_ChatInfo = C_ChatInfo or {}

@@ -13,6 +13,9 @@ local M = {}
 local tab, open, taking = "inbox", nil, nil -- the page; the open letter; what the take loop empties (a letter, or "all")
 local cod, copper = false, 0 -- the Send page's money: COD or sent, and how much
 local replyTo -- the letter the Send page answers (Reply), as the stock sendMode "reply"
+local sending -- Send pressed: off until the server answers (MAIL_SUCCESS, MAIL_FAILED)
+local autoSubject = "" -- the subject the first attachment wrote (the stock previousItem)
+local MAX_COD = (MAX_COD_AMOUNT or 10000) * 10000
 local rows = {}
 local paint, codLine -- below
 
@@ -480,21 +483,48 @@ local function messageBox(parent, w)
 	return e
 end
 
+-- Send needs a name, a subject and a COD under the cap (SendMailFrame_CanSend).
+local function canSend()
+	local b = f.footerButtons.right[1]
+	if tab ~= "send" or not b then return end
+	local over = cod and copper > MAX_COD
+	send.CODError:SetShown(over)
+	ns.SetEnabled(b, not sending and (send.To:GetText() or "") ~= "" and (send.Subject:GetText() or "") ~= "" and not over)
+end
+
 local function paintSend()
+	local n, first = 0, nil
 	for i, well in ipairs(send.Wells) do
 		if HasSendMailItem(i) then
-			local _, _, icon, count, quality = GetSendMailItem(i)
+			local name, _, icon, count, quality = GetSendMailItem(i)
 			ns.PaintItem(well, { icon = icon, quality = quality, count = count })
+			n = n + 1
+			first = first or name and ((count or 1) > 1 and ("%s (%d)"):format(name, count) or name)
 		else
 			ns.PaintItem(well, nil)
 		end
 	end
+	-- As SendMailFrame_Update: the subject follows the first item until the
+	-- player writes one; COD needs an item.
+	local subject = send.Subject:GetText() or ""
+	if n > 0 then
+		if subject == "" or subject == autoSubject then
+			autoSubject = first or ""
+			send.Subject:SetText(autoSubject)
+		end
+	else
+		if subject == autoSubject then send.Subject:SetText("") end
+		autoSubject, cod = "", false
+	end
+	send.psNoItems = n == 0
 	send.MoneyCaption:SetText(cod and "COD amount" or "Money to send")
 	send.COD:Refresh()
 	local price = GetSendMailPrice()
 	ns.SetMoney(send.Postage, price, price > GetMoney() and "danger" or nil)
 	W.ShellTitle(f, "Send mail", "Click a well with an item on the cursor to attach it.")
 	W.ShellFooter(f, {}, { { label = "Send", onClick = function()
+		sending = true
+		canSend()
 		SetSendMailCOD(0)
 		SetSendMailMoney(0)
 		if copper > 0 then
@@ -502,6 +532,7 @@ local function paintSend()
 		end
 		SendMail(send.To:GetText(), send.Subject:GetText(), send.Body:GetText(), replyTo)
 	end, opts = { primary = true } } })
+	canSend()
 	return 24 + 18 + 30 + 20 + 18 + BODY_H + 20 + 18 + 36 + 20 + 18 + 28 + 12
 end
 
@@ -515,13 +546,27 @@ local function buildSend()
 	caption(send, "Subject", x + 236, y)
 	send.To = ns.TextField(send, 220, 77)
 	send.To:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
-	send.To:HookScript("OnTextChanged", function(self, user) if user then suggest(self) end end)
+	send.To:HookScript("OnTextChanged", function(self, user)
+		if user then suggest(self) end
+		canSend()
+	end)
 	send.Subject = ns.TextField(send, w - 236, 64)
 	send.Subject:SetPoint("TOPLEFT", send, "TOPLEFT", x + 236, -(y + 18))
+	send.Subject:HookScript("OnTextChanged", canSend)
 	y = y + 18 + 30 + 20
 	caption(send, "Message", x, y)
 	send.Body = messageBox(send, w)
 	send.Body.Well:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
+	-- Tab walks To, Subject, Message; Enter in Subject goes on to the message.
+	send.To:SetScript("OnTabPressed", function() send.Subject:SetFocus() end)
+	send.Subject:SetScript("OnTabPressed", function() send.Body:SetFocus() end)
+	send.Subject:SetScript("OnEnterPressed", function() send.Body:SetFocus() end)
+	send.Body:SetScript("OnTabPressed", function() send.To:SetFocus() end)
+	-- An item dropped anywhere on the page goes in the first free well.
+	local function drop() if CursorHasItem() then ClickSendMailItemButton() end end
+	send:EnableMouse(true)
+	send:SetScript("OnMouseUp", drop)
+	send.Body.Well:HookScript("OnMouseUp", drop)
 	y = y + 18 + BODY_H + 20
 	caption(send, "Attachments", x, y)
 	local grid = ns.ItemGrid(send, SEND, 36, 4)
@@ -541,25 +586,33 @@ local function buildSend()
 	end
 	y = y + 18 + 36 + 20
 	send.MoneyCaption = caption(send, "", x, y)
-	send.Money = ns.MoneyInput(send, function(c) copper = c end)
+	send.Money = ns.MoneyInput(send, function(c)
+		copper = c
+		canSend()
+	end)
 	send.Money:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
 	send.COD = W.Switch(send, function() return cod end, function(v) cod = v; paintSend() end)
 	send.COD:SetPoint("LEFT", send.Money, "RIGHT", 24, 0)
+	W.SetDisabledWhen(send.COD, function() return send.psNoItems end)
 	local codText = W.Text(send, "label", "text")
 	codText:SetPoint("LEFT", send.COD, "RIGHT", 8, 0)
 	codText:SetText("Cash on delivery")
+	send.CODError = W.Text(send, "small", "danger")
+	send.CODError:SetPoint("TOPLEFT", send.Money, "BOTTOMLEFT", 0, -6)
+	send.CODError:SetText(("A COD cannot be over %d gold."):format(MAX_COD / 10000))
+	send.CODError:Hide()
 	caption(send, "Postage", x + w - 120, y)
 	send.Postage = ns.Money(send)
 	send.Postage:SetPoint("LEFT", send, "TOPLEFT", x + w - 120, -(y + 18 + 14))
 end
 
-local function resetSend()
+local function resetSend(quiet)
 	send.To:SetText("")
 	send.Subject:SetText("")
 	send.Body:SetText("")
-	cod, copper = false, 0
+	cod, copper, autoSubject = false, 0, ""
 	send.Money.Set(0)
-	paint()
+	if not quiet then paint() end
 end
 
 ---------------------------------------------------------------------------
@@ -588,17 +641,25 @@ local function build()
 		stopTaking()
 		closing()
 		open = nil
+		-- As the stock hide: the page emptied, the bags' right-click theirs again.
+		SetSendMailShowing(false)
+		resetSend(true)
 	end)
 	Polestar.CloseOnEscape(NAME)
 end
 
 function paint()
-	W.ShellTabs(f, { { key = "inbox", label = "Inbox" }, { key = "send", label = "Send" } }, tab, function(k)
+	-- Trial accounts cannot send mail: no Send page (MailMixin:UpdateTrialState).
+	local trial = GameLimitedMode_IsActive()
+	if trial then tab = "inbox" end
+	W.ShellTabs(f, { { key = "inbox", label = "Inbox" }, not trial and { key = "send", label = "Send" } or nil }, tab, function(k)
 		tab, replyTo = k, nil
 		paint()
 	end)
 	f.psInbox:SetShown(tab == "inbox")
 	send:SetShown(tab == "send")
+	-- On Send, the bags' right-click attaches an item, as the stock page.
+	SetSendMailShowing(tab == "send")
 	W.ShellBody(f, tab == "inbox" and paintInbox() or paintSend())
 	paintLetter()
 end
@@ -624,9 +685,18 @@ function M.Enable()
 		if not send then return end
 		-- A reply sent goes back to the inbox, as the stock window does.
 		if replyTo then tab, replyTo = "inbox", nil end
+		PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
 		resetSend()
 	end)
-	Polestar.RegisterEvent("MAIL_FAILED", stopTaking)
+	Polestar.RegisterEvent("MAIL_SUCCESS", function()
+		sending = nil
+		if shown() then canSend() end
+	end)
+	Polestar.RegisterEvent("MAIL_FAILED", function()
+		sending = nil
+		stopTaking()
+		if shown() then canSend() end
+	end)
 	Polestar.RegisterEvent("MAIL_OPEN_ALL_CANCELED", stopTaking)
 	-- The game closed a letter (taken whole, or gone): its flyout goes too.
 	Polestar.RegisterEvent("CLOSE_INBOX_ITEM", function(_, i)
