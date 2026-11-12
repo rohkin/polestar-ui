@@ -224,13 +224,33 @@ function C_Item.GetItemInfo(id, ...)
 	if itemInfo then return itemInfo(id, ...) end
 end
 stub.stackCount = { [2589] = 20 }
+-- The bags: [bag][slot] = itemID; a slot's ItemLocation; the stock bag button (stub.bagButton(bag, slot)).
+stub.bagItems = { [0] = { [1] = 2589, [2] = 6975, [3] = 4540 } }
+stub.ahItems[4540] = { "Tough Hunk of Bread", 133964, 1, false, 1 }
+stub.ahRefused = { [4540] = true }
+ItemLocation = ItemLocation or {}
+function ItemLocation:CreateFromBagAndSlot(bag, slot)
+	local id = (stub.bagItems[bag] or {})[slot]
+	return { itemID = id, bag = bag, slot = slot, IsValid = function() return id ~= nil end }
+end
+function stub.bagButton(bag, slot)
+	local b = CreateFrame("Button", nil, UIParent)
+	b:SetSize(37, 37)
+	b:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -40 * slot, 100)
+	b.GetBagID = function() return bag end
+	b.GetID = function() return slot end
+	b.OnModifiedClick = function(self, button) stub.bagModified = button end
+	return b
+end
+function C_Container.PickupContainerItem(bag, slot) stub.picked = { bag, slot } end
+function GameTooltip.SetBagItem(self, bag, slot) self.lines = { "Bag item " .. bag .. "/" .. slot } end
 function C_Item.GetCurrentItemLevel(loc) return 0 end
 function C_Item.GetItemQuality(loc) return stub.ahItems[loc.itemID][3] end
 function C_Item.GetStackCount(loc) return stub.stackCount[loc.itemID] or 1 end
 stub.throttled, stub.sellCancelled, stub.multisellSteps = false, 0, nil
 function AH.IsThrottledMessageSystemReady() return not stub.throttled end
 function AH.CancelSell() stub.sellCancelled = stub.sellCancelled + 1 end
-function AH.IsSellItemValid(loc) return stub.ahItems[loc.itemID] ~= nil end
+function AH.IsSellItemValid(loc) return stub.ahItems[loc.itemID] ~= nil and not stub.ahRefused[loc.itemID] end
 function AH.GetItemKeyFromItem(loc) return key(loc.itemID) end
 function AH.GetItemCommodityStatus(loc) return stub.ahItems[loc.itemID][4] and 2 or 1 end
 function AH.GetAvailablePostCount(loc) return stub.bagCount[loc.itemID] or 1 end

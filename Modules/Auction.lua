@@ -1388,6 +1388,51 @@ function M.Show()
 	if AH.HasFavorites() then favorites() end
 end
 
+-- Right-click from the bags sells, as the game's bag code does for the stock
+-- window (ContainerFrameItemButton_OnClick calls AuctionHouseFrame:SetPostItem,
+-- a frame it knows only by name and that is never loaded now). A button of
+-- ours lies over the hovered bag slot while ours is open (ns.Overlay, out of
+-- combat), for an item the auction house takes or any while selling: its
+-- right-click puts the item on the Sell page; its other clicks and drags are
+-- the slot's, as the stock bag button's.
+local function bagLoc(t) return ItemLocation:CreateFromBagAndSlot(t:GetBagID(), t:GetID()) end
+local function bagPickup(t) C_Container.PickupContainerItem(t:GetBagID(), t:GetID()) end
+local function bagClick(t, button)
+	if IsModifiedClick() then return t:OnModifiedClick(button) end
+	if button == "RightButton" then
+		if setItem(bagLoc(t)) then
+			tab = "sell"
+			paint()
+		end
+	else
+		bagPickup(t)
+	end
+end
+
+local function bagDoor(shown)
+	local place = ns.Overlay("PolestarUIAuctionBagSlot", {
+		enter = function(t)
+			GameTooltip:SetOwner(t, "ANCHOR_RIGHT")
+			GameTooltip:SetBagItem(t:GetBagID(), t:GetID())
+			ns.TooltipHint("Right-click to sell it here.")
+			GameTooltip:Show()
+		end,
+		pickup = bagPickup,
+		stale = function() return not shown() end,
+		setup = function(over)
+			over:HookScript("PostClick", function(self, button) bagClick(self.psTarget, button) end)
+			over:HookScript("OnReceiveDrag", function(self) bagPickup(self.psTarget) end)
+		end,
+		attrs = function() end,
+	})
+	EventRegistry:RegisterCallback("ContainerFrameItemButton.EnterButton", function(_, b)
+		if not shown() or InCombatLockdown() or not b.GetBagID then return end
+		local loc = bagLoc(b)
+		if not loc:IsValid() or not (tab == "sell" or AH.IsSellItemValid(loc, false)) then return end
+		place(b)
+	end)
+end
+
 local function onError(_, err)
 	for name, v in pairs(Enum.AuctionHouseError or {}) do
 		if v == err and _G[ERRORS[name] or ""] then UIErrorsFrame:AddExternalErrorMessage(_G[ERRORS[name]]) end
@@ -1403,6 +1448,7 @@ function M.Enable()
 		close = function() C_AuctionHouse.CloseAuctionHouse() end, internal = { "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }, events = { "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" } })
 	local function shown() return f and f:IsShown() end
 	local function changed() if shown() then paint() end end
+	bagDoor(shown)
 	for _, e in ipairs({ "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "ITEM_KEY_ITEM_INFO_RECEIVED",
 		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED", "BID_ADDED",
 		"AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "AUCTION_HOUSE_THROTTLED_MESSAGE_SENT" }) do
