@@ -619,11 +619,8 @@ local function row(k)
 		local k = self:GetParent().psKey
 		setFavorite(k, not AH.IsFavoriteItem(k))
 	end, 14)
-	r.Fav:SetScript("OnEnter", function(self)
-		local k = self:GetParent().psKey
-		if canFavorite(k) then return enter(self:GetParent()) end
-		W.Tooltip(self, "ANCHOR_RIGHT", AUCTION_HOUSE_FAVORITES_MAXED_TOOLTIP or "You have the most favorites allowed.")
-	end)
+	-- Off, it says why (ns.SetEnabled's tooltip); on, the row's.
+	r.Fav:SetScript("OnEnter", function(self) if self:IsEnabled() then enter(self:GetParent()) end end)
 	r.Fav:Hide()
 	r.Cells = {}
 	for i = 1, MAX_COLS do
@@ -747,6 +744,8 @@ local function fill(k, top, o, cols)
 		r.Fav:ClearAllPoints()
 		r.Fav:SetPoint("RIGHT", r, "LEFT", right[#cols], 0)
 		W.SetIconState(r.Fav, o.fav)
+		ns.SetEnabled(r.Fav, canFavorite(o.key), not AH.FavoritesAreAvailable() and "Favorites are not available now."
+			or (AUCTION_HOUSE_FAVORITES_MAXED_TOOLTIP or "You have the most favorites allowed."))
 	end
 	r.psKey, r.psClick, r.psHint, r.psData = o.key, o.click, o.hint, o.data
 	r:Show()
@@ -813,10 +812,9 @@ local function paintToken()
 	elseif token.noneUntil then line = TOKEN_NONE_FOR_SALE or "None for sale; try again in a minute."
 	else line = ("Market price: %s"):format(coins(price)) end
 	W.ShellTitle(f, TOKEN_FILTER_LABEL or "WoW Token", line)
-	local can = price and not token.disabled and not token.noneUntil and GetMoney() >= price
+	local why = (token.disabled or token.noneUntil) and line or price and GetMoney() < price and (ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") or nil
 	W.ShellFooter(f, {}, { price and { label = BUYOUT or "Buy", onClick = buyToken, opts = { primary = true } } or nil })
-	local b = f.footerButtons.right[1]
-	if price and b then ns.SetEnabled(b, can and true or false) end
+	if price then ns.SetEnabled(f.footerButtons.right[1], not why, why) end
 	return 0, 24, TUTORIAL_TOKEN_ABOUT_TOKENS or ""
 end
 
@@ -931,6 +929,8 @@ local function paintCommodity()
 	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetCommoditySearchResultsQuantity(id))))
 	W.ShellFooter(f, viewFooter(),
 		{ got > 0 and { label = ("Buy %d (%s)"):format(got, coins(total)), onClick = buyCommodity, opts = { primary = true } } or nil })
+	-- More than the player has: off, as the stock buy button.
+	if got > 0 then ns.SetEnabled(f.footerButtons.right[1], total <= GetMoney(), ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") end
 	local strip = f.psBuy
 	strip.Stepper.Paint()
 	ns.SetMoney(strip.Total, total, total > GetMoney() and "danger" or nil)
@@ -1315,7 +1315,7 @@ local function paintSell()
 	W.ShellFooter(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
 		{ loc and { label = "Post", onClick = post, opts = { primary = true } } or nil })
 	local p = f.footerButtons.right[1]
-	if loc and p then ns.SetEnabled(p, not why) end
+	if loc and p then ns.SetEnabled(p, not why, why ~= "" and why or nil) end
 	return paintSellList(s.psHeight)
 end
 
@@ -1610,6 +1610,8 @@ function paint()
 	W.SetIconState(f.psFilter, on > 0)
 	f.psFilter.psTip = on > 0 and ("Search options (%d on)"):format(on) or "Search options"
 	ns.SetMoney(money, GetMoney())
+	-- The footer's buttons are reused page to page: each page turns off its own.
+	for _, side in pairs(f.footerButtons) do for _, b in ipairs(side) do ns.SetEnabled(b, true) end end
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
 	f.psBuy:SetShown(commodity and true or false)
