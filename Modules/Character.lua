@@ -992,6 +992,8 @@ function M.Enable()
 		end
 	end
 	Polestar.RegisterEvent("PLAYER_ENTERING_WORLD", changed)
+	-- Polestar hidden or back: its bag upgrade marks go or return.
+	if Polestar.On then Polestar.On("POLESTAR_HIDDEN", changed) end
 	-- The stock sheet's stat events (PaperDollFrame_OnLoad).
 	for _, e in ipairs({ "UNIT_STATS", "UNIT_RANGEDDAMAGE", "UNIT_RANGED_ATTACK_POWER", "UNIT_ATTACK", "UNIT_SPELL_HASTE",
 		"UNIT_RESISTANCES", "UNIT_DAMAGE", "UNIT_ATTACK_SPEED", "UNIT_MAXHEALTH", "UNIT_AURA", "UNIT_LEVEL" }) do
