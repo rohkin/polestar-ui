@@ -36,16 +36,7 @@ local function hairline(r)
 	r.Line:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
 end
 
-local function iconWell(r, size)
-	local well = CreateFrame("Frame", nil, r)
-	well:SetSize(size, size)
-	Theme.Skin(well, "inset")
-	Theme.Border(well, Theme.Wash("border"))
-	r.Icon = ns.GameIcon(well)
-	r.Icon:SetPoint("TOPLEFT", 1, -1)
-	r.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
-	return well
-end
+local iconWell = ns.ItemWell
 
 ---------------------------------------------------------------------------
 -- Reward Track
@@ -91,7 +82,8 @@ local function newRewardRow(parent, i)
 	r.Mark:SetWidth(2)
 	r.Level = W.Text(r, "number", "textDim")
 	r.Level:SetPoint("CENTER", r, "LEFT", 32, 0)
-	local well = iconWell(r, ICON)
+	local well
+	well, r.Icon = iconWell(r, ICON)
 	well:SetPoint("LEFT", r, "LEFT", 64, 0)
 	r.State = W.Tex(r, "ARTWORK", "check", "accent")
 	r.State:SetSize(14, 14)
@@ -418,7 +410,8 @@ local function newChallengeRow(parent)
 	r:SetScript("OnClick", challengeClick)
 	r:SetScript("OnEnter", challengeTip)
 	r:SetScript("OnLeave", function() GameTooltip:Hide() end)
-	local well = iconWell(r, ICON)
+	local well
+	well, r.Icon = iconWell(r, ICON)
 	well:SetPoint("TOPLEFT", r, "TOPLEFT", 16, -12)
 	-- Its legacy points on a chip, the date it was earned under them.
 	r.Points = W.Text(r, "number", "accent")

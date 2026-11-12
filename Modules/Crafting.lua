@@ -136,16 +136,7 @@ local function paintQuality(text, well, q)
 	if r and q >= 2 then Theme.Border(well, r, g, b, 1) else Theme.Border(well, Theme.Wash("border")) end
 end
 
-local function iconWell(parent, size)
-	local well = CreateFrame("Frame", nil, parent)
-	well:SetSize(size, size)
-	Theme.Skin(well, "inset")
-	Theme.Border(well, Theme.Wash("border"))
-	local icon = ns.GameIcon(well)
-	icon:SetPoint("TOPLEFT", 1, -1)
-	icon:SetPoint("BOTTOMRIGHT", -1, 1)
-	return well, icon
-end
+local iconWell = ns.ItemWell
 
 local function place(b, y)
 	b:ClearAllPoints()

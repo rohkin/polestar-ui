@@ -91,6 +91,18 @@ function ns.GridCell(v)
 	return s or 1
 end
 
+-- An inset well holding a game icon, in the Polestar look: returns the well and its icon.
+function ns.ItemWell(parent, size)
+	local well = CreateFrame("Frame", nil, parent)
+	well:SetSize(size, size)
+	Polestar.Theme.Skin(well, "inset")
+	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
+	local icon = ns.GameIcon(well)
+	icon:SetPoint("TOPLEFT", 1, -1)
+	icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	return well, icon
+end
+
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the
