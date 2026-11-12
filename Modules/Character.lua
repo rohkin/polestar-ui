@@ -548,21 +548,13 @@ local function build()
 		v.psPaint, v.psH = page.paint, 0
 		f.psPages[key] = v
 	end
-	-- The drawer's toggle at the right of the tab row (kept with no tabs).
-	local toggle = CreateFrame("Button", nil, f.TabRow)
-	toggle:SetHeight(24)
-	toggle:SetPoint("RIGHT", f.TabRow, "RIGHT", -20, 0)
-	W.Hover(toggle)
-	toggle.Label = W.Text(toggle, "small", "text")
-	toggle.Label:SetPoint("LEFT", toggle, "LEFT", 10, 0)
-	toggle.Arrow = W.Tex(toggle, "ARTWORK", "chevron-left", "textDim")
-	toggle.Arrow:SetSize(12, 12)
-	toggle.Arrow:SetPoint("RIGHT", toggle, "RIGHT", -10, 0)
-	toggle:SetScript("OnClick", function()
-		PolestarUIDB.hideStats = statsShown() or nil
-		refresh()
+	-- The band's Options: the drawer put away and back, for every character.
+	f.psOptions = ns.OptionsButton(f, function()
+		return { { text = "Show stats", checked = statsShown(), onClick = function()
+			PolestarUIDB.hideStats = statsShown() or nil
+			refresh()
+		end } }
 	end)
-	f.psToggle = toggle
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -600,7 +592,6 @@ function refresh()
 	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
 	local gear = section == "PaperDollFrame"
-	f.psKeepTabRow = gear
 	if gear then
 		W.ShellTabs(f, nil)
 		W.ShellTitle(f, CHARACTER or "Character", repairLine())
@@ -611,10 +602,7 @@ function refresh()
 	local stats = gear and statsShown()
 	f.psGear:SetShown(gear)
 	f.psStats:SetShown(stats)
-	f.psToggle:SetShown(gear)
-	f.psToggle.Label:SetText(stats and "Hide stats" or "Show stats")
-	f.psToggle.Arrow:SetTexture(Polestar.Theme.Media(stats and "chevron-left" or "chevron-right"))
-	f.psToggle:SetWidth(math.floor(f.psToggle.Label:GetStringWidth() + 44 + 0.5))
+	f.psOptions:SetShown(gear)
 	local h = 0
 	if gear then
 		paintGear()
