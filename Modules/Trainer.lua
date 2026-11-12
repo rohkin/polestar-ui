@@ -222,7 +222,7 @@ function paint()
 	local pet = petTrainer()
 	SetPortraitTexture(subject.icon, pet and "pet" or "npc")
 	subject.name:SetText(UnitName(pet and "pet" or "npc") or "")
-	subject.line:SetText(classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or "Trainer")
+	subject.line:SetText(classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or pet and "Pet trainer" or "Trainer")
 
 	-- The services (headers skipped), by category (Camelot's skill lines) when
 	-- categorized, counting what can be learnt. A profession's next rank (the
