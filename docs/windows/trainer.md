@@ -1,4 +1,7 @@
 #### Trainer (`ClassTrainerFrame`) — Risk: medium
+Polestar export: Train All (`QoL.Trainer.Start`) needs a new export from Polestar, which needs a Polestar PR
+approved first. The window feature-detects it and ships without Train All until
+Polestar has it, as the World Map does with `Polestar.MapCanvas.Add`.
 Demand-loaded; opened by the interaction manager (Trainer) and by Forever's
 `GameEvent` (`TRAINER_SHOW`): both are taken (`ns.Interaction`,
 `CloseTrainer`). Its show and hide also run `UpdateMicroButtons`: one more

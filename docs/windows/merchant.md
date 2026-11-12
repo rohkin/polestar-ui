@@ -1,4 +1,7 @@
 #### Merchant (`MerchantFrame`) — Risk: medium
+Polestar export: Restock (`QoL.Restock.Plan`/`Run`) needs a new export from Polestar, which needs a Polestar PR
+approved first. The window feature-detects it and ships without the Restock button until
+Polestar has it, as the World Map does with `Polestar.MapCanvas.Add`.
 Opened by the interaction manager (Merchant), taken as above
 (`ns.Interaction`, `CloseMerchant`). Polestar's own merchant features stay
 whole: Vendor and Keep (sell junk, repair) run on `MERCHANT_SHOW`, no
