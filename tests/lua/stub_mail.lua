@@ -32,11 +32,12 @@ function GetInboxHeaderInfo(i)
 	if not l then return end
 	local first, link
 	for a = 1, 16 do if l[12][a] then first, link = l[12][a][4], "item:" .. l[12][a][2]; break end end
-	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, false, not l[9], l[9], first, link
+	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, l.textCreated or false, not l[9], l[9], first, link
 end
 function GetInboxText(i)
 	stub.inbox[i][8] = true
-	return stub.inbox[i][11], nil, nil, false, false
+	-- A letter with text can be copied; an invoice (l.invoice) is one.
+	return stub.inbox[i][11], nil, nil, stub.inbox[i][11] ~= "", stub.inbox[i].invoice ~= nil
 end
 function GetInboxItem(i, a)
 	local it = letter(i)[12][a]
@@ -68,6 +69,16 @@ function AutoLootMailItem(i)
 	stub.money, l[5] = stub.money + l[5], 0
 	l[12] = {}
 end
+function TakeInboxTextItem(i)
+	letter(i).textCreated = true
+	table.insert(stub.taken, { i, "letter" })
+end
+function GetInboxInvoiceInfo(i)
+	local v = letter(i).invoice
+	if v then return unpack(v) end
+end
+C_CurrencyInfo = C_CurrencyInfo or {}
+function C_CurrencyInfo.GetCoinIcon() return 133784 end
 function ReturnInboxItem(i) table.insert(stub.returned, table.remove(stub.inbox, i)[3]) end
 function DeleteInboxItem(i) table.insert(stub.deleted, table.remove(stub.inbox, i)[3]) end
 

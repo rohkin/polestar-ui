@@ -1,7 +1,7 @@
 --@ title: Mail: a letter with attachments and COD
 --@ roots: PolestarUIMail, PolestarUIMailLetter
 --@ stubs: stub_npc.lua, stub_mail.lua
--- A click opens the letter in a flyout right of the list (the dock counts it): its text, its attachments in an item grid, its COD in danger. Taking an item or all of a COD letter asks first, naming the price; cancelled, nothing is taken; paid, Take empties the letter one item per MAIL_INBOX_UPDATE. A letter a player sent is returned, not deleted; one that can go is deleted only after a danger dialog. Reply (not to a GM) opens Send with the sender and "RE: subject", sends as a reply, and goes back to the inbox once sent. The game closing a letter closes its flyout.
+-- A click opens the letter in a flyout right of the list (the dock counts it): its text, its attachments in an item grid, its COD in danger. Taking an item or all of a COD letter asks first, naming the price; cancelled, nothing is taken; paid, Take empties the letter one item per MAIL_INBOX_UPDATE. A COD the player cannot pay says so and takes nothing. A letter with text offers a copy of itself first in the grid; its money is a well of its own. A letter a player sent is returned, not deleted; one that still holds money or items is deleted only after a danger dialog naming them, an empty one at once; closing a letter whose copy was taken and that holds nothing more deletes it. Reply (not to a GM) opens Send with the sender and "RE: subject", sends as a reply, and goes back to the inbox once sent. The game closing a letter closes its flyout.
 local T = Enum.PlayerInteractionType
 stub.interact(T.MailInfo)
 local f, L = PolestarUIMail, PolestarUIMailLetter
@@ -30,11 +30,14 @@ assert(tostring(L.Discard.Label:GetText()) == "Return", "a player's letter is re
 L.Discard:Click()
 assert(stub.returned[1] == "Thrall" and not L:IsShown(), "not returned")
 
--- The Auction House's letter can go: a danger dialog asks first.
+-- The Auction House's letter can go: it holds money, so a danger dialog asks first.
 f.psInbox:GetChildren():Click()
 assert(tostring(L.Discard.Label:GetText()) == "Delete", "not deletable")
+local mw = L.Grid:GetChildren()
+assert(mw:IsShown() and mw.psAttachment == "money", "no money well")
 L.Discard:Click()
 assert(PolestarModal:IsShown() and PolestarModal.Box.Action.psDanger and #stub.deleted == 0, "no danger dialog")
+assert(tostring(PolestarModal.Box.Text:GetText()) == "It still holds 4g 87s 50c.", "the dialog does not name the money")
 PolestarModal.Box.Action:Click()
 assert(stub.deleted[1] == "Auction House" and not L:IsShown(), "not deleted")
 
@@ -42,9 +45,17 @@ assert(stub.deleted[1] == "Auction House" and not L:IsShown(), "not deleted")
 f.psInbox:GetChildren():Click()
 local wells = { L.Grid:GetChildren() }
 assert(tostring(L.Sender:GetText()) == "Garrosh" and tostring(L.MoneyLabel:GetText()) == "COD", "the COD letter")
-assert(wells[1]:IsShown() and wells[3]:IsShown() and not wells[4], "an item grid of its three attachments")
-assert(select(2, wells[3].Icon:GetVertexColor()) < 1 and select(2, wells[1].Icon:GetVertexColor()) == 1, "an unusable item not red")
-wells[2]:Click()
+assert(wells[1].psAttachment == "letter" and wells[4]:IsShown() and wells[4].psAttachment == 5 and not (wells[5] and wells[5]:IsShown()), "the copy and its three attachments")
+assert(select(2, wells[4].Icon:GetVertexColor()) < 1 and select(2, wells[2].Icon:GetVertexColor()) == 1, "an unusable item not red")
+-- Short of money: the game's alert, nothing taken.
+local purse = stub.money
+stub.money = 1000
+wells[3]:Click()
+assert(PolestarModal:IsShown() and tostring(PolestarModal.Box.Title:GetText()) == "Not enough money" and #stub.taken == 0, "no COD alert")
+PolestarModal.Box.Action:Click()
+assert(#stub.taken == 0, "taken without the money")
+stub.money = purse
+wells[3]:Click()
 assert(PolestarModal:IsShown() and #stub.taken == 0, "an item taken before the COD was asked")
 local price
 for _, c in ipairs({ PolestarModal.Box:GetChildren() }) do if c.psParts and c:IsShown() then price = tostring(c.psParts[1].text:GetText()) end end
@@ -62,7 +73,15 @@ stub.fire("MAIL_INBOX_UPDATE")
 stub.fire("MAIL_INBOX_UPDATE")
 assert(#stub.taken == 3 and not L.Take:IsEnabled(), "not emptied, or Take still on")
 
+-- Its copy taken and nothing left, closing it deletes it.
+wells[1]:Click()
+assert(stub.taken[4][2] == "letter" and stub.inbox[1].textCreated, "the copy not taken")
+stub.fire("MAIL_INBOX_UPDATE")
+L.Close:Click()
+assert(stub.deleted[2] == "Garrosh" and not L:IsShown(), "an emptied letter not deleted on close")
+
 -- The game closes the letter: its flyout goes.
+f.psInbox:GetChildren():Click()
 stub.fire("CLOSE_INBOX_ITEM", 1)
 assert(not L:IsShown(), "the flyout stayed")
 

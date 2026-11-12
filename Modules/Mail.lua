@@ -50,10 +50,14 @@ local function startTaking(what)
 	takeNext()
 end
 
--- A COD letter's items cost money: the dialog names the price first.
+-- A COD letter's items cost money: the dialog names the price first, or says
+-- the player cannot pay it (the stock COD_CONFIRMATION and COD_ALERT).
 local function payFirst(i, fn)
 	local price = select(6, GetInboxHeaderInfo(i))
 	if price == 0 then return fn() end
+	if price > GetMoney() then
+		return W.Modal({ title = "Not enough money", text = ("This letter's items cost %s (COD), more than you have."):format(ns.Coins(price)), action = "OK" })
+	end
 	codLine = codLine or ns.Money(UIParent)
 	ns.SetMoney(codLine, price, price > GetMoney() and "danger" or nil)
 	ns.ModalWith({ title = "Pay for this letter?", text = "Its sender asks this much for its items (COD).", action = "Pay", onAccept = fn }, codLine)
@@ -63,20 +67,42 @@ end
 -- The open letter (the flyout)
 ---------------------------------------------------------------------------
 
+-- Closing a letter whose copy was taken and that holds nothing more deletes
+-- it, as the stock OpenMailFrame's OnHide (never a pending auction sale's).
+local function closing()
+	if not open or open > GetInboxNumItems() then return end
+	local _, _, _, _, money, _, _, items, _, _, textCreated = GetInboxHeaderInfo(open)
+	local isInvoice = select(5, GetInboxText(open))
+	if isInvoice and GetInboxInvoiceInfo(open) == "seller_temp_invoice" then return end
+	if money == 0 and not items and textCreated then DeleteInboxItem(open) end
+end
+
 function M.Open(i)
+	if i ~= open then closing() end
 	open = i
 	paint()
 end
 
+-- Delete asks first when the letter still holds items or money (the stock
+-- DELETE_MAIL and DELETE_MONEY); a letter from a player goes back instead.
 local function discard()
 	local i = open
 	if not InboxItemCanDelete(i) then
 		ReturnInboxItem(i)
+		open = nil
 		return M.Open(nil)
 	end
-	local subject = select(4, GetInboxHeaderInfo(i))
-	W.Modal({ title = "Delete this letter?", text = subject, action = "Delete", danger = true,
-		onAccept = function() DeleteInboxItem(i); M.Open(nil) end })
+	local money, items = select(5, GetInboxHeaderInfo(i)), select(8, GetInboxHeaderInfo(i))
+	local text
+	if items then
+		for a = 1, RECEIVE do text = text or (HasInboxItem(i, a) and GetInboxItem(i, a)) end
+		text = ("It still holds %s."):format(text or "items")
+	elseif money > 0 then
+		text = ("It still holds %s."):format(ns.Coins(money))
+	end
+	local function delete() DeleteInboxItem(i); open = nil; M.Open(nil) end
+	if not text then return delete() end
+	W.Modal({ title = "Delete this letter?", text = text, action = "Delete", danger = true, onAccept = delete })
 end
 
 -- Reply: the Send page with the sender and "RE: subject" filled, the cursor
@@ -127,33 +153,60 @@ end
 local function paintLetter()
 	letter:SetShown(open ~= nil and tab == "inbox")
 	if not letter:IsShown() then return end
-	local _, _, sender, subject, money, price, _, _, _, _, _, canReply = GetInboxHeaderInfo(open)
+	local _, stationery, sender, subject, money, price, _, _, _, _, textCreated, canReply = GetInboxHeaderInfo(open)
 	-- No reply to the game's letters, to oneself, or without a sender.
 	ns.SetEnabled(letter.Reply, sender and canReply and sender ~= ns.Clean(UnitName("player")))
 	letter.Sender:SetText(sender or "Unknown")
 	letter.Subject:SetText(subject or "")
 	-- Reading the text marks the letter read, as the stock open does.
-	letter.Text:SetText(GetInboxText(open) or "")
+	local body, _, _, takeable = GetInboxText(open)
+	letter.Text:SetText(body or "")
 	local y = 24 + 24 + 6 + 16 + 20
 	letter.Text:ClearAllPoints()
 	letter.Text:SetPoint("TOPLEFT", letter, "TOPLEFT", 24, -y)
 	y = y + math.ceil(letter.Text:GetStringHeight()) + 20
+	-- As the stock letter: a copy of the letter to take, its money, its items.
 	local list = {}
+	if takeable and not textCreated then list[1] = "letter" end
+	if money > 0 then list[#list + 1] = "money" end
 	for a = 1, RECEIVE do if HasInboxItem(open, a) then list[#list + 1] = a end end
 	local wells = letter.Grid.Layout(#list)
 	for k, well in ipairs(wells) do
-		local _, _, icon, count, quality, canUse = GetInboxItem(open, list[k])
-		ns.PaintItem(well, { icon = icon, quality = quality, count = count, unusable = not canUse })
-		well.psAttachment = list[k]
+		local a = list[k]
+		if a == "letter" then
+			ns.PaintItem(well, { icon = stationery })
+		elseif a == "money" then
+			ns.PaintItem(well, { icon = C_CurrencyInfo.GetCoinIcon(money) })
+		else
+			local _, _, icon, count, quality, canUse = GetInboxItem(open, a)
+			ns.PaintItem(well, { icon = icon, quality = quality, count = count, unusable = not canUse })
+		end
+		well.psAttachment = a
 		if not well.psMail then
 			well.psMail = true
 			well:SetScript("OnClick", function(self)
-				local i, a = open, self.psAttachment
-				payFirst(i, function() TakeInboxItem(i, a) end)
+				local i, at = open, self.psAttachment
+				if at == "letter" then return TakeInboxTextItem(i) end
+				if at == "money" then return TakeInboxMoney(i) end
+				payFirst(i, function() TakeInboxItem(i, at) end)
 			end)
 			well:HookScript("OnEnter", function(self)
+				local at = self.psAttachment
 				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-				GameTooltip:SetInboxItem(open, self.psAttachment)
+				if at == "letter" then
+					GameTooltip:SetText("A copy of this letter")
+					ns.TooltipHint("Click to take it.")
+				elseif at == "money" then
+					GameTooltip:SetText(ns.Coins(select(5, GetInboxHeaderInfo(open))))
+					ns.TooltipHint("Click to take it.")
+				else
+					GameTooltip:SetInboxItem(open, at)
+					local cost = select(6, GetInboxHeaderInfo(open))
+					if cost > 0 then
+						local r, g, b = Theme.Color(cost > GetMoney() and "danger" or "text")
+						GameTooltip:AddLine("COD: " .. ns.Coins(cost), r, g, b)
+					end
+				end
 				GameTooltip:Show()
 			end)
 			well:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -171,7 +224,7 @@ local function paintLetter()
 		letter.MoneyLabel:SetPoint("TOPLEFT", letter, "TOPLEFT", 24, -y)
 		ns.SetMoney(letter.Money, price > 0 and price or money, price > 0 and "danger" or nil)
 	end
-	ns.SetEnabled(letter.Take, money > 0 or #list > 0)
+	ns.SetEnabled(letter.Take, money > 0 or select(8, GetInboxHeaderInfo(open)) ~= nil)
 	local deletes = InboxItemCanDelete(open)
 	W.SetButtonText(letter.Discard, deletes and "Delete" or "Return")
 	letter.Discard.psDanger = deletes
@@ -466,6 +519,7 @@ local function build()
 	f:HookScript("OnHide", function()
 		C_ChatInfo.CancelEmote()
 		stopTaking()
+		closing()
 		open = nil
 	end)
 	Polestar.CloseOnEscape(NAME)
