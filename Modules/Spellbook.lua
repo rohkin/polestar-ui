@@ -303,8 +303,7 @@ local function refresh()
 		for _, c in ipairs(cats) do if c.key == section then cur = c end end
 		W.ShellNav(f, cats, section, function(k) section = k; M.Show() end)
 		if cur then spells(cur, list) end
-		W.ShellTitle(f, cur and cur.label or "", section == "pet" and "Your pet's abilities. Click one to use it, or drag it to the pet bar."
-			or "Click a spell to cast it, or drag it to your action bars.")
+		W.ShellTitle(f, cur and cur.label or "", #list == 1 and "1 spell." or #list .. " spells.")
 	end
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})
