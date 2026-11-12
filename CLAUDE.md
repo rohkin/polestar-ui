@@ -17,6 +17,7 @@ WoW (Forever client) addon: replaces stock Blizzard windows with Polestar's kit 
 - `node tools/preview.js <scene>...`: render only those scenes (blesses them).
 - `node tools/preview.js --check <scene>`: compare only, exit 1 on a mismatch; a failure writes `<scene>.actual.svg` (gitignored).
 - `node tools/new-window.js <key> <StockFrame>`: writes `Modules/<Key>.lua`, `tests/lua/stub_<key>.lua`, `tests/scenes/<key>.lua`, the .toc line, and `docs/windows/<key>.md` (a TODO stub, if missing). Never overwrites.
+- `node tools/release.js [version|patch|minor] [--push] [--dry-run]`: cut a release; see the release skill.
 - `npm run link` / `npm run unlink`: junction the repo into the WoW Forever AddOns folder (`$WOW_FOREVER_ADDONS` or autodetected); unlink removes only a junction.
 - Needs Node 24+, a Lua 5.1 (luajit works; `LUA=` overrides), and Polestar at `../polestar`.
 - Worktree gotcha: `tests/helpers/lua.js` finds the TOC by folder name, so the checkout folder must be named `Polestar_UI`.
