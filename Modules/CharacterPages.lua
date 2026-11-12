@@ -127,9 +127,12 @@ local function setBar(r, frac, red, green, blue)
 	if red then r.Bar.Fill:SetVertexColor(red, green, blue, 1) else W.Color(r.Bar.Fill, "accent") end
 end
 
-local function pageOf(paintFn, subtitle)
-	return { build = listView, paint = paintFn, subtitle = subtitle }
+local function pageOf(paintFn)
+	return { build = listView, paint = paintFn }
 end
+
+-- "1 skill", "3 skills".
+local function count(n, one, many) return n == 1 and "1 " .. one or n .. " " .. many end
 
 ---------------------------------------------------------------------------
 -- Reputation: groups are the top headers; a sub-header (isChild) is a row,
@@ -205,11 +208,13 @@ local repSpec = {
 }
 
 pages.ReputationFrame = pageOf(function(v)
-	local groups, cur = {}, nil
+	local groups, cur, n, watched = {}, nil, 0, nil
 	for i = 1, C_Reputation.GetNumFactions() do
 		local d = C_Reputation.GetFactionDataByIndex(i)
 		if d then
 			d.index = i
+			if not d.isHeader or d.isHeaderWithRep then n = n + 1 end
+			if d.isWatched then watched = d.name end
 			if d.isHeader and not d.isChild then
 				local idx = i
 				cur = { name = d.name, collapsed = d.isCollapsed, rows = {}, toggle = function()
@@ -226,8 +231,9 @@ pages.ReputationFrame = pageOf(function(v)
 			end
 		end
 	end
+	v.psSub = watched and "Watching " .. watched or count(n, "faction", "factions")
 	return paintList(v, groups, repSpec)
-end, "Click a faction to follow it on your experience bar.")
+end)
 
 ---------------------------------------------------------------------------
 -- Currency: the client's currency list, its headers as groups.
@@ -264,11 +270,12 @@ local currencySpec = {
 }
 
 pages.TokenFrame = pageOf(function(v)
-	local groups, cur = {}, nil
+	local groups, cur, n = {}, nil, 0
 	for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
 		local d = C_CurrencyInfo.GetCurrencyListInfo(i)
 		if d then
 			d.index = i
+			if not d.isHeader then n = n + 1 end
 			if d.isHeader then
 				local idx, expanded = i, d.isHeaderExpanded
 				cur = { name = d.name, collapsed = not expanded, rows = {}, toggle = function()
@@ -280,8 +287,9 @@ pages.TokenFrame = pageOf(function(v)
 			end
 		end
 	end
+	v.psSub = count(n, "currency", "currencies")
 	return paintList(v, groups, currencySpec)
-end, "Currencies you've earned, by group. Click a heading to fold it.")
+end)
 
 ---------------------------------------------------------------------------
 -- Skills: the client's skill lines (as the stock page filters them: no class
@@ -314,7 +322,7 @@ local skillSpec = {
 }
 
 pages.SkillsFrame = pageOf(function(v)
-	local groups, cur = {}, nil
+	local groups, cur, n = {}, nil, 0
 	for i = 1, C_SkillInfo.GetNumSkillLines() do
 		local d = C_SkillInfo.GetSkillLineInfo(i)
 		if d and d.parentSkillLineID == 0 then
@@ -333,8 +341,9 @@ pages.SkillsFrame = pageOf(function(v)
 			end
 		end
 	end
+	v.psSub = count(n, "skill", "skills")
 	return paintList(v, groups, skillSpec)
-end, "Your skills rise as you use them; a trainer raises how high they can go.")
+end)
 
 ---------------------------------------------------------------------------
 -- Statistics: the client's statistic categories (as the stock StatisticsFrame
@@ -435,8 +444,9 @@ pages.StatisticsFrame = pageOf(function(v)
 		end
 		groups[#groups + 1] = g
 	end
+	v.psSub = count(#roots, "category", "categories")
 	return paintList(v, groups, statSpec)
-end, "What your character has done, counted. Click a heading to open it.")
+end)
 
 ---------------------------------------------------------------------------
 -- Honor: Forever's PvP rank, kept as the major faction 2800 (as the stock
@@ -451,7 +461,6 @@ local function rankTitle(rank)
 end
 
 pages.PVPRankFrame = {
-	subtitle = "Win battlegrounds and fight in world PvP to earn rank points.",
 	build = function(body, width)
 		local v = CreateFrame("Frame", nil, body)
 		v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
@@ -475,6 +484,7 @@ pages.PVPRankFrame = {
 		v.Empty:SetShown(not info)
 		if not info then
 			v.Empty:SetText(PVP_RANK_DETAIL_UNAVAILABLE or "No PvP rank this season.")
+			v.psSub = nil
 			v:SetHeight(40)
 			return 64
 		end
@@ -482,6 +492,7 @@ pages.PVPRankFrame = {
 		v.Rank:SetText(rank > 0 and ("%s · %s"):format(rankTitle(rank), (PVP_RANK_NUMBER or "Rank %d"):format(rank)) or rankTitle(rank))
 		local season = GetCurrentArenaSeason and GetCurrentArenaSeason() or 0
 		v.Season:SetText(season > 0 and (EXPANSION_SEASON_NAME or "%sSeason %d"):format("", season) or "")
+		v.psSub = v.Season:GetText() ~= "" and v.Season:GetText() or nil
 		local earned, need = info.renownReputationEarned or 0, info.renownLevelThreshold or 0
 		v.Points:SetText(need > 0 and ("%s / %s"):format(BreakUpLargeNumbers(earned), BreakUpLargeNumbers(need)) or "")
 		W.SetProgress(v.Bar, need > 0 and math.min(1, earned / need) or 1, v:GetWidth())

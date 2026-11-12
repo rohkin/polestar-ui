@@ -606,9 +606,6 @@ function refresh()
 		W.ShellTitle(f, CHARACTER or "Character", repairLine())
 	else
 		W.ShellTabs(f, nil)
-		for _, s in ipairs(SECTIONS) do
-			if s.key == section then W.ShellTitle(f, s.label, ns.CharacterPages[s.key] and ns.CharacterPages[s.key].subtitle) end
-		end
 	end
 	W.ShellFooter(f, {}, {})
 	local stats = gear and statsShown()
@@ -628,7 +625,12 @@ function refresh()
 	for key, v in pairs(f.psPages) do
 		local on = key == section
 		v:SetShown(on)
-		if on then h = paintPage(v) end
+		if on then
+			h = paintPage(v)
+			for _, s in ipairs(SECTIONS) do
+				if s.key == key then W.ShellTitle(f, s.label, v.psSub) end
+			end
+		end
 	end
 	W.ShellBody(f, h)
 end
