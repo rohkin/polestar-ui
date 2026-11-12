@@ -115,19 +115,20 @@ Restyle in place (rule 15):
       (shape of the real XML: region names, children, the stock functions our
       hooks follow). Client rules shared by all scenes: `tests/lua/stub_client.lua`;
       generic frames: `tests/lua/wow_stub.lua`.
-- [ ] <!-- TODO tooling: scenes are moving from `tools/preview.js` SCENES to one file each, `tests/scenes/<name>.lua` --> Scene(s) in `tools/preview.js` `SCENES` (`{ file, title, panels: [{ roots,
-      stubs, saved?, script }] }`): `script` asserts doors (`stub.pressKey`),
-      combat (`stub.inCombat`), secrets, the switch off/on, and for restyles
-      that other code's lines still show and the stock art comes back off.
+- [ ] Scene(s) as `tests/scenes/<name>.lua`: `--@ title`, `--@ roots`, `--@ stubs`
+      and `--@ saved` header lines, then Lua asserts; `--@ panel` starts a further
+      panel with its own header. Asserts cover doors (`stub.pressKey`), combat
+      (`stub.inCombat`), secrets, the switch off/on, and for restyles that other
+      code's lines still show and the stock art comes back off. A new window
+      starts from `node tools/new-window.js <key> <StockFrameName>` (module,
+      stub, scene and `.toc` line; refuses to overwrite).
 - [ ] A new CLIENT.md rule gets a stub check where it can.
-- [ ] Render/bless: `node tools/preview.js <scene>` writes `tests/golden/<scene>.svg`;
-      `npm test` compares (a mismatch writes `<scene>.actual.svg`) and audits
-      text overflow.
-- [ ] <!-- TODO tooling: SVG ids are becoming stable per file; the sed recipe below is being replaced --> Golden diff that should be "ids only": clip/mask/gradient ids are
-      `p<panel>[cmg]<frame id>`, so one new frame renumbers them. Check the
-      rest is unchanged:
-      `diff <(git show HEAD:tests/golden/X.svg | sed -E 's/p[0-9]+([cmg])[0-9]+/p\1N/g') <(sed -E 's/p[0-9]+([cmg])[0-9]+/p\1N/g' tests/golden/X.svg)`
-      (empty = only renumbering).
+- [ ] Bless and compare: `node tools/preview.js <scene>` writes
+      `tests/golden/<scene>.svg`; `node tools/preview.js --check <scene>`
+      compares one scene without writing; `npm run preview` re-blesses all;
+      `npm test` compares everything (a mismatch writes `<scene>.actual.svg`)
+      and audits text overflow. SVG ids are stable per file, so a golden diff
+      holds only real changes.
 - [ ] Look at it: `"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless --disable-gpu --screenshot=<scratch>/x.png --window-size=1400,1000 "file:///D:/Projects/Polestar_UI/tests/golden/X.svg"`
       then Read the PNG.
 - [ ] Catalogue entry (with Risk) written before building, in its own file
