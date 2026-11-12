@@ -272,7 +272,7 @@ function paint()
 	-- The NPC heads the band, its portrait beside it (QuestFrame_SetPortrait:
 	-- the quest's NPC, the quest book with none); a quest's title, too long for
 	-- a 640 band beside its tools, heads the body as on the World Map's details.
-	W.ShellTitle(f, ns.Clean(UnitName("questnpc")) or "", page == "greeting" and "Click a quest." or nil)
+	W.ShellTitle(f, ns.Clean(UnitName("questnpc")) or "")
 	f.psPortraitPaint("questnpc")
 	-- A friendship NPC's standing heads the body (QuestFrame_OnShow).
 	f.psFriend.Paint()

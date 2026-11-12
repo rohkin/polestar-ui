@@ -11,6 +11,8 @@ assert(look(f.Body, "Current Quests") and look(f.Body, "Available Quests"), "the
 local active, available = { f.psPanel:GetChildren() }, { f.psPanel2:GetChildren() }
 assert(#active == 1 and active[1].Text:GetText() == "Wolves Across the Border", "current quests")
 assert(#available == 1 and available[1].Text:GetText() == "Kobold Camp Cleanup", "available quests")
+-- No instruction in the band.
+assert((f.Subtitle:GetText() or "") == "", "an instruction in the band")
 assert(not f.psPortrait:IsShown(), "a 3D portrait on the greeting")
 active[1]:Click()
 available[1]:Click()
