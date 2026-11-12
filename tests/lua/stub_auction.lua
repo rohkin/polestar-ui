@@ -11,6 +11,15 @@ Enum.AuctionHouseSortOrder = { Price = 0, Name = 1, Level = 2, Bid = 3, Buyout =
 Enum.ItemCommodityStatus = { Unknown = 0, Item = 1, Commodity = 2 }
 Enum.AuctionStatus = { Active = 0, Sold = 1 }
 Enum.AuctionHouseTimeLeftBand = { Short = 0, Medium = 1, Long = 2, VeryLong = 3 }
+-- The item classes the stock categories name (ItemConstantsDocumentation.lua).
+Enum.ItemClass = { Consumable = 0, Container = 1, Weapon = 2, Armor = 4, Projectile = 6, Tradegoods = 7, Recipe = 9, Quiver = 11, Questitem = 12, Miscellaneous = 15 }
+Enum.ItemWeaponSubclass = { Axe1H = 0, Axe2H = 1, Bows = 2, Guns = 3, Mace1H = 4, Mace2H = 5, Polearm = 6, Sword1H = 7, Sword2H = 8, Staff = 10, Unarmed = 13, Generic = 14, Dagger = 15, Thrown = 16, Crossbow = 18, Wand = 19, Fishingpole = 20 }
+Enum.ItemArmorSubclass = { Generic = 0, Cloth = 1, Leather = 2, Mail = 3, Plate = 4, Shield = 6, Libram = 7, Idol = 8, Totem = 9 }
+Enum.ItemContainerSubclass = { Bag = 0, Soul = 1, Herb = 2, Enchanting = 3, Engineering = 4, Mining = 6, Leatherworking = 7, Tacklebox = 9, Cooking = 10, Reagent = 11 }
+Enum.ItemQuiverSubclass = { Quiver = 2, Ammopouch = 3 }
+Enum.ItemConsumableSubclass = { Generic = 0, Potion = 1, Elixir = 2, Flask = 3, Scroll = 4, Fooddrink = 5, Itemenhancement = 6, Bandage = 7, Other = 8, ItemenhancementTemporary = 9 }
+Enum.ItemRecipeSubclass = { Book = 0, Leatherworking = 1, Tailoring = 2 }
+Enum.InventoryType = { IndexHeadType = 1, IndexNeckType = 2, IndexShoulderType = 3, IndexBodyType = 4, IndexChestType = 5, IndexWaistType = 6, IndexLegsType = 7, IndexFeetType = 8, IndexWristType = 9, IndexHandType = 10, IndexFingerType = 11, IndexTrinketType = 12, IndexCloakType = 16, IndexRobeType = 20, IndexHoldableType = 23, IndexRelicType = 28 }
 
 -- The stock addon (Blizzard_AuctionHouseUI): loaded by either stock open,
 -- which shows AuctionHouseFrame (Bootstrap.lua's ShowAuctionHouseFrame).
@@ -73,6 +82,17 @@ stub.cursor = nil
 stub.bagCount = { [2589] = 40, [6975] = 1 }
 stub.npcClosed.CloseAuctionHouse = 0
 
+-- Class, subclass and slot names (C_Item), and the subclasses the auction house lists.
+local SUBNAMES = { [2] = { [0] = "One-Handed Axes", [4] = "One-Handed Maces", [7] = "One-Handed Swords", [15] = "Daggers" },
+	[4] = { [0] = "Miscellaneous", [1] = "Cloth", [2] = "Leather", [3] = "Mail", [4] = "Plate", [6] = "Shields" },
+	[0] = { [1] = "Potion", [7] = "Bandage", [8] = "Other" }, [9] = { [0] = "Book", [1] = "Leatherworking", [2] = "Tailoring" }, [7] = { [0] = "Cloth", [1] = "Metal & Stone" } }
+local SLOTNAMES = { [1] = "Head", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hands", [28] = "Relic" }
+C_Item = C_Item or {}
+function C_Item.GetItemSubClassInfo(c, s) return (SUBNAMES[c] or {})[s] or ("Subclass " .. c .. "." .. s) end
+function C_Item.GetItemInventorySlotInfo(t) return SLOTNAMES[t] or ("Slot " .. t) end
+function C_Item.GetItemClassInfo(c) return "Class " .. c end
+stub.ahSubclasses = { [0] = { 1, 7, 6, 9, 8 }, [7] = { 0, 1 }, [6] = { 2, 3 }, [9] = { 0, 1, 2 }, [15] = { 0, 2 } }
+
 local function key(id) return { itemID = id, itemLevel = 0, itemSuffix = 0, battlePetSpeciesID = 0 } end
 
 C_AuctionHouse = {}
@@ -82,6 +102,7 @@ function AH.CloseAuctionHouse()
 	stub.endInteraction(T.Auctioneer)
 end
 AH.MakeItemKey = key
+function AH.GetAuctionItemSubClasses(c) return stub.ahSubclasses[c] or {} end
 function AH.GetItemKeyInfo(k)
 	local it = stub.ahItems[k.itemID]
 	if it then return { itemID = k.itemID, battlePetSpeciesID = 0, itemName = it[1], iconFileID = it[2], quality = it[3], isCommodity = it[4], isPet = false, isEquipment = not it[4] } end

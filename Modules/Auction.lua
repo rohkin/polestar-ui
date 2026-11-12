@@ -15,12 +15,108 @@ local ROW_H = 48
 -- does (MAXIMUM_PREVIEW_PRICE_DIFFERENTIAL).
 local QUOTE_SLACK = 1.05
 
--- Forever's top-level categories (Camelot's Blizzard_AuctionData.lua): label, item classes.
--- shortcut: top level only; add the subcategories if players ask to narrow further.
-local CATEGORIES = {
-	{ "Weapons", 2 }, { "Armor", 4 }, { "Containers", 1, 11 }, { "Consumables", 0 }, { "Trade Goods", 7 },
-	{ "Projectiles", 6 }, { "Recipes", 9 }, { "Quest Items", 12 }, { "Miscellaneous", 15 },
-}
+-- Forever's categories, as the stock list builds them (Camelot's
+-- Blizzard_AuctionData.lua, the stock addon we never load): each node a
+-- name, its item class filters (a node's filters are its children's too, as
+-- AuctionCategoryMixin:AddFilter adds them up), its children, and the column
+-- the stock browse list adds for it (SetDetailColumnString). Built on first
+-- show: the names come from the client.
+local tree
+local function buildTree()
+	local E, I = Enum, C_Item
+	local IC, WS, AS, IT = E.ItemClass, E.ItemWeaponSubclass, E.ItemArmorSubclass, E.InventoryType
+	local top = {}
+	local function node(parent, name)
+		local c = { name = name or "", filters = {}, kids = {}, parent = parent }
+		table.insert(parent and parent.kids or top, c)
+		return c
+	end
+	local function add(c, classID, subClassID, inv)
+		local flt = { classID = classID, subClassID = subClassID, inventoryType = inv }
+		while c do
+			table.insert(c.filters, flt)
+			c = c.parent
+		end
+	end
+	-- CreateSubCategoryAndFilter: named after the slot, the subclass or the class.
+	local function auto(parent, classID, subClassID, inv)
+		local name = inv and I.GetItemInventorySlotInfo(inv) or subClassID and I.GetItemSubClassInfo(classID, subClassID)
+			or I.GetItemClassInfo(classID)
+		local c = node(parent, name)
+		add(c, classID, subClassID, inv)
+		return c
+	end
+	local function each(parent, classID, list) for _, s in ipairs(list) do auto(parent, classID, s) end end
+	local function generate(parent, classID) each(parent, classID, C_AuctionHouse.GetAuctionItemSubClasses(classID) or {}) end
+	local LEVEL = AUCTION_HOUSE_BROWSE_HEADER_REQUIRED_LEVEL or "Req. Level"
+
+	local wpn = node(nil, AUCTION_CATEGORY_WEAPONS or "Weapons")
+	wpn.detail = LEVEL
+	each(node(wpn, AUCTION_SUBCATEGORY_ONE_HANDED or "One-Handed"), IC.Weapon,
+		{ WS.Axe1H, WS.Mace1H, WS.Sword1H, WS.Dagger, WS.Unarmed, WS.Wand })
+	each(node(wpn, AUCTION_SUBCATEGORY_TWO_HANDED or "Two-Handed"), IC.Weapon, { WS.Axe2H, WS.Mace2H, WS.Sword2H, WS.Polearm, WS.Staff })
+	each(node(wpn, AUCTION_SUBCATEGORY_RANGED or "Ranged"), IC.Weapon, { WS.Bows, WS.Crossbow, WS.Guns, WS.Thrown })
+	local misc = node(wpn, AUCTION_SUBCATEGORY_MISCELLANEOUS or "Miscellaneous")
+	auto(misc, IC.Weapon, WS.Fishingpole)
+	add(node(misc, AUCTION_SUBCATEGORY_OTHER or "Other"), IC.Weapon, WS.Generic)
+
+	local arm = node(nil, AUCTION_CATEGORY_ARMOR or "Armor")
+	arm.detail = LEVEL
+	local SLOTS = { IT.IndexHeadType, IT.IndexShoulderType, IT.IndexChestType, IT.IndexWaistType, IT.IndexLegsType,
+		IT.IndexFeetType, IT.IndexWristType, IT.IndexHandType, IT.IndexRelicType }
+	for _, kind in ipairs({ AS.Plate, AS.Mail, AS.Leather, AS.Cloth }) do
+		local k = auto(arm, IC.Armor, kind)
+		for _, slot in ipairs(SLOTS) do
+			local c = auto(k, IC.Armor, kind, slot)
+			if slot == IT.IndexChestType then add(c, IC.Armor, kind, IT.IndexRobeType) end
+		end
+	end
+	each(node(arm, AUCTION_SUBCATEGORY_RELIC or "Relic"), IC.Armor, { AS.Idol, AS.Libram, AS.Totem })
+	misc = node(arm, I.GetItemSubClassInfo(IC.Armor, AS.Generic))
+	auto(misc, IC.Armor, AS.Generic, IT.IndexNeckType)
+	add(node(misc, AUCTION_SUBCATEGORY_CLOAK or "Cloak"), IC.Armor, AS.Cloth, IT.IndexCloakType)
+	auto(misc, IC.Armor, AS.Generic, IT.IndexFingerType)
+	auto(misc, IC.Armor, AS.Generic, IT.IndexTrinketType)
+	auto(misc, IC.Armor, AS.Generic, IT.IndexHoldableType)
+	auto(misc, IC.Armor, AS.Shield)
+	auto(misc, IC.Armor, AS.Generic, IT.IndexBodyType)
+
+	local cont = node(nil, AUCTION_CATEGORY_CONTAINERS or "Containers")
+	cont.detail = AUCTION_HOUSE_BROWSE_HEADER_CONTAINER_SLOTS or "Slots"
+	local CS, QS = E.ItemContainerSubclass, E.ItemQuiverSubclass
+	each(node(cont, AUCTION_SUBCATEGORY_STANDARD_CONTAINER or "Standard"), IC.Container, { CS.Bag, CS.Soul })
+	each(node(cont, AUCTION_SUBCATEGORY_AMMO_CONTAINER or "Ammo"), IC.Quiver, { QS.Quiver, QS.Ammopouch })
+	each(node(cont, AUCTION_SUBCATEGORY_REAGENT_CONTAINER or "Reagent"), IC.Container,
+		{ CS.Herb, CS.Enchanting, CS.Engineering, CS.Mining, CS.Leatherworking, CS.Tacklebox, CS.Cooking, CS.Reagent })
+
+	local cons = node(nil, AUCTION_CATEGORY_CONSUMABLES or "Consumables")
+	cons.detail = LEVEL
+	local US = E.ItemConsumableSubclass
+	for _, s in ipairs(C_AuctionHouse.GetAuctionItemSubClasses(IC.Consumable) or {}) do
+		if s ~= US.Itemenhancement and s ~= US.ItemenhancementTemporary then auto(cons, IC.Consumable, s) end
+		-- After bandages, the item enhancements under one heading.
+		if s == US.Bandage then
+			each(node(cons, AUCTION_SUBCATEGORY_ITEM_ENHANCEMENT or "Item Enhancement"), IC.Consumable,
+				{ US.Itemenhancement, US.ItemenhancementTemporary })
+		end
+	end
+
+	generate(node(nil, AUCTION_CATEGORY_TRADE_GOODS or "Trade Goods"), IC.Tradegoods)
+	generate(node(nil, AUCTION_CATEGORY_PROJECTILE or "Projectiles"), IC.Projectile)
+	local rec = node(nil, AUCTION_CATEGORY_RECIPES or "Recipes")
+	rec.detail = AUCTION_HOUSE_BROWSE_HEADER_RECIPE_SKILL or "Skill"
+	generate(rec, IC.Recipe)
+	-- Books go last (SetSortIndex(100)).
+	local book = I.GetItemSubClassInfo(IC.Recipe, E.ItemRecipeSubclass.Book)
+	for i, c in ipairs(rec.kids) do
+		if c.name == book then table.insert(rec.kids, table.remove(rec.kids, i)) break end
+	end
+	add(node(nil, AUCTION_CATEGORY_QUEST_ITEMS or "Quest Items"), IC.Questitem)
+	local m = node(nil, AUCTION_CATEGORY_MISCELLANEOUS or "Miscellaneous")
+	add(m, IC.Miscellaneous)
+	generate(m, IC.Miscellaneous)
+	return top
+end
 local BANDS = { [0] = "Under 30 min", "30 min to 2 h", "2 to 12 h", "Over 12 h" }
 local DURATIONS = { "12 hours", "24 hours", "48 hours" }
 -- The client's error texts (AuctionHouseErrorToErrorText lives in the stock addon, never loaded).
@@ -39,7 +135,7 @@ local ERRORS = {
 local AH -- C_AuctionHouse, set in Enable
 local f, money
 local tab = "buy"
-local category, searched -- the browse: a category index (nil: all); whether a search ran
+local sel, searched = {}, nil -- the browse: the category path ({ top, sub, subsub } indexes); whether a search ran
 local view -- an item's listings: { key, info, n (commodity count) }
 local quote -- a commodity purchase waiting on its quote: { id, n, unit, total, name }
 local sell = { n = 1, price = 0, duration = 2 } -- loc, key, commodity, touched
@@ -76,12 +172,21 @@ end
 ---------------------------------------------------------------------------
 -- Buy: the browse, then an item's listings.
 
+-- The category picked, deepest first (nil: all).
+local function picked()
+	local c, list = nil, tree
+	for _, i in ipairs(sel) do
+		c = list[i]
+		list = c.kids
+	end
+	return c
+end
+
 local function browse()
 	tab, view, searched = "buy", nil, true
-	local filters = {}
-	for i = 2, #(CATEGORIES[category] or {}) do filters[#filters + 1] = { classID = CATEGORIES[category][i] } end
+	local c = picked()
 	paint()
-	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(), itemClassFilters = filters })
+	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(), itemClassFilters = c and c.filters or {} })
 end
 
 local function research()
@@ -229,7 +334,7 @@ end
 -- Each page fills its rows and returns how many, where they start, and the
 -- text shown when there are none.
 local function paintBrowse()
-	W.ShellTitle(f, CATEGORIES[category] and CATEGORIES[category][1] or "Browse",
+	W.ShellTitle(f, picked() and picked().name or "Browse",
 		searched and "Click an item to see its listings." or "Search for an item (Enter), or pick a category.")
 	W.ShellFooter(f, {}, {})
 	local list = searched and AH.GetBrowseResults() or {}
@@ -480,11 +585,44 @@ local function build()
 	f:HookScript("OnHide", function()
 		if asked and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == asked then PolestarModal:Hide() end
 		if quote then AH.CancelCommoditiesPurchase() end
-		quote, pendingPost, view, searched, category, sell.loc = nil, nil, nil, false, nil, nil
+		quote, pendingPost, view, searched, sel, sell.loc = nil, nil, nil, false, {}, nil
 		f.Search:SetText("")
 		PlaySound(SOUNDKIT.AUCTION_WINDOW_CLOSE)
 	end)
 	Polestar.CloseOnEscape(NAME)
+end
+
+-- The sidebar: All, the top categories, and under the one picked its
+-- subcategories (and under the subcategory picked, its own), indented, as the
+-- stock list opens them. A click on the one picked closes it again.
+local function paintNav()
+	local nav, depth = { { key = "", label = "All" } }, {}
+	local function walk(list, path, d)
+		for i, c in ipairs(list) do
+			local key = path .. i .. "."
+			nav[#nav + 1] = { key = key, label = c.name }
+			depth[#nav] = d
+			if sel[d + 1] == i then walk(c.kids, key, d + 1) end
+		end
+	end
+	walk(tree, "", 0)
+	local active = tab == "buy" and not view and searched and (table.concat(sel, ".") .. (#sel > 0 and "." or "")) or false
+	W.ShellNav(f, nav, active, function(k)
+		local path = {}
+		for n in k:gmatch("%d+") do path[#path + 1] = tonumber(n) end
+		-- One on the picked path again closes it, as the stock list's toggle.
+		local on = #path > 0
+		for d, i in ipairs(path) do on = on and sel[d] == i end
+		if on then table.remove(path) end
+		sel = path
+		browse()
+	end)
+	for i, b in ipairs(f.navButtons) do
+		local d = depth[i] or 0
+		b.Icon:ClearAllPoints()
+		b.Icon:SetPoint("LEFT", b, "LEFT", W.SHELL.side + 16 * d, 0)
+		if d > 0 then b.Icon:Hide() end
+	end
 end
 
 function paint()
@@ -493,12 +631,7 @@ function paint()
 		if k == "auctions" then AH.QueryOwnedAuctions(sorts()) end
 		paint()
 	end)
-	local nav = { { key = 0, label = "All" } }
-	for i, c in ipairs(CATEGORIES) do nav[#nav + 1] = { key = i, label = c[1] } end
-	W.ShellNav(f, nav, tab == "buy" and not view and searched and (category or 0) or false, function(k)
-		category = k > 0 and k or nil
-		browse()
-	end)
+	paintNav()
 	ns.SetMoney(money, GetMoney())
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
@@ -518,6 +651,7 @@ function paint()
 end
 
 function M.Show()
+	tree = tree or buildTree()
 	if not f then build() end
 	tab = "buy"
 	paint()
