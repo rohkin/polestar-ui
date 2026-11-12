@@ -138,6 +138,7 @@ function ns.QuestLog(win, canvas, width)
 	p.Empty:SetText("Your quest log is empty.")
 
 	local heads, rows, sel = {}, {}, nil
+	local headMenu -- below
 	local textW = width - 1 - W.SHELL.side * 2
 
 	local function place(b, y)
@@ -149,6 +150,29 @@ function ns.QuestLog(win, canvas, width)
 
 	-- A header: a click folds it, through the client, which sends no redraw
 	-- of its own we can count on (docs/CLIENT.md, rule 6).
+	-- The stock header menu (QuestMapLogHeaderButton_CreateContextMenu, under
+	-- its tag so other addons' entries join it): every quest under the header
+	-- tracked or untracked, as QuestLogMixin:SetHeaderQuestsTracked.
+	local function headTracked(index, on)
+		for i = index + 1, C_QuestLog.GetNumQuestLogEntries() do
+			local info = C_QuestLog.GetInfo(i)
+			if not info or info.isHeader then break end
+			local id, watched = info.questID, QuestUtils_IsQuestWatched(info.questID)
+			if on and not watched then C_QuestLog.AddQuestWatch(id)
+			elseif not on and watched and QuestUtil.CanRemoveQuestWatch() then C_QuestLog.RemoveQuestWatch(id) end
+		end
+		p.Paint()
+	end
+	function headMenu(h)
+		MenuUtil.CreateContextMenu(h, function(_, root)
+			root:SetTag("MENU_QUEST_MAP_FRAME")
+			root:CreateButton(QUEST_LOG_TRACK_ALL, function() headTracked(h.psIndex, true) end)
+			if QuestUtil.CanRemoveQuestWatch() then
+				root:CreateButton(QUEST_LOG_UNTRACK_ALL, function() headTracked(h.psIndex, false) end)
+			end
+		end)
+	end
+
 	local function headRow(i)
 		if heads[i] then return heads[i] end
 		local h = CreateFrame("Button", nil, p.Scroll.Child)
@@ -164,7 +188,9 @@ function ns.QuestLog(win, canvas, width)
 		h.Label:SetPoint("RIGHT", h.Count, "LEFT", -8, 0)
 		h.Label:SetJustifyH("LEFT")
 		h.Label:SetWordWrap(false)
-		h:SetScript("OnClick", function(self)
+		h:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		h:SetScript("OnClick", function(self, button)
+			if button == "RightButton" then return headMenu(self) end
 			if self.psCollapsed then ExpandQuestHeader(self.psIndex) else CollapseQuestHeader(self.psIndex) end
 			p.Paint()
 		end)
@@ -172,20 +198,74 @@ function ns.QuestLog(win, canvas, width)
 		return h
 	end
 
+	-- The stock title tooltip (QuestMapLogTitleButton_OnEnter): the title, on
+	-- hold or failed, then the hand-in line or the objectives summary and
+	-- every objective (a finished one grey); then what a click does.
 	local function questTip(r)
+		local id, index = r.psQuest, C_QuestLog.GetLogIndexForQuestID(r.psQuest)
 		GameTooltip:SetOwner(r, "ANCHOR_LEFT")
 		GameTooltip:SetText(r.psTitle, 1, 1, 1, 1, true)
-		ns.TooltipHint("Click to open it and show it on the map. Shift-click to " .. (QuestUtils_IsQuestWatched(r.psQuest) and "stop tracking it." or "track it."))
+		if C_QuestLog.IsQuestDisabledForSession(id) then GameTooltip:AddLine(QUEST_SESSION_ON_HOLD_TOOLTIP_TITLE or "On hold", 0.5, 0.5, 0.5) end
+		if C_QuestLog.IsFailed(id) then GameTooltip:AddLine(FAILED or "Failed", 1, 0.13, 0.13) end
+		if index then
+			GameTooltip:AddLine(" ")
+			if C_QuestLog.IsComplete(id) then
+				GameTooltip:AddLine(GetQuestLogCompletionText and GetQuestLogCompletionText(index) or QUEST_WATCH_QUEST_READY or "Ready to turn in.", 1, 1, 1, true)
+			else
+				local _, summary = GetQuestLogQuestText(index)
+				if summary and summary ~= "" then GameTooltip:AddLine(summary, 1, 1, 1, true) end
+				for i = 1, GetNumQuestLeaderBoards(index) or 0 do
+					local text, _, finished = GetQuestLogLeaderBoard(i, index)
+					if text then
+						local g = finished and 0.5 or 1
+						GameTooltip:AddLine((QUEST_DASH or "- ") .. text, g, g, g, true)
+					end
+				end
+			end
+		end
+		if C_SuperTrack.GetSuperTrackedQuestID() == id then GameTooltip:AddLine(" "); GameTooltip:AddLine("Focused: your guide points to it.", 1, 0.82, 0) end
+		ns.TooltipHint("Click to open it and show it on the map. Shift-click to " .. (QuestUtils_IsQuestWatched(id) and "stop tracking it." or "track it.")
+			.. " Right-click for more.")
 		GameTooltip:Show()
+	end
+
+	-- The stock title menu (QuestMapLogTitleButton_CreateContextMenu, under
+	-- its tag so other addons' entries join it): track, focus (the client's
+	-- super-track), share, abandon (our confirm, as the details' Abandon).
+	local abandon -- below
+	local function questMenu(r)
+		local id = r.psQuest
+		MenuUtil.CreateContextMenu(r, function(_, root)
+			root:SetTag("MENU_QUEST_MAP_LOG_TITLE")
+			local watched = QuestUtils_IsQuestWatched(id)
+			if not watched or QuestUtil.CanRemoveQuestWatch() then
+				root:CreateButton(watched and UNTRACK_QUEST or TRACK_QUEST, function()
+					QuestMapQuestOptions_TrackQuest(id)
+					p.Paint()
+				end)
+			end
+			if C_SuperTrack.GetSuperTrackedQuestID() ~= id then
+				root:CreateButton(SUPER_TRACK_QUEST, function() C_SuperTrack.SetSuperTrackedQuestID(id); p.Paint() end)
+			else
+				root:CreateButton(STOP_SUPER_TRACK_QUEST, function() C_SuperTrack.SetSuperTrackedQuestID(0); p.Paint() end)
+			end
+			local share = root:CreateButton(SHARE_QUEST, function() QuestMapQuestOptions_ShareQuest(id) end)
+			if not C_QuestLog.IsPushableQuest(id) or not IsInGroup() then share:SetEnabled(false) end
+			if C_QuestLog.CanAbandonQuest(id) then root:CreateButton(ABANDON_QUEST, function() abandon(id) end) end
+		end)
 	end
 
 	-- As the stock title button: a link into an open chat box, shift-click
 	-- tracks; a click opens its details and shows the quest's map with its
 	-- area in focus.
-	local function questClick(r)
+	local function questClick(r, button)
 		local id = r.psQuest
 		if ChatFrameUtil.TryInsertQuestLinkForQuestID(id) then return end
 		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+		if button == "RightButton" and not IsShiftKeyDown() then
+			if not C_QuestLog.IsQuestDisabledForSession(id) then questMenu(r) end
+			return
+		end
 		if IsShiftKeyDown() then
 			-- The stock toggle: it says so when too many are tracked.
 			if not C_QuestLog.IsQuestDisabledForSession(id) then QuestMapQuestOptions_TrackQuest(id) end
@@ -237,7 +317,7 @@ function ns.QuestLog(win, canvas, width)
 		r.Goals:SetWordWrap(true)
 		r.Goals:SetSpacing(2)
 		r.Goals:SetWidth(textW)
-		r:RegisterForClicks("LeftButtonUp")
+		r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 		r:SetScript("OnClick", questClick)
 		-- Its area on the map lights up, as from the stock log.
 		r:SetScript("OnEnter", function(self)
@@ -301,8 +381,11 @@ function ns.QuestLog(win, canvas, width)
 		r.Goals:SetShown(g ~= "")
 		local h = 8 + math.ceil(r.Name:GetStringHeight()) + (g ~= "" and 4 + math.ceil(r.Goals:GetStringHeight()) or 0) + 10
 		r:SetHeight(h)
+		-- The clicked quest on the selected wash; the focused one (the
+		-- client's super-tracked quest, as the stock list selects its
+		-- button) with the accent bar.
 		r.Sel:SetShown(info.questID == sel)
-		r.Bar:SetShown(info.questID == sel)
+		r.Bar:SetShown(info.questID == C_SuperTrack.GetSuperTrackedQuestID())
 	end
 
 	-- The log in its order: a header, then its quests unless folded. Hidden
@@ -473,7 +556,7 @@ function ns.QuestLog(win, canvas, width)
 
 	-- Abandon, as QuestMapQuestOptions_AbandonQuest and its popup's accept,
 	-- confirmed by our own dialog: StaticPopup is never driven from our code.
-	local function abandon(id)
+	function abandon(id)
 		local old = C_QuestLog.GetSelectedQuest()
 		C_QuestLog.SetSelectedQuest(id)
 		C_QuestLog.SetAbandonQuest()

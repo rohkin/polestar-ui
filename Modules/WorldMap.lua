@@ -278,6 +278,7 @@ function M.Enable()
 	local function quests() if f then f.psQuests.Paint() end end
 	Polestar.RegisterEvent("QUEST_LOG_UPDATE", quests)
 	Polestar.RegisterEvent("QUEST_WATCH_LIST_CHANGED", quests)
+	Polestar.RegisterEvent("SUPER_TRACKING_CHANGED", quests)
 	-- A filter changed from the stock map's menu or log (the level, colour, objectives).
 	Polestar.RegisterEvent("CVAR_UPDATE", quests)
 	-- A reward's item, loaded after the details first showed it.

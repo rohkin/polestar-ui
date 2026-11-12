@@ -11,6 +11,7 @@
 - Quest dialog: quest givers open Polestar's window: the offer with its objectives and rewards, progress with what you still need, and the reward choice with Polestar's best-pick marks.
 - Loot: the loot window in Polestar's look, at the cursor when the game's option is on, titled Fishing when fishing. Roll windows and loot confirmations stay the game's.
 - Auction House: the auctioneer in Polestar's look: search and categories, commodity buying with a quote that asks again if the price rises, item buyout and bids, posting with duration and deposit, and your auctions with cancel.
+- Quest log: right-click a quest to track, focus (point your guide to it), share or abandon it, or a header to track or untrack all its quests; the focused quest is marked, and a quest's tooltip lists its objectives.
 
 ## 0.0.5
 

@@ -235,3 +235,11 @@ GameTooltip_Hide = GameTooltip_Hide or function() GameTooltip:Hide() end
 QUEST_OBJECTIVES_FILTER_DESCRIPTION, QUEST_LEVEL_FILTER_DESCRIPTION = "Show quest objectives on the map.", "Show the level of each quest."
 QUEST_DIFFICULTY_FILTER_DESCRIPTION, TRIVIAL_QUESTS_FILTER_DESCRIPTION = "Colour quests by difficulty.", "Show quests far below your level."
 TRACKED_ITEMS_FILTER_DESCRIPTION = "Show tracked items on the map."
+
+-- The quest menus: watches added and removed one by one, and the focus (the
+-- client's super-tracked quest, none at first).
+function C_QuestLog.AddQuestWatch(id) stub.watched[id] = true end
+function C_QuestLog.RemoveQuestWatch(id) stub.watched[id] = nil end
+C_SuperTrack = { GetSuperTrackedQuestID = function() return stub.superTracked or 0 end, SetSuperTrackedQuestID = function(id) stub.superTracked = id end }
+TRACK_QUEST, UNTRACK_QUEST, SUPER_TRACK_QUEST, STOP_SUPER_TRACK_QUEST = "Track Quest", "Untrack Quest", "Focus Quest", "Unfocus Quest"
+SHARE_QUEST, ABANDON_QUEST, QUEST_LOG_TRACK_ALL, QUEST_LOG_UNTRACK_ALL = "Share Quest", "Abandon Quest", "Track All", "Untrack All"

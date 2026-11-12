@@ -28,6 +28,37 @@ stub.keys.shift = true
 row("Kobold Camp Cleanup"):Click()
 stub.keys.shift = false
 assert(not stub.watched[7], "shift-click track")
+-- Right-click: the stock title menu under its tag; focus is the client's super-track.
+stub.RunScript(row("Kobold Camp Cleanup"), "OnClick", "RightButton")
+local qm = stub.menu
+local function entry(m, t) for _, x in ipairs(m.items) do if x.text == t then return x end end end
+assert(qm.tag == "MENU_QUEST_MAP_LOG_TITLE" and entry(qm, TRACK_QUEST) and entry(qm, SUPER_TRACK_QUEST) and entry(qm, SHARE_QUEST).disabled and entry(qm, ABANDON_QUEST), "quest menu")
+assert(not q.Details:IsShown(), "a right-click opens no details")
+entry(qm, SUPER_TRACK_QUEST).click()
+assert(stub.superTracked == 7 and row("Kobold Camp Cleanup").Bar:IsShown() and not row("A Threat Within").Bar:IsShown(), "focused, marked")
+stub.RunScript(row("Kobold Camp Cleanup"), "OnEnter")
+assert(table.concat(GameTooltip.lines, "/"):find("Focused", 1, true) and table.concat(GameTooltip.lines, "/"):find("Kobold Vermin slain: 4/10", 1, true), "the stock tooltip's objectives, and the focus")
+stub.RunScript(row("Kobold Camp Cleanup"), "OnLeave")
+stub.RunScript(row("Kobold Camp Cleanup"), "OnClick", "RightButton")
+entry(stub.menu, STOP_SUPER_TRACK_QUEST).click()
+assert(stub.superTracked == 0, "unfocused")
+stub.RunScript(row("Kobold Camp Cleanup"), "OnClick", "RightButton")
+entry(stub.menu, TRACK_QUEST).click()
+assert(stub.watched[7] and row("Kobold Camp Cleanup").Tracked:IsShown(), "tracked from the menu")
+stub.RunScript(row("Kobold Camp Cleanup"), "OnClick", "RightButton")
+entry(stub.menu, ABANDON_QUEST).click()
+assert(PolestarModal:IsShown() and not stub.abandoned, "abandon asks first")
+PolestarModal.Box.Cancel:Click()
+-- A header's menu: track or untrack all its quests.
+stub.RunScript(row("Elwynn Forest"), "OnClick", "RightButton")
+assert(stub.menu.tag == "MENU_QUEST_MAP_FRAME", "header menu")
+entry(stub.menu, QUEST_LOG_UNTRACK_ALL).click()
+assert(not stub.watched[7] and not stub.watched[33] and not stub.watched[783], "untrack all")
+stub.RunScript(row("Elwynn Forest"), "OnClick", "RightButton")
+entry(stub.menu, QUEST_LOG_TRACK_ALL).click()
+assert(stub.watched[7] and stub.watched[33] and stub.watched[783] and not stub.watched[65] and row("Elwynn Forest"), "track all, its own quests only, not folded")
+stub.watched = { [33] = true }
+q.Paint()
 stub.chatOpen = true
 row("A Threat Within"):Click()
 stub.chatOpen = false

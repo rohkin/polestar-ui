@@ -41,7 +41,15 @@ zoom and click-to-open are the game's.
   (`QuestUtils_GetQuestTagAtlas`, account-wide first). Hover lights its area on the map (the
   canvas's `SetHighlightedQuestID`); a click shows its map with its area in
   focus, selects it and opens its details; shift-click tracks it (the stock
-  toggle); with a chat box open, a click links it. A search under the head
+  toggle); with a chat box open, a click links it. Right-click opens the
+  stock title menu (the game's Menu, `MENU_QUEST_MAP_LOG_TITLE`, so other
+  addons' entries join it): Track/Untrack, Focus (the client's super-track,
+  `C_SuperTrack`), Share (greyed unless pushable in a group) and Abandon
+  (our confirm). A header's right-click: Track all and Untrack all
+  (`MENU_QUEST_MAP_FRAME`). The focused quest carries the accent bar, the
+  clicked one the selected wash. The row's tooltip is the stock one: the
+  title, on hold or failed, the hand-in line or the objectives summary and
+  every objective (finished ones grey), then the hint. A search under the head
   (the sidebar's search box) matches a quest's title or what is left of it;
   searching, every match shows with its header open. At its right end, as
   Social's, a filter button (`sliders`, editbox ground; its glyph in the
