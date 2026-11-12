@@ -542,11 +542,23 @@ function ns.QuestLog(win, canvas, width)
 		child:SetWidth(width - 1)
 		W.SetScrollContent(d.Scroll, c.y + 16, p:GetHeight() - HEAD - 1 - FOOT)
 		-- The actions, as QuestMapFrame_UpdateQuestDetailsButtons allows them.
+		-- Disabled ones fade (ns.SetEnabled) and say why in their tooltip.
 		local disabled, watched = C_QuestLog.IsQuestDisabledForSession(id), QuestUtils_IsQuestWatched(id)
 		W.SetButtonText(d.Track, watched and "Untrack" or "Track")
-		d.Track:SetEnabled((watched and QuestUtil.CanRemoveQuestWatch()) or (not watched and not disabled))
+		local hold = disabled and "This quest is on hold for now." or nil
+		local why
+		if watched then
+			why = not QuestUtil.CanRemoveQuestWatch() and "This quest can't be untracked now." or nil
+		else
+			local max = Constants.QuestWatchConsts and Constants.QuestWatchConsts.MAX_QUEST_WATCHES
+			why = hold or (max and C_QuestLog.GetNumQuestWatches() >= max and ("You're tracking too many quests (%d at most). Untrack one first."):format(max)) or nil
+		end
+		ns.SetEnabled(d.Track, not why)
+		d.Track.psTip = why
 		d.Share:SetShown(not disabled and C_QuestLog.IsPushableQuest(id) and IsInGroup())
-		d.Abandon:SetEnabled(not disabled and C_QuestLog.CanAbandonQuest(id))
+		why = hold or (not C_QuestLog.CanAbandonQuest(id) and "You can't abandon this quest.") or nil
+		ns.SetEnabled(d.Abandon, not why)
+		d.Abandon.psTip = why
 	end
 
 	local listParts = { p.Title, p.Count, p.Filter, p.Search, line, p.Scroll }

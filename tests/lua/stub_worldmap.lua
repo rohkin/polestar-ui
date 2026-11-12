@@ -170,7 +170,10 @@ function C_QuestLog.IsAccountQuest() return false end
 function C_QuestLog.GetQuestTagInfo(id) return id == 65 and { tagID = 1 } or nil end
 function QuestUtils_GetQuestTagAtlas(tag) return tag == 1 and "questlog-questtypeicon-group" or nil end
 function C_QuestLog.IsPushableQuest(id) return sel().questID == id and sel().pushable or false end
-function C_QuestLog.CanAbandonQuest() return true end
+function C_QuestLog.CanAbandonQuest(id) return id ~= stub.noAbandon end
+function C_QuestLog.GetNumQuestWatches() local n = 0 for _ in pairs(stub.watched) do n = n + 1 end return n end
+Constants = Constants or {}
+Constants.QuestWatchConsts = { MAX_QUEST_WATCHES = 3 }
 function IsInGroup() return stub.inGroup or false end
 function QuestMapQuestOptions_ShareQuest(id) stub.shared = id end
 -- Abandoning: the quest set aside, then dropped from the log on AbandonQuest.

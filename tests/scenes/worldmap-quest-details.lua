@@ -46,6 +46,19 @@ d.Track:Click()
 assert(not stub.watched[7] and d.Track.Label:GetText() == "Track", "untracked")
 d.Track:Click()
 assert(stub.watched[7], "tracked")
+stub.watched[783], stub.watched[65] = true, true
+q.Paint()
+assert(d.Track:IsEnabled() and not d.Track.psTip, "untrack while too many are tracked")
+stub.watched[7] = nil
+q.Paint()
+assert(not d.Track:IsEnabled() and d.Track:GetAlpha() < 1 and d.Track.psTip:find("too many", 1, true), "track greyed with its reason")
+stub.watched[783], stub.watched[65], stub.watched[7] = nil, nil, true
+stub.noAbandon = 7
+q.Paint()
+assert(not d.Abandon:IsEnabled() and d.Abandon:GetAlpha() < 1 and d.Abandon.psTip == "You can't abandon this quest." and d.Track:IsEnabled(), "abandon greyed with its reason")
+stub.noAbandon = nil
+q.Paint()
+assert(d.Abandon:IsEnabled() and not d.Abandon.psTip, "abandon again")
 stub.inGroup = true
 q.Paint()
 assert(d.Share:IsShown(), "share in a group")

@@ -76,7 +76,10 @@ zoom and click-to-open are the game's.
   and its modified click; one the player cannot use has a red icon. A
   footer at the bottom: Abandon (danger) at the left, Share (only when the
   stock button is enabled: pushable, in a group) and Track/Untrack at the
-  right. Track and Share are the stock helpers; Abandon runs the stock
+  right. Track (greyed when the most quests are tracked, or the quest is on
+  hold) and Abandon (greyed when the client refuses it) fade as Polestar
+  disables (`ns.SetEnabled`), their tooltip saying why. Track and Share are
+  the stock helpers; Abandon runs the stock
   steps (`SetSelectedQuest`, `SetAbandonQuest`, then `AbandonQuest` on
   accept), confirmed by `W.Modal` in danger naming any items lost with it,
   never the stock popup. Redrawn on `QUEST_LOG_UPDATE` (and as a reward's
