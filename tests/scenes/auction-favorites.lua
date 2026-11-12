@@ -45,11 +45,11 @@ named("Whirlwind").Fav:Click()
 assert(not stub.favorites[6975], "past the most allowed")
 stub.maxFavorites = 3
 named("Whirlwind"):Click()
-local set = f.footerButtons.left[2]
+local set = f.footerButtons.left[3]
 assert(tostring(set.Label:GetText()) == "Set favorite", "the footer's favorite")
 set:Click()
-assert(stub.favorites[6975] and tostring(f.footerButtons.left[2].Label:GetText()) == "Remove favorite", "not set from the footer")
-f.footerButtons.left[2]:Click()
+assert(stub.favorites[6975] and tostring(f.footerButtons.left[3].Label:GetText()) == "Remove favorite", "not set from the footer")
+f.footerButtons.left[3]:Click()
 assert(not stub.favorites[6975], "not removed")
 
 -- Favorites lists them; the window opens on them.

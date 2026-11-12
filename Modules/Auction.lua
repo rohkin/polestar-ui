@@ -414,7 +414,8 @@ local function quoted(unit, total)
 	if not q then return end
 	if unit > q.unit * QUOTE_SLACK then return lost("The price went up too far since the search. Search again.") end
 	local up = unit > q.unit and (" The price went up by %s."):format(coins(total - q.total)) or ""
-	ask({ title = ("Buy %d %s?"):format(q.n, q.name or ""), action = "Buy",
+	local title = ("Buy %d %s?"):format(q.n, q.name or "")
+	ask({ title = title, action = "Buy",
 		text = ("It costs %s (%s each).%s"):format(coins(total), coins(unit), up),
 		onAccept = function()
 			quote = nil
@@ -424,6 +425,20 @@ local function quoted(unit, total)
 			quote = nil
 			AH.CancelCommoditiesPurchase()
 		end })
+	-- The quote's countdown, as the stock buy dialog's: its last ten seconds
+	-- in the title, and at none left the dialog closes (the quote dropped).
+	local spec = asked
+	f.psQuote:SetScript("OnUpdate", function(self)
+		local rem = AH.GetQuoteDurationRemaining()
+		if not (PolestarModal:IsShown() and PolestarModal.psSpec == spec) then
+			self:SetScript("OnUpdate", nil)
+		elseif rem <= 0 then
+			self:SetScript("OnUpdate", nil)
+			PolestarModal.Box.Cancel:Click()
+		else
+			PolestarModal.Box.Title:SetText(rem <= 10 and ("%s  %d"):format(title, rem) or title)
+		end
+	end)
 end
 
 -- The player's bids: the auctions bid on, kept per character as the stock
@@ -753,12 +768,32 @@ local function back()
 	paint()
 end
 
--- An item's listings: Back, and its favorite as the stock item display's star.
+-- The stock refresh button: the listings asked for again.
+local function refresh()
+	if not AH.HasSearchResults(view.key) then return research() end
+	if view.info.isCommodity then AH.RefreshCommoditySearchResults(view.info.itemID)
+	else AH.RefreshItemSearchResults(view.key, options().minLevel, options().maxLevel) end
+end
+
+-- An item's listings: Back, Refresh, and its favorite as the stock item display's star.
 local function viewFooter()
 	local k, on = view.key, AH.IsFavoriteItem(view.key)
-	return { { label = "Back", onClick = back },
+	return { { label = "Back", onClick = back }, { label = REFRESH or "Refresh", onClick = refresh, opts = { icon = "reload" } },
 		canFavorite(k) and { label = on and (AUCTION_HOUSE_DROPDOWN_REMOVE_FAVORITE or "Remove favorite") or (AUCTION_HOUSE_DROPDOWN_SET_FAVORITE or "Set favorite"),
 			onClick = function() setFavorite(k, not on) end, opts = { icon = "star" } } or nil }
+end
+
+-- A listing clicked: every unit up to its price, the player's own left out
+-- (AggregateCommoditySearchResultsByMaxPrice).
+local function pickPrice(row)
+	local id, max, n = view.info.itemID, row.psData.unitPrice, 0
+	for i = 1, AH.GetNumCommoditySearchResults(id) do
+		local r = AH.GetCommoditySearchResultInfo(id, i)
+		if not r or r.unitPrice > max then break end
+		n = n + r.quantity - (r.numOwnerItems or 0)
+	end
+	view.n = math.max(1, n)
+	paint()
 end
 
 local function paintCommodity()
@@ -766,12 +801,14 @@ local function paintCommodity()
 	local most = aggregate(id, math.huge)
 	view.n = math.max(1, math.min(view.n, most))
 	local got, total = aggregate(id, view.n)
-	W.ShellTitle(f, view.info.itemName, "Pick how many; Buy asks the auction house for its price first.")
+	-- The stock refresh frame: how many are up, and the list asked for again.
+	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetCommoditySearchResultsQuantity(id))))
 	W.ShellFooter(f, viewFooter(),
 		{ got > 0 and { label = ("Buy %d (%s)"):format(got, coins(total)), onClick = buyCommodity, opts = { primary = true } } or nil })
 	local strip = f.psBuy
 	strip.Stepper.Paint()
 	ns.SetMoney(strip.Total, total, total > GetMoney() and "danger" or nil)
+	ns.SetMoney(strip.Unit, got > 0 and math.ceil(total / got) or 0)
 	-- The stock commodity list: unit price and quantity, unsorted.
 	local cols = { { label = AUCTION_HOUSE_HEADER_UNIT_PRICE or "Unit Price", w = 170 }, { label = AUCTION_HOUSE_BROWSE_HEADER_QUANTITY or "Quantity", w = 110 } }
 	local y = header(72, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols)
@@ -781,13 +818,14 @@ local function paintCommodity()
 		local mine = (r.numOwnerItems or 0) > 0
 		local who = sellers(r)
 		fill(i, y, { key = view.key, line = mine and ("%s (%d yours)"):format(who, r.numOwnerItems) or who,
-			cells = { { money = r.unitPrice }, { text = count(r.quantity) } } }, cols)
+			cells = { { money = r.unitPrice }, { text = count(r.quantity) } }, data = r, click = pickPrice,
+			hint = "Click to buy every one listed up to this price." }, cols)
 	end
 	return n, y, "None listed."
 end
 
 local function paintItem()
-	W.ShellTitle(f, view.info.itemName, "Click an auction to buy it out; right-click to bid.")
+	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetItemSearchResultsQuantity(view.key))))
 	W.ShellFooter(f, viewFooter(), {})
 	local S = Enum.AuctionHouseSortOrder
 	-- The stock item list: current bid, buyout, quantity, time left.
@@ -1046,6 +1084,12 @@ local function build()
 	t:SetText("Total")
 	strip.Total = ns.Money(strip)
 	strip.Total:SetPoint("LEFT", t, "RIGHT", 10, 0)
+	local u = W.Text(strip, "small", "textDim")
+	u:SetPoint("LEFT", strip.Stepper, "RIGHT", 200, 0)
+	u:SetText(AUCTION_HOUSE_UNIT_PRICE_LABEL or "Unit price")
+	strip.Unit = ns.Money(strip)
+	strip.Unit:SetPoint("LEFT", u, "RIGHT", 10, 0)
+	f.psQuote = CreateFrame("Frame", nil, f)
 	f.psBuy = strip
 	f.psSell = buildSell()
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.AUCTION_WINDOW_OPEN) end)
@@ -1165,6 +1209,8 @@ function M.Enable()
 	Polestar.RegisterEvent("COMMODITY_PURCHASE_FAILED", function() lost("The purchase failed. Search again.") end)
 	Polestar.RegisterEvent("COMMODITY_PURCHASE_SUCCEEDED", function()
 		PlaySound(SOUNDKIT.LOOT_WINDOW_COIN_SOUND)
+		-- Back to one, as the stock buy display after a purchase.
+		if view then view.n = 1 end
 		research()
 	end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_PURCHASE_COMPLETED", research)

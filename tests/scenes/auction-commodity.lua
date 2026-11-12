@@ -1,7 +1,7 @@
 --@ title: Auction House: buying a commodity
 --@ roots: PolestarUIAuction, PolestarModal
 --@ stubs: stub_npc.lua, stub_auction.lua
--- A commodity opens its price list (the player's own units counted out) and a quantity stepper with the total at the listed prices. Buy asks the auction house for a quote (StartCommoditiesPurchase from the click) and shows it in our dialog; its Buy confirms (ConfirmCommoditiesPurchase from that click), Cancel drops the quote. A quote too far over the listed price, or none to be had, is dropped and said; a smaller rise is named in the dialog (shown last). The restricted calls error outside a click.
+-- A commodity opens its price list (the player's own units counted out), how many are up, and a quantity stepper with the unit price and total at the listed prices; a listing clicked picks every unit up to its price, and Refresh asks for the list again. Buy asks the auction house for a quote (StartCommoditiesPurchase from the click) and shows it in our dialog; its Buy confirms (ConfirmCommoditiesPurchase from that click), Cancel drops the quote. The quote's last ten seconds count down in the dialog's title, and at none left it closes and the quote is dropped, as the stock buy dialog. A quote too far over the listed price, or none to be had, is dropped and said; a smaller rise is named in the dialog (shown last). The restricted calls error outside a click.
 local T = Enum.PlayerInteractionType
 assert(not pcall(C_AuctionHouse.StartCommoditiesPurchase, 2589, 1, 1), "the stub's hardware check let a call through")
 stub.interact(T.Auctioneer)
@@ -18,6 +18,13 @@ for _, r in ipairs({ f.Body:GetChildren() }) do if r.psKey and r:IsShown() then 
 table.sort(rows, function(a, b) return a:GetTop() > b:GetTop() end)
 assert(#rows == 3 and tostring(rows[3].Cells[2].Text:GetText()) == "50" and tostring(rows[3].Line:GetText()) == "2 sellers (20 yours)", "the price list")
 
+assert(tostring(f.Subtitle:GetText()) == "350 available", "how many are up")
+-- A listing clicked: every unit up to its price.
+rows[2]:Click()
+assert(tostring(f.footerButtons.right[1].Label:GetText()):find("Buy 300 ", 1, true), "the listing's price not picked")
+-- Refresh.
+f.footerButtons.left[2]:Click()
+assert(stub.refreshed == 2589, "not refreshed")
 -- How many: Max is every unit not the player's own; the total adds the tiers up.
 f.psBuy.Stepper.Max:Click()
 local buy = f.footerButtons.right[1]
@@ -32,7 +39,20 @@ assert(PolestarModal:IsShown() and tostring(box.Title:GetText()) == "Buy 330 Lin
 assert(not tostring(box.Text:GetText()):find("went up"), "a rise named at the listed price")
 box.Action:Click()
 assert(stub.bought[1] == 2589 and stub.bought[2] == 330, "not bought")
+-- Back to one after a purchase, as the stock buy display.
+assert(tostring(buy.Label:GetText()):find("Buy 1 ", 1, true), "not back to one")
+f.psBuy.Stepper.Max:Click()
 
+-- The countdown: its last ten seconds in the title; at none left, closed and dropped.
+buy:Click()
+stub.quoteLeft = 8
+stub.advance(0.1)
+assert(tostring(box.Title:GetText()) == "Buy 330 Linen Cloth?  8", "the countdown: " .. tostring(box.Title:GetText()))
+stub.quoteLeft = 0
+stub.advance(0.1)
+assert(not PolestarModal:IsShown() and stub.quoteCancelled == 1 and stub.bought[2] == 330, "the quote not dropped at none left")
+stub.quoteLeft = 60
+stub.quoteCancelled = 0
 -- Too far over: dropped and said.
 stub.bought = nil
 stub.quoteUnit = 200

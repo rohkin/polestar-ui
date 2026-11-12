@@ -193,6 +193,12 @@ function AH.ConfirmCommoditiesPurchase(id, n)
 	stub.bought = { id, n }
 	stub.fire("COMMODITY_PURCHASE_SUCCEEDED")
 end
+stub.quoteLeft, stub.refreshed = 60, nil
+function AH.GetQuoteDurationRemaining() return stub.quoteLeft end
+function AH.HasSearchResults(k) return true end
+function AH.RefreshCommoditySearchResults(id) stub.refreshed = id; search(key(id)) end
+function AH.RefreshItemSearchResults(k) stub.refreshed = k.itemID; search(k) end
+function AH.GetItemSearchResultsQuantity(k) return #(stub.itemList[k.itemID] or {}) end
 function AH.CancelCommoditiesPurchase() stub.quoteCancelled = stub.quoteCancelled + 1 end
 function AH.PlaceBid(id, amount)
 	restricted("PlaceBid")
