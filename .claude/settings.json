@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run preview)",
+      "Bash(node tools/preview.js *)",
+      "Bash(node tools/new-window.js *)",
+      "PowerShell(npm test)",
+      "PowerShell(npm run preview)",
+      "PowerShell(node tools/preview.js *)",
+      "PowerShell(node tools/new-window.js *)"
+    ]
+  }
+}
