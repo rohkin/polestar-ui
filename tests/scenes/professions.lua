@@ -25,3 +25,6 @@ for _, t in ipairs(PolestarUIProfessions.railButtons) do if t:IsShown() then tab
 if t.psActive then on = t.psName end end end
 assert(tabs == 5 and on == "Overview", "tabs: " .. tabs)
 assert(select(2, PolestarUIProfessions.Main:GetPoint(1)) == PolestarUIProfessions, "main column hangs off the 0-wide sidebar (docs/CLIENT.md, rule 12)")
+-- A spell with no second line (a profession's, no rank or cost) has its name on the well's middle.
+local one = byName["Smelting"]
+assert(one.Sub:GetText() == "" and one.Name:GetPoint(1) == "LEFT", "name not centred: " .. tostring(one.Sub:GetText()))
