@@ -165,16 +165,70 @@ local function standingColor(reaction)
 	return Theme.Legible(c.r, c.g, c.b)
 end
 
+-- A faction's standing as the stock bar draws it, by its kind
+-- (GetReputationTypeFromElementData and the bar initializers): a friendship
+-- (its rank name, always green), a renown faction ("Renown 4", blue) or a
+-- standard one. Returns { text, frac, r, g, b, cur, max (nil when at the
+-- top), friend (the friendship data), paragon = { value, threshold, pending,
+-- low } (a paragon faction) }. Each kind shows only when the client has it.
+local function repStanding(d)
+	local id, st = d.factionID, {}
+	local friend = id and C_GossipInfo and C_GossipInfo.GetFriendshipReputation and C_GossipInfo.GetFriendshipReputation(id)
+	local lo, hi, cur, color
+	if friend and (friend.friendshipFactionID or 0) > 0 then
+		st.friend, st.text, color = friend, friend.reaction, 5
+		if friend.nextThreshold then lo, hi, cur = friend.reactionThreshold, friend.nextThreshold, friend.standing end
+	elseif id and C_Reputation.IsMajorFaction and C_Reputation.IsMajorFaction(id) then
+		local m = C_MajorFactions.GetMajorFactionData(id)
+		st.text = (RENOWN_LEVEL_LABEL or "Renown %d"):format(m and m.renownLevel or 0)
+		st.r, st.g, st.b = Theme.Legible(0, 0.44, 0.87) -- BLUE_FONT_COLOR
+		if not C_MajorFactions.HasMaximumRenown(id) then lo, hi, cur = 0, m and m.renownLevelThreshold or 0, m and m.renownReputationEarned or 0 end
+	else
+		st.text, color = GetText("FACTION_STANDING_LABEL" .. d.reaction, UnitSex("player")), d.reaction
+		if d.reaction ~= (MAX_REPUTATION_REACTION or 8) then lo, hi, cur = d.currentReactionThreshold, d.nextReactionThreshold, d.currentStanding end
+	end
+	if color then st.r, st.g, st.b = standingColor(color) end
+	if lo and hi > lo then
+		st.cur, st.max, st.frac = cur - lo, hi - lo, (cur - lo) / (hi - lo)
+	else
+		st.frac = 1
+	end
+	if id and C_Reputation.IsFactionParagonForCurrentPlayer and C_Reputation.IsFactionParagonForCurrentPlayer(id) then
+		local value, threshold, _, pending, low = C_Reputation.GetFactionParagonInfo(id)
+		st.paragon = { value = value, threshold = threshold, pending = pending, low = low }
+	end
+	return st
+end
+ns.CharacterRepStanding = repStanding
+
+-- The stock paragon tooltip lines (ReputationUtil.AddParagonRewardsToTooltip).
+local function paragonLines(d, st)
+	local p = st.paragon
+	GameTooltip:AddLine(" ")
+	if p.low then return GameTooltip:AddLine(PARAGON_REPUTATION_TOOLTIP_TEXT_LOW_LEVEL or "Reach a higher level to earn paragon rewards.", 1, 0.82, 0, true) end
+	GameTooltip:AddLine((PARAGON_REPUTATION_TOOLTIP_TEXT or "Continue earning reputation with %s to earn a reward."):format(d.name), 1, 0.82, 0, true)
+	if p.pending then
+		GameTooltip:AddLine("A reward waits: hand in its quest.", 0.1, 1, 0.1, true)
+	elseif p.value and p.threshold and p.threshold > 0 then
+		GameTooltip:AddLine(("%s / %s"):format(BreakUpLargeNumbers(p.value % p.threshold), BreakUpLargeNumbers(p.threshold)), 1, 1, 1)
+	end
+end
+ns.CharacterParagonLines = paragonLines
+
 local function repEnter(r)
 	local d = r.psData
 	if not d or d.isHeader and not d.isHeaderWithRep then return end
+	local st = repStanding(d)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
-	GameTooltip:SetText(d.name)
-	if d.description and d.description ~= "" then GameTooltip:AddLine(d.description, 1, 1, 1, true) end
-	local span = d.nextReactionThreshold - d.currentReactionThreshold
-	if span > 0 then
-		GameTooltip:AddLine(("%s / %s"):format(BreakUpLargeNumbers(d.currentStanding - d.currentReactionThreshold), BreakUpLargeNumbers(span)), 1, 1, 1)
+	-- A friendship's title carries its rank of all, as the stock tooltip.
+	local ranks = st.friend and C_GossipInfo.GetFriendshipReputationRanks and C_GossipInfo.GetFriendshipReputationRanks(st.friend.friendshipFactionID)
+	GameTooltip:SetText(ranks and (ranks.maxLevel or 0) > 0 and ("%s (%d / %d)"):format(d.name, ranks.currentLevel, ranks.maxLevel) or d.name)
+	local desc = st.friend and st.friend.text or d.description
+	if desc and desc ~= "" then GameTooltip:AddLine(desc, 1, 1, 1, true) end
+	if st.max then
+		GameTooltip:AddLine(("%s %s / %s"):format(st.friend and st.text or "", BreakUpLargeNumbers(st.cur), BreakUpLargeNumbers(st.max)):gsub("^ ", ""), 1, 1, 1)
 	end
+	if st.paragon then paragonLines(d, st) end
 	if d.isWatched then GameTooltip:AddLine("Shown on your experience bar.", 1, 1, 1) end
 	-- What a click does, for players new to it: a sub-header folds instead.
 	if not d.isHeader then ns.TooltipHint("Click for its details: at war, inactive, experience bar.") end
@@ -200,6 +254,14 @@ local repSpec = {
 		r.Chevron = W.Tex(r, "ARTWORK", "chevron-down", "textDim")
 		r.Chevron:SetSize(12, 12)
 		r.Chevron:SetPoint("RIGHT", r.Name, "LEFT", -6, 0)
+		r.Paragon = r:CreateTexture(nil, "ARTWORK")
+		r.Paragon:SetAtlas("ParagonReputation_Bag")
+		r.Paragon:SetSize(14, 16)
+		r.Paragon:SetPoint("RIGHT", r.Value, "LEFT", -6, 0)
+		r.ParagonCheck = r:CreateTexture(nil, "OVERLAY")
+		r.ParagonCheck:SetAtlas("ParagonReputation_Checkmark")
+		r.ParagonCheck:SetSize(10, 10)
+		r.ParagonCheck:SetPoint("CENTER", r.Paragon, "CENTER", 0, 0)
 		r:SetScript("OnEnter", repEnter)
 		r:SetScript("OnClick", repClick)
 	end,
@@ -216,13 +278,19 @@ local repSpec = {
 		local rep = not d.isHeader or d.isHeaderWithRep
 		r.Value:SetShown(rep)
 		r.Bar:SetShown(rep)
+		r.Paragon:Hide()
+		r.ParagonCheck:Hide()
 		if rep then
-			local cr, cg, cb = standingColor(d.reaction)
-			r.Value:SetText(GetText("FACTION_STANDING_LABEL" .. d.reaction, UnitSex("player")))
+			local st = repStanding(d)
+			r.Value:SetText(st.text)
 			W.Uncolor(r.Value)
-			if cr then r.Value:SetTextColor(cr, cg, cb, 1) else W.Color(r.Value, "textDim") end
-			local span = d.nextReactionThreshold - d.currentReactionThreshold
-			setBar(r, span > 0 and (d.currentStanding - d.currentReactionThreshold) / span or 1, cr, cg, cb)
+			if st.r then r.Value:SetTextColor(st.r, st.g, st.b, 1) else W.Color(r.Value, "textDim") end
+			setBar(r, st.frac, st.r, st.g, st.b)
+			-- A paragon faction's bag, checked when its reward waits.
+			if st.paragon then
+				r.Paragon:Show()
+				r.ParagonCheck:SetShown(st.paragon.pending and not st.paragon.low or false)
+			end
 		end
 	end,
 }

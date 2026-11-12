@@ -93,11 +93,6 @@ ns.CharacterDetailView = detailView
 -- Reputation: the chosen faction's standing, its bar and description, and
 -- the stock checkboxes: At war, Inactive, Show as experience bar.
 
-local function standingColor(reaction)
-	local c = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
-	if c then return Theme.Legible(c.r, c.g, c.b) end
-end
-
 ns.CharacterPanes.reputation = { page = "ReputationFrame", label = REPUTATION or "Reputation", order = 1,
 	build = function(holder) return detailView(holder, 3) end,
 	paint = function(sf)
@@ -110,20 +105,29 @@ ns.CharacterPanes.reputation = { page = "ReputationFrame", label = REPUTATION or
 		end
 		local c = sf.c
 		sf.psTitle = d.name
-		local cr, cg, cb = standingColor(d.reaction)
-		local standing = GetText("FACTION_STANDING_LABEL" .. d.reaction, UnitSex("player"))
-		local span = d.nextReactionThreshold - d.currentReactionThreshold
-		local line = c.text("label", "text", standing, 0)
-		if cr then W.Uncolor(line); line:SetTextColor(cr, cg, cb, 1) end
-		if span > 0 and d.reaction < (MAX_REPUTATION_REACTION or 8) then
-			local pts = c.text("number", "textDim", ("%s / %s"):format(BreakUpLargeNumbers(d.currentStanding - d.currentReactionThreshold), BreakUpLargeNumbers(span)), 0)
+		local st = ns.CharacterRepStanding(d)
+		local line = c.text("label", "text", st.text, 0)
+		if st.r then W.Uncolor(line); line:SetTextColor(st.r, st.g, st.b, 1) end
+		if st.max then
+			local pts = c.text("number", "textDim", ("%s / %s"):format(BreakUpLargeNumbers(st.cur), BreakUpLargeNumbers(st.max)), 0)
 			pts:ClearAllPoints()
 			pts:SetPoint("TOPRIGHT", line, "TOPRIGHT", 0, 0)
 			pts:SetJustifyH("RIGHT")
 			c.y = c.y - math.ceil(pts:GetStringHeight())
 		end
-		sf.bar(span > 0 and (d.currentStanding - d.currentReactionThreshold) / span or 1, cr, cg, cb)
-		if d.description and d.description ~= "" then c.text("body", "textDim", d.description, 14) end
+		sf.bar(st.frac, st.r, st.g, st.b)
+		local desc = st.friend and st.friend.text or d.description
+		if desc and desc ~= "" then c.text("body", "textDim", desc, 14) end
+		if st.paragon and not st.paragon.low then
+			local p = st.paragon
+			c.head("Paragon")
+			if p.pending then
+				c.text("body", "success", "A reward waits: hand in its quest.", 4)
+			elseif p.value and (p.threshold or 0) > 0 then
+				c.pair("Toward the next reward",
+					("%s / %s"):format(BreakUpLargeNumbers(p.value % p.threshold), BreakUpLargeNumbers(p.threshold)))
+			end
+		end
 		if C_Reputation.IsAccountWideReputation and d.factionID and C_Reputation.IsAccountWideReputation(d.factionID) then
 			c.text("small", "success", REPUTATION_TOOLTIP_ACCOUNT_WIDE_LABEL or "Account-wide", 10)
 		end

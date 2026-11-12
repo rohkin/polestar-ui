@@ -137,6 +137,10 @@ local FACTIONS = {
 	faction("Stormwind", 6, 11200, 9000, 21000, { isWatched = true }),
 	faction("Ironforge", 5, 4100, 3000, 9000),
 	faction("Darnassus", 4, 1500, 0, 3000),
+	faction("Dragon Isles", 0, 0, 0, 0, { isHeader = true }),
+	faction("Wrathion", 5, 0, 0, 0),
+	faction("Valdrakken Accord", 5, 0, 0, 0),
+	faction("Argent Crusade", 8, 42000, 42000, 42000),
 	faction("Classic", 0, 0, 0, 0, { isHeader = true, isCollapsed = true }),
 }
 for i, d in ipairs(FACTIONS) do d.factionID, d.canToggleAtWar, d.canSetInactive, d.atWarWith = 60 + i, not d.isHeader, not d.isHeader, false end
@@ -352,3 +356,18 @@ function GetInventoryItemCount(unit, id) return id == 0 and 200 or 1 end
 function IsInventoryItemLocked(id) return id == 8 end
 function GetInventoryItemEquippedUnusable(unit, id) return false end
 function GetInventoryItemCooldown(unit, id) if id == 10 then return 100, 120, 1 end return 0, 0, 0 end
+
+-- The other kinds of standing, each where the client has data: Wrathion a
+-- friendship (rank 3 of 5), the Valdrakken Accord a renown faction (renown 4),
+-- the Argent Crusade exalted with a paragon reward waiting.
+C_GossipInfo = { GetFriendshipReputation = function(id)
+	if id == 66 then return { friendshipFactionID = 66, reaction = "Ally", text = "Wrathion trusts you with his plans.", standing = 2500, reactionThreshold = 2000, nextThreshold = 4000 } end
+	return { friendshipFactionID = 0 }
+end, GetFriendshipReputationRanks = function(id) return { currentLevel = 3, maxLevel = 5 } end }
+C_Reputation.IsMajorFaction = function(id) return id == 67 end
+C_MajorFactions.GetMajorFactionData = function(id) return { renownLevel = 4, renownLevelThreshold = 2500, renownReputationEarned = 1000 } end
+C_MajorFactions.HasMaximumRenown = function(id) return false end
+C_Reputation.IsFactionParagonForCurrentPlayer = function(id) return id == 68 end
+C_Reputation.GetFactionParagonInfo = function(id) return 10000, 10000, 54321, true, false end
+FACTION_STANDING_LABEL8, RENOWN_LEVEL_LABEL = "Exalted", "Renown %d"
+FACTION_BAR_COLORS[8] = { r = 0, g = 0.6, b = 0.1 }
