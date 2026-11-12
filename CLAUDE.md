@@ -54,7 +54,9 @@ Widgets
 - `ns.Money(parent)` / `ns.SetMoney(m, copper, colorToken?)`: coin line as `GetMoneyString` writes it.
 - `ns.TextField(parent, w, letters?)`: one-line edit box (Enter and Escape leave it).
 - `ns.SetEnabled(button, on, why?)`: enable and fade to 45% as Polestar does; `why`, the reason a disabled one shows in its tooltip.
-- `ns.QuestRewards(parent, {x, width, tip, click, selected?})`: pooled text and reward tiles shared by Quest dialog and quest log; `c.Begin(y)`, `c.text/head/pair/tile`, `c.money(label, copper, color?)` (coins, `ns.Money`), `c.Rewards(id, d)`, `c.End()`, `c.y`.
+- `ns.QuestRewards(parent, {x, width, tip, click, selected?})`: pooled text and reward tiles shared by Quest dialog and quest log; `c.Begin(y)`, `c.text/head/pair/tile`, `c.money(label, copper, color?)` (coins, `ns.Money`), `c.Rewards(id, d)` (`d.chooseItems`: "Choose your reward:" on the complete step), `c.End()`, `c.y`.
+- `ns.NpcPortrait(f)`: the NPC portrait well and title in a shell band; returns `paint(unit)`. Shared by Gossip and Quest dialog.
+- `ns.FriendshipBar(parent)`: friendship NPC standing (icon, rank, Skill Bar, tooltip); `b.Paint()` shows or hides it. Shared by Gossip and Quest dialog.
 - `ns.MoneyInput(parent, onChange(copper))`: g/s/c fields; `m.Set(copper)`.
 - `ns.Stepper(parent, {get, set, max})`: -, count, +, Max; caller calls `s.Paint()` after its own changes.
 - `ns.ModalWith(spec, body)`: `W.Modal(spec)` with our frame (stepper, input) under its text.

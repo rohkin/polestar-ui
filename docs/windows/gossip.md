@@ -13,8 +13,8 @@ events and is unaffected.
 - **Body:** a friendship NPC's standing first (`NPCFriendshipStatusBarMixin`:
   `C_GossipInfo.GetFriendshipReputation(0)`; its icon or the heart, the rank,
   a Skill Bar to the next rank, the stock tooltip's lines), then the greeting.
-  `ns.NpcPortrait` and `ns.FriendshipBar` live here and serve the Quest dialog
-  too (Core helpers in all but name).
+  `ns.NpcPortrait` and `ns.FriendshipBar` are Core helpers that serve the
+  Quest dialog too.
 - **List:** in `GossipFrameSharedMixin:Update`'s order: quests to take, quests
   to hand in (the stock icons by quest ID, `QuestUtil.Get*ForQuestID`;
   trivial and ignored ones in textMuted with the icon greyed), then the

@@ -8,7 +8,7 @@ events only) and answers them. Off waits for `/reload`. Polestar's reward
 marks (`QoL.Rewards`, feature-detected) sit on our choices.
 - **Shell:** plain, 640×600. Band: the quest NPC's portrait and name
   (`questnpc`, the quest book with none, as `QuestFrame_SetPortrait`). A
-  friendship NPC's standing heads the body (`ns.FriendshipBar`, Gossip.lua).
+  friendship NPC's standing heads the body (`ns.FriendshipBar`, Core.lua).
 - **3D portrait:** the giver's on an offer (`GetQuestPortraitGiver`), the
   turn-in's on the reward page (`GetQuestPortraitTurnIn`), in a flyout off
   the right edge (`ns.Flyout`, `ns.DockFlyout`): our own
@@ -37,8 +37,7 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
   ours calls the client's function and the tracker draws it on its next
   update, without the item icon. The stock detail also hides the objectives
   and rewards until the text is in; ours shows them (World Map layout).
-  "Choose your reward:" (`REWARD_CHOOSE`) on the reward page is the shared
-  column's (Core.lua) to say. Quest text contrast and the parchment
+  Quest text contrast and the parchment
   materials are the stock art's.
 - **Polestar's chat line:** Polestar prints "Best reward: ..." when it could
   not mark the stock buttons (`Rewards.Mark` finds no `QuestInfoFrame`); with
