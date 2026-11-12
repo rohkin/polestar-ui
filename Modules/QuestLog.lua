@@ -529,7 +529,7 @@ function ns.QuestLog(win, canvas, width)
 			end
 		end
 		local need = C_QuestLog.GetRequiredMoney()
-		if need > 0 then c.pair("Required money", GetMoneyString(need), need > GetMoney() and "danger" or "text") end
+		if need > 0 then c.money("Required money", need, need > GetMoney() and "danger" or nil) end
 		local group = C_QuestLog.GetSuggestedGroupSize(id)
 		if group > 0 then c.text("small", "textDim", QUEST_SUGGESTED_GROUP_NUM:format(group), 8) end
 		if description and description ~= "" then

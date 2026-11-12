@@ -18,7 +18,8 @@ assert(not f.footerButtons.right[1]:IsEnabled(), "Continue enabled on an unfinis
 stub.quest.completable, stub.quest.have[50001], stub.quest.money = true, 4, 99999999
 stub.fire("QUEST_PROGRESS")
 assert(look(f.Body, "4/4") and f.footerButtons.right[1]:IsEnabled(), "completable")
-local m = look(f.Body, GetMoneyString(99999999))
+local m = look(f.Body, "9999") -- the gold on the coin line (ns.Money), not GetMoneyString
+assert(m and not look(f.Body, GetMoneyString(99999999)), "money as coins")
 local r, g, b = m:GetTextColor()
 local dr, dg, db = Polestar.Theme.Color("danger")
 assert(m and math.abs(r - dr) + math.abs(g - dg) + math.abs(b - db) < 0.01, "the money the player is short of is not in danger")

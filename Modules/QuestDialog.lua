@@ -94,7 +94,7 @@ local function required()
 	local nc = GetNumQuestCurrencies()
 	if money + n + nc == 0 then return end
 	c.text("heading", "text", "Required", 24)
-	if money > 0 then c.pair("Money", GetMoneyString(money), money > GetMoney() and "danger" or nil) end
+	if money > 0 then c.money("Money", money, money > GetMoney() and "danger" or nil) end
 	for i = 1, n do
 		if IsQuestItemHidden(i) == 0 then
 			local name, icon, need, q, usable, itemID = GetQuestItemInfo("required", i)

@@ -392,10 +392,12 @@ function ns.QuestRewards(parent, o)
 	local TILE = 32
 	local c = { y = 0 }
 	local texts, used, tiles, nTile = {}, {}, {}, 0
-	function c.Begin(y) used, nTile, c.y = {}, 0, y end
+	local monies, nMoney -- c.money's lines, below
+	function c.Begin(y) used, nTile, nMoney, c.y = {}, 0, 0, y end
 	function c.End()
 		for role, l in pairs(texts) do for i = (used[role] or 0) + 1, #l do l[i]:Hide() end end
 		for i = nTile + 1, #tiles do tiles[i]:Hide() end
+		for i = nMoney + 1, #monies do monies[i]:Hide() end
 	end
 	function c.text(role, color, s, gap, indent)
 		used[role] = (used[role] or 0) + 1
@@ -426,6 +428,20 @@ function ns.QuestRewards(parent, o)
 		v:SetPoint("TOPRIGHT", l, "TOPRIGHT", 0, 0)
 		v:SetJustifyH("RIGHT")
 		c.y = c.y - math.ceil(v:GetStringHeight())
+	end
+
+	-- A money fact: its name, and the coins (ns.Money) at the right of the same line.
+	monies = {}
+	function c.money(label, copper, color)
+		local l = c.text("body", "textDim", label, 8)
+		nMoney = nMoney + 1
+		local m = monies[nMoney] or ns.Money(parent)
+		monies[nMoney] = m
+		ns.SetMoney(m, copper, color)
+		m:ClearAllPoints()
+		m:SetPoint("RIGHT", l, "TOPRIGHT", 0, -math.ceil(l:GetStringHeight()) / 2)
+		m:Show()
+		return m
 	end
 
 	local function newTile()
@@ -573,7 +589,7 @@ function ns.QuestRewards(parent, o)
 				local share = levelShare(xp)
 				if share then c.text("small", "textMuted", share, 2):SetJustifyH("RIGHT") end
 			end
-			if money > 0 then c.pair("Money", GetMoneyString(money)) end
+			if money > 0 then c.money("Money", money) end
 			if skillPoints then c.tile(nil, nil, nil, d.skillName, d.skillIcon, skillPoints) end
 			for i = 1, items do
 				local name, icon, n, q, usable = d.reward(i)

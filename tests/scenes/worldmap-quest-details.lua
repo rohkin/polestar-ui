@@ -25,7 +25,7 @@ assert(has("4/10") and has("Kobold camp found"), "every objective")
 local checks = 0
 for _, r in ipairs({ d.Scroll.Child:GetRegions() }) do if r:IsShown() and r.GetTexture and r:GetTexture() == Polestar.Theme.Media("check") then checks = checks + 1 end end
 assert(checks == 1, "finished objective checked: " .. checks)
-assert(has(REWARD_CHOICES) and has("Militia Dagger") and has("Kobold Ear Charm") and has(REWARD_SPELL) and has("Healing Touch") and has(REWARD_ITEMS) and has("450 XP") and has("12s 50c") and has("Militia Buckler"), "rewards")
+assert(has(REWARD_CHOICES) and has("Militia Dagger") and has("Kobold Ear Charm") and has(REWARD_SPELL) and has("Healing Touch") and has(REWARD_ITEMS) and has("450 XP") and has("Money") and has("50") and not has("12s 50c") and has("Militia Buckler"), "rewards")
 assert(has("450 XP") and has("35% of level 24"), "XP share of the level")
 stub.xpMax = 100000
 q.Paint()
