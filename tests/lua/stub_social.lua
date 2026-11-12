@@ -154,7 +154,8 @@ stub.alliesReady = true
 C_RecentAllies = {
 	IsSystemEnabled = function() return true end,
 	IsRecentAllyDataReady = function() return stub.alliesReady end,
-	TryRequestRecentAlliesData = function() stub.alliesRequested = true end,
+	-- Restricted to the game's code: addon code may not call it.
+	TryRequestRecentAlliesData = function() stub.forbidden = "TryRequestRecentAlliesData" end,
 	GetRecentAllies = function()
 		return {
 			{ characterData = { guid = "Player-ROGUE-20", name = "Vessa", fullName = "Vessa-Realm", level = 23, classID = 4 },

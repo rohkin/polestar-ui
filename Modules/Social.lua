@@ -590,6 +590,9 @@ local function build()
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psEmpty:SetJustifyH("LEFT")
+	f.psEmpty:SetWordWrap(true)
 	-- The stock window's sounds: it never opens now to play them.
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB) end)
 	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.IG_MAINMENU_CLOSE) end)
@@ -653,7 +656,7 @@ local function refresh()
 		for _, e in ipairs(lists[page]) do if matches(e) then list[#list + 1] = e end end
 		if page == "friends" then list = withHeads(list) end
 		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
-		f.psEmpty:SetText(not ready and "Loading recent allies..." or (query ~= "" or next(filters)) and "No one matches." or p[3])
+		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab." or (query ~= "" or next(filters)) and "No one matches." or p[3])
 		h = paintRows(list)
 	end
 	W.ShellBody(f, h)
@@ -662,7 +665,8 @@ end
 function M.Show(key)
 	if not f then build() end
 	page = key or page
-	if page == "allies" and alliesOn() then C_RecentAllies.TryRequestRecentAlliesData() end
+	-- No TryRequestRecentAlliesData: it is restricted to the game's code; the
+	-- stock Recent Allies tab asks, and RECENT_ALLIES_DATA_READY fills ours.
 	refresh()
 	f:Show()
 end
@@ -682,7 +686,7 @@ function M.Enable()
 	})
 	local function changed() if f and f:IsShown() then refresh() end end
 	for _, ev in ipairs({ "FRIENDLIST_UPDATE", "IGNORELIST_UPDATE", "BN_DISCONNECTED", "BN_INFO_CHANGED", "GROUP_ROSTER_UPDATE", "PLAYER_REGEN_ENABLED",
-		"BN_FRIEND_INVITE_ADDED", "BN_FRIEND_INVITE_REMOVED", "BN_FRIEND_INVITE_LIST_INITIALIZED", "RECENT_ALLIES_CACHE_UPDATE" }) do
+		"BN_FRIEND_INVITE_ADDED", "BN_FRIEND_INVITE_REMOVED", "BN_FRIEND_INVITE_LIST_INITIALIZED", "RECENT_ALLIES_CACHE_UPDATE", "RECENT_ALLIES_DATA_READY" }) do
 		Polestar.RegisterEvent(ev, changed)
 	end
 	-- Battle.net reads also run hidden, so a window first opened in combat
