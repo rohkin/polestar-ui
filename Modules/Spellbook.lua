@@ -11,11 +11,7 @@ local f, section, query = nil, nil, ""
 local M = {}
 local rows = {}
 
--- Spell text the client may hand over secret in combat (docs/CLIENT.md, rule 3).
-local function clean(v)
-	if v == nil or (issecretvalue and issecretvalue(v)) then return nil end
-	return v
-end
+local clean = ns.Clean
 
 local function bank(name) return Enum.SpellBookSpellBank[name] end
 

@@ -19,10 +19,7 @@ local f
 local M = {}
 local cards = {}
 
-local function clean(v)
-	if v == nil or (issecretvalue and issecretvalue(v)) then return nil end
-	return v
-end
+local clean = ns.Clean
 
 -- The stock page's slots, in its order: two primaries, then Cooking, Fishing
 -- and First Aid, each with what the stock page says while it is empty.

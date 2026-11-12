@@ -65,6 +65,12 @@ function ns.GameIcon(parent, layer)
 	return t
 end
 
+-- A game value the client may hand over secret in combat (docs/CLIENT.md, rule 3): nil when it is.
+function ns.Clean(v)
+	if v == nil or (issecretvalue and issecretvalue(v)) then return nil end
+	return v
+end
+
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the
