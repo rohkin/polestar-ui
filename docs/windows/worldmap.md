@@ -23,6 +23,15 @@ zoom and click-to-open are the game's.
   scroll to zoom) is the sidebar rows' tooltip hint.
   A full-screen toggle at the band's bottom right, as the stock maximise
   (remembered; out of the dock while full).
+- **Map controls:** as the stock map's overlay frames, at the canvas's top
+  right (above the pins, unless a game rule turns them off): the filter
+  button (the quest log's menu and state, lit and counted as the log's, so
+  the filters work with the log shut), and under it the map pin
+  (`qol-target`; the stock pin button: while on, a click on the map sets the
+  player's waypoint through the stock waypoint provider,
+  `WaypointLocationToggleUpdate`; off again once a waypoint is set, on a new
+  map, or as the window hides; disabled where the map takes no waypoint,
+  its tooltip the stock lines).
 - **Zoom:** the canvas takes its zoom steps from the map art; where the art
   gives one (Forever's), ours adds 1.5×, 2.25× and 3×. Drag pans once zoomed.
 - **Quest Log:** a 320 flyout right of the canvas, under the band, on the

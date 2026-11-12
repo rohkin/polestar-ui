@@ -124,6 +124,54 @@ local function setFull(on)
 	ns.Relayout()
 end
 
+-- A game rule that turns a stock map control off (C_GameRules), as the stock map checks.
+local function ruled(name)
+	local r = Enum.GameRule and Enum.GameRule[name]
+	return r and C_GameRules and C_GameRules.IsGameRuleActive(r) or false
+end
+
+-- The stock map's controls over the canvas's top right (its overlay frames):
+-- the filter menu (the quest log's, one filter state for both, so it works
+-- with the log shut) and the map pin (WorldMapTrackingPinButtonMixin: while
+-- on, a click on the map sets the player's waypoint, through the stock
+-- waypoint provider). Above the pins, in the window's strata.
+local function mapControls()
+	local y = -8
+	local function place(b)
+		b:SetFrameLevel(canvas:GetFrameLevel() + 1500)
+		b:SetPoint("TOPRIGHT", canvas, "TOPRIGHT", -8, y)
+		Polestar.Theme.Skin(b, "editbox")
+		y = y - 30 - 6
+	end
+	if not ruled("WorldMapTrackingOptionsDisabled") then
+		f.psMapFilter = W.IconButton(f.Main, "sliders", 30, "Filter", function(self) f.psQuests.FilterMenu(self) end, 14)
+		place(f.psMapFilter)
+		f.psQuests.OnFilters = function() f.psQuests.PaintFilter(f.psMapFilter) end
+	end
+	if not ruled("WorldMapTrackingPinDisabled") then
+		local pin = W.IconButton(f.Main, "qol-target", 30, MAP_PIN or "Map Pin", function(self)
+			M.SetPinning(not self.psPinning)
+			PlaySound(self.psPinning and SOUNDKIT.UI_MAP_WAYPOINT_BUTTON_CLICK_ON or SOUNDKIT.UI_MAP_WAYPOINT_BUTTON_CLICK_OFF)
+		end, 14)
+		place(pin)
+		f.psPin = pin
+		-- A waypoint set (or cleared) ends the pinning, as the stock button.
+		Polestar.RegisterEvent("USER_WAYPOINT_UPDATED", function() M.SetPinning(false) end)
+	end
+end
+
+-- The pin button's state: on (the accent), and enabled where the map takes a waypoint.
+function M.SetPinning(on)
+	local b = f and f.psPin
+	if not b then return end
+	local can = C_Map.CanSetUserWaypointOnMap(canvas:GetMapID() or 0) and true or false
+	b.psPinning = on and can or false
+	W.SetIconState(b, b.psPinning, can)
+	b.psTipLines = can and { MAP_PIN_TOOLTIP or "Click on the map to place a pin you can track.", { MAP_PIN_TOOLTIP_INSTRUCTIONS or "", 0.1, 1, 0.1 } }
+		or { { MAP_PIN_INVALID_MAP or "You can't place a pin on this map.", 1, 0.13, 0.13 } }
+	canvas:TriggerEvent("WaypointLocationToggleUpdate", b.psPinning)
+end
+
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.sidebar + 2 + MAP_W, height = W.SHELL.header + 2 + MAP_H })
 	ns.Dock(f)
@@ -160,6 +208,7 @@ local function build()
 	f.psQuests = ns.QuestLog(f, canvas, QUEST_W)
 	f.psQuests:SetPoint("TOPRIGHT", f.Content, "TOPRIGHT", 0, 0)
 	f.psQuests:SetPoint("BOTTOMRIGHT", f.Content, "BOTTOMRIGHT", 0, 0)
+	mapControls()
 	-- A new size: the band's sky cropped again, never stretched.
 	f:HookScript("OnSizeChanged", function(self, w)
 		self.Band:SetTexCoord(Polestar.Theme.BandCoords(w - W.SHELL.sidebar - 2, W.SHELL.header))
@@ -174,6 +223,7 @@ local function build()
 		PlaySound(SOUNDKIT.IG_QUEST_LOG_OPEN)
 	end)
 	f:HookScript("OnHide", function()
+		M.SetPinning(false)
 		canvas:Hide()
 		PlaySound(SOUNDKIT.IG_QUEST_LOG_CLOSE)
 	end)
@@ -241,6 +291,12 @@ function M.Refresh()
 			b:HookScript("OnLeave", W.HideTooltip)
 		end
 	end
+	if f.psMapFilter then f.psQuests.PaintFilter(f.psMapFilter) end
+	-- A new map: the pin turned off, enabled where the map takes one.
+	if f.psPin and f.psPinMap ~= id then
+		f.psPinMap = id
+		M.SetPinning(false)
+	end
 	f.psLine:SetText(GetZoneText() or "")
 	-- The status line: the map this one lies in.
 	local parent = info.parentMapID and info.parentMapID > 0 and C_Map.GetMapInfo(info.parentMapID)
@@ -275,7 +331,11 @@ function M.Enable()
 	ns.Doors("map", "WorldMap", { TOGGLEWORLDMAP = M.Toggle, TOGGLEQUESTLOG = M.ToggleQuests }, QuestLogMicroButton, M.ToggleQuests)
 	Polestar.RegisterEvent("ZONE_CHANGED_NEW_AREA", M.Refresh)
 	Polestar.RegisterEvent("ZONE_CHANGED", M.Refresh)
-	local function quests() if f then f.psQuests.Paint() end end
+	local function quests()
+		if not f then return end
+		f.psQuests.Paint()
+		if f.psMapFilter then f.psQuests.PaintFilter(f.psMapFilter) end
+	end
 	Polestar.RegisterEvent("QUEST_LOG_UPDATE", quests)
 	Polestar.RegisterEvent("QUEST_WATCH_LIST_CHANGED", quests)
 	Polestar.RegisterEvent("SUPER_TRACKING_CHANGED", quests)

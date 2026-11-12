@@ -30,6 +30,8 @@ end
 -- (which the nav bar leaves out).
 function C_Map.IsMapValidForNavBarDropdown(id) return stub.caveListed and (id == 1429 or id == 1430) or false end
 MapUtil = { GetDisplayableMapForPlayer = function() return 37 end }
+-- A pin can go on a zone or a continent, not on Azeroth.
+function C_Map.CanSetUserWaypointOnMap(id) return id ~= 947 end
 function GetZoneText() return "Elwynn Forest" end
 C_QuestLog = C_QuestLog or {}
 function C_QuestLog.GetMaxNumQuests() return 25 end
