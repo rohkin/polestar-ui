@@ -9,8 +9,9 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
+const { POLESTAR_DIR } = require('./helpers/lua');
 const { SCENES, GOLDEN, render, loadFonts } = require('../tools/preview');
-const { audit, describe } = require('../tools/preview/fit');
+const { audit, describe } = require(path.join(POLESTAR_DIR, 'tools', 'preview', 'fit'));
 
 const out = render();
 const fonts = loadFonts();

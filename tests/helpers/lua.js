@@ -1,6 +1,6 @@
 'use strict';
 // Runs addon Lua under a real Lua 5.1 against tests/lua/wow_stub.lua.
-// From Polestar (GPL-3.0); only the addon folders below differ.
+// From Polestar (GPL-3.0); only the addon folders and the stub lookup below differ.
 //
 //   const { runAddon } = require('./helpers/lua');
 //   const [result] = runAddon({
@@ -34,6 +34,10 @@ const ROOT = path.join(__dirname, '..', '..');
 const POLESTAR_DIR = path.resolve(process.env.POLESTAR_DIR || path.join(ROOT, '..', 'polestar'));
 const ADDONS = path.join(POLESTAR_DIR, 'addon');
 const STUBS = path.join(ROOT, 'tests', 'lua');
+// The shared stubs (wow_stub.lua, stub_ui.lua, ...) come from Polestar's checkout;
+// tests/lua holds ours (stub_*.lua for our windows, wow_stub_local.lua over wow_stub.lua).
+const POLESTAR_STUBS = path.join(POLESTAR_DIR, 'tests', 'lua');
+const stubPath = (name) => (fs.existsSync(path.join(STUBS, name)) ? STUBS : POLESTAR_STUBS) + '/' + name;
 
 function norm(p) {
 	return p.replace(/\\/g, '/');
@@ -94,9 +98,8 @@ function luaString(s) {
 
 function buildProgram(opts) {
 	const lines = [];
-	lines.push(`package.path = ${luaString(STUBS + '/?.lua;')} .. package.path`);
-	lines.push(`dofile(${luaString(path.join(STUBS, 'wow_stub.lua'))})`);
-	for (const s of opts.stubs || []) lines.push(`dofile(${luaString(path.join(STUBS, s))})`);
+	lines.push(`package.path = ${luaString(STUBS + '/?.lua;' + POLESTAR_STUBS + '/?.lua;')} .. package.path`);
+	for (const s of ['wow_stub.lua', 'wow_stub_local.lua', ...(opts.stubs || [])]) lines.push(`dofile(${luaString(stubPath(s))})`);
 	if (opts.before) lines.push(opts.before);
 	lines.push(`local function __load(name, files, saved)
   local ns = {}
