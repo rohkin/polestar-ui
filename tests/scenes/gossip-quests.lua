@@ -1,6 +1,6 @@
 --@ title: Gossip: quests
 --@ roots: PolestarUIGossip
---@ stubs: stub_npc.lua, stub_gossip.lua
+--@ stubs: stub_npc.lua, stub_gossip.lua, stub_questdialog.lua
 -- Quests to hand in first (complete and not yet), then quests to take (a repeatable one, a trivial one in textMuted with its icon greyed), then the options. A long option wraps to a second line and its row grows. Picking a quest hands on to the quest dialog (the game's, until ours is built): ours closes without ending the gossip. QUEST_LOG_UPDATE redraws the list.
 -- Polestar's quest automation reads the guide engine, not loaded here: off, as a player may have it.
 Polestar.Set("behavior.autoAccept", false)

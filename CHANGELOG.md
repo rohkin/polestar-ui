@@ -8,6 +8,7 @@
 - Gossip: talking to an NPC opens Polestar's window: the greeting, quests to hand in and take, and the options with their icons; keys 1-9 pick. A vendor with one option opens straight away, as before.
 - Merchant: the vendor in Polestar's look: Buy and Buyback, prices in red when you can't afford them, click to buy one, right-click a stack, shift-click a count; Repair all, Guild repair, Sell junk, and Polestar's Restock with its total.
 - Trainer: the trainer in Polestar's look: categories with what you can learn, each spell's cost and needs, Train, and Polestar's Train all at your class trainer. Profession trainers ask before you learn.
+- Quest dialog: quest givers open Polestar's window: the offer with its objectives and rewards, progress with what you still need, and the reward choice with Polestar's best-pick marks.
 
 ## 0.0.5
 

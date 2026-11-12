@@ -190,7 +190,7 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 | Auction House (`AuctionHouseFrame`) | medium | planned, built last | [windows/auction.md](windows/auction.md) |
 | Trainer (`ClassTrainerFrame`) | medium | built | [windows/trainer.md](windows/trainer.md) |
 | Gossip (`GossipFrame`) | medium | built | [windows/gossip.md](windows/gossip.md) |
-| Quest dialog (`QuestFrame`) | medium | planned | [windows/questdialog.md](windows/questdialog.md) |
+| Quest dialog (`QuestFrame`) | medium | built | [windows/questdialog.md](windows/questdialog.md) |
 | Loot (`LootFrame`) | high | planned | [windows/loot.md](windows/loot.md) |
 | Game menu (`GameMenuFrame`) | high | dropped | [windows/gamemenu.md](windows/gamemenu.md) |
 | Tooltips (`GameTooltip` and the stock tooltips) | low | built | [windows/tooltips.md](windows/tooltips.md) |
