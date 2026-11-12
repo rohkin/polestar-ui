@@ -71,3 +71,11 @@ function stub.pressKey(key)
 		for _, k in ipairs(keys) do if k == key and stub.bindingRun[action] then stub.bindingRun[action]() end end
 	end
 end
+
+-- EditBox:SetText runs OnTextChanged (userInput false), as the client does.
+local setTextChanged = M.SetText
+function M.SetText(self, t)
+	local was = self.text
+	setTextChanged(self, t)
+	if self.kind == "EditBox" and self.text ~= was then stub.RunScript(self, "OnTextChanged", false) end
+end

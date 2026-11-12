@@ -59,3 +59,4 @@ f:Hide()
 stub.browseQuery = nil
 stub.interact(T.Auctioneer)
 assert(stub.browseQuery and stub.browseQuery.favorites and #rows() == 2 and nav("Favorites").Selected:IsShown(), "not opened on the favorites")
+assert(not f.Search.Clear:IsShown() and f.Search.Placeholder:IsShown(), "the search box kept its clear button with no text")
