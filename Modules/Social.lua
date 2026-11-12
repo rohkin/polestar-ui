@@ -10,7 +10,7 @@ local NAME = "PolestarUISocial"
 local ROW_H, HEAD_H, RAID_H, COL_GAP = 44, 32, 28, 24
 
 local f, page, query = nil, "friends", ""
-local collapsed, lastSearch = {}, nil
+local collapsed = {}
 -- Each list's own filter picks, as the stock Friends and Recent Allies tabs keep them.
 local filterSets = { friends = {}, allies = {} }
 local M = {}
@@ -71,27 +71,46 @@ local function tagValue(t)
 	return v
 end
 
--- The search info for the checked filters, nil when none is.
-local function searchInfo()
-	local info, on = { searchText = "", tags = {} }, false
-	for _, o in ipairs(STATUS) do
-		info[o[1]] = filterSets.friends[o[1]] or false
-		on = on or info[o[1]]
+-- Battle.net friends in a queue or free for one (no account field says so):
+-- the client's search found them at the last filter pick. shortcut:
+-- C_BattleNet.SearchFriends is restricted, so it runs only from that click and
+-- the queue picks hold until the next one; read it live once seen to work in game.
+local queued
+
+local function searchQueue()
+	local s = filterSets.friends
+	queued = nil
+	if not (s.isInQueue or s.isAvailableForQueue) then return end
+	queued = {}
+	local found = C_BattleNet.SearchFriends({ searchText = "", isOnline = false, isOffline = false, isAFK = false, isDND = false,
+		isInQueue = s.isInQueue or false, isAvailableForQueue = s.isAvailableForQueue or false, tags = {} })
+	for _, i in ipairs(found or {}) do
+		local a = C_BattleNet.GetFriendAccountInfo(i)
+		if a then queued[a.bnetAccountID] = true end
 	end
-	for _, list in ipairs({ INTERESTS, ROLES }) do
-		for _, t in ipairs(list) do
-			local v = filterSets.friends[t[1]] and tagValue(t)
-			if v then info.tags[#info.tags + 1] = v; on = true end
-		end
-	end
-	return on and info or nil
 end
 
--- WoW friends have no tags or queue state: only the presence filters keep them.
-local function wowShown(info, connected, afk, dnd)
-	if not info then return true end
-	if #info.tags > 0 or info.isInQueue or info.isAvailableForQueue then return false end
-	return (info.isOnline and connected) or (info.isAFK and afk) or (info.isDND and dnd) or (info.isOffline and not connected) or false
+-- The checked filters as the stock list's search applies them: any checked
+-- status, then any checked tag. WoW friends have no tags or queue state.
+local function friendShown(online, afk, dnd, tags, id)
+	local s = filterSets.friends
+	local status = false
+	for _, o in ipairs(STATUS) do status = status or s[o[1]] or false end
+	if status and not ((s.isOnline and online) or (s.isAFK and afk) or (s.isDND and dnd) or (s.isOffline and not online)
+		or (id and queued and queued[id])) then
+		return false
+	end
+	local want, has = false, false
+	for _, list in ipairs({ INTERESTS, ROLES }) do
+		for _, t in ipairs(list) do
+			local v = s[t[1]] and tagValue(t)
+			if v then
+				want = true
+				for _, x in ipairs(tags or {}) do if x == v then has = true end end
+			end
+		end
+	end
+	return not want or has
 end
 
 -- The stock friend card's tooltip (FriendsListSocialCardMixin:BuildTooltip):
@@ -169,20 +188,10 @@ end
 -- favorites, then online Battle.net and WoW friends, then offline ones; the
 -- client already lists each kind online first, favorites first.
 local function friends()
-	local list, filter = {}, searchInfo()
-	-- The client's own filter for Battle.net friends (presence, queue, tags);
-	-- in combat the last result stands.
-	local bnShown
-	if filter then
-		if not InCombatLockdown() then
-			lastSearch = {}
-			for _, i in ipairs(C_BattleNet.SearchFriends(filter) or {}) do lastSearch[i] = true end
-		end
-		bnShown = lastSearch or {}
-	end
+	local list = {}
 	for i = 1, C_FriendList.GetNumFriends() do
 		local info = C_FriendList.GetFriendInfoByIndex(i)
-		if info and wowShown(filter, info.connected, info.afk, info.dnd) then
+		if info and friendShown(info.connected, info.afk, info.dnd) then
 			list[#list + 1] = { name = info.name, online = info.connected, class = classFile(info.guid),
 				rank = info.connected and 2 or 4, order = i, canInvite = info.connected,
 				status = not info.connected and "offline" or info.dnd and "busy" or info.afk and "away" or "online",
@@ -219,7 +228,7 @@ local function friends()
 			-- Favorites are set from the right-click menu, as in the stock list.
 			-- The client's own icon (Battle.net app, WoW...), faded for another WoW project, as the stock card.
 			local client = g.isOnline and g.clientProgram ~= "" and g.clientProgram or nil
-			if not bnShown or bnShown[i] then list[#list + 1] = { name = name, char = char, online = g.isOnline, sub = sub,
+			if friendShown(g.isOnline, a.isAFK or g.isGameAFK, a.isDND or g.isGameBusy, a.friendTags, id) then list[#list + 1] = { name = name, char = char, online = g.isOnline, sub = sub,
 				client = client, subIcon = g.subIcon, faded = client == BNET_CLIENT_WOW and g.wowProjectID ~= WOW_PROJECT_ID,
 				bnet = true, favorite = a.isFavorite, rank = a.isFavorite and 0 or g.isOnline and 1 or 3, order = 1000 + i,
 				status = status, canInvite = g.isOnline and char ~= nil,
@@ -938,6 +947,7 @@ local function filterItems()
 				end
 				items[#items + 1] = { text = o[2] or o[1], checked = filters[k], onClick = function()
 					filters[k] = not filters[k] or nil
+					if page == "friends" then searchQueue() end -- from the click (restricted)
 					M.Show()
 					W.ShowMenu(f.psFilter, filterItems(), { minWidth = 200 })
 				end }
@@ -956,7 +966,11 @@ local function filterItems()
 	end
 	if next(filters) then
 		items[#items + 1] = { separator = true }
-		items[#items + 1] = { text = "Clear filters", onClick = function() filterSets[page] = {}; M.Show() end }
+		items[#items + 1] = { text = "Clear filters", onClick = function()
+			filterSets[page] = {}
+			if page == "friends" then queued = nil end
+			M.Show()
+		end }
 	end
 	return items
 end

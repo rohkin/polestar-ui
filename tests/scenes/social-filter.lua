@@ -2,8 +2,9 @@
 --@ roots: PolestarUISocial, PolestarMenu
 --@ stubs: stub_social.lua
 -- As the stock friends list: search "for keywords"; a Filter menu (Status, then the tags this
--- game type has as Interests and Roles, no Delves) that filters through C_BattleNet.SearchFriends
--- and keeps WoW friends only for presence filters; Favorites and Friends groups that fold; a
+-- game type has as Interests and Roles, no Delves) that filters presence and tags itself and asks
+-- the restricted C_BattleNet.SearchFriends only for queue picks, from the click; WoW friends stay only
+-- for presence filters; Favorites and Friends groups that fold; a
 -- presence pip and an invite button on each friend; the player's presence and BattleTag in the subject block.
 PolestarUI.Show("social", "friends")
 local f = PolestarUISocial
@@ -49,9 +50,9 @@ assert(row("Mira"), "unfold")
 f.psFilter:Click()
 assert(PolestarMenu:IsShown(), "no filter menu")
 assert(menuTexts() == "Status,Online,Away,Busy,Offline,In Queue,Available For Queue,Interests,Professions,PvP,Raiding,Dungeons,Questing,Roleplaying,Roles,DPS,Healer,Tank", "menu: " .. menuTexts())
--- Away: Mira through the client's search, Brannoc as a WoW friend; the menu stays open.
+-- Away: Mira as a Battle.net friend, Brannoc as a WoW friend, with no restricted search; the menu stays open.
 menuRow("Away"):Click()
-assert(stub.searchInfo.isAFK and not stub.searchInfo.isOnline and #stub.searchInfo.tags == 0, "search info")
+assert(stub.searchInfo == nil, "restricted search for presence")
 assert(PolestarMenu:IsShown() and menuRow("Away").psItem.checked, "menu closed on a pick")
 assert(row("Mira") and row("Brannoc") and not row("Jon") and not row("Aelric") and not row("Sefa"), "away filter")
 assert(row("Friends 2/2") and not row("Favorites 0/1"), "group counts follow the filter")
@@ -59,8 +60,19 @@ assert(f.psFilter.psActive and f.psFilter.psTip == "Filter (1 on)", "filter coun
 -- A tag keeps Battle.net friends only.
 menuRow("Away"):Click()
 menuRow("Raiding"):Click()
-assert(stub.searchInfo.tags[1] == Enum.BattleNetFriendTag.Raiding, "tag search")
+assert(stub.searchInfo == nil, "restricted search for a tag")
 assert(row("Sefa") and row("Mira") and not row("Jon") and not row("Brannoc"), "tag filter")
+-- A queue pick asks the client's search from the click; a later redraw never does.
+menuRow("Raiding"):Click()
+menuRow("Available For Queue"):Click()
+assert(stub.searchInfo and stub.searchInfo.isAvailableForQueue and not stub.searchInfo.isAFK, "queue search")
+stub.searchInfo = nil
+stub.fire("BN_FRIEND_INFO_CHANGED")
+assert(stub.searchInfo == nil, "restricted search off a click")
+assert(row("Mira") and not row("Aelric"), "queue filter")
+if not PolestarMenu:IsShown() then f.psFilter:Click() end
+menuRow("Available For Queue"):Click()
+menuRow("Raiding"):Click()
 PolestarUI.Show("social", "friends")
 -- The player's presence in the subject block: the BattleTag, a dot on the icon; a pick sets it through C_BattleNet.
 local st = f.psStatus
