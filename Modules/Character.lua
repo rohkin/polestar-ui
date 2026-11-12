@@ -374,7 +374,7 @@ local OWN = {} -- the scratch row's own keys; any other is the stock function's
 
 -- Runs fn on the scratch row: true, label, value, its fields (numericValue,
 -- tooltip, onEnterFunc ...), shown; nil when it fails or reads secret.
-local function runStock(fn)
+local function runStock(fn, unit)
 	if not scratch then
 		scratch = CreateFrame("Button", nil, UIParent)
 		scratch:SetAlpha(0)
@@ -388,7 +388,7 @@ local function runStock(fn)
 	scratch:Show()
 	scratch.Label:SetText("")
 	scratch.Value:SetText("")
-	if not pcall(fn, scratch, "player") then return end
+	if not pcall(fn, scratch, unit or "player") then return end
 	local label, value = scratch.Label:GetText(), scratch.Value:GetText()
 	if secret(label) or secret(value) or secret(scratch.numericValue) then return end
 	local fields = {}
@@ -399,15 +399,16 @@ end
 
 -- Fills row r from one stock stat function; true when the stat is to be shown.
 -- In combat, or when the read fails, it shows what the stat last read.
-local function fill(r, fn, hideAt)
+local function fill(r, fn, hideAt, unit)
 	for k in pairs(r.psFields or {}) do r[k] = nil end
 	r:Show()
 	local ok, label, value, fields, shown
-	if not InCombatLockdown() then ok, label, value, fields, shown = runStock(fn) end
+	local key = (unit or "player") .. tostring(fn)
+	if not InCombatLockdown() then ok, label, value, fields, shown = runStock(fn, unit) end
 	if ok then
-		lastRead[fn] = { label, value, fields }
+		lastRead[key] = { label, value, fields }
 	else
-		local last = lastRead[fn]
+		local last = lastRead[key]
 		if not last then return false end
 		label, value, fields, shown = last[1], last[2], last[3], true
 	end
@@ -418,12 +419,30 @@ local function fill(r, fn, hideAt)
 	return shown and (hideAt == nil or hideAt ~= fields.numericValue)
 end
 
--- { name, { { fn, hideAt }, ... } } for the player's categories, in the
--- stock order.
-local function statCategories()
+local refresh, statsShown, repairLine -- below
+
+-- The stock pane's resistance rows (CharacterStatsPaneScrollBoxMixin:UpdateStats),
+-- written the way a stock stat function writes a row.
+local RESISTANCES = {}
+for _, e in ipairs({ { "DAMAGE_SCHOOL7", "Arcane" }, { "DAMAGE_SCHOOL3", "Fire" }, { "DAMAGE_SCHOOL5", "Frost" },
+	{ "DAMAGE_SCHOOL4", "Nature" }, { "DAMAGE_SCHOOL6", "Shadow" } }) do
+	RESISTANCES[#RESISTANCES + 1] = function(r, unit)
+		local name, class = _G[e[1]] or e[2], Enum.Damageclass and Enum.Damageclass[e[2]]
+		local _, _, effective, bonus = UnitResistance(unit, class)
+		r.Label:SetText((STAT_FORMAT or "%s:"):format(name))
+		local text = BreakUpLargeNumbers(effective)
+		r.Value:SetText(PaperDollFrame_FormatBonusValue and PaperDollFrame_FormatBonusValue(text, bonus) or text)
+		if PaperDollFrame_SetResistanceTooltips then PaperDollFrame_SetResistanceTooltips(r, name, effective, unit, class) end
+		r.numericValue = effective
+	end
+end
+
+-- { name, { { fn, hideAt }, ... } } for the unit's categories, in the stock
+-- order, then its resistances.
+local function statCategories(unit)
 	local cats = {}
 	for _, c in ipairs(PAPERDOLL_STATCATEGORIES or {}) do
-		if (c.unit or "player") == "player" then
+		if (c.unit or "player") == unit then
 			local list = {}
 			for _, st in ipairs(c.stats) do
 				local info = PAPERDOLL_STATINFO[st.stat]
@@ -434,25 +453,23 @@ local function statCategories()
 			cats[#cats + 1] = { c.categoryName, list }
 		end
 	end
+	if UnitResistance then
+		local list = {}
+		for _, fn in ipairs(RESISTANCES) do list[#list + 1] = { fn } end
+		cats[#cats + 1] = { STAT_CATEGORY_RESISTANCE or "Resistance", list }
+	end
 	return cats
 end
 
--- The drawer: its own window skin, flush with the window's right edge, its
--- heading over a scrolling column.
-local function buildStats()
-	local d = ns.Flyout(f, NAME .. "Stats", STATS_W)
-	local title = W.Text(d, "heading", "text")
-	title:SetPoint("LEFT", d, "TOPLEFT", 24, -STATS_TOP / 2)
-	title:SetText("Stats")
-	d.Scroll = W.Scroll(d)
-	d.Scroll:SetPoint("TOPLEFT", d, "TOPLEFT", 0, -STATS_TOP)
-	d.Scroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -4, 4)
-	local v = d.Scroll.Child
+-- A scrolling column of stat categories, filling `parent`.
+local function statsView(parent)
+	local sf = W.Scroll(parent)
+	sf:SetAllPoints(parent)
+	local v = sf.Child
 	v:SetWidth(STATS_W - 4)
 	v.colW = STATS_W - 48
 	v.sections = {}
-	d.Body = v
-	return d
+	return sf
 end
 
 -- The folded categories, by name, for every character (PolestarUIDB.statsFolded).
@@ -465,7 +482,8 @@ local paintStats
 
 -- A category: its heading (the chevron in the gutter and the heading fold it)
 -- over its row panel.
-local function statSection(v)
+local function statSection(sf)
+	local v = sf.Child
 	local s = { Head = W.SectionHeader(v), Panel = W.RowPanel(v), rows = {} }
 	s.Head:SetWidth(v.colW)
 	s.Panel:SetWidth(v.colW)
@@ -477,26 +495,26 @@ local function statSection(v)
 	s.Hit:SetPoint("BOTTOMRIGHT", s.Head, "BOTTOMRIGHT", 0, 0)
 	s.Hit:SetScript("OnClick", function()
 		folded()[s.name] = not folded()[s.name] or nil
-		paintStats()
+		paintStats(sf, sf.psUnit, sf.psTop)
 	end)
 	s.Hit:SetScript("OnEnter", function() W.Color(s.Chevron, "text") end)
 	s.Hit:SetScript("OnLeave", function() W.Color(s.Chevron, "textDim") end)
 	return s
 end
 
--- Lays the categories out down the drawer and sets its scroll.
-function paintStats()
-	local d = f.psStats
-	local v, y = d.Body, 0
-	local cats = statCategories()
+-- Lays the unit's categories out down the column from `top` and sets its scroll.
+function paintStats(sf, unit, top)
+	sf.psUnit, sf.psTop = unit, top or 0
+	local v, y = sf.Child, top or 0
+	local cats = statCategories(unit)
 	for i, cat in ipairs(cats) do
-		local s = v.sections[i] or statSection(v)
+		local s = v.sections[i] or statSection(sf)
 		v.sections[i] = s
 		s.name = cat[1]
 		local n = 0
 		for _, e in ipairs(cat[2]) do
 			local r = statRow(s, n + 1)
-			if fill(r, e[1], e[2]) then
+			if fill(r, e[1], e[2], unit) then
 				n = n + 1
 			else
 				r:Hide()
@@ -519,10 +537,127 @@ function paintStats()
 		v.sections[i].Head:Hide()
 		v.sections[i].Panel:Hide()
 	end
-	W.SetScrollContent(d.Scroll, y, f:GetHeight() - STATS_TOP - 4)
+	W.SetScrollContent(sf, y, f:GetHeight() - STATS_TOP - 4)
+end
+ns.CharacterStats = paintStats -- the pet pane's
+
+---------------------------------------------------------------------------
+-- The drawer: the stock window's right pane, docked flush to the window's
+-- right edge. Each section has its panes there (ns.CharacterPanes): the
+-- Character page's Stats, Gear sets, Titles and Pet as tabs along its top;
+-- another section's one pane (the details of what is selected) under its
+-- heading.
+--   ns.CharacterPanes[key] = { page = section, label, order, shown = fn?,
+--     build = fn(parent) -> view, paint = fn(view) }
+-- A pane fills the drawer under its top band and is painted out of combat
+-- only; paint may set view.psTitle, the heading of a pane without tabs.
+
+ns.CharacterPanes = ns.CharacterPanes or {}
+local paneSel = {} -- section -> the pane chosen there
+
+ns.CharacterPanes.stats = { page = "PaperDollFrame", label = "Stats", order = 1,
+	build = statsView, paint = function(sf) paintStats(sf, "player") end }
+ns.CharacterStatsView = statsView
+
+-- The section's panes in order: { key, ... }.
+local function panesOf(page)
+	local list = {}
+	for key, p in pairs(ns.CharacterPanes) do
+		if p.page == page and (not p.shown or p.shown()) then list[#list + 1] = key end
+	end
+	table.sort(list, function(a, b) return ns.CharacterPanes[a].order < ns.CharacterPanes[b].order end)
+	return list
 end
 
-local refresh, statsShown, repairLine -- below
+local function buildDrawer()
+	local d = ns.Flyout(f, NAME .. "Stats", STATS_W)
+	d.Title = W.Text(d, "heading", "text")
+	d.Title:SetPoint("LEFT", d, "TOPLEFT", 24, -STATS_TOP / 2)
+	d.Title:SetPoint("RIGHT", d, "TOPRIGHT", -24, -STATS_TOP / 2)
+	d.Title:SetJustifyH("LEFT")
+	d.Tabs, d.panes = {}, {}
+	for key, p in pairs(ns.CharacterPanes) do
+		local holder = CreateFrame("Frame", nil, d)
+		holder:SetPoint("TOPLEFT", d, "TOPLEFT", 0, -STATS_TOP)
+		holder:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -4, 4)
+		holder:SetSize(STATS_W - 4, f:GetHeight() - STATS_TOP - 4)
+		local v = p.build(holder)
+		holder.psView, holder.psPaint = v, p.paint
+		holder:Hide()
+		d.panes[key] = holder
+	end
+	d.Body = d.panes.stats.psView.Child -- the stats column (scenes)
+	return d
+end
+
+-- A tab along the drawer's top: its label, the accent line under the chosen one.
+local function drawerTab(d, i)
+	local t = d.Tabs[i]
+	if t then return t end
+	t = CreateFrame("Button", nil, d)
+	t:SetHeight(28)
+	t.Label = W.Text(t, "label", "textDim")
+	t.Label:SetPoint("CENTER", t, "CENTER", 0, 0)
+	t.Line = W.Fill(t, "accent", "ARTWORK", 0)
+	t.Line:ClearAllPoints()
+	t.Line:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, 0)
+	t.Line:SetPoint("BOTTOMRIGHT", t, "BOTTOMRIGHT", 0, 0)
+	t.Line:SetHeight(2)
+	t:SetScript("OnClick", function(self)
+		paneSel[section] = self.psKey
+		refresh()
+	end)
+	t:SetScript("OnEnter", function(self) if not self.psOn then W.Color(self.Label, "text") end end)
+	t:SetScript("OnLeave", function(self) if not self.psOn then W.Color(self.Label, "textDim") end end)
+	d.Tabs[i] = t
+	return t
+end
+
+-- Paints a pane out of combat; in combat it keeps what it drew.
+local function paintPane(holder)
+	if InCombatLockdown() then return end
+	local ok, err = pcall(holder.psPaint, holder.psView)
+	if not ok then geterrorhandler()(err) end
+end
+
+-- The pane chosen on the section shown.
+local function currentPane()
+	local list = panesOf(section)
+	local cur = paneSel[section]
+	for _, k in ipairs(list) do if k == cur then return cur, list end end
+	return list[1], list
+end
+function ns.CharacterPane() return f and f.psStats:IsShown() and currentPane() end
+
+-- Shows the section's chosen pane, with tabs on the Character page.
+local function paintDrawer()
+	local d = f.psStats
+	local cur, list = currentPane()
+	paneSel[section] = cur
+	local tabs = section == "PaperDollFrame"
+	local x = 24
+	for i, key in ipairs(tabs and list or {}) do
+		local t = drawerTab(d, i)
+		t.psKey, t.psOn = key, key == cur
+		t.Label:SetText(ns.CharacterPanes[key].label)
+		W.Color(t.Label, t.psOn and "text" or "textDim")
+		t.Line:SetShown(t.psOn)
+		t:SetWidth(math.floor(t.Label:GetStringWidth() + 0.5))
+		t:ClearAllPoints()
+		t:SetPoint("LEFT", d, "TOPLEFT", x, -STATS_TOP / 2)
+		t:Show()
+		x = x + t:GetWidth() + 20
+	end
+	for i = (tabs and #list or 0) + 1, #d.Tabs do d.Tabs[i]:Hide() end
+	for key, holder in pairs(d.panes) do
+		holder:SetShown(key == cur)
+		if key == cur then paintPane(holder) end
+	end
+	local v = cur and d.panes[cur].psView
+	d.Title:SetShown(not tabs)
+	d.Title:SetText(v and v.psTitle or "")
+end
+
 
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
@@ -539,7 +674,7 @@ local function build()
 	-- string: the client's own truncation).
 	f.psGuild:SetWidth(f.psLine:GetWidth())
 	f.psGear = buildGear(f.Body, f.BodyWidth)
-	f.psStats = buildStats()
+	f.psStats = buildDrawer()
 	-- The dock makes room for the drawer, and the window keeps it on screen.
 	ns.DockFlyout(f, f.psStats, 1)
 	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
@@ -552,7 +687,7 @@ local function build()
 	end
 	-- The band's Options: the drawer put away and back, for every character.
 	f.psOptions = ns.OptionsButton(f, function()
-		return { { text = "Show stats", checked = statsShown(), onClick = function()
+		return { { text = section == "PaperDollFrame" and "Show stats" or "Show details", checked = statsShown(), onClick = function()
 			PolestarUIDB.hideStats = statsShown() or nil
 			refresh()
 		end } }
@@ -601,17 +736,17 @@ function refresh()
 		W.ShellTabs(f, nil)
 	end
 	W.ShellFooter(f, {}, {})
-	local stats = gear and statsShown()
+	local panes = #panesOf(section) > 0
 	f.psGear:SetShown(gear)
-	f.psStats:SetShown(stats)
-	f.psOptions:SetShown(gear)
+	f.psOptions:SetShown(panes)
+	f.psStats:SetShown(panes and statsShown())
+	if f.psStats:IsShown() then paintDrawer() end
 	local h = 0
 	if gear then
 		paintGear()
 		showModel()
 		h = f.psGear:GetHeight() + 24
 	end
-	if stats then paintStats() end
 	for key, v in pairs(f.psPages) do
 		local on = key == section
 		v:SetShown(on)
@@ -672,7 +807,7 @@ function M.Enable()
 		playerText(UnitName)
 		playerText(UnitPVPName)
 		playerText(GetGuildInfo)
-		paintStats()
+		for _, holder in pairs(f.psStats.panes) do paintPane(holder) end
 		for _, v in pairs(f.psPages) do paintPage(v) end
 	end
 	local function changed()
@@ -684,7 +819,7 @@ function M.Enable()
 			return
 		end
 		if f.psGear:IsShown() then paintGear() end
-		if f.psStats:IsShown() then paintStats() end
+		if f.psStats:IsShown() then paintDrawer() end
 		for _, v in pairs(f.psPages) do
 			if v:IsShown() then W.ShellBody(f, paintPage(v)) end
 		end

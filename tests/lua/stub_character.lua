@@ -210,3 +210,9 @@ function GetAchievementInfo(statID)
 	local s = STATS[math.floor(statID / 100)][statID % 100]
 	return statID, s[1]
 end
+
+-- Resistances, as the stock pane reads them (UnitResistance's effective value).
+Enum.Damageclass = { Arcane = 6, Fire = 2, Frost = 4, Nature = 3, Shadow = 5 }
+DAMAGE_SCHOOL3, DAMAGE_SCHOOL4, DAMAGE_SCHOOL5, DAMAGE_SCHOOL6, DAMAGE_SCHOOL7 = "Fire", "Nature", "Frost", "Shadow", "Arcane"
+STAT_CATEGORY_RESISTANCE = "Resistance"
+function UnitResistance(unit, class) local v = class == 2 and 15 or 0; return v, v, v, 0 end
