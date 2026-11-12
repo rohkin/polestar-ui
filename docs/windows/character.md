@@ -2,16 +2,21 @@
 Opened by `TOGGLECHARACTER0/2/4`, `TOGGLECURRENCY` and the micro button; all
 call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
 - **Shell:** 960×680 with sidebar (240).
-- **Subject block:** the class icon (36px, `ClassIcon_<class>` on an inset
-  well, hairline), the first name in Title (no surname: the sidebar has no room), "Level 24 Warrior" in Small textDim; the
+- **Subject block:** the class icon (36px, the game's class atlas,
+  `GetClassAtlas`, on an inset well, hairline), the first name in Title (no surname: the sidebar has no room), "Level 24 Warrior" in Small textDim; the
   guild under it in Small textMuted (none without one); each to the 24 edge,
   ending in an ellipsis past it. Name and guild are read
   out of combat (CLIENT.md, rule 3).
 - **Sidebar sections** (stock subframes, in stock order): Character
-  (`PaperDollFrame`), Reputation, Currency (only while `ShouldShowCurrencyTab`),
-  Honor (`PVPRankFrame`), Skills, Statistics.
-- **Character page** — title the character's PvP name, subtitle level, race,
-  class. No tabs: the gear, with the stats in a drawer at the window's right.
+  (`PaperDollFrame`), Reputation, Currency (always: the stock `ShouldShowCurrencyTab` returns true; only
+  the `TOGGLECURRENCY` key does nothing with an empty list, as
+  `ToggleTokenFrame` does), Honor (`PVPRankFrame`), Skills, Statistics.
+- **Band:** the section's name as title; a status subtitle (Character: "2
+  items need repair" or "Gear in good repair"; Reputation: "Watching
+  Stormwind" or the faction count; Currency, Skills, Statistics: their
+  counts; Honor: the season); Options on the Character page ("Show stats",
+  checked while the drawer shows).
+- **Character page** — no tabs: the gear, with the stats in a drawer at the window's right.
   Item level is not shown anywhere: it means nothing in Forever.
   - *Gear*: two slot columns on the 32 and right edges (Head, Neck, Shoulder,
     Back, Chest, Shirt, Tabard, Wrist; Hands, Waist, Legs, Feet, Finger ×2,
@@ -19,7 +24,7 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     well (Main Hand, Off Hand, Ranged), as the stock sheet and the armory lay
     them out. Ammo is a 16px tile in the Ranged slot's bottom-right corner,
     shown only when the ranged weapon is a bow, gun or crossbow. Slot tiles
-    36px, 6px apart. Beside each column's slot, on the inside (over the model
+    36px item wells (`ns.ItemWell`), 6px apart. Beside each column's slot, on the inside (over the model
     well): the item's name in Label in its quality colour, 220px wide, and
     under it a permanent enchant (its tooltip line, "Enchanted: " dropped) in
     Small success; the lines centred on the slot (no item stats: those are the
@@ -28,8 +33,7 @@ call `ToggleCharacter(subFrame)` or `CharacterFrame:ToggleTokenFrame()`.
     slot's name in textMuted. Painted out of combat only.
   - *Stats drawer*: 280px wide, its own window skin, docked flush to the
     window's right edge and as tall (the shell stays 960 wide; open, the two
-    read as one 1240px window, as in the armory). "Hide stats" / "Show
-    stats" with a chevron at the right of the tab row (kept with no tabs) puts
+    read as one 1240px window, as in the armory). Options' "Show stats" puts
     it away and back, for every character (`PolestarUIDB.hideStats`). In it:
     "Stats" in Heading, centred 36px down, then one scrolling column from
     72px: a Heading per stock category (`PAPERDOLL_STATCATEGORIES`) over a
@@ -49,7 +53,7 @@ only and read in the background like the stats (CLIENT.md, rule 3).
   in textDim with its own chevron, its factions indented 18px. A click watches
   a faction (or stops watching it); the watched one carries the 2px accent bar.
   The tooltip is the faction's description and its points in this standing.
-- **Currency:** 28px rows: the icon 16px in a 1px hairline (18px at 15), the name in Label, the amount
+- **Currency:** 28px rows: the icon in an 18px item well at 15, the name in Label, the amount
   (and its cap) in Number at the right; the game's currency tooltip.
 - **Honor:** Forever's PvP rank (the major faction 2800, as the stock page
   reads it): the title and rank in Display, the season in Small textDim, the

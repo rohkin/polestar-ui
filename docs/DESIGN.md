@@ -135,16 +135,18 @@ Polestar's: the band 0–112, the tab band 112–152, the hairline at 152, the 2
   **subject block** (the thing the window is about: the character, the
   profession) at the band's line, then the window's sections as `W.ShellNav`
   rows. The Polestar emblem stays in the rail of a hub only.
-- **Header.** The page title in Hero on the band, its subtitle in Note textDim:
-  a fact ("Level 24 Human Warrior", "Blacksmithing 145/150"), or one line for
-  a newer player saying what the page is and what they can do on it ("Click a
-  faction to follow it on your experience bar.", "Your skills rise as you use
-  them; a trainer raises how high they can go."). Anything that can be
-  clicked or dragged in a way a newer player would not guess ends its tooltip
-  with a hint in textMuted after a blank line (`ns.TooltipHint`), saying what
-  it does now ("Shown on your experience bar. Click to stop.", "Drag an item
-  here to equip it."); where the title line holds facts, the hints live in the
-  tooltips alone (Gear, Stats).
+- **Header.** The band holds the page title in Hero, a short status subtitle
+  in Note textDim, and the band's Options button (`ns.OptionsButton`) for the
+  window's settings. The subtitle is a fact about the page now ("2 items need
+  repair", "Watching Stormwind", "3 currencies", "4 of 9 friends online"),
+  never an instruction. Hints go in tooltips: anything that can be clicked or
+  dragged in a way a newer player would not guess ends its tooltip with a
+  hint in textMuted after a blank line (`ns.TooltipHint`), saying what it
+  does now ("Shown on your experience bar. Click to stop.", "Drag an item
+  here to equip it."). Identity (the character, the profession, the NPC)
+  goes in the sidebar's subject block, not the band. Filters are a sliders
+  icon button beside the sidebar search (`W.IconButton(..., "sliders")` on
+  the editbox skin), its glyph lit while a filter is on.
 - **Tabs.** `W.ShellTabs` for the views of one page; one view is no tab row.
 - **Footer.** Only when a page has actions (Reset, Craft, Learn). Never "Close":
   the ✕ and Escape already close it.
