@@ -138,8 +138,14 @@ end
 local function slotEnter(s)
 	GameTooltip:SetOwner(s, "ANCHOR_RIGHT")
 	if GameTooltip:SetInventoryItem("player", s:GetID()) then
-		ns.TooltipHint((canUse(s:GetID()) and "Right-click to use it. " or "")
-			.. "Drag to take it off. Shift-click to link it in chat.")
+		-- Using and applying are protected: in combat they wait for the fight to end.
+		local fight = InCombatLockdown()
+		if SpellIsTargeting() then
+			ns.TooltipHint(fight and "Applying it here waits for the fight to end." or "Click to apply it to this item.")
+		else
+			local use = canUse(s:GetID()) and (fight and "Using it waits for the fight to end. " or "Right-click to use it. ") or ""
+			ns.TooltipHint(use .. "Drag to take it off. Shift-click to link it in chat.")
+		end
 	else
 		GameTooltip:SetText(s.psLabel)
 		ns.TooltipHint("Drag an item here to equip it.")

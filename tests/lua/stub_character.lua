@@ -33,6 +33,11 @@ local NAMES = { [1] = "Helm of the Fallen Champion", [3] = "Ridge Spaulders", [5
 function GetInventoryItemLink(unit, id)
 	if GEAR[id] then return ("|cff1eff00|Hitem:%d::::::::24:::::|h[%s]|h|r"):format(id, NAMES[id]) end
 end
+-- The game's item tooltip: the worn item's name, true when the slot holds one.
+function GameTooltip.SetInventoryItem(self, unit, id)
+	self.lines = { NAMES[id] }
+	return GEAR[id] ~= nil
+end
 SHIRTSLOT, TABARDSLOT, FINGER1SLOT, TRINKET1SLOT, AMMOSLOT = "Shirt", "Tabard", "Finger", "Trinket", "Ammo"
 C_Item = C_Item or {}
 -- The ranged slot holds a bow (weapon class 2, subclass 2): it shoots ammo.
