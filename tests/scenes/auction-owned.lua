@@ -6,7 +6,7 @@ local T = Enum.PlayerInteractionType
 stub.interact(T.Auctioneer)
 local f = PolestarUIAuction
 f.tabButtons[3]:Click()
-assert(tostring(f.Title:GetText()) == "Your auctions", "not on Auctions")
+assert(tostring(f.Title:GetText()) == "Your auctions" and f.Subtitle:GetText() == "3 auctions \194\183 1 sold", "not on Auctions: " .. tostring(f.Subtitle:GetText()))
 local r = {}
 for _, b in ipairs({ f.Body:GetChildren() }) do if b.psKey and b:IsShown() then r[#r + 1] = b end end
 table.sort(r, function(a, b) return a:GetTop() > b:GetTop() end)

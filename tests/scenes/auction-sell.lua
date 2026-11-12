@@ -9,6 +9,11 @@ f.tabButtons[2]:Click()
 local s = f.psSell
 assert(s:IsShown() and tostring(f.Title:GetText()) == "Sell" and tostring(s.Name:GetText()) == "No item", "the empty Sell page")
 assert(#f.footerButtons.right == 0 or not f.footerButtons.right[1]:IsShown(), "Post with no item")
+-- The band says what is on the well; the well's tooltip, how it takes an item.
+assert(f.Subtitle:GetText() == "No item chosen", "subtitle: " .. tostring(f.Subtitle:GetText()))
+stub.RunScript(s.Well, "OnEnter")
+assert(table.concat(GameTooltip.lines, "/"):find("Drop an item", 1, true), "no well hint")
+stub.RunScript(s.Well, "OnLeave")
 local function coins(m)
 	local out = {}
 	for _, p in ipairs(m.psParts) do if p.text:IsShown() then out[#out + 1] = tostring(p.text:GetText()) end end
@@ -41,6 +46,9 @@ assert(coins(s.Total) == "48 40", "the typed price: " .. coins(s.Total))
 stub.throttled = true
 stub.fire("AUCTION_HOUSE_THROTTLED_MESSAGE_SENT")
 assert(not postButton():IsEnabled() and tostring(s.Reason:GetText()) ~= "", "Post not held by the throttle")
+stub.RunScript(postButton(), "OnEnter")
+assert(GameTooltip.lines[1] == s.Reason:GetText(), "Post's tooltip does not say why it is off")
+stub.RunScript(postButton(), "OnLeave")
 stub.throttled = false
 stub.fire("AUCTION_HOUSE_THROTTLED_SYSTEM_READY")
 assert(postButton():IsEnabled() and tostring(s.Reason:GetText()) == "", "Post not ready again")

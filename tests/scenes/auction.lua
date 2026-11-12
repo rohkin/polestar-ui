@@ -53,6 +53,9 @@ assert(stub.browseQuery.searchString == "cloth" and #stub.browseQuery.itemClassF
 local r = rows()
 assert(#r == 2 and tostring(r[1].Name:GetText()) == "Linen Cloth" and tostring(r[1].Cells[1].Text:GetText()) == "350", "the cloth results")
 assert(tostring(r[2].Cells[2].Money.psParts[2].text:GetText()) == "4", "the lowest price")
+-- The band counts the results; a one-line row has its name in the row's middle.
+assert(f.Subtitle:GetText() == "2 results", "subtitle: " .. tostring(f.Subtitle:GetText()))
+assert(r[1].Line:GetText() == "" and select(3, r[1].Name:GetPoint(1)) == "RIGHT", "a one-line row not centred")
 
 -- A category narrows by its item classes; All lifts it.
 f.Search:SetText("")

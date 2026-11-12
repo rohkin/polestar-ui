@@ -755,6 +755,8 @@ end
 local function cost(copper) return { money = copper, color = copper > GetMoney() and "danger" or nil } end
 
 local function count(n) return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or tostring(n) end
+-- "1 result", "3 results": a band subtitle's count.
+local function many(n, one, more) return (n == 1 and one or more):format(count(n)) end
 
 -- The time left: a band (AuctionHouseUtil.GetTimeLeftBandText, short in
 -- red), or seconds as the stock TimeLeftFormatter writes them (one unit,
@@ -849,10 +851,10 @@ end
 
 local function paintBrowse()
 	local favs = searched == "fav"
-	W.ShellTitle(f, favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
-		searched and "Click an item to see its listings." or "Search for an item (Enter), or pick a category.")
-	W.ShellFooter(f, {}, {})
 	local list = searched and AH.GetBrowseResults() or {}
+	W.ShellTitle(f, favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
+		searched and not browseFailed and many(#list, "%s result", "%s results") or nil)
+	W.ShellFooter(f, {}, {})
 	-- The column a category adds (required level, slots, skill), as the stock layout.
 	local detail = sel[1] and tree[sel[1]].detail
 	local S = Enum.AuctionHouseSortOrder
@@ -1311,7 +1313,7 @@ local function paintSell()
 	local tip = not why and sell.from and sell.price == sell.from - SILVER and (AUCTION_HOUSE_UNDERCUT_TUTORIAL or "Undercutting by a silver is enough.")
 	s.Reason:SetText(sell.multi and (AUCTION_CREATING or "Creating auction %d of %d"):format(sell.multi[1], sell.multi[2]) or loc and (why or tip) or "")
 	W.Color(s.Reason, (sell.multi or tip) and "textDim" or "danger")
-	W.ShellTitle(f, "Sell", "Drop an item on the well, set its price, and post it.")
+	W.ShellTitle(f, "Sell", loc and ("%s in your bags"):format(count(AH.GetAvailablePostCount(loc))) or "No item chosen")
 	W.ShellFooter(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
 		{ loc and { label = "Post", onClick = post, opts = { primary = true } } or nil })
 	local p = f.footerButtons.right[1]
@@ -1350,7 +1352,12 @@ local function cancel(row)
 end
 
 local function paintOwned()
-	W.ShellTitle(f, "Your auctions", "Click an auction to cancel it. Sold items' money comes by mail.")
+	local n, sold = AH.GetNumOwnedAuctions(), 0
+	for i = 1, n do
+		local o = AH.GetOwnedAuctionInfo(i)
+		if o and o.status == Enum.AuctionStatus.Sold then sold = sold + 1 end
+	end
+	W.ShellTitle(f, "Your auctions", many(n, "%s auction", "%s auctions") .. (sold > 0 and (" \194\183 %d sold"):format(sold) or ""))
 	-- The stock list's refresh button.
 	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
@@ -1360,7 +1367,6 @@ local function paintOwned()
 		{ label = TIME_LEFT or "Time Left", sort = S.TimeRemaining, w = 90 } }
 	local y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item", sort = S.Name }, cols, "owned:auctions",
 		function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end)
-	local n = AH.GetNumOwnedAuctions()
 	for i = 1, n do
 		local o = AH.GetOwnedAuctionInfo(i)
 		local sold = o.status == Enum.AuctionStatus.Sold
@@ -1370,7 +1376,7 @@ local function paintOwned()
 		fill(i, y, { key = o.itemKey, line = ("\195\151%d"):format(o.quantity), dim = sold,
 			cells = { bidCell, o.buyoutAmount and { money = o.buyoutAmount, color = sold and "textDim" or nil } or { text = "" },
 				o.timeLeftSeconds and left(o.timeLeftSeconds, sold) or (sold and { text = "Sold", color = "textDim" } or band(o.timeLeft)) },
-			click = cancel, data = o, hint = not sold and "Click to cancel it." or nil }, cols)
+			click = cancel, data = o, hint = sold and "Its money comes by mail." or "Click to cancel it." }, cols)
 	end
 	return n, y, "You have no auctions."
 end
@@ -1387,7 +1393,8 @@ end
 
 local function paintOwnItem()
 	local info = AH.GetItemKeyInfo(own) or {}
-	W.ShellTitle(f, displayName(own, info) or "", "Click yours to cancel it; click another to buy it out, right-click to bid.")
+	local listed = info.isCommodity and AH.GetNumCommoditySearchResults(own.itemID) or AH.GetNumItemSearchResults(own)
+	W.ShellTitle(f, displayName(own, info) or "", many(listed, "%s listing", "%s listings"))
 	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = queryOwn, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols, y, n
@@ -1422,14 +1429,18 @@ end
 
 -- Bids: the auctions the player bid on (QueryBids), as the stock Bids tab.
 local function paintBids()
-	W.ShellTitle(f, AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", "Click an auction to buy it out; right-click to bid again.")
+	local n, lost = AH.GetNumBids(), 0
+	for i = 1, n do
+		local b = AH.GetBidInfo(i)
+		if b and bidStatus(b) == "outbid" then lost = lost + 1 end
+	end
+	W.ShellTitle(f, AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", many(n, "%s bid", "%s bids") .. (lost > 0 and (" \194\183 %d outbid"):format(lost) or ""))
 	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = queryBids, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
 		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
 		{ label = TIME_LEFT or "Time Left", w = 110 } }
 	local y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item", sort = S.Name }, cols, "owned:bids", queryBids)
-	local n = AH.GetNumBids()
 	for i = 1, n do
 		local b = AH.GetBidInfo(i)
 		local status = bidStatus(b)
