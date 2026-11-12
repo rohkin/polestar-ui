@@ -599,18 +599,7 @@ local function currencyOf(config, t)
 	return c and c[1]
 end
 
--- One cell of the client's grid: the smallest step between positions,
--- ignoring the few units the client nudges a node off it (as Talents.lua).
-local function cell(v)
-	table.sort(v)
-	local big, s = 0, nil
-	for i = 2, #v do big = math.max(big, v[i] - v[i - 1]) end
-	for i = 2, #v do
-		local d = v[i] - v[i - 1]
-		if d >= big / 4 and d > 0 and (not s or d < s) then s = d end
-	end
-	return s or 1
-end
+local cell = ns.GridCell
 
 -- The tree's shown nodes, each with its column and row on that grid.
 local function readTree(config, t)

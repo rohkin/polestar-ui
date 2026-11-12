@@ -77,6 +77,20 @@ function ns.Num(v)
 	return v
 end
 
+-- One cell of the client's grid: the smallest step between positions,
+-- ignoring the few units the client nudges a node off it (steps under a
+-- quarter of the largest).
+function ns.GridCell(v)
+	table.sort(v)
+	local big, s = 0, nil
+	for i = 2, #v do big = math.max(big, v[i] - v[i - 1]) end
+	for i = 2, #v do
+		local d = v[i] - v[i - 1]
+		if d >= big / 4 and d > 0 and (not s or d < s) then s = d end
+	end
+	return s or 1
+end
+
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the

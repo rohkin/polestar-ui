@@ -41,19 +41,7 @@ local function entryOf(config, info)
 	return entryID, icon, def and def.spellID, def
 end
 
--- One cell of the client's grid: the smallest step between positions,
--- ignoring the few units the client nudges a node off it (steps under a
--- quarter of the largest).
-local function cell(v)
-	table.sort(v)
-	local big, s = 0, nil
-	for i = 2, #v do big = math.max(big, v[i] - v[i - 1]) end
-	for i = 2, #v do
-		local d = v[i] - v[i - 1]
-		if d >= big / 4 and d > 0 and (not s or d < s) then s = d end
-	end
-	return s or 1
-end
+local cell = ns.GridCell
 
 -- The trees: the client's groups in order, each with its nodes on a grid read
 -- off the client's positions (rounded to the nearest cell).
