@@ -134,7 +134,8 @@ function C_Item.GetItemInfo(link) return link == "item:12360" and "Arcanite Bar"
 -- A trial account cannot send mail.
 function GameLimitedMode_IsActive() return stub.trial or false end
 
--- The read emote (the stock show performs it, the hide cancels it).
+-- The read emote: recorded, so a scene can check ours never performs it
+-- (PerformEmote has restrictions).
 C_ChatInfo = C_ChatInfo or {}
 function C_ChatInfo.PerformEmote(e) stub.emote = e end
 function C_ChatInfo.CancelEmote() stub.emote = nil end

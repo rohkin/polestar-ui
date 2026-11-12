@@ -676,15 +676,14 @@ local function build()
 	f.psInbox:SetSize(f.BodyWidth + 2 * W.SHELL.pad, 1)
 	buildSend()
 	buildLetter()
-	-- As the stock show and hide: the read emote, the inbox fetched, the
-	-- guild roster asked for (the To list reads it).
+	-- As the stock show and hide: the inbox fetched, the guild roster asked
+	-- for (the To list reads it). Not the read emote: PerformEmote has
+	-- restrictions, and ours opens from the interaction, not a click.
 	f:HookScript("OnShow", function()
-		C_ChatInfo.PerformEmote("READ", nil, true)
 		M.RefreshInbox()
 		if IsInGuild() and GetNumGuildMembers() == 0 then C_GuildInfo.GuildRoster() end
 	end)
 	f:HookScript("OnHide", function()
-		C_ChatInfo.CancelEmote()
 		stopTaking()
 		closing()
 		open = nil

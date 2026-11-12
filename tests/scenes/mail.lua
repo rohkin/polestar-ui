@@ -1,16 +1,16 @@
 --@ title: Mail
 --@ roots: PolestarUIMail
 --@ stubs: stub_npc.lua, stub_mail.lua
--- The mailbox opens ours, never the stock window, with the bags, the read emote and the inbox fetched; closing ours ends the interaction once, the game ending it closes ours. A row per letter: the package or the stationery, read letters faded, unread letters bright, read ones faded, days left (warning under 3, danger in hours under a day), the first item's quality on the well, a tooltip naming the item, the money or COD and when the letter goes; shift-click takes all of a letter (never a COD's) and opens it, money and COD lines. Open all takes one money or item per MAIL_INBOX_UPDATE, never a COD's or a GM's, says so on its button, skips an item the server refused, stops with the bags full and when none is left. Over 50 letters, the subtitle says how many wait, and room made fetches more (as often as C_Mail.CanCheckInbox allows).
+-- The mailbox opens ours, never the stock window, with the bags and the inbox fetched (not the read emote: PerformEmote has restrictions); closing ours ends the interaction once, the game ending it closes ours. A row per letter: the package or the stationery, read letters faded, unread letters bright, read ones faded, days left (warning under 3, danger in hours under a day), the first item's quality on the well, a tooltip naming the item, the money or COD and when the letter goes; shift-click takes all of a letter (never a COD's) and opens it, money and COD lines. Open all takes one money or item per MAIL_INBOX_UPDATE, never a COD's or a GM's, says so on its button, skips an item the server refused, stops with the bags full and when none is left. Over 50 letters, the subtitle says how many wait, and room made fetches more (as often as C_Mail.CanCheckInbox allows).
 local T = Enum.PlayerInteractionType
 local ns = PolestarUI
 assert(ns.modules.mail.reloadOff, "switching off does not wait for /reload")
 
 stub.interact(T.MailInfo)
 assert(PolestarUIMail:IsShown() and not MailFrame:IsShown(), "the mailbox did not open ours")
-assert(stub.bagsOpen and stub.emote == "READ" and stub.checked == 1 and stub.rosterAsked, "bags, emote, inbox, roster")
+assert(stub.bagsOpen and stub.emote == nil and stub.checked == 1 and stub.rosterAsked, "bags, no emote, inbox, roster")
 PolestarUIMail:Hide()
-assert(stub.npcClosed.CloseMail == 1 and not stub.bagsOpen and stub.emote == nil, "closing ours did not end the mail once")
+assert(stub.npcClosed.CloseMail == 1 and not stub.bagsOpen, "closing ours did not end the mail once")
 stub.interact(T.MailInfo)
 stub.endInteraction(T.MailInfo)
 assert(not PolestarUIMail:IsShown() and stub.npcClosed.CloseMail == 1, "the game's end")
