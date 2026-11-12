@@ -445,23 +445,8 @@ local function build()
 	ns.Dock(f)
 	ns.WindowMenu(f, "talents")
 	-- The subject block names the window, in place of Polestar's lockup.
-	-- Reparented, not hidden: the shell re-shows its version line on every show.
-	local holder = CreateFrame("Frame", nil, f)
-	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(holder) end
-	local well = CreateFrame("Frame", nil, f.Sidebar)
-	well:SetSize(36, 36)
-	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
-	Polestar.Theme.Skin(well, "inset")
-	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
-	f.psClass = ns.GameIcon(well)
-	f.psClass:SetPoint("TOPLEFT", 1, -1)
-	f.psClass:SetPoint("BOTTOMRIGHT", -1, 1)
-	f.psName = W.Text(f.Sidebar, "title", "text")
-	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
-	f.psLine = W.Text(f.Sidebar, "small", "textDim")
-	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
-	for _, t in ipairs({ f.psName, f.psLine }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
+	local b = ns.SubjectBlock(f)
+	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
 	-- The way to the stock frame (its search, inspect), on the band.
 	local opt = CreateFrame("Button", nil, f.Header)
 	opt:SetSize(96, 24)

@@ -579,17 +579,12 @@ local function build()
 	ns.WindowMenu(f, "crafting")
 	-- The subject block names the profession, in place of Polestar's lockup:
 	-- its name with the rank at the right end of its skill bar.
-	local holder = CreateFrame("Frame", nil, f)
-	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(holder) end
 	local SB, X = f.psSidebar or W.SHELL.sidebar, 24 + 36 + 12
-	local well
-	well, f.psIcon = iconWell(f.Sidebar, 36)
-	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
 	f.psRank = W.Text(f.Sidebar, "number", "textDim")
 	f.psRank:SetPoint("BOTTOMRIGHT", f.Sidebar, "TOPLEFT", SB - 24, -47)
-	f.psName = W.Text(f.Sidebar, "title", "text")
-	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", X, -47)
+	local b = ns.SubjectBlock(f)
+	b.line:Hide()
+	f.psIcon, f.psName = b.icon, b.name
 	f.psName:SetPoint("RIGHT", f.psRank, "LEFT", -8, 0)
 	f.psName:SetJustifyH("LEFT")
 	f.psName:SetWordWrap(false)

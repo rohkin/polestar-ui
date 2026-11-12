@@ -103,6 +103,27 @@ function ns.ItemWell(parent, size)
 	return well, icon
 end
 
+-- The sidebar's head in a game window (docs/DESIGN.md, "Subject Block"), in
+-- place of Polestar's lockup: a 36px icon well on the band's title line, the
+-- name in Title right of it, one Small textDim line under it. Returns
+-- { icon, name, line }.
+function ns.SubjectBlock(f)
+	local W = Polestar.Widgets
+	-- Reparented, not hidden: the shell re-shows its version line on every show.
+	local holder = CreateFrame("Frame", nil, f)
+	holder:Hide()
+	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(holder) end
+	local well, icon = ns.ItemWell(f.Sidebar, 36)
+	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
+	local name = W.Text(f.Sidebar, "title", "text")
+	name:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
+	local line = W.Text(f.Sidebar, "small", "textDim")
+	line:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -6)
+	-- To the sidebar's 24 edge; longer text ends in the client's ellipsis.
+	for _, t in ipairs({ name, line }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
+	return { icon = icon, name = name, line = line }
+end
+
 -- An item quality's colour as r, g, b (nil when the client has none).
 function ns.QualityRGB(q)
 	if q == nil then return end

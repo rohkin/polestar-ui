@@ -950,29 +950,19 @@ local function build()
 	ns.Dock(f)
 	ns.WindowMenu(f, "legacy")
 	-- The subject block names the window, in place of Polestar's lockup.
-	local holder = CreateFrame("Frame", nil, f)
-	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(holder) end
+	local b = ns.SubjectBlock(f)
 	-- The Legacy emblem heads the rail, where Polestar's stands in its own,
 	-- centred on the title's line.
 	f.psEmblem = f.Rail:CreateTexture(nil, "ARTWORK")
 	f.psEmblem:SetSize(40, 40)
 	f.psEmblem:SetPoint("CENTER", f.Rail, "TOP", 0, -47)
 	f.psEmblem:SetAtlas("Legacy-up-c60")
-	local well = CreateFrame("Frame", nil, f.Sidebar)
-	well:SetSize(36, 36)
-	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
-	Theme.Skin(well, "inset")
-	Theme.Border(well, Theme.Wash("border"))
-	f.psIcon = well:CreateTexture(nil, "ARTWORK")
-	f.psIcon:SetPoint("TOPLEFT", 1, -1)
-	f.psIcon:SetPoint("BOTTOMRIGHT", -1, 1)
+	-- An atlas, not an icon: its own crop.
+	f.psIcon = b.icon
+	f.psIcon:SetTexCoord(0, 1, 0, 1)
 	f.psIcon:SetAtlas("Legacy-up-c60")
-	f.psName = W.Text(f.Sidebar, "title", "text")
-	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
+	f.psName, f.psLine = b.name, b.line
 	f.psName:SetText(LEGACY_BUTTON or "Legacy")
-	f.psLine = W.Text(f.Sidebar, "small", "textDim")
-	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
 	-- The filter acts on the list: at the end of the search row, as the
 	-- crafting window's.
 	local top = W.SHELL.header - 30

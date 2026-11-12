@@ -531,29 +531,16 @@ local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
 	ns.Dock(f)
 	ns.WindowMenu(f, "character")
-	-- The subject block names the window, in place of Polestar's lockup.
-	-- Reparented, not hidden: the shell re-shows its version line on every show.
-	local holder = CreateFrame("Frame", nil, f)
-	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Search, f.Status, f.Stage }) do r:SetParent(holder) end
-	-- The class icon on an inset well with a hairline, centred on the title line.
-	local well = CreateFrame("Frame", nil, f.Sidebar)
-	well:SetSize(36, 36)
-	well:SetPoint("LEFT", f.Sidebar, "TOPLEFT", 24, -47)
-	Polestar.Theme.Skin(well, "inset")
-	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
-	f.psClass = ns.GameIcon(well)
-	f.psClass:SetPoint("TOPLEFT", 1, -1)
-	f.psClass:SetPoint("BOTTOMRIGHT", -1, 1)
-	f.psName = W.Text(f.Sidebar, "title", "text")
-	f.psName:SetPoint("BOTTOMLEFT", f.Sidebar, "TOPLEFT", 24 + 36 + 12, -47)
-	f.psLine = W.Text(f.Sidebar, "small", "textDim")
-	f.psLine:SetPoint("TOPLEFT", f.psName, "BOTTOMLEFT", 0, -6)
+	-- The subject block names the window, in place of Polestar's lockup:
+	-- the class icon, the name, the level and class, and the guild under them.
+	f.Search:Hide()
+	local b = ns.SubjectBlock(f)
+	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
 	f.psGuild = W.Text(f.Sidebar, "small", "textMuted")
 	f.psGuild:SetPoint("TOPLEFT", f.psLine, "BOTTOMLEFT", 0, -4)
-	-- To the sidebar's 24 edge; a longer guild ends in an ellipsis
-	-- (a fixed width on an unwrapped string: the client's own truncation).
-	for _, t in ipairs({ f.psName, f.psLine, f.psGuild }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
+	-- A longer guild ends in an ellipsis (a fixed width on an unwrapped
+	-- string: the client's own truncation).
+	f.psGuild:SetWidth(f.psLine:GetWidth())
 	f.psGear = buildGear(f.Body, f.BodyWidth)
 	f.psStats = buildStats()
 	-- The dock makes room for the drawer, and the window keeps it on screen.
