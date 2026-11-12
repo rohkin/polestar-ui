@@ -71,13 +71,6 @@ local function classTrainer()
 	return not IsTradeskillTrainer() and not petTrainer() and E and E.IsClassTrainer and E.IsClassTrainer(Polestar.Compat.GetNpcID("npc"))
 end
 
--- Polestar's Train All, only where its Start would act: a class trainer of the
--- player's class, with its button setting on.
-local function trainAll()
-	local Q = Polestar.QoL
-	if Q and Q.Trainer and Q.Trainer.Start and Q.On and Q.On("trainAllButton") and classTrainer() then return Q.Trainer.Start end
-end
-
 local function enter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	GameTooltip:SetTrainerService(r.psIndex)
@@ -170,7 +163,6 @@ function paint()
 	local pet = petTrainer()
 	SetPortraitTexture(subject.icon, pet and "pet" or "npc")
 	subject.name:SetText(UnitName(pet and "pet" or "npc") or "")
-	local start = trainAll()
 	subject.line:SetText(classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or "Trainer")
 
 	-- The services by category (Camelot's skill lines), counting what can be learnt.
@@ -223,20 +215,8 @@ function paint()
 	f.psEmpty:SetShown(#list == 0)
 	W.SetIconState(f.psFilter, not (GetTrainerServiceTypeFilter("available") and GetTrainerServiceTypeFilter("unavailable") and GetTrainerServiceTypeFilter("used")))
 
-	local right = { { label = "Train", onClick = train, opts = { primary = true } } }
-	-- Polestar's run buys nothing while Shift is held (QoL.Shift): say so rather than do nothing.
-	if start then right[2] = { label = "Train all", onClick = function()
-		if IsShiftKeyDown() then return UIErrorsFrame:AddExternalErrorMessage("Release Shift to train all: Shift stops Polestar's Train All.") end
-		start()
-	end } end
-	W.ShellFooter(f, {}, right)
-	-- Disabled as Polestar disables: faded to 45%. Train All as Polestar's own button: something to learn.
-	for n, on in ipairs({ sel and canTrain(sel) or false, open > 0 }) do
-		local b = f.footerButtons.right[n]
-		if b and b:IsShown() then
-			ns.SetEnabled(b, on)
-		end
-	end
+	W.ShellFooter(f, {}, { { label = "Train", onClick = train, opts = { primary = true } } })
+	ns.SetEnabled(f.footerButtons.right[1], sel and canTrain(sel) or false)
 	W.ShellBody(f, 24 + math.max(#list, 1) * ROW_H + 24)
 end
 

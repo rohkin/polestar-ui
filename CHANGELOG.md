@@ -7,7 +7,7 @@
 - Mail: the mailbox in Polestar's look: the inbox, a letter beside it with Take, Return and Delete, Open all, cash on delivery that asks first, and a send page with attachments, money and COD.
 - Gossip: talking to an NPC opens Polestar's window: the greeting, quests to hand in and take, and the options with their icons; keys 1-9 pick. A vendor with one option opens straight away, as before.
 - Merchant: the vendor in Polestar's look: Buy and Buyback, prices in red when you can't afford them, click to buy one, right-click a stack, shift-click a count; Repair all, Guild repair, Sell junk, and Polestar's Restock with its total.
-- Trainer: the trainer in Polestar's look: categories with what you can learn, each spell's cost and needs, Train, and Polestar's Train all at your class trainer. Profession trainers ask before you learn.
+- Trainer: the trainer in Polestar's look: categories with what you can learn, each spell's cost and needs, and Train. Profession trainers ask before you learn.
 - Quest dialog: quest givers open Polestar's window: the offer with its objectives and rewards, progress with what you still need, and the reward choice with Polestar's best-pick marks.
 - Loot: the loot window in Polestar's look, at the cursor when the game's option is on, titled Fishing when fishing. Roll windows and loot confirmations stay the game's.
 

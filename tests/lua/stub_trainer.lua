@@ -1,6 +1,6 @@
 -- The client's trainer as the Trainer sees it (Blizzard_TrainerUI, Camelot's
 -- categories): the services, their costs and needs, the type filter, the
--- trainer's unit, and Polestar's Train All. Load after stub_npc.lua (the
+-- trainer's unit. Load after stub_npc.lua (the
 -- interaction manager, TRAINER_SHOW's route, CloseTrainer, money).
 
 -- Services: { name, kind, icon, reqLevel, rank, category, cost, profession?, skill req?, ability req? }.
@@ -42,7 +42,6 @@ function BuyTrainerService(i) stub.bought[#stub.bought + 1] = shown()[i][1] end
 stub.professions = {}
 PROFESSION_CONFIRMATION1 = "Do you really want to learn %s as your first profession?"
 PROFESSION_CONFIRMATION2 = "Do you really want to learn %s as your second profession?"
-function UIErrorsFrame:AddExternalErrorMessage(msg) stub.uiError = msg end
 function GetProfessions() return stub.professions[1], stub.professions[2] end
 Enum.TrainerType = { Normal = 0, Pet = 1 }
 C_Trainer = { GetTrainerType = function() return stub.trainerType end }
@@ -57,17 +56,11 @@ end
 function UnitGUID(unit) if unit == "npc" then return "Creature-0-4372-0-17-914-0000123456" end end
 function SetPortraitTexture(tex, unit) tex:SetTexture(132355) end
 
--- Polestar's Train All (QoL/Trainer.lua; the preview loads no QoL) and its
--- class-trainer check (Engine.IsClassTrainer, Compat.GetNpcID: the preview's
--- Engine and Compat are stub_ui's), put in at login, after stub_ui installs them.
-stub.trainAllButton, stub.trainAllRuns = true, 0
+-- Polestar's class-trainer check (Engine.IsClassTrainer, Compat.GetNpcID: the
+-- preview's Engine and Compat are stub_ui's), put in at login, after stub_ui installs them.
 local login = CreateFrame("Frame")
 login:RegisterEvent("PLAYER_LOGIN")
 login:SetScript("OnEvent", function()
-	Polestar.QoL = {
-		On = function(k) return k == "trainAllButton" and stub.trainAllButton end,
-		Trainer = { Start = function() stub.trainAllRuns = stub.trainAllRuns + 1 end },
-	}
 	Polestar.Engine.IsClassTrainer = function(npc) return npc == 914 end
 	Polestar.Compat.GetNpcID = function(unit) return tonumber((select(6, strsplit("-", UnitGUID(unit) or "")))) end
 end)

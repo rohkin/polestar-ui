@@ -1,13 +1,9 @@
 #### Trainer (`ClassTrainerFrame`) — Risk: medium
-Polestar export: Train All (`QoL.Trainer.Start`) needs a new export from Polestar, which needs a Polestar PR
-approved first. The window feature-detects it and ships without Train All until
-Polestar has it, as the World Map does with `Polestar.MapCanvas.Add`.
 Demand-loaded; opened by the interaction manager (Trainer) and by Forever's
 `GameEvent` (`TRAINER_SHOW`): both are taken (`ns.Interaction`,
 `CloseTrainer`). Its show and hide also run `UpdateMicroButtons`: one more
-reason it is never opened. Polestar's "Train All" button hangs on the stock
-frame (`QoL/Trainer.lua`); ours carries it in the footer (Polestar's
-`QoL.Trainer.Start`).
+reason it is never opened. There is no Train All: Polestar removed its bulk
+spell purchase (`QoL.Trainer.Start`) on purpose.
 - **Shell:** 760×600 with sidebar. Subject block: the trainer's portrait
   (`SetPortraitTexture` on a well), the NPC's name, "Warrior trainer".
 - **Sidebar:** the stock categories (`Blizzard_TrainerUI_Camelot`: by skill
@@ -18,6 +14,6 @@ frame (`QoL/Trainer.lua`); ours carries it in the footer (Polestar's
   needs ("Requires level 26") in danger when unmet; learnt ones in textMuted.
   Click selects and shows its description in a panel under the list.
 - **Footer:** Train (primary, `BuyTrainerService`; the stock
-  `CONFIRM_PROFESSION` becomes `W.Modal`), Train All (Polestar's).
+  `CONFIRM_PROFESSION` becomes `W.Modal`).
 - **Tests:** `stub_trainer.lua` (services, categories, both open routes); scenes `trainer` (`TRAINER_SHOW` unregistered, the interaction taken, `ClassTrainerFrame` never shown), `trainer-filter`.
 
