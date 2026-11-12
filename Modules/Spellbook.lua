@@ -247,8 +247,7 @@ local function whatsTraining()
 	return ldb and ldb:GetDataObjectByName("WhatsTrainingMinimap")
 end
 
-local function optionsMenu(self)
-	if W.MenuShown(self) then return W.HideMenu() end
+local function optionsItems(self)
 	local function flip(cvar) return function() SetCVar(cvar, GetCVarBool(cvar) and "0" or "1"); M.Show() end end
 	local items = {
 		{ text = "Show passive spells", checked = not GetCVarBool("spellBookHidePassives"), onClick = flip("spellBookHidePassives") },
@@ -260,7 +259,7 @@ local function optionsMenu(self)
 	if wt and wt.OnClick then
 		items[#items + 1] = { text = "What's Training?", onClick = function() wt.OnClick(self, "LeftButton") end }
 	end
-	W.ShowMenu(self, items, { minWidth = 200 })
+	return items
 end
 
 local function build()
@@ -274,18 +273,7 @@ local function build()
 	local b = ns.SubjectBlock(f)
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
 	-- The stock book's settings and the ways to its own view, on the band.
-	local opt = CreateFrame("Button", nil, f.Header)
-	opt:SetSize(96, 24)
-	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
-	W.Hover(opt)
-	opt.Label = W.Text(opt, "small", "text")
-	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
-	opt.Label:SetText("Options")
-	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
-	opt.Arrow:SetSize(12, 12)
-	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
-	opt:SetScript("OnClick", optionsMenu)
-	f.psOptions = opt
+	f.psOptions = ns.OptionsButton(f, optionsItems)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psEmpty:SetText("No spells here.")

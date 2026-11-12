@@ -310,13 +310,10 @@ end
 -- The window.
 
 -- The Nothing Lost Rule: what stays on the stock window, and the way to it.
-local function optionsMenu(self)
-	if W.MenuShown(self) then return W.HideMenu() end
-	W.ShowMenu(self, {
-		{ text = "Game's window: the friends button by the chat, or /friends", disabled = true },
-		{ text = "There: Quick Join, Recruit a Friend, and the raid's groups and ready check", disabled = true },
-	}, { minWidth = 200 })
-end
+local optionsItems = {
+	{ text = "Game's window: the friends button by the chat, or /friends", disabled = true },
+	{ text = "There: Quick Join, Recruit a Friend, and the raid's groups and ready check", disabled = true },
+}
 
 local function addFriend()
 	if not f.psAdd then
@@ -362,18 +359,7 @@ local function build()
 	f.psDot = W.Tex(f.psClass:GetParent(), "OVERLAY", "circle", "success")
 	f.psDot:SetSize(10, 10)
 	f.psDot:SetPoint("CENTER", f.psClass:GetParent(), "BOTTOMRIGHT", -2, 2)
-	local opt = CreateFrame("Button", nil, f.Header)
-	opt:SetSize(96, 24)
-	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
-	W.Hover(opt)
-	opt.Label = W.Text(opt, "small", "text")
-	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
-	opt.Label:SetText("Options")
-	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
-	opt.Arrow:SetSize(12, 12)
-	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
-	opt:SetScript("OnClick", optionsMenu)
-	f.psOptions = opt
+	f.psOptions = ns.OptionsButton(f, optionsItems)
 	f.psPanel = W.RowPanel(f.Body)
 	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)

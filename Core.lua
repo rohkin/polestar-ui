@@ -66,6 +66,27 @@ function ns.Plain(f)
 	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
 end
 
+-- The band's Options button, a menu of `items` (or a function(button) returning
+-- them) that a second click closes. Returns the button.
+function ns.OptionsButton(f, items)
+	local W = Polestar.Widgets
+	local opt = CreateFrame("Button", nil, f.Header)
+	opt:SetSize(96, 24)
+	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
+	W.Hover(opt)
+	opt.Label = W.Text(opt, "small", "text")
+	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
+	opt.Label:SetText("Options")
+	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
+	opt.Arrow:SetSize(12, 12)
+	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
+	opt:SetScript("OnClick", function(self)
+		if W.MenuShown(self) then return W.HideMenu() end
+		W.ShowMenu(self, type(items) == "function" and items(self) or items, { minWidth = 200 })
+	end)
+	return opt
+end
+
 -- A texture for a game icon (item, currency, spell), cropped of the border
 -- the client bakes into its icons, as Polestar's own icons are.
 function ns.GameIcon(parent, layer)

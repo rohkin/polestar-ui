@@ -376,10 +376,7 @@ local function paintTrees(config)
 	return bottom + 24
 end
 
-local function optionsMenu(self)
-	if W.MenuShown(self) then return W.HideMenu() end
-	W.ShowMenu(self, { { text = "Game's talents: shift-click their micro button", disabled = true } }, { minWidth = 200 })
-end
+local optionsItems = { { text = "Game's talents: shift-click their micro button", disabled = true } }
 
 -- The class's talent art (the stock frame's talent-background-<class>) behind
 -- the trees, under a wash of Polestar's sky blue, both feathered out at the
@@ -448,18 +445,7 @@ local function build()
 	local b = ns.SubjectBlock(f)
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
 	-- The way to the stock frame (its search, inspect), on the band.
-	local opt = CreateFrame("Button", nil, f.Header)
-	opt:SetSize(96, 24)
-	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
-	W.Hover(opt)
-	opt.Label = W.Text(opt, "small", "text")
-	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
-	opt.Label:SetText("Options")
-	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
-	opt.Arrow:SetSize(12, 12)
-	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
-	opt:SetScript("OnClick", optionsMenu)
-	f.psOptions = opt
+	f.psOptions = ns.OptionsButton(f, optionsItems)
 	f.psArt, f.psTint, f.psStripe = {}, {}, {}
 	for i = 1, 2 do
 		f.psStripe[i] = f.Content:CreateTexture(nil, "BORDER")

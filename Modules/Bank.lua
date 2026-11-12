@@ -102,9 +102,7 @@ local function deposit(bankType)
 		action = "Deposit", onAccept = function() C_Bank.AutoDepositItemsIntoBank(bankType) end })
 end
 
-local function optionsMenu(self)
-	W.ShowMenu(self, { { text = "Tab name, icon and filters: the game's bank (/pui bank off)", disabled = true } }, { minWidth = 200 })
-end
+local optionsItems = { { text = "Tab name, icon and filters: the game's bank (/pui bank off)", disabled = true } }
 
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, searchPlaceholder = "Search the bank",
@@ -117,18 +115,7 @@ local function build()
 	money = ns.Money(f.Sidebar)
 	money:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -6)
 	-- The tab settings stay the stock bank's, on the band's Options (as Spellbook's).
-	local opt = CreateFrame("Button", nil, f.Header)
-	opt:SetSize(96, 24)
-	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
-	W.Hover(opt)
-	opt.Label = W.Text(opt, "small", "text")
-	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
-	opt.Label:SetText("Options")
-	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
-	opt.Arrow:SetSize(12, 12)
-	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
-	opt:SetScript("OnClick", optionsMenu)
-	f.psOptions = opt
+	f.psOptions = ns.OptionsButton(f, optionsItems)
 	grid = ns.ItemGrid(f.Body, 11, 36, 4)
 	grid:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psGrid = grid
