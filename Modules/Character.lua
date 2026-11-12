@@ -327,10 +327,17 @@ local function buildGear(body, width)
 	m:HookScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:SetText(playerText(UnitName) or "")
-		ns.TooltipHint("Drag to turn, scroll to zoom, right-drag to move.")
+		ns.TooltipHint("Drag to turn, scroll to zoom, right-drag to move. Drop an item here to wear it.")
 		GameTooltip:Show()
 	end)
 	m:HookScript("OnLeave", W.HideTooltip)
+	-- An item dropped on the model goes on, as on the stock sheet
+	-- (CharacterModelSceneMixin's TryAutoEquipCursorItem).
+	local function wearCursor()
+		if CursorHasItem() and C_PaperDollInfo.CanAutoEquipCursorItem() then AutoEquipCursorItem() end
+	end
+	m:HookScript("OnReceiveDrag", wearCursor)
+	m:HookScript("OnMouseUp", function(_, button) if button == "LeftButton" then wearCursor() end end)
 	text:SetFrameLevel(m:GetFrameLevel() + 10)
 	v.Model, v.Text = m, text
 	return v

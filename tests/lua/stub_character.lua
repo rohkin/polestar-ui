@@ -338,3 +338,7 @@ C_PetInfo = { GetPetLoyalty = function() return "Loyalty Level 3" end, GetPetHap
 PAPERDOLL_STATINFO.PET_ARMOR = stat("Armor", "812")
 PAPERDOLL_STATINFO.PET_DAMAGE = stat("Damage", "32 - 41")
 table.insert(PAPERDOLL_STATCATEGORIES, { categoryName = "Combat", unit = "pet", stats = { { stat = "PET_ARMOR" }, { stat = "PET_DAMAGE" } } })
+
+-- An item dropped on the model: stub.autoEquipped.
+function C_PaperDollInfo.CanAutoEquipCursorItem() return CursorHasItem() end
+function AutoEquipCursorItem() stub.autoEquipped = true; stub.cursorFits = nil end

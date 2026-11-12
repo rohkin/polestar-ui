@@ -5,3 +5,7 @@ PolestarUI.Show("character")
 local v = PolestarUICharacterStats.Body
 local res = v.sections[#v.sections]
 assert(res.name == "Resistance" and res.rows[5]:IsShown() and res.rows[2].Value:GetText() == "15", "resistances")
+-- An item dropped on the model goes on.
+stub.cursorFits = {}
+stub.RunScript(PolestarUICharacter.psGear.Model, "OnReceiveDrag")
+assert(stub.autoEquipped and not CursorHasItem(), "not worn")
