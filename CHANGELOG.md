@@ -17,6 +17,11 @@
 - Spellbook: a Filter button, portals and other flyouts as one entry, the game's skill-line icons, and marks for spells on no action bar.
 - Talents: Activate and Reset, the game's search options, drag learnt talents to your bars, and disabled buttons say why.
 - Professions: favorite recipes, Track recipe, Link profession, item-level search, skill-up chance in the tooltip, View crafters, tool and gear slots, and Craft says why it is disabled.
+- Legacy: status lines in place of instructions, and filters that show how many are on, with Clear filters.
+- Chat: the selected tab is the only one that looks selected.
+- Windows: each window's options are in its "..." menu.
+- NPC windows stay open when a bag addon such as Baganator opens its bags.
+- Quest dialog: closes itself when another addon accepts or turns in the quest.
 
 ## 0.0.5
 
