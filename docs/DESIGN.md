@@ -597,12 +597,248 @@ zoom and click-to-open are the game's.
   world quest links, `/mappin`, the minimap's zone text, NPC map
   interactions (`WORLD_MAP_OPEN`) and the spirit healer.
 
+#### NPC windows: how they open
+Merchant, Bank, Mail, Auction and Trainer are NPC interactions. The game
+opens each through the interaction manager
+(`PLAYER_INTERACTION_MANAGER_FRAME_SHOW`, `RegisterPlayerInteraction` in
+`PlayerInteractionFrameManager.lua`), and the stock window ends the
+interaction as it hides (`CloseMerchant`, `C_Bank.CloseBankFrame`,
+`CloseMail`, `C_AuctionHouse.CloseAuctionHouse`, `CloseTrainer` in its
+`OnHide`). So, as the crafting window (CLIENT.md, rule 11), the stock window
+is never opened: ours registers itself for the interaction type
+(`RegisterPlayerInteraction(type, { frame = "PolestarUI<Name>", showFunc,
+hideFunc })`, the manager's own API, which replaces the stock entry), and
+where Forever also routes the open through `GameEvent` (`TRAINER_SHOW`,
+`AUCTION_HOUSE_SHOW`/`CLOSED`) that route is stopped
+(`GameEvent.UnregisterInternalEvent`). Ours opens the bags as the stock
+`OnShow` did (`OpenAllBags`), closes them as it hides, and ends the
+interaction when the player closes it (`C_PlayerInteractionManager.ClearInteraction`
+or the stock close call), never twice when the game ended it. Off waits for
+`/reload` (`reloadOff`): routed back from our code, the stock window would open
+tainted. One helper does this for all five (`ns.Interaction`, Core.lua).
+Doors only the stock code knows: none; the NPC is the only door. Gossip,
+the quest dialog and loot open on events their own frames register
+(below): each says how.
+
+#### Social (`FriendsFrame`) — Risk: medium
+Forever loads `Blizzard_FriendsFrame`'s Camelot files: three bottom tabs,
+Contacts (`FriendsListFrame`, its header's Battle.net status and the ignore
+list as a toggle inside it; `RecentAlliesFrame`), Raid (`RaidFrame`) and
+Quick Join. No Who tab (Who is `LFGVanilla`'s, `TOGGLEWHOTAB`) and no guild
+tab (`TOGGLEGUILDTAB` opens Communities): both stay the game's.
+`FriendsFrame`'s show and hide run `UpdateMicroButtons`, so it is never
+touched (CLIENT.md, rule 8): `TOGGLESOCIAL`, `TOGGLEFRIENDSTAB` and
+`TOGGLERAIDTAB` open ours through `ns.Doors` (keys only: Forever has no
+social micro button). The chat's friends button (`QuickJoinToastButton`),
+Battle.net toasts, `/friends` and the gamepad radial call
+`ToggleFriendsFrame` and stay the game's: they are the way to the stock
+window (its Quick Join and Recruit a Friend, until ours has them: the
+Nothing Lost Rule, said in the Options menu).
+- **Shell:** 760×600 with sidebar (240). Subject block: the player's
+  Battle.net status as a dot on the class icon, the player's name, "12 of 40
+  friends online" in Small textDim.
+- **Sidebar:** the shell's search ("Search friends"), then Friends,
+  Battle.net, Ignored, Raid as nav rows, each with its count.
+- **Friends / Battle.net:** a row panel, online first, as the stock list
+  sorts: name in Body (class colour, legible), level, class and zone in Small
+  textDim; offline rows in textMuted with "last online". Click whispers,
+  right-click opens the game's unit popup menu (`FriendsFrame_ShowDropdown`'s
+  contexts, so other addons' entries join it), double-click invites. Footer:
+  "Add friend" (primary, the stock `AddFriendFrame` flow is a StaticPopup:
+  ours is `W.Modal` with a name field), "Send message".
+- **Ignored:** rows with an ✕ (`C_FriendList.DelIgnore`).
+- **Raid:** the eight groups as two columns of row panels (name, class
+  colour, role), read only; the stock drag between groups and the raid
+  ready check stay on the stock tab (pointed to in Options).
+- **Taint:** no protected calls (`C_FriendList`, `BNSendWhisper`,
+  `C_PartyInfo.InviteUnit` are not). Battle.net names and notes are secret
+  in combat on some clients: read out of combat, `issecretvalue` guard (rule 3).
+- **Tests:** `stub_social.lua` (a `FriendsFrame` whose `Hide`/`Show` error from addon code, `C_FriendList`, `C_BattleNet`); scenes `social` (keys through override bindings, refused in combat), `social-battlenet`, `social-raid`, `social-secret` (names secret in combat keep the last read).
+
+#### Merchant (`MerchantFrame`) — Risk: medium
+Opened by the interaction manager (Merchant), taken as above
+(`ns.Interaction`, `CloseMerchant`). Polestar's own merchant features stay
+whole: Vendor and Keep (sell junk, repair) run on `MERCHANT_SHOW`, no
+frame; Restock hangs its button under `MerchantFrame`, so ours carries it in
+the footer instead (Polestar's `QoL.Restock.Plan`/`Run`, its total in the
+label; gone when the plan is empty).
+- **Shell:** plain, 640×600, no sidebar; band: the NPC's name, subtitle "Click
+  an item to buy it. Right-click an item in your bags to sell it."
+- **Tabs:** Buy, Buyback (`W.ShellTabs`; the stock `MerchantFrameTab1/2`).
+- **Buy:** every item on one scrolling page (the stock 10 a page is gone):
+  two columns of item rows, each an Item Well (36px), the name in Label
+  (quality colour, legible), under it the price as a Money line (or the
+  currency's icon and count), stack size "×5" in Number textDim, red icon
+  when unusable, desaturated when sold out. Click buys one
+  (`BuyMerchantItem`), shift-click asks how many (a stepper in `W.Modal`),
+  right-click buys a stack, ctrl-click previews; tooltip
+  `GameTooltip:SetMerchantItem`. The stock's high-cost and non-refundable
+  confirms become `W.Modal`. The filter (`MENU_MERCHANT_FRAME`) is the
+  sliders button on the band, the game's Menu kept.
+- **Buyback:** the 12 buyback items, same rows (`BuybackItem`).
+- **Footer:** left: Repair all (`RepairAllItems`, with its cost; guild repair
+  when `CanGuildBankRepair`), Sell junk (`C_MerchantFrame.SellAllJunkItems`,
+  confirmed); right: Restock (Polestar's). Above it, the player's money.
+- **Taint:** no protected calls; dropping a cursor item on the window sells it
+  (`PickupMerchantItem(0)`, as the stock frame).
+- **Tests:** `stub_merchant.lua` (interaction manager, `GetMerchantItemInfo`, buyback, repair cost); scenes `merchant` (`RegisterPlayerInteraction` took the type; `MerchantFrame` never shown; closing ours ends the interaction once), `merchant-buyback`, `merchant-restock` (Polestar's plan shows in the footer).
+
+#### Bank (`BankFrame`) — Risk: medium
+Opened by the interaction manager (Banker, CharacterBanker, AccountBanker),
+taken as above (`ns.Interaction`, `C_Bank.CloseBankFrame`). Forever's bank is
+the mainline tabbed bank (`BankPanel`, `C_Bank`): a Character bank and a
+Warband bank, each of bought tabs (`C_Bank.FetchPurchasedBankTabData`).
+- **Shell:** 760×600 with sidebar. Subject block: the bank icon, "Bank", the
+  player's money.
+- **Sidebar:** Character and Warband as headings, their tabs as nav rows (the
+  tab's icon and name), then "Buy a tab" (its cost) while one can be bought
+  (`C_Bank.PurchaseBankTab` behind `W.Modal`).
+- **Main column:** title the tab's name, an Item Grid of the tab's slots
+  (up to 98, 36px wells, 4px apart), the stock count and quality border on
+  each, search on the band dims what does not match. Footer: "Deposit all"
+  (`C_Bank.AutoDepositItemsIntoBank`), and on Warband "Deposit money" /
+  "Withdraw money" (`W.Modal` with a Money Input; `C_Bank.DepositMoney`).
+  Tab settings (name, icon, filters) stay the stock tab menu's: an Options
+  entry says so, until ours has them.
+- **Slots:** drag and left-click pick up and place
+  (`C_Container.PickupContainerItem`, not protected); right-click moves the
+  item to the bags, which is the protected `UseContainerItem`: a secure button
+  of ours over the hovered slot (`ns.Overlay`, type `item`, "bag slot"), out of
+  combat. Split with shift-drag (`C_Container.SplitContainerItem`, a stepper
+  `W.Modal`).
+- **Tests:** `stub_bank.lua` (tabs, `C_Container` slots, `C_Bank`); scenes `bank` (grid, overlay type `item` on the hovered slot, none in combat), `bank-warband`, `bank-buy-tab`.
+
+#### Mail (`MailFrame`, `OpenMailFrame`) — Risk: low
+Opened by the interaction manager (MailInfo), taken as above
+(`ns.Interaction`, `CloseMail`; the read emote as the stock show does).
+- **Shell:** plain, 760×600, no sidebar. Tabs: Inbox, Send.
+- **Inbox:** a row per letter (`GetInboxHeaderInfo`): the package or the
+  sender's icon in a well, sender in Label, subject in Small textDim, days
+  left at the right (warning under 3), money and COD as Money lines. Click
+  opens it in a flyout right of the list (`ns.DockFlyout`): body text,
+  attachments as an Item Grid (16), money; Take (`TakeInboxItem`,
+  `TakeInboxMoney`), Return, Delete (danger, `W.Modal`); COD asks first
+  (`W.Modal` naming the price). Footer: "Open all" (the stock
+  `C_Mail.SetOpeningAll` loop, one item per `MAIL_INBOX_UPDATE`).
+- **Send:** To (editbox with the stock autocomplete off: our own list from
+  friends and guild), Subject, Body (multi-line editbox), 12 attachment wells
+  (`ClickSendMailItemButton` takes the cursor item), Money or COD (a toggle
+  and a Money Input), the postage as a Money line. Footer: "Send" (primary,
+  `SendMail`).
+- **Taint:** no protected calls.
+- **Tests:** `stub_mail.lua` (inbox headers, attachments, COD); scenes `mail` (inbox), `mail-open` (a letter with attachments and COD), `mail-send`.
+
+#### Auction House (`AuctionHouseFrame`) — Risk: medium
+Forever loads the mainline auction house (`C_AuctionHouse`, commodities and
+items), demand-loaded. Opened by the interaction manager (Auctioneer) and by
+`GameEvent` (`AUCTION_HOUSE_SHOW`/`CLOSED`): both are taken
+(`ns.Interaction`, `C_AuctionHouse.CloseAuctionHouse`); the stock addon is
+never loaded while ours is on.
+- **Shell:** 960×680 with sidebar. Subject block: the auction icon, "Auction
+  House", the player's money. Tabs: Buy, Sell, Auctions.
+- **Buy:** the stock categories (`AuctionCategories`) in the sidebar, the
+  shell's search (`C_AuctionHouse.SendBrowseQuery`), filters on the sliders
+  button; results as rows (Item Well, name, count, unit price as a Money line,
+  time left). A commodity opens its price list and a quantity stepper;
+  Buy is `StartCommoditiesPurchase` then `ConfirmCommoditiesPurchase` on the
+  quote, an item `PlaceBid` (buyout or bid), confirmed by `W.Modal`.
+- **Sell:** drop an item on the well, quantity stepper, unit price (Money
+  Input, the stock default from the lowest listing), duration (three choices),
+  the deposit as a Money line; Post (`PostItem`/`PostCommodity`).
+- **Auctions:** the player's auctions and bids (`GetOwnedAuctions`), Cancel
+  (`CancelAuction`, `W.Modal` naming the fee).
+- **Taint:** purchases and posts need a hardware event: only from our
+  buttons' clicks, never from a timer or an event.
+- **Tests:** `stub_auction.lua` (`C_AuctionHouse` browse results, commodity quote, owned auctions; both open routes); scenes `auction` (both routes stopped, the stock addon not loaded), `auction-commodity`, `auction-sell`, `auction-owned`.
+
+#### Trainer (`ClassTrainerFrame`) — Risk: medium
+Demand-loaded; opened by the interaction manager (Trainer) and by Forever's
+`GameEvent` (`TRAINER_SHOW`): both are taken (`ns.Interaction`,
+`CloseTrainer`). Its show and hide also run `UpdateMicroButtons`: one more
+reason it is never opened. Polestar's "Train All" button hangs on the stock
+frame (`QoL/Trainer.lua`); ours carries it in the footer (Polestar's
+`QoL.Trainer.Start`).
+- **Shell:** 760×600 with sidebar. Subject block: the trainer's portrait
+  (`SetPortraitTexture` on a well), the NPC's name, "Warrior trainer".
+- **Sidebar:** the stock categories (`Blizzard_TrainerUI_Camelot`: by skill
+  line) as nav rows with counts of what can be learnt; the stock filter
+  (available, unavailable, used; `MENU_TRAINER_FILTER`) on the sliders button.
+- **Main column:** a row per service as Spellbook rows (`ns.SpellRow`'s
+  shape): icon, name and rank, under it the cost as a Money line and what it
+  needs ("Requires level 26") in danger when unmet; learnt ones in textMuted.
+  Click selects and shows its description in a panel under the list.
+- **Footer:** Train (primary, `BuyTrainerService`; the stock
+  `CONFIRM_PROFESSION` becomes `W.Modal`), Train All (Polestar's).
+- **Tests:** `stub_trainer.lua` (services, categories, both open routes); scenes `trainer` (`TRAINER_SHOW` unregistered, the interaction taken, `ClassTrainerFrame` never shown), `trainer-filter`.
+
+#### Gossip (`GossipFrame`) — Risk: medium
+Opened by `CustomGossipFrameManager` on `GOSSIP_SHOW`. The stock window ends
+the gossip as it hides (`C_GossipInfo.CloseGossip` in its `OnHide`). The
+manager offers a default handler (`CustomGossipFrameManager:SetBaseHandler`):
+ours takes it, so the game calls ours for every gossip its custom handlers
+(the NPE guide) do not take; ours closes itself on `GOSSIP_CLOSED` (the
+manager's `HideUIPanel` of ours does nothing from our code, CLIENT.md rule
+1). Off waits for `/reload`. Polestar's gossip automation runs on the
+events and is unaffected.
+- **Shell:** plain, 520×560, no tabs, no sidebar. Band: the NPC's name, the
+  greeting under it in Body.
+- **List:** quests to hand in, quests to take (the stock icons:
+  available, repeatable, complete; trivial in textMuted), then the options
+  (`C_GossipInfo.GetOptions`, `orderIndex` order) with their game icons.
+  Click: `SelectActiveQuest`, `SelectAvailableQuest`,
+  `C_GossipInfo.SelectOption`. Keys 1-9 pick, as the stock frame's.
+- **Taint:** none protected; a gossip that opens another window (vendor,
+  trainer) flows into that window's interaction.
+- **Tests:** `stub_gossip.lua` (`CustomGossipFrameManager` with the stock dispatch, `C_GossipInfo`); scenes `gossip` (the base handler is ours, the NPE guide kit still goes to its handler, `GOSSIP_CLOSED` closes ours), `gossip-quests`.
+
+#### Quest dialog (`QuestFrame`) — Risk: medium
+`QuestFrame` registers its own events (`QUEST_GREETING`, `QUEST_DETAIL`,
+`QUEST_PROGRESS`, `QUEST_COMPLETE`, `QUEST_FINISHED`, `QuestFrame_OnLoad`) and
+ends the quest dialog as it hides (`CloseQuest`). No manager, no `GameEvent`
+route: to replace it, ours would unregister those five events on
+`QuestFrame` (a widget call, no Lua value written; the contract allows it only
+with the user's leave). Without that, it is not built. Polestar's reward
+marks hang on `QuestInfoFrame`'s reward buttons; ours shows them through
+Polestar's ranking (`QoL.Rewards`, exported for it).
+- **Shell:** plain, 560×600. Band: the quest's title, the NPC's name.
+- **Pages:** greeting (as Gossip's list), detail (description, objectives,
+  rewards: the World Map's quest details layout), progress (required items as
+  Reagent Tiles, "3/4"), reward (choices as Reagent Tiles with Polestar's
+  marks, a click selects). Footer: Accept / Decline, Continue, Complete
+  (`AcceptQuest`, `CompleteQuest`, `GetQuestReward(choice)`); the stock
+  expensive and PvP confirms become `W.Modal`.
+- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events); scenes `quest-detail`, `quest-progress`, `quest-reward` (Polestar's marks), each asserting `QuestFrame` never shows.
+
+#### Loot (`LootFrame`) — Risk: high
+`LootFrame` registers its own `LOOT_OPENED`/`LOOT_CLOSED` and ends the loot
+as it hides (`CloseLoot`); the gamepad smart navigation focuses it. As the
+quest dialog, ours needs the stock frame's open event unregistered (the
+user's leave), off after `/reload`. `LootSlot` is not protected (the stock
+click is plain Lua), but loot under the mouse and autoloot are the game's:
+with autoloot the window flashes, as the stock one.
+- **Shell:** none: a small panel (`Theme.Skin(f, "window")`, 240 wide), at
+  the cursor when `lootUnderMouse` is on, else the stock place. A row per
+  slot: Item Well (32px), name in quality colour (legible), count; coin
+  slots as a Money line. Click loots (`LootSlot`); the bind and
+  distribution confirms stay the game's StaticPopups (`LOOT_BIND`, shown by
+  `GameEvent`); master loot's candidate menu as the stock one.
+- **Group loot rolls** (`GroupLootFrame`, `START_LOOT_ROLL`) are not part of
+  it.
+- **Tests:** `stub_loot.lua` (`LootFrame` with its events, `GetLootSlotInfo`, a coin slot); scenes `loot` (`LootSlot` on click, `LootFrame` never shows), `loot-cursor` (`lootUnderMouse`).
+
+#### Game menu (`GameMenuFrame`) — Risk: high
+Not replaced. Escape runs `ToggleGameMenu`, which walks the game's Escape
+handlers in `securecallfunction` (closing windows, stopping a cast, clearing
+the target) before it shows the menu: taking the key would take all of that.
+Other addons add buttons on `EventRegistry` "GameMenuFrame.Shown", and the
+buttons are rebuilt from a pool on every show; Logout and Quit are
+protected. If anything, it is restyled in place (rule 15: our ground and
+hairlines, the pooled buttons repainted from "GameMenuFrame.Shown"), with
+the HUD restyles, after the user decides.
+
 #### Later windows
-Each gets its entry before it is built. Planned order and Risk:
-Social (low), Merchant (medium), Bank (medium), Mail (low),
-Auction (medium), Trainer (low), Gossip and Quest dialog (medium), Loot (high:
-`LootSlot`), Game menu (high: protected logout/exit), StaticPopup (high: never
-replaced, only restyled windows of our own call `W.Modal`).
+StaticPopup is never replaced or restyled: it is shared with the secure
+dialogs; only our own windows call `W.Modal`.
 
 ### 2. HUD (after the windows)
 
