@@ -567,7 +567,8 @@ function ns.QuestRewards(parent, o)
 	-- The rewards in QuestInfo_ShowRewards' order: choices, spells, a title,
 	-- then what comes with them (experience, money, skill, items, currencies,
 	-- honor). `d` = the counts and values the caller read (items, choices,
-	-- money, xp, honor, title, skillName, skillIcon, skillPoints) and
+	-- money, xp, honor, title, skillName, skillIcon, skillPoints, chooseItems (the
+	-- complete step: "Choose your reward:" for several choices)) and
 	-- choice(i), reward(i) -> name, icon, count, quality, usable.
 	function c.Rewards(id, d)
 		local items, choices, money, xp, honor, title, skillPoints = d.items, d.choices, d.money, d.xp, d.honor, d.title, d.skillPoints
@@ -587,7 +588,7 @@ function ns.QuestRewards(parent, o)
 		if items + choices + #currencies + #spells == 0 and money == 0 and xp == 0 and honor == 0 and not title and not skillPoints then return end
 		c.text("heading", "text", "Rewards", 24)
 		if choices > 0 then
-			c.head(choices == 1 and REWARD_ITEMS_ONLY or REWARD_CHOICES)
+			c.head(choices == 1 and REWARD_ITEMS_ONLY or (d.chooseItems and REWARD_CHOOSE or REWARD_CHOICES))
 			for i = 1, choices do d.choice(i) end
 		end
 		table.sort(spells, function(a, b) return a.order < b.order end)

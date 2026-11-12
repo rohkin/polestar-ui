@@ -140,6 +140,7 @@ end
 function UnitXPMax() return 1280 end
 GameRulesUtil = GameRulesUtil or { CanShowExperienceBar = function() return true end }
 function GetMoneyString(m) return ("%ds %dc"):format(math.floor(m / 100), m % 100) end
+REWARD_CHOOSE = "Choose your reward:"
 REWARD_CHOICES, REWARD_ITEMS, REWARD_ITEMS_ONLY, REWARD_SPELL = "You will be able to choose one of these rewards:", "You will also receive:", "You will receive:", "You will learn:"
 CONFIRM_COMPLETE_EXPENSIVE_QUEST = "Completing this quest requires the following amount of gold. Are you sure you want to complete this quest?"
 CONFIRM_ACCEPT_PVP_QUEST = "Accepting this quest will flag you for PvP for as long as you are on it. Are you sure?"

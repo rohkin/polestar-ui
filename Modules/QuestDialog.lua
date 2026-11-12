@@ -67,7 +67,7 @@ end
 -- The quest giver's rewards in QuestInfo_ShowRewards' order (its npc branch).
 local function rewards()
 	local id = GetQuestID()
-	local d = { items = 0, choices = 0, money = 0, xp = 0, honor = 0 }
+	local d = { items = 0, choices = 0, money = 0, xp = 0, honor = 0, chooseItems = page == "reward" }
 	if page == "reward" or C_QuestLog.ShouldShowQuestRewards(id) then
 		d.items, d.choices, d.money, d.xp, d.honor, d.title = GetNumQuestRewards(), GetNumQuestChoices(), GetRewardMoney(), GetRewardXP(), GetRewardHonor(), GetRewardTitle()
 		d.skillName, d.skillIcon, d.skillPoints = GetRewardSkillPoints()
