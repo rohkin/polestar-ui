@@ -211,14 +211,9 @@ local function newCard()
 	end
 	-- Repainted with the theme: the wash is Polestar's sky.
 	W.Painter(c.psTint[1], function() paintArt(c) end)
-	local well = CreateFrame("Frame", nil, c)
-	well:SetSize(ICON, ICON)
+	local well
+	well, c.Icon = ns.ItemWell(c, ICON)
 	well:SetPoint("TOPLEFT", c, "TOPLEFT", PAD, -PAD)
-	Polestar.Theme.Skin(well, "inset")
-	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
-	c.Icon = ns.GameIcon(well)
-	c.Icon:SetPoint("TOPLEFT", 1, -1)
-	c.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
 	c.Unlearn = W.IconButton(c, "cross", 24, "Unlearn", function() unlearn(c) end, 12)
 	c.Unlearn:SetPoint("TOPRIGHT", c, "TOPRIGHT", -10, -10)
 	c.Name = W.Text(c, "title", "text")
