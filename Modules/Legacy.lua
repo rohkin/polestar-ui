@@ -293,11 +293,12 @@ local function catRow(list, i, group)
 	r.Bar:SetWidth(2)
 	r.Count = W.Text(r, "number", "textMuted")
 	r.Count:SetPoint("RIGHT", r, "RIGHT", -W.SHELL.side, 0)
-	-- The stock list's "new" mark: a challenge earned here not yet seen.
+	-- The stock list's "new" mark: a challenge earned here not yet seen; a
+	-- fixed slot left of the count's (three digits wide), never moving with it.
 	r.Dot = W.Fill(r, "accent", "ARTWORK", 0)
 	r.Dot:ClearAllPoints()
 	r.Dot:SetSize(6, 6)
-	r.Dot:SetPoint("RIGHT", r.Count, "LEFT", -8, 0)
+	r.Dot:SetPoint("RIGHT", r, "RIGHT", -(W.SHELL.side + 24 + 8), 0)
 	r.Chevron = W.Tex(r, "ARTWORK", "chevron-right", "textMuted")
 	r.Chevron:SetSize(12, 12)
 	r.Chevron:SetPoint("LEFT", r, "LEFT", W.SHELL.side, 0)
