@@ -6,3 +6,5 @@ stub.dual = true
 PolestarUI.Show("talents", 2)
 local f = PolestarUITalents
 assert(f.psArt[2]:IsShown() and f.psTint[2]:IsShown() and f.psArt[1].gradient.min[4] == 0 and f.psArt[3].gradient.max[4] == 0 and f.psArt[6].gradient.max[4] == 0 and f.psArt[9].gradient.max[4] == 0, "no class art, or not feathered at its sides and seams")
+stub.RunScript(f.footerButtons.right[1], "OnEnter")
+assert(GameTooltip.lines[1] == "Not your active spec", "no reason on Apply: " .. tostring(GameTooltip.lines[1]))

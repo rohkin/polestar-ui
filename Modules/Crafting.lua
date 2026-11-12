@@ -449,11 +449,42 @@ local function hidePage()
 	for _, fs in ipairs(f.psNotes) do fs:Hide() end
 end
 
+-- Why the game would refuse the craft, in the stock window's order
+-- (ValidateCraftRequirements), or nil when it would take it.
+local function whyNot(info)
+	if not info then return "No recipe chosen" end
+	if viewing() then return "Not your recipes: they are only shown" end
+	if info.disabled or not info.craftable then return info.disabledReason or "You can't craft this now" end
+	local cd = C_TradeSkillUI.GetRecipeCooldown(info.recipeID)
+	if cd and cd > 0 then return PROFESSIONS_RECIPE_COOLDOWN or "On cooldown" end
+	for _, r in ipairs(C_TradeSkillUI.GetRecipeRequirements(info.recipeID) or {}) do
+		if not r.met then return PROFESSIONS_MISSING_REQUIREMENT or "Missing a requirement" end
+	end
+	if info.count <= 0 then return PROFESSIONS_INSUFFICIENT_REAGENTS or "Missing reagents" end
+end
+
+-- A button enabled only without a reason; disabled, it says why in its
+-- tooltip (the client sends a disabled button its mouse-overs only when asked).
+local function reason(b, why)
+	ns.SetEnabled(b, why == nil)
+	b.psReason = why
+	if b.psReasonHooked then return end
+	b.psReasonHooked = true
+	b:SetMotionScriptsWhileDisabled(true)
+	b:HookScript("OnEnter", function(self)
+		if not self.psReason then return end
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(self.psReason, 1, 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	b:HookScript("OnLeave", function(self) if GameTooltip:GetOwner() == self then GameTooltip:Hide() end end)
+end
+
 -- The footer: the quantity stepper on the left, Craft all and Craft on the
 -- right, each enabled only when the game would take it.
 local function paintFooter(info)
-	local blocked = not info or viewing() or select(2, notes(info))
-	local can = not blocked and info.count > 0
+	local why = whyNot(info)
+	local can = why == nil
 	most = can and info.count or 1
 	-- An enchant goes on one item; more only into one that stores them (a
 	-- vellum), as the game's window allows.
@@ -473,7 +504,7 @@ local function paintFooter(info)
 		{ label = "Craft all", onClick = function() craft(most) end },
 	})
 	f.psStep.Paint()
-	for _, b in ipairs(f.footerButtons.right) do ns.SetEnabled(b, can) end
+	for _, b in ipairs(f.footerButtons.right) do reason(b, why) end
 end
 
 -- The first section holding the recipe, `key`'s if it is one of them.

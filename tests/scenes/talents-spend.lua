@@ -15,6 +15,8 @@ local function frost() return find(function(n) return n.currentRank == 0 and n.i
 assert(frost().Icon.desaturated, "an open talent with no point to spend is not greyed, as the stock button greys it")
 f.footerButtons.right[2]:Click()
 assert(footer() == 0 and sub():find("1 point to spend"), "undo: " .. sub())
+local function tip(b) stub.RunScript(b, "OnEnter"); return GameTooltip.lines[1] end
+assert(tip(f.footerButtons.right[1]) == "Nothing to apply" and tip(f.footerButtons.right[2]) == "Nothing to undo", "no reason on a disabled button")
 assert(not frost().Icon.desaturated, "an open talent with a point to spend is greyed")
 local open = find(function(n) return n.canPurchaseRank and n.groupIDs[1] == 1003 end)
 local id, rank = open.psInfo.ID, open.psInfo.currentRank

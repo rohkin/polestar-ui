@@ -378,6 +378,23 @@ end
 
 local optionsItems = { { text = "Game's talents: shift-click their micro button", disabled = true } }
 
+-- A button enabled only without a reason; disabled, it says why in its
+-- tooltip (the client sends a disabled button its mouse-overs only when asked).
+local function reason(b, why)
+	ns.SetEnabled(b, why == nil)
+	b.psReason = why
+	if b.psReasonHooked then return end
+	b.psReasonHooked = true
+	b:SetMotionScriptsWhileDisabled(true)
+	b:HookScript("OnEnter", function(self)
+		if not self.psReason then return end
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(self.psReason, 1, 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	b:HookScript("OnLeave", function(self) if GameTooltip:GetOwner() == self then GameTooltip:Hide() end end)
+end
+
 -- The class's talent art (the stock frame's talent-background-<class>) behind
 -- the trees, under a wash of Polestar's sky blue, both feathered out at the
 -- sides: full width, the middle band of its height (its aspect kept), so its
@@ -525,9 +542,13 @@ local function refresh()
 	-- Polestar disables (faded to 45%) while nothing is staged. The right side
 	-- lays out from the edge.
 	W.ShellFooter(f, {}, { { label = "Apply", onClick = apply, opts = { primary = true } }, { label = "Undo", onClick = undo } })
-	for _, b in ipairs(f.footerButtons.right) do
-		ns.SetEnabled(b, staged)
-	end
+	-- A disabled one says why in its tooltip; Apply also waits on the
+	-- client's CanChangeTalents, as the stock Apply does.
+	local why = not active and "Not your active spec" or committing and "Applying your talents…" or nil
+	local can, canAdd, err = C_ClassTalents.CanChangeTalents()
+	local apply_, undo_ = f.footerButtons.right[1], f.footerButtons.right[2]
+	reason(apply_, why or (not staged and "Nothing to apply") or (not (can or canAdd) and (err or "Talents cannot be changed now")) or nil)
+	reason(undo_, why or (not staged and "Nothing to undo") or nil)
 	paintArt() -- the footer sets the content's height
 	W.ShellBody(f, height)
 end
