@@ -36,6 +36,11 @@ assert(r[1].Text:GetText() == "Let me browse your goods." and r[2].Text:GetText(
 assert(r[3].Text:GetText() == "(Quest) (Play Movie) What happened to the mine?", "the quest option is not marked: " .. r[3].Text:GetText())
 assert(f.psPortraitIcon.texture == 132355, "no portrait")
 assert(r[1].Icon.texture == 132060 and tostring(r[1].Key:GetText()) == "1", "icon or key number")
+-- No instruction in the band: the key is the row tooltip's hint.
+assert((f.Subtitle:GetText() or "") == "", "an instruction in the band")
+stub.RunScript(r[2], "OnEnter")
+assert(GameTooltip.lines[1] == "Train me." and GameTooltip.lines[#GameTooltip.lines] == "Click or press 2 to choose it.", "row hint")
+stub.RunScript(r[2], "OnLeave")
 
 -- The player closing ours ends the gossip once.
 f:Hide()

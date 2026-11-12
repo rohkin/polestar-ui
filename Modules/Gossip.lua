@@ -60,11 +60,11 @@ local function newRow(i)
 	r.Text:SetPoint("LEFT", r.Icon, "RIGHT", 8, 0)
 	r.Text:SetWordWrap(true)
 	r:SetScript("OnClick", function(self) self.psEntry.pick() end)
+	-- The option's spell, as the stock button's tooltip; the key that picks it as a hint.
 	r:SetScript("OnEnter", function(self)
-		local id = self.psEntry.spellID
-		if not id then return end
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetSpellByID(id)
+		if self.psEntry.spellID then GameTooltip:SetSpellByID(self.psEntry.spellID) else GameTooltip:SetText(self.Text:GetText(), 1, 1, 1, 1, true) end
+		if self.psKey then ns.TooltipHint(("Click or press %d to choose it."):format(self.psKey)) end
 		GameTooltip:Show()
 	end)
 	r:SetScript("OnLeave", W.HideTooltip)
@@ -74,7 +74,7 @@ end
 
 local function refresh()
 	local list, w = entries(), f.BodyWidth
-	W.ShellTitle(f, ns.Clean(UnitName("npc")) or "", #list > 0 and "Click a choice, or press its number." or nil)
+	W.ShellTitle(f, ns.Clean(UnitName("npc")) or "")
 	f.psPortrait("npc")
 	-- A friendship NPC's standing heads the body, the greeting under it.
 	f.psFriend.Paint()
@@ -90,7 +90,8 @@ local function refresh()
 		r.psEntry = e
 		if e.atlas then r.Icon:SetAtlas(e.icon) else r.Icon:SetTexture(e.icon) end
 		r.Icon:SetDesaturated(e.dim or false)
-		r.Key:SetText(i <= 9 and i or "")
+		r.psKey = i <= 9 and i or nil
+		r.Key:SetText(r.psKey or "")
 		r.Text:SetWidth(w - (W.SHELL.side + 16 + 8) - W.SHELL.side - 24)
 		r.Text:SetText(e.text)
 		W.Color(r.Text, e.dim and "textMuted" or "text")
