@@ -1,7 +1,7 @@
 --@ title: Auction House: search options
 --@ roots: PolestarUIAuction, PolestarMenu
 --@ stubs: stub_npc.lua, stub_auction.lua
--- The stock search options on the sliders button at the end of the search row: a level range (our dialog with two fields) and the client's filter groups (C_AuctionHouse.GetFilterGroups) under their headings, every rarity on by default; the menu opens again after each pick. They go with the next search (SendBrowseQuery's filters and level range), and an item's auctions keep to the level range (SendSearchQuery). The glyph is lit while an option differs from the default, kept per character; Reset filters puts them back. Shown last: the menu with Usable only on and Poor off.
+-- The stock search options on the sliders button at the end of the search row: a level range (our dialog with two fields) and the client's filter groups (C_AuctionHouse.GetFilterGroups) under their headings, every rarity on by default; the menu opens again after each pick. They go with the next search (SendBrowseQuery's filters and level range), and an item's auctions keep to the level range (SendSearchQuery). The glyph is lit while an option differs from the default, kept per character, and its tooltip counts them; Clear filters puts them back. Shown last: the menu with Usable only on and Poor off.
 local T = Enum.PlayerInteractionType
 stub.interact(T.Auctioneer)
 local f = PolestarUIAuction
@@ -47,11 +47,13 @@ for _, r in ipairs({ f.Body:GetChildren() }) do if r.psKey and r:IsShown() then 
 first:Click()
 assert(stub.searchQuery.minLevel == 10 and stub.searchQuery.maxLevel == 20, "the item's auctions not kept to the level range")
 
--- Kept per character; Reset filters puts the defaults back.
+-- Kept per character, counted in the tooltip (the level range, Usable only,
+-- Poor); Clear filters puts the defaults back.
 assert(PolestarUICharDB.auctionFilters.minLevel == 10, "not kept")
+assert(f.psFilter.psTip == "Search options (3 on)", "the count: " .. tostring(f.psFilter.psTip))
 f.psFilter:Click()
-row("Reset filters"):Click()
-assert(not f.psFilter.psActive and PolestarUICharDB.auctionFilters.minLevel == 0 and not next(PolestarUICharDB.auctionFilters.filters), "not reset")
+row("Clear filters"):Click()
+assert(not f.psFilter.psActive and f.psFilter.psTip == "Search options" and PolestarUICharDB.auctionFilters.minLevel == 0 and not next(PolestarUICharDB.auctionFilters.filters), "not cleared")
 f.footerButtons.left[1]:Click()
 f.psFilter:Click()
 row("Usable only"):Click()

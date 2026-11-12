@@ -235,11 +235,12 @@ local function filterOn(v)
 	return on
 end
 
+-- How many search options are off their default (the level range counts one).
 local function filtered()
-	local o = options()
-	if o.minLevel ~= 0 or o.maxLevel ~= 0 then return true end
-	for v, on in pairs(o.filters) do if on ~= defaultFilter(v) then return true end end
-	return false
+	local o, n = options(), 0
+	if o.minLevel ~= 0 or o.maxLevel ~= 0 then n = 1 end
+	for v, on in pairs(o.filters) do if on ~= defaultFilter(v) then n = n + 1 end end
+	return n
 end
 
 local function filterList()
@@ -305,9 +306,9 @@ local function filterMenu(anchor)
 			end }
 		end
 	end
-	if filtered() then
+	if filtered() > 0 then
 		items[#items + 1] = { separator = true }
-		items[#items + 1] = { text = "Reset filters", onClick = function()
+		items[#items + 1] = { text = "Clear filters", onClick = function()
 			PolestarUICharDB.auctionFilters = nil
 			paint()
 		end }
@@ -1605,7 +1606,9 @@ function paint()
 		paint()
 	end)
 	paintNav()
-	W.SetIconState(f.psFilter, filtered())
+	local on = filtered()
+	W.SetIconState(f.psFilter, on > 0)
+	f.psFilter.psTip = on > 0 and ("Search options (%d on)"):format(on) or "Search options"
 	ns.SetMoney(money, GetMoney())
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
