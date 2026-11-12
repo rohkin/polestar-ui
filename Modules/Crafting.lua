@@ -8,8 +8,9 @@ local Theme = Polestar.Theme
 
 local NAME = "PolestarUICrafting"
 local HEAD_H, ROW_H, TILE_H, PRODUCT, RECENT = 32, 28, 32, 40, 8
--- The client's recipe difficulty colours: optimal, medium, easy, trivial.
-local DIFFICULTY = { [0] = { 1, 0.5, 0.25 }, [1] = { 1, 1, 0 }, [2] = { 0.25, 0.75, 0.25 }, [3] = { 0.5, 0.5, 0.5 } }
+-- The client's recipe difficulty colours (its own colour constants), by
+-- relativeDifficulty: optimal, medium, easy, trivial.
+local DIFFICULTY = { [0] = "DIFFICULT_DIFFICULTY_COLOR", [1] = "FAIR_DIFFICULTY_COLOR", [2] = "EASY_DIFFICULTY_COLOR", [3] = "TRIVIAL_DIFFICULTY_COLOR" }
 
 local f, query, sel, selKey, qty, most = nil, "", nil, nil, 1, 1
 -- An enchant's item (its GUID), chosen in the item slot; nil: Craft lets the
@@ -124,13 +125,13 @@ end
 
 local quality = ns.QualityRGB
 
--- An item's name in its quality colour, lifted to read; the border raw,
--- from uncommon up (docs/DESIGN.md, "Slot Tile").
-local function paintQuality(text, well, q)
+-- An item's icon and name: the name in its quality colour, lifted to read;
+-- the well as ns.PaintItem paints it (docs/DESIGN.md, "Slot Tile").
+local function paintQuality(text, well, q, icon)
+	ns.PaintItem(well, { icon = icon, quality = q })
 	local r, g, b = quality(q)
 	W.Uncolor(text)
 	if r then text:SetTextColor(Theme.Legible(r, g, b)) else W.Color(text, "text") end
-	if r and q >= 2 then Theme.Border(well, r, g, b, 1) else Theme.Border(well, Theme.Wash("border")) end
 end
 
 local iconWell = ns.ItemWell
@@ -210,9 +211,9 @@ local function paintRow(r, info, key)
 	r.psRecipe, r.psKey = info, key
 	r.Icon:SetTexture(info.icon)
 	r.Name:SetText(info.name)
-	local c = DIFFICULTY[info.relativeDifficulty]
+	local c = _G[DIFFICULTY[info.relativeDifficulty] or ""]
 	W.Uncolor(r.Name)
-	if c then r.Name:SetTextColor(Theme.Legible(c[1], c[2], c[3])) else W.Color(r.Name, "text") end
+	if c then r.Name:SetTextColor(Theme.Legible(c.r, c.g, c.b)) else W.Color(r.Name, "text") end
 	r.Count:SetText(info.count > 0 and info.count or "")
 	-- The name runs from the icon to the count; the row grows for a second line.
 	local side = W.SHELL.side
@@ -301,9 +302,8 @@ local function paintTile(t, slot)
 		name, icon = c and c.name, c and c.iconFileID
 	end
 	t.psItem = reagent.itemID
-	t.Icon:SetTexture(icon)
 	t.Name:SetText(name or RETRIEVING_ITEM_INFO or "Loading")
-	paintQuality(t.Name, t.Well, q)
+	paintQuality(t.Name, t.Well, q, icon)
 	t.Count:SetText(("%d/%d"):format(have, slot.quantityRequired))
 	W.Color(t.Count, have >= slot.quantityRequired and "text" or "danger")
 end
@@ -347,9 +347,8 @@ local function paintPage(info)
 		q = C_Item.GetItemQualityByID(s.outputItemID)
 	end
 	p.psRecipe, p.psItem = id, s.outputItemID
-	p.Icon:SetTexture(icon)
 	p.Name:SetText(name)
-	paintQuality(p.Name, p.Well, q)
+	paintQuality(p.Name, p.Well, q, icon)
 	local made = s.quantityMax > s.quantityMin and ("Makes %d\226\128\147%d"):format(s.quantityMin, s.quantityMax)
 		or s.quantityMin > 1 and ("Makes %d"):format(s.quantityMin) or nil
 	p.Sub:SetText(made or "")
@@ -409,13 +408,10 @@ local function paintPage(info)
 		y = y + f.psHead2:GetHeight() + 12
 		local name, icon, q = nil, nil, nil
 		if target then name, icon, q = itemByGUID(target) end
-		t.Icon:SetTexture(icon)
 		t.Icon:SetShown(icon ~= nil)
 		t.Name:SetText(name or PROFESSIONS_ADD_ENCHANT or "Add an item")
-		if name then paintQuality(t.Name, t.Well, q) else
-			W.Color(t.Name, "textMuted")
-			Theme.Border(t.Well, Theme.Wash("border"))
-		end
+		paintQuality(t.Name, t.Well, q, icon)
+		if not name then W.Color(t.Name, "textMuted") end
 		t:ClearAllPoints()
 		t:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
 		t:SetWidth((w - 8) / 2)

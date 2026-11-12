@@ -130,3 +130,8 @@ end
 function T.GetEnchantItems(id) return id == 7420 and { "Item-worn-5", "Item-bag-2569" } or {} end
 function T.CanStoreEnchantInItem(guid) return false end
 function T.CraftEnchant(id, n, reagents, loc) stub.enchanted = { id, n, loc and loc.guid } end
+-- The client's difficulty colours (SharedColorConstants), as ColorMixin tables.
+DIFFICULT_DIFFICULTY_COLOR = { r = 1, g = 0.5, b = 0.25 }
+FAIR_DIFFICULTY_COLOR = { r = 1, g = 1, b = 0 }
+EASY_DIFFICULTY_COLOR = { r = 0.25, g = 0.75, b = 0.25 }
+TRIVIAL_DIFFICULTY_COLOR = { r = 0.5, g = 0.5, b = 0.5 }
