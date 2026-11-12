@@ -426,25 +426,84 @@ local function quoted(unit, total)
 		end })
 end
 
--- An item's auction: a click buys it out, a right-click (or no buyout) bids;
--- PlaceBid runs from the dialog button's click.
+-- The player's bids: the auctions bid on, kept per character as the stock
+-- g_activeBidAuctionIDs (QueryBids asks for them by ID), and those outbid
+-- this session (UpdateBidLists): one bid on that no longer shows the player
+-- as its bidder.
+local outbid = {}
+local function bidList()
+	PolestarUICharDB.auctionBids = PolestarUICharDB.auctionBids or {}
+	return PolestarUICharDB.auctionBids
+end
+
+local function queryBids() AH.QueryBids(sorts("owned:bids"), bidList()) end
+
+local function bidsUpdated()
+	for _, id in ipairs(bidList()) do outbid[id] = true end
+	local list, me = {}, UnitGUID("player")
+	for i = 1, AH.GetNumBids() do
+		local b = AH.GetBidInfo(i)
+		if b then
+			if #list < 100 then list[#list + 1] = b.auctionID end
+			if b.bidder and b.bidder == me then outbid[b.auctionID] = nil end
+		end
+	end
+	PolestarUICharDB.auctionBids = list
+end
+
+-- AuctionHouseFrameMixin:GetBidStatus: "mine", "outbid", "other" or nil.
+local function bidStatus(r)
+	if not r.bidder then return nil end
+	if r.bidder == UnitGUID("player") then return "mine" end
+	if outbid[r.auctionID] then return "outbid" end
+	return "other"
+end
+local BID_TEXT = { mine = AUCTION_HOUSE_HIGHEST_BIDDER or "You are the highest bidder", outbid = AUCTION_HOUSE_OUTBID or "Outbid" }
+local BID_COLOR = { mine = "success", outbid = "danger" }
+
+-- An auction (an item's listing or a bid of the player's): a click buys it
+-- out, a right-click (or no buyout) bids, as the stock bid and buyout frames
+-- (AuctionHouseBuySystemMixin); PlaceBid runs from our dialog button's click.
+local function buyout(r, name)
+	if r.buyoutAmount > GetMoney() then
+		return UIErrorsFrame:AddExternalErrorMessage(AUCTION_HOUSE_TOOLTIP_TITLE_NOT_ENOUGH_MONEY or ERR_NOT_ENOUGH_MONEY or "Not enough money")
+	end
+	ask({ title = ("Buy out %s?"):format(name or ""), text = ("It costs %s."):format(coins(r.buyoutAmount)), action = "Buy",
+		onAccept = function() AH.PlaceBid(r.auctionID, r.buyoutAmount) end })
+end
+
 local moneyIn
-local function bid(r)
+local function bid(r, name)
+	local least = r.minBid or 0
+	if bidStatus(r) == "mine" then
+		return UIErrorsFrame:AddExternalErrorMessage(BID_TEXT.mine)
+	elseif least == 0 then
+		return
+	elseif least > GetMoney() then
+		return UIErrorsFrame:AddExternalErrorMessage(AUCTION_HOUSE_TOOLTIP_TITLE_NOT_ENOUGH_MONEY or ERR_NOT_ENOUGH_MONEY or "Not enough money")
+	end
 	moneyIn = moneyIn or ns.MoneyInput(UIParent, function(c) bidAmount = c end)
-	bidAmount = r.minBid
+	bidAmount = least
 	moneyIn.Set(bidAmount)
-	ask({ title = ("Bid on %s"):format(view.info.itemName or ""), text = ("At least %s."):format(coins(r.minBid)), action = "Bid",
-		onAccept = function() if bidAmount >= r.minBid then AH.PlaceBid(r.auctionID, bidAmount) end end }, moneyIn)
+	ask({ title = ("Bid on %s"):format(name or ""), text = ("At least %s."):format(coins(least)), action = "Bid",
+		onAccept = function()
+			-- A bid at the buyout or over buys it out; under the least is refused.
+			if r.buyoutAmount and r.buyoutAmount > 0 and bidAmount >= r.buyoutAmount then return buyout(r, name) end
+			if bidAmount < least then
+				return UIErrorsFrame:AddExternalErrorMessage(AUCTION_HOUSE_BID_AMOUNT_IS_TOO_LOW or "Your bid is too low.")
+			end
+			AH.PlaceBid(r.auctionID, bidAmount)
+		end }, moneyIn)
 end
 
 local function auctionClick(row, button)
 	local r = row.psData
 	if r.containsOwnerItem then return end
+	local info = AH.GetItemKeyInfo(r.itemKey) or {}
 	if r.buyoutAmount and button ~= "RightButton" then
-		ask({ title = ("Buy out %s?"):format(view.info.itemName or ""), text = ("It costs %s."):format(coins(r.buyoutAmount)), action = "Buy",
-			onAccept = function() AH.PlaceBid(r.auctionID, r.buyoutAmount) end })
+		buyout(r, info.itemName)
 	elseif r.minBid then
-		bid(r)
+		bid(r, info.itemName)
 	end
 end
 
@@ -739,11 +798,13 @@ local function paintItem()
 	local n = AH.GetNumItemSearchResults(view.key)
 	for i = 1, n do
 		local r = AH.GetItemSearchResultInfo(view.key, i)
-		local mine = r.containsOwnerItem
+		local mine, status = r.containsOwnerItem, bidStatus(r)
 		local who = sellers(r)
-		fill(i, y, { key = view.key, line = r.buyoutAmount and who or (who ~= "" and who .. ", bid only" or "Bid only"),
-			-- No bid yet: the least one, muted (the stock bid frame's starting amount).
-			cells = { (r.bidAmount or r.minBid) and { money = r.bidAmount or r.minBid, color = r.bidAmount and "textDim" or "textMuted" } or { text = "" },
+		if not r.buyoutAmount then who = who ~= "" and who .. ", bid only" or "Bid only" end
+		fill(i, y, { key = view.key, line = BID_TEXT[status] or who,
+			-- The bid in green when it is the player's, red once outbid
+			-- (SetBidsFrameBidTextColor); no bid yet: the least one, muted.
+			cells = { (r.bidAmount or r.minBid) and { money = r.bidAmount or r.minBid, color = BID_COLOR[status] or (r.bidAmount and "textDim" or "textMuted") } or { text = "" },
 				r.buyoutAmount and (mine and { money = r.buyoutAmount } or cost(r.buyoutAmount)) or { text = "" },
 				{ text = (r.quantity or 1) > 1 and count(r.quantity) or "" }, band(r.timeLeft) },
 			click = auctionClick, data = r, hint = not mine and "Click to buy out, right-click to bid." or nil }, cols)
@@ -928,10 +989,32 @@ local function paintOwned()
 	return n, y, "You have no auctions."
 end
 
+-- Bids: the auctions the player bid on (QueryBids), as the stock Bids tab.
+local function paintBids()
+	W.ShellTitle(f, AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", "Click an auction to buy it out; right-click to bid again.")
+	W.ShellFooter(f, {}, {})
+	local S = Enum.AuctionHouseSortOrder
+	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
+		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
+		{ label = TIME_LEFT or "Time Left", w = 110 } }
+	local y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item", sort = S.Name }, cols, "owned:bids", queryBids)
+	local n = AH.GetNumBids()
+	for i = 1, n do
+		local b = AH.GetBidInfo(i)
+		local status = bidStatus(b)
+		fill(i, y, { key = b.itemKey, line = BID_TEXT[status],
+			cells = { b.bidAmount and { money = b.bidAmount, color = BID_COLOR[status] or "textDim" } or { text = "" },
+				b.buyoutAmount and cost(b.buyoutAmount) or { text = "" }, band(b.timeLeft) },
+			click = auctionClick, data = b, hint = "Click to buy it out, right-click to bid." }, cols)
+	end
+	return n, y, "You have no bids."
+end
+
 ---------------------------------------------------------------------------
 -- The window.
 
-local TABS = { { key = "buy", label = "Buy" }, { key = "sell", label = "Sell" }, { key = "auctions", label = "Auctions" } }
+local TABS = { { key = "buy", label = "Buy" }, { key = "sell", label = "Sell" }, { key = "auctions", label = "Auctions" },
+	{ key = "bids", label = AUCTION_HOUSE_BIDS_SUB_TAB or "Bids" } }
 
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 960, height = 680, searchPlaceholder = "Search items" })
@@ -1019,6 +1102,7 @@ function paint()
 	W.ShellTabs(f, TABS, tab, function(k)
 		tab = k
 		if k == "auctions" then AH.QueryOwnedAuctions(sorts("owned:auctions")) end
+		if k == "bids" then queryBids() end
 		paint()
 	end)
 	paintNav()
@@ -1031,6 +1115,7 @@ function paint()
 	local n, top, empty
 	if tab == "sell" then n, top, empty = paintSell()
 	elseif tab == "auctions" then n, top, empty = paintOwned()
+	elseif tab == "bids" then n, top, empty = paintBids()
 	elseif not view then n, top, empty = paintBrowse()
 	elseif commodity then n, top, empty = paintCommodity()
 	else n, top, empty = paintItem() end
@@ -1048,6 +1133,8 @@ function M.Show()
 	tab = "buy"
 	paint()
 	f:Show()
+	-- The bids, for the outbid marks (the stock addon asks as it loads).
+	queryBids()
 	-- As the stock window opens: the favorites listed when there are any.
 	if AH.HasFavorites() then favorites() end
 end
@@ -1068,7 +1155,7 @@ function M.Enable()
 	local function shown() return f and f:IsShown() end
 	local function changed() if shown() then paint() end end
 	for _, e in ipairs({ "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "ITEM_KEY_ITEM_INFO_RECEIVED",
-		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED" }) do
+		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED", "BID_ADDED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	Polestar.RegisterEvent("COMMODITY_SEARCH_RESULTS_UPDATED", function(_, id) listed(id); changed() end)
@@ -1081,6 +1168,16 @@ function M.Enable()
 		research()
 	end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_PURCHASE_COMPLETED", research)
+	Polestar.RegisterEvent("BIDS_UPDATED", function()
+		bidsUpdated()
+		changed()
+	end)
+	-- Someone outbid the player, or bid on theirs: asked again, as the stock Auctions tab.
+	Polestar.RegisterEvent("AUCTION_HOUSE_NEW_BID_RECEIVED", function()
+		if not shown() then return end
+		if tab == "auctions" then AH.QueryOwnedAuctions(sorts("owned:auctions")) end
+		queryBids()
+	end)
 	Polestar.RegisterEvent("AUCTION_CANCELED", function() if shown() then AH.QueryOwnedAuctions(sorts("owned:auctions")) end end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_POST_WARNING", confirmPost)
 	-- What the stock frame said while open.

@@ -253,6 +253,22 @@ function AH.CancelAuction(id)
 	stub.cancelled[#stub.cancelled + 1] = id
 end
 
+-- The player's bids: { auctionID, itemID, bid, buyout, minBid, timeLeft band, bidder }.
+local ME = "Player-1-0001"
+local unitGUID = UnitGUID
+function UnitGUID(unit) if unit == "player" then return ME end return unitGUID and unitGUID(unit) end
+stub.ahBids = { { 801, 6975, 1550000, 1800000, 1600000, 3, ME }, { 802, 2244, 20000000, 25000000, 21000000, 0, "Player-1-0002" } }
+stub.bidsQueried = nil
+function AH.QueryBids(sorts, ids)
+	stub.bidsQueried = { sorts = sorts, ids = ids }
+	stub.fire("BIDS_UPDATED")
+end
+function AH.GetNumBids() return #stub.ahBids end
+function AH.GetBidInfo(i)
+	local b = stub.ahBids[i]
+	if b then return { auctionID = b[1], itemKey = key(b[2]), bidAmount = b[3], buyoutAmount = b[4], minBid = b[5], timeLeft = b[6], bidder = b[7] } end
+end
+
 local unitName = UnitName
 function UnitName(unit, ...)
 	if unit == "npc" then return "Auctioneer Beardo" end

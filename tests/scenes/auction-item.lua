@@ -3,6 +3,7 @@
 --@ stubs: stub_npc.lua, stub_auction.lua
 -- An item (not a commodity) opens its auctions: each with its buyout, its next bid and the time left; the player's own says so and takes no click. A click buys out after our dialog, a right-click (or an auction with no buyout) bids from a money field set to the least bid, refusing less; PlaceBid runs from the dialog button's click. Back returns to the results.
 local T = Enum.PlayerInteractionType
+stub.money = 50000000
 stub.interact(T.Auctioneer)
 local f = PolestarUIAuction
 f.Search:SetText("axe")
