@@ -1,7 +1,7 @@
 -- Talents (docs/DESIGN.md, "Talents"): the stock talents tab of
 -- PlayerSpellsFrame in a Polestar shell. Forever's three classic trees live on
 -- the client's trait engine: one C_Traits tree, a node group per talent tree.
--- This first step shows them; spending comes next.
+-- Points are staged on the tree and applied, as the stock frame does.
 
 local ADDON, ns = ...
 local W = Polestar.Widgets
@@ -219,13 +219,7 @@ local function undo()
 end
 
 local function newNode(parent)
-	local b = CreateFrame("Button", nil, parent)
-	b:SetSize(NODE, NODE)
-	Polestar.Theme.Skin(b, "inset")
-	Polestar.Theme.Border(b, Polestar.Theme.Wash("border"))
-	b.Icon = ns.GameIcon(b)
-	b.Icon:SetPoint("TOPLEFT", 1, -1)
-	b.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	local b = ns.ItemWell(parent, NODE, "Button")
 	W.Hover(b)
 	-- The rank, once learnt, on a solid chip over the bottom-right corner,
 	-- its hairline in the node's state colour: legible on any icon.
@@ -316,14 +310,8 @@ local function paintTrees(config)
 		if not h then
 			h = CreateFrame("Frame", nil, f.Body)
 			h:SetSize(1, 24)
-			h.Well = CreateFrame("Frame", nil, h)
-			h.Well:SetSize(24, 24)
+			h.Well, h.Icon = ns.ItemWell(h, 24)
 			h.Well:SetPoint("LEFT", 0, 0)
-			Polestar.Theme.Skin(h.Well, "inset")
-			Polestar.Theme.Border(h.Well, Polestar.Theme.Wash("border"))
-			h.Icon = ns.GameIcon(h.Well)
-			h.Icon:SetPoint("TOPLEFT", 1, -1)
-			h.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
 			h.Name = W.Text(h, "heading", "text")
 			h.Name:SetPoint("LEFT", h.Well, "RIGHT", 8, 0)
 			h.Spent = W.Text(h, "number", "textDim")
