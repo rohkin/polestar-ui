@@ -18,8 +18,9 @@ rows()[1]:Click()
 assert(tostring(f.Title:GetText()) == "Whirlwind Axe" and not f.psBuy:IsShown(), "the item not opened")
 local r = rows()
 assert(#r == 3, "an auction per row")
-assert(tostring(r[1].Line:GetText()) == "Bid 150g 0s 0c" and tostring(r[1].Note:GetText()) == "Over 12 h", "buyout, bid and time left")
-assert(tostring(r[2].Line:GetText()) == "Bid only" and tostring(r[3].Note:GetText()) == "Yours", "bid only, and yours")
+local function cell(r, i) return tostring(r.Cells[i].Text:GetText()) end
+assert(tostring(r[1].Line:GetText()) == "Seller901" and cell(r[1], 4) == "Over 12 h" and r[1].Cells[2].Money:IsShown(), "buyout, seller and time left")
+assert(tostring(r[2].Line:GetText()) == "Seller902, bid only" and tostring(r[3].Line:GetText()) == "You", "bid only, and yours")
 local box = function() return PolestarModal.Box end
 
 -- Buyout.

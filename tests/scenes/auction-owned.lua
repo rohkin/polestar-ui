@@ -11,7 +11,7 @@ local r = {}
 for _, b in ipairs({ f.Body:GetChildren() }) do if b.psKey and b:IsShown() then r[#r + 1] = b end end
 table.sort(r, function(a, b) return a:GetTop() > b:GetTop() end)
 assert(#r == 3 and tostring(r[1].Name:GetText()) == "Wool Cloth" and tostring(r[1].Line:GetText()) == "\195\15120", "the auctions")
-assert(tostring(r[3].Note:GetText()) == "Sold" and tostring(r[2].Note:GetText()) == "Over 12 h", "time left and sold")
+assert(tostring(r[3].Cells[1].Text:GetText()) == "Incoming" and tostring(r[2].Cells[3].Text:GetText()) == "Over 12 h", "time left and sold")
 
 r[2]:Click()
 assert(PolestarModal:IsShown() and tostring(PolestarModal.Box.Text:GetText()):find("1g 25s 0c", 1, true), "the fee not named")

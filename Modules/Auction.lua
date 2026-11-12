@@ -146,9 +146,37 @@ local paint
 
 local coins = ns.Coins
 
-local function sorts()
+-- The sorts each list asks the client for, two at most, the last clicked
+-- first, kept for the account as the stock g_auctionHouseSortsBySearchContext
+-- (InitAuctionHouseSortsBySearchContext's defaults; a commodity list has none).
+local function sorts(ctx)
 	local S = Enum.AuctionHouseSortOrder
-	return { { sortOrder = S.Price, reverseSort = false }, { sortOrder = S.Name, reverseSort = false } }
+	PolestarUIDB.auctionSorts = PolestarUIDB.auctionSorts or {}
+	local list = PolestarUIDB.auctionSorts[ctx]
+	if not list then
+		local kind = ctx:match("^%a+")
+		local a, b
+		if kind == "browse" then a, b = S.Price, S.Name
+		elseif kind == "item" then a, b = S.Buyout, S.Bid
+		elseif kind == "owned" then a, b = S.Name, S.Price end
+		list = a and { { sortOrder = a, reverseSort = false }, { sortOrder = b, reverseSort = false } } or {}
+		PolestarUIDB.auctionSorts[ctx] = list
+	end
+	return list
+end
+
+-- AddSortType: the column clicked goes first; clicked while first, it turns.
+local function sortBy(ctx, order)
+	local list, rev = sorts(ctx), false
+	for i, t in ipairs(list) do
+		if t.sortOrder == order then
+			if i == 1 then rev = not t.reverseSort end
+			table.remove(list, i)
+			break
+		end
+	end
+	table.insert(list, 1, { sortOrder = order, reverseSort = rev })
+	list[3] = nil
 end
 
 -- Polestar's dialogs of ours, so ours closes them as it hides.
@@ -300,18 +328,20 @@ local function picked()
 	return c
 end
 
+local function browseCtx() return "browse" .. (sel[1] or "") end
+
 local function browse()
 	tab, view, searched = "buy", nil, true
 	local c = picked()
 	paint()
 	local o = options()
-	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(), itemClassFilters = c and c.filters or {},
+	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(browseCtx()), itemClassFilters = c and c.filters or {},
 		filters = filterList(), minLevel = o.minLevel, maxLevel = o.maxLevel })
 end
 
 local function research()
 	-- An item's auctions keep to the level range, as the stock QueryItem.
-	if view then AH.SendSearchQuery(view.key, sorts(), true, options().minLevel, options().maxLevel) end
+	if view then AH.SendSearchQuery(view.key, sorts("item:buy"), true, options().minLevel, options().maxLevel) end
 end
 
 local function open(key)
@@ -395,8 +425,10 @@ local function auctionClick(row, button)
 end
 
 ---------------------------------------------------------------------------
--- Rows: the well, the name in its quality colour, a line under it; a price
--- and a note on the right.
+-- Rows as the stock lists' tables: a header of columns, the sortable ones a
+-- click away (AuctionHouseTableHeaderStringMixin); each row the well and the
+-- name (a line under it) in the fill column, then the page's columns, each
+-- a text or a money line, laid out from the right.
 
 local function enter(r)
 	local k = r.psKey
@@ -406,6 +438,8 @@ local function enter(r)
 	if r.psHint then ns.TooltipHint(r.psHint) end
 	GameTooltip:Show()
 end
+
+local MAX_COLS = 5
 
 local function row(k)
 	local r = rows[k]
@@ -417,14 +451,18 @@ local function row(k)
 	r.Well:SetPoint("LEFT", r, "LEFT", 6, 0)
 	r.Name = W.Text(r, "label", "text")
 	r.Name:SetPoint("BOTTOMLEFT", r.Well, "RIGHT", 10, 2)
-	r.Name:SetPoint("RIGHT", r, "RIGHT", -200, 0)
 	r.Name:SetJustifyH("LEFT")
+	r.Name:SetWordWrap(false)
 	r.Line = W.Text(r, "small", "textDim")
 	r.Line:SetPoint("TOPLEFT", r.Well, "RIGHT", 10, -3)
-	r.Money = ns.Money(r)
-	r.Money:SetPoint("BOTTOMRIGHT", r, "RIGHT", -10, 2)
-	r.Note = W.Text(r, "small", "textDim")
-	r.Note:SetPoint("TOPRIGHT", r, "RIGHT", -10, -3)
+	r.Line:SetJustifyH("LEFT")
+	r.Line:SetWordWrap(false)
+	r.Cells = {}
+	for i = 1, MAX_COLS do
+		local c = { Text = W.Text(r, "label", "text"), Money = ns.Money(r) }
+		c.Text:SetJustifyH("RIGHT")
+		r.Cells[i] = c
+	end
 	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	r:SetScript("OnClick", function(self, button) if self.psClick then self.psClick(self, button) end end)
 	r:SetScript("OnEnter", enter)
@@ -433,23 +471,140 @@ local function row(k)
 	return r
 end
 
--- o = { key, line, price, cost (red when short of money), note, click, hint, data }
-local function fill(k, top, o)
+-- The columns' right edges, right to left from the row's end; and where the
+-- name column ends.
+local function edges(cols)
+	local out, x = {}, f.BodyWidth - 10
+	for i = #cols, 1, -1 do
+		out[i] = x
+		x = x - cols[i].w
+	end
+	return out, x - 12
+end
+
+local heads = {}
+local function head(i)
+	local h = heads[i]
+	if h then return h end
+	h = CreateFrame("Button", nil, f.Body)
+	h:SetHeight(24)
+	h.Text = W.Text(h, "small", "textDim")
+	h.Arrow = W.Tex(h, "ARTWORK", "chevron-up", "accent")
+	h.Arrow:SetSize(10, 10)
+	h:SetScript("OnClick", function(self)
+		sortBy(self.psCtx, self.psSort)
+		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+		self.psRequery()
+	end)
+	heads[i] = h
+	return h
+end
+
+-- The header row at `top`: the name column's label, then each column's,
+-- right-aligned over it. A sortable one's arrow shows while it sorts first.
+-- -> the top of the rows under it.
+local function header(top, name, cols, ctx, requery)
+	local right = edges(cols)
+	local first = ctx and sorts(ctx)[1]
+	local all = { { label = name.label, sort = name.sort, left = 6 } }
+	for i, c in ipairs(cols) do all[#all + 1] = { label = c.label, sort = c.sort, right = right[i] } end
+	for i, c in ipairs(all) do
+		local h = head(i)
+		h:ClearAllPoints()
+		h.Text:SetText(c.label or "")
+		h.Text:ClearAllPoints()
+		h.Arrow:ClearAllPoints()
+		h:SetWidth(math.ceil(h.Text:GetStringWidth()) + 14)
+		if c.left then
+			h:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + c.left, -top)
+			h.Text:SetPoint("LEFT", h, "LEFT", 0, 0)
+			h.Arrow:SetPoint("LEFT", h.Text, "RIGHT", 4, 0)
+		else
+			h:SetPoint("TOPRIGHT", f.Body, "TOPLEFT", W.SHELL.pad + c.right, -top)
+			h.Text:SetPoint("RIGHT", h, "RIGHT", 0, 0)
+			h.Arrow:SetPoint("RIGHT", h.Text, "LEFT", -4, 0)
+		end
+		local sortable = ctx ~= nil and c.sort ~= nil
+		h:EnableMouse(sortable)
+		h.psCtx, h.psSort, h.psRequery = ctx, c.sort, requery
+		local on = sortable and first ~= nil and first.sortOrder == c.sort
+		h.Arrow:SetShown(on)
+		if on then h.Arrow:SetTexture(Polestar.Theme.Media(first.reverseSort and "chevron-down" or "chevron-up")) end
+		W.Color(h.Text, on and "text" or "textDim")
+		h:Show()
+	end
+	return top + 28
+end
+
+-- o = { key, name (else the item's), line, cells = { { text, color } or { money, color } }, click, hint, data, dim }
+local function fill(k, top, o, cols)
 	local r = row(k)
 	r:ClearAllPoints()
 	r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(top + (k - 1) * ROW_H))
 	local info = AH.GetItemKeyInfo(o.key) or {}
-	ns.PaintItem(r.Well, { icon = info.iconFileID, quality = info.quality })
-	r.Name:SetText(info.itemName or "")
+	ns.PaintItem(r.Well, { icon = info.iconFileID, quality = info.quality, desat = o.dim })
+	r.Name:SetText(o.name or info.itemName or "")
 	local cr, cg, cb = ns.QualityRGB(info.quality)
 	W.Uncolor(r.Name)
-	if cr and info.quality ~= 1 then r.Name:SetTextColor(Polestar.Theme.Legible(cr, cg, cb)) else W.Color(r.Name, "text") end
+	if o.dim then W.Color(r.Name, "textMuted")
+	elseif cr and info.quality ~= 1 then r.Name:SetTextColor(Polestar.Theme.Legible(cr, cg, cb))
+	else W.Color(r.Name, "text") end
 	r.Line:SetText(o.line or "")
-	r.Money:SetShown(o.price ~= nil)
-	if o.price then ns.SetMoney(r.Money, o.price, o.cost and o.price > GetMoney() and "danger" or nil) end
-	r.Note:SetText(o.note or "")
+	local right, nameEnd = edges(cols)
+	r.Name:SetPoint("RIGHT", r, "LEFT", nameEnd, 0)
+	r.Line:SetPoint("RIGHT", r, "LEFT", nameEnd, 0)
+	for i, c in ipairs(r.Cells) do
+		local v = (o.cells or {})[i]
+		c.Text:SetShown(v ~= nil and v.text ~= nil)
+		c.Money:SetShown(v ~= nil and v.money ~= nil)
+		if v and v.text then
+			c.Text:ClearAllPoints()
+			c.Text:SetPoint("RIGHT", r, "LEFT", right[i], 0)
+			c.Text:SetText(v.text)
+			W.Color(c.Text, v.color or "text")
+		elseif v and v.money then
+			ns.SetMoney(c.Money, v.money, v.color)
+			c.Money:ClearAllPoints()
+			c.Money:SetPoint("RIGHT", r, "LEFT", right[i], 0)
+		end
+	end
 	r.psKey, r.psClick, r.psHint, r.psData = o.key, o.click, o.hint, o.data
 	r:Show()
+end
+
+-- A price the player cannot pay is red.
+local function cost(copper) return { money = copper, color = copper > GetMoney() and "danger" or nil } end
+
+local function count(n) return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or tostring(n) end
+
+-- The time left: a band (AuctionHouseUtil.GetTimeLeftBandText, short in
+-- red), or seconds as the stock TimeLeftFormatter writes them (one unit,
+-- red under an hour).
+local function band(t) return { text = BANDS[t] or "", color = t == 0 and "danger" or "textDim" } end
+local function left(sec, sold)
+	local text
+	if sec >= 86400 then text = ("%dd"):format(math.floor(sec / 86400))
+	elseif sec >= 3600 then text = ("%dh"):format(math.floor(sec / 3600))
+	else text = ("%dm"):format(math.ceil(sec / 60)) end
+	return { text = text, color = (sold or sec >= 3600) and "textDim" or "danger" }
+end
+
+-- The name as the stock list shows it: an equipment's required level after
+-- it, unless a column shows it (AuctionHouseUtil.GetItemDisplayTextFromItemKey).
+local function displayName(key, info, hideLevel)
+	local lvl = AH.GetItemKeyRequiredLevel(key) or 0
+	if info.isEquipment and lvl > 0 and not hideLevel then
+		return (AUCTION_HOUSE_EQUIPMENT_RESULT_FORMAT or "%s (%d)"):format(info.itemName or "", lvl)
+	end
+	return info.itemName
+end
+
+-- The sellers (AuctionHouseUtil.GetSellersString).
+local function sellers(r)
+	local o = r.owners or {}
+	if #o == 1 then return r.containsOwnerItem and (AUCTION_HOUSE_SELLER_YOU or "You") or o[1] end
+	if #o > 1 then return (AUCTION_HOUSE_NUM_SELLERS or "%d sellers"):format(r.totalNumberOfOwners or #o) end
+	return ""
 end
 
 -- Each page fills its rows and returns how many, where they start, and the
@@ -459,11 +614,32 @@ local function paintBrowse()
 		searched and "Click an item to see its listings." or "Search for an item (Enter), or pick a category.")
 	W.ShellFooter(f, {}, {})
 	local list = searched and AH.GetBrowseResults() or {}
+	-- The column a category adds (required level, slots, skill), as the stock layout.
+	local detail = sel[1] and tree[sel[1]].detail
+	local S = Enum.AuctionHouseSortOrder
+	local cols = {}
+	if detail then cols[#cols + 1] = { label = detail, sort = S.Level, w = 90 } end
+	cols[#cols + 1] = { label = AUCTION_HOUSE_BROWSE_HEADER_QUANTITY or "Available", w = 90 }
+	cols[#cols + 1] = { label = AUCTION_HOUSE_BROWSE_HEADER_PRICE or "Price", sort = S.Price, w = 170 }
+	local y = 24
+	if searched then y = header(y, { label = AUCTION_HOUSE_BROWSE_HEADER_NAME or "Name", sort = S.Name }, cols, browseCtx(), browse) end
 	for i, b in ipairs(list) do
-		fill(i, 24, { key = b.itemKey, price = b.minPrice, cost = true, note = ("%d available"):format(b.totalQuantity),
-			click = function() open(b.itemKey) end, hint = "Click to see its listings." })
+		local info = AH.GetItemKeyInfo(b.itemKey) or {}
+		local none = b.totalQuantity == 0
+		local cells = {}
+		if detail then
+			-- Equipment shows its required level (AuctionHouseTableCellLevelMixin).
+			local extra = AH.GetExtraBrowseInfo(b.itemKey)
+			if info.isEquipment then extra = math.max(1, AH.GetItemKeyRequiredLevel(b.itemKey) or 0) end
+			cells[#cells + 1] = { text = extra and tostring(extra) or "" }
+		end
+		cells[#cells + 1] = { text = count(b.totalQuantity), color = none and "textMuted" or nil }
+		cells[#cells + 1] = none and { text = AUCTION_HOUSE_NONE_AVAILABLE or "None available", color = "textMuted" } or cost(b.minPrice)
+		fill(i, y, { key = b.itemKey, name = displayName(b.itemKey, info, detail ~= nil), cells = cells, dim = none,
+			line = b.containsOwnerItem and "Yours among them" or nil,
+			click = function() open(b.itemKey) end, hint = "Click to see its listings." }, cols)
 	end
-	return #list, 24, searched and "Nothing found." or ""
+	return #list, y, searched and "Nothing found." or ""
 end
 
 local function back()
@@ -482,27 +658,42 @@ local function paintCommodity()
 	local strip = f.psBuy
 	strip.Stepper.Paint()
 	ns.SetMoney(strip.Total, total, total > GetMoney() and "danger" or nil)
+	-- The stock commodity list: unit price and quantity, unsorted.
+	local cols = { { label = AUCTION_HOUSE_HEADER_UNIT_PRICE or "Unit Price", w = 170 }, { label = AUCTION_HOUSE_BROWSE_HEADER_QUANTITY or "Quantity", w = 110 } }
+	local y = header(72, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols)
 	local n = AH.GetNumCommoditySearchResults(id)
 	for i = 1, n do
 		local r = AH.GetCommoditySearchResultInfo(id, i)
-		fill(i, 72, { key = view.key, price = r.unitPrice, line = "each",
-			note = ("%d%s"):format(r.quantity, (r.numOwnerItems or 0) > 0 and (" (%d yours)"):format(r.numOwnerItems) or "") })
+		local mine = (r.numOwnerItems or 0) > 0
+		local who = sellers(r)
+		fill(i, y, { key = view.key, line = mine and ("%s (%d yours)"):format(who, r.numOwnerItems) or who,
+			cells = { { money = r.unitPrice }, { text = count(r.quantity) } } }, cols)
 	end
-	return n, 72, "None listed."
+	return n, y, "None listed."
 end
 
 local function paintItem()
 	W.ShellTitle(f, view.info.itemName, "Click an auction to buy it out; right-click to bid.")
 	W.ShellFooter(f, { { label = "Back", onClick = back } }, {})
+	local S = Enum.AuctionHouseSortOrder
+	-- The stock item list: current bid, buyout, quantity, time left.
+	local cols = { { label = AUCTION_HOUSE_HEADER_CURRENT_BID or "Current Bid", sort = S.Bid, w = 150 },
+		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
+		{ label = "", w = 50 }, { label = TIME_LEFT or "Time Left", w = 110 } }
+	local y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols, "item:buy", research)
 	local n = AH.GetNumItemSearchResults(view.key)
 	for i = 1, n do
 		local r = AH.GetItemSearchResultInfo(view.key, i)
-		local line = r.buyoutAmount and r.minBid and ("Bid %s"):format(coins(r.minBid)) or (r.buyoutAmount and "Buyout" or "Bid only")
-		fill(i, 24, { key = view.key, price = r.buyoutAmount or r.bidAmount or r.minBid, cost = not r.containsOwnerItem, line = line,
-			note = r.containsOwnerItem and "Yours" or BANDS[r.timeLeft],
-			click = auctionClick, data = r, hint = not r.containsOwnerItem and "Click to buy out, right-click to bid." or nil })
+		local mine = r.containsOwnerItem
+		local who = sellers(r)
+		fill(i, y, { key = view.key, line = r.buyoutAmount and who or (who ~= "" and who .. ", bid only" or "Bid only"),
+			-- No bid yet: the least one, muted (the stock bid frame's starting amount).
+			cells = { (r.bidAmount or r.minBid) and { money = r.bidAmount or r.minBid, color = r.bidAmount and "textDim" or "textMuted" } or { text = "" },
+				r.buyoutAmount and (mine and { money = r.buyoutAmount } or cost(r.buyoutAmount)) or { text = "" },
+				{ text = (r.quantity or 1) > 1 and count(r.quantity) or "" }, band(r.timeLeft) },
+			click = auctionClick, data = r, hint = not mine and "Click to buy out, right-click to bid." or nil }, cols)
 	end
-	return n, 24, "None listed."
+	return n, y, "None listed."
 end
 
 ---------------------------------------------------------------------------
@@ -524,7 +715,7 @@ local function setItem(loc)
 		sell.commodity = AH.GetItemCommodityStatus(loc) == Enum.ItemCommodityStatus.Commodity
 		sell.price = defaultPrice(C_Item.GetItemID(loc))
 		f.psSell.Price.Set(sell.price)
-		AH.SendSellSearchQuery(sell.key, sorts(), true)
+		AH.SendSellSearchQuery(sell.key, sorts(sell.commodity and "commodity:sell" or "item:sell"), true)
 	end
 	paint()
 	return true
@@ -660,14 +851,26 @@ end
 local function paintOwned()
 	W.ShellTitle(f, "Your auctions", "Click an auction to cancel it. Sold items' money comes by mail.")
 	W.ShellFooter(f, {}, {})
+	local S = Enum.AuctionHouseSortOrder
+	-- The stock auctions list: name, bid, buyout, time left.
+	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
+		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
+		{ label = TIME_LEFT or "Time Left", sort = S.TimeRemaining, w = 90 } }
+	local y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item", sort = S.Name }, cols, "owned:auctions",
+		function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end)
 	local n = AH.GetNumOwnedAuctions()
 	for i = 1, n do
 		local o = AH.GetOwnedAuctionInfo(i)
 		local sold = o.status == Enum.AuctionStatus.Sold
-		fill(i, 24, { key = o.itemKey, price = o.buyoutAmount or o.bidAmount, line = ("\195\151%d"):format(o.quantity),
-			note = sold and "Sold" or BANDS[o.timeLeft], click = cancel, data = o, hint = not sold and "Click to cancel it." or nil })
+		-- A bid shows green once someone bid; a sold one's money is on its way.
+		local bidCell = sold and { text = AUCTION_HOUSE_INCOMING_AMOUNT or "Incoming", color = "textDim" }
+			or o.bidAmount and { money = o.bidAmount, color = o.bidder and "success" or "textDim" } or { text = "" }
+		fill(i, y, { key = o.itemKey, line = ("\195\151%d"):format(o.quantity), dim = sold,
+			cells = { bidCell, o.buyoutAmount and { money = o.buyoutAmount, color = sold and "textDim" or nil } or { text = "" },
+				o.timeLeftSeconds and left(o.timeLeftSeconds, sold) or (sold and { text = "Sold", color = "textDim" } or band(o.timeLeft)) },
+			click = cancel, data = o, hint = not sold and "Click to cancel it." or nil }, cols)
 	end
-	return n, 24, "You have no auctions."
+	return n, y, "You have no auctions."
 end
 
 ---------------------------------------------------------------------------
@@ -676,7 +879,7 @@ end
 local TABS = { { key = "buy", label = "Buy" }, { key = "sell", label = "Sell" }, { key = "auctions", label = "Auctions" } }
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 960, height = 680, searchPlaceholder = "Search the auction house" })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 960, height = 680, searchPlaceholder = "Search items" })
 	ns.Dock(f)
 	ns.WindowMenu(f, "auction")
 	local b = ns.SubjectBlock(f)
@@ -755,7 +958,7 @@ end
 function paint()
 	W.ShellTabs(f, TABS, tab, function(k)
 		tab = k
-		if k == "auctions" then AH.QueryOwnedAuctions(sorts()) end
+		if k == "auctions" then AH.QueryOwnedAuctions(sorts("owned:auctions")) end
 		paint()
 	end)
 	paintNav()
@@ -764,6 +967,7 @@ function paint()
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
 	f.psBuy:SetShown(commodity and true or false)
+	for _, h in ipairs(heads) do h:Hide() end
 	local n, top, empty
 	if tab == "sell" then n, top, empty = paintSell()
 	elseif tab == "auctions" then n, top, empty = paintOwned()
@@ -815,7 +1019,7 @@ function M.Enable()
 		research()
 	end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_PURCHASE_COMPLETED", research)
-	Polestar.RegisterEvent("AUCTION_CANCELED", function() if shown() then AH.QueryOwnedAuctions(sorts()) end end)
+	Polestar.RegisterEvent("AUCTION_CANCELED", function() if shown() then AH.QueryOwnedAuctions(sorts("owned:auctions")) end end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_POST_WARNING", confirmPost)
 	-- What the stock frame said while open.
 	Polestar.RegisterEvent("AUCTION_HOUSE_AUCTION_CREATED", function() system(ERR_AUCTION_STARTED) end)

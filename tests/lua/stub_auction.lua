@@ -113,6 +113,10 @@ function AH.GetItemKeyInfo(k)
 	local it = stub.ahItems[k.itemID]
 	if it then return { itemID = k.itemID, battlePetSpeciesID = 0, itemName = it[1], iconFileID = it[2], quality = it[3], isCommodity = it[4], isPet = false, isEquipment = not it[4] } end
 end
+-- Required levels and the browse list's extra column (container slots, recipe skill).
+stub.reqLevel = { [6975] = 42, [2244] = 40 }
+function AH.GetItemKeyRequiredLevel(k) return stub.reqLevel[k.itemID] or 0 end
+function AH.GetExtraBrowseInfo(k) return 0 end
 function AH.ShouldAutoPopulatePrice() return true end
 function AH.SupportsCopperValues() return true end
 
@@ -145,7 +149,7 @@ function AH.SendSellSearchQuery(k) search(k) end
 function AH.GetNumCommoditySearchResults(id) return #(stub.commodity[id] or {}) end
 function AH.GetCommoditySearchResultInfo(id, i)
 	local c = (stub.commodity[id] or {})[i]
-	if c then return { itemID = id, unitPrice = c[1], quantity = c[2], numOwnerItems = c[3], containsOwnerItem = c[3] > 0, auctionID = 500 + i, owners = {}, totalNumberOfOwners = 1 } end
+	if c then return { itemID = id, unitPrice = c[1], quantity = c[2], numOwnerItems = c[3], containsOwnerItem = c[3] > 0, auctionID = 500 + i, owners = c[3] > 0 and { "player", "Trader" } or { "Trader" }, totalNumberOfOwners = c[3] > 0 and 2 or 1 } end
 end
 function AH.GetCommoditySearchResultsQuantity(id)
 	local n = 0
@@ -155,7 +159,7 @@ end
 function AH.GetNumItemSearchResults(k) return #(stub.itemList[k.itemID] or {}) end
 function AH.GetItemSearchResultInfo(k, i)
 	local a = (stub.itemList[k.itemID] or {})[i]
-	if a then return { itemKey = k, auctionID = a[1], buyoutAmount = a[2], minBid = a[3], timeLeft = a[4], quantity = 1, containsOwnerItem = a[5] or false, owners = {} } end
+	if a then return { itemKey = k, auctionID = a[1], buyoutAmount = a[2], minBid = a[3], timeLeft = a[4], quantity = 1, containsOwnerItem = a[5] or false, owners = { a[5] and "player" or ("Seller" .. a[1]) }, totalNumberOfOwners = 1 } end
 end
 
 -- Buying: a commodity's quote, then its confirm; an item's bid or buyout.

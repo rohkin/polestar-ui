@@ -16,7 +16,7 @@ assert(tostring(f.Title:GetText()) == "Linen Cloth" and f.psBuy:IsShown(), "the 
 local rows = {}
 for _, r in ipairs({ f.Body:GetChildren() }) do if r.psKey and r:IsShown() then rows[#rows + 1] = r end end
 table.sort(rows, function(a, b) return a:GetTop() > b:GetTop() end)
-assert(#rows == 3 and tostring(rows[3].Note:GetText()) == "50 (20 yours)", "the price list")
+assert(#rows == 3 and tostring(rows[3].Cells[2].Text:GetText()) == "50" and tostring(rows[3].Line:GetText()) == "2 sellers (20 yours)", "the price list")
 
 -- How many: Max is every unit not the player's own; the total adds the tiers up.
 f.psBuy.Stepper.Max:Click()
