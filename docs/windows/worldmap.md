@@ -32,6 +32,12 @@ zoom and click-to-open are the game's.
   `WaypointLocationToggleUpdate`; off again once a waypoint is set, on a new
   map, or as the window hides; disabled where the map takes no waypoint,
   its tooltip the stock lines).
+- **Coordinates:** at the canvas's bottom left, on an editbox ground, as
+  the stock coordinates panel: the player's ("Player: 41, 65"; off this map,
+  their own map's, named after them) and the cursor's while over the map,
+  each as its CVar says (`worldMapShowPlayerCoords`,
+  `worldMapShowCursorCoords`; shown where the client lacks it), in tenths
+  with `coordsByTenths`; read ten times a second while the map shows.
 - **Zoom:** the canvas takes its zoom steps from the map art; where the art
   gives one (Forever's), ours adds 1.5×, 2.25× and 3×. Drag pans once zoomed.
 - **Quest Log:** a 320 flyout right of the canvas, under the band, on the

@@ -160,6 +160,62 @@ local function mapControls()
 	end
 end
 
+-- The player's and the cursor's coordinates at the canvas's bottom left, as
+-- the stock coordinates panel (WorldMapCoordsPanelMixin): each as its CVar
+-- says (worldMapShowPlayerCoords, worldMapShowCursorCoords), shown where the
+-- client has no such CVar; tenths as coordsByTenths says. The player off
+-- this map: their own map's coordinates, its name after them.
+local function shown(cvar) local v = GetCVar(cvar) return v == nil or v == "1" end
+local function coordText(prefix, x, y, name)
+	local t = GetCVarBool("coordsByTenths") and ("%s: %.1f, %.1f"):format(prefix, x * 100, y * 100)
+		or ("%s: %d, %d"):format(prefix, math.floor(x * 100 + 0.5), math.floor(y * 100 + 0.5))
+	return name and ("%s (%s)"):format(t, name) or t
+end
+local function paintCoords()
+	local c, lines = f.psCoords, {}
+	local id = canvas:GetMapID()
+	if id and shown("worldMapShowPlayerCoords") then
+		local pos = C_Map.GetPlayerMapPosition(id, "player")
+		if pos then
+			lines[#lines + 1] = coordText("Player", pos:GetXY())
+		else
+			local own = C_Map.GetBestMapForUnit("player")
+			pos = own and C_Map.GetPlayerMapPosition(own, "player")
+			if pos then
+				local x, y = pos:GetXY()
+				lines[#lines + 1] = coordText("Player", x, y, (C_Map.GetMapInfo(own) or {}).name or UNKNOWN)
+			end
+		end
+	end
+	if shown("worldMapShowCursorCoords") and canvas:IsMouseOver() then
+		local x, y = canvas:GetNormalizedCursorPosition()
+		if x and x >= 0 and x <= 1 and y >= 0 and y <= 1 then lines[#lines + 1] = coordText("Cursor", x, y) end
+	end
+	c.Text:SetText(table.concat(lines, string.char(10)))
+	c:SetSize(math.ceil(c.Text:GetStringWidth()) + 16, math.ceil(c.Text:GetStringHeight()) + 10)
+	c:SetShown(#lines > 0)
+end
+local function coords()
+	local c = CreateFrame("Frame", nil, f.Main)
+	c:SetFrameLevel(canvas:GetFrameLevel() + 1500)
+	c:SetPoint("BOTTOMLEFT", canvas, "BOTTOMLEFT", 8, 8)
+	Polestar.Theme.Skin(c, "editbox")
+	c.Text = W.Text(c, "small", "text")
+	c.Text:SetPoint("LEFT", c, "LEFT", 8, 0)
+	c.Text:SetJustifyH("LEFT")
+	c.Text:SetSpacing(2)
+	f.psCoords = c
+	-- Read ten times a second while the map shows (the stock panel reads every frame).
+	local wait = 0
+	local driver = CreateFrame("Frame", nil, f)
+	driver:SetScript("OnUpdate", function(_, e)
+		wait = wait - e
+		if wait > 0 then return end
+		wait = 0.1
+		paintCoords()
+	end)
+end
+
 -- The pin button's state: on (the accent), and enabled where the map takes a waypoint.
 function M.SetPinning(on)
 	local b = f and f.psPin
@@ -209,6 +265,7 @@ local function build()
 	f.psQuests:SetPoint("TOPRIGHT", f.Content, "TOPRIGHT", 0, 0)
 	f.psQuests:SetPoint("BOTTOMRIGHT", f.Content, "BOTTOMRIGHT", 0, 0)
 	mapControls()
+	coords()
 	-- A new size: the band's sky cropped again, never stretched.
 	f:HookScript("OnSizeChanged", function(self, w)
 		self.Band:SetTexCoord(Polestar.Theme.BandCoords(w - W.SHELL.sidebar - 2, W.SHELL.header))

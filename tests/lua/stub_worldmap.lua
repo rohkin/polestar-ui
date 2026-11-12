@@ -50,6 +50,12 @@ function Canvas:SetMapID(id) if id ~= self.mapID then self.mapID = id; self:OnMa
 function Canvas:GetMapID() return self.mapID end
 function Canvas:OnMapChanged() end
 function Canvas:ResetZoom() self.zoomedOut = true end
+-- The player at 41.2, 65.3 in Elwynn (and so nowhere on another map); the
+-- cursor over the map once a scene sets stub.mapCursor = { x, y }.
+function C_Map.GetPlayerMapPosition(id) if id == 37 then return { GetXY = function() return 0.4123, 0.6534 end } end end
+function C_Map.GetBestMapForUnit() return 37 end
+function Canvas:IsMouseOver() return stub.mapCursor ~= nil end
+function Canvas:GetNormalizedCursorPosition() return unpack(stub.mapCursor or { 0, 0 }) end
 function Canvas:RefreshAllDataProviders() self.refreshed = (self.refreshed or 0) + 1 end
 -- The map art's one zoom step, as Forever's art gives it.
 function Canvas:OnFrameSizeChanged() self.ScrollContainer:CreateZoomLevels() end

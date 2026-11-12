@@ -31,6 +31,25 @@ assert(c.mapID == 1430, "floor click")
 c:SetMapID(52)
 assert(not row("The Deadmines"), "a dungeon the dropdown does not list")
 assert(not WorldMapFrame:IsShown(), "stock map")
+-- Coordinates at the canvas's bottom left, as the stock CVars say (none set: shown).
+c:SetMapID(37)
+stub.advance(0.2)
+local co = f.psCoords
+assert(co:IsShown() and co.Text:GetText() == "Player: 41, 65" and select(2, co:GetPoint(1)) == c, "player coordinates: " .. tostring(co.Text:GetText()))
+stub.mapCursor = { 0.5, 0.25 }
+stub.cvars.coordsByTenths = "1"
+stub.advance(0.2)
+assert(co.Text:GetText() == "Player: 41.2, 65.3" .. string.char(10) .. "Cursor: 50.0, 25.0", "cursor coordinates, by tenths: " .. co.Text:GetText())
+stub.cvars.worldMapShowPlayerCoords, stub.cvars.coordsByTenths = "0", nil
+stub.advance(0.2)
+assert(co.Text:GetText() == "Cursor: 50, 25", "the player's CVar off")
+stub.cvars.worldMapShowPlayerCoords, stub.cvars.worldMapShowCursorCoords = "1", "0"
+c:SetMapID(52)
+stub.advance(0.2)
+assert(co.Text:GetText() == "Player: 41, 65 (Elwynn Forest)", "off this map: the player's own map named")
+stub.cvars.worldMapShowPlayerCoords, stub.cvars.worldMapShowCursorCoords, stub.mapCursor = nil, nil, nil
+c:SetMapID(37)
+stub.advance(0.2)
 -- The map's own controls at the canvas's top right: the filter (the log's
 -- menu, the log shut) and the map pin.
 local mf, pin = f.psMapFilter, f.psPin
