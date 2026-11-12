@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Character:
+  - Titles: pick the title you wear from the side panel.
+  - Gear sets: save, wear, rename, re-icon and delete equipment sets; drag one to your action bars. A set asked for in combat goes on when the fight ends.
+  - Gear slots show their sockets and gems (shift-right-click to socket), stack counts, cooldowns, and locked or broken items; hold Alt over a slot to wear another item for it, put it in your bags, or leave it out of a gear set.
+  - Reputation: click a faction for its details, with At War, Inactive and Show as Experience Bar.
+  - Currency: click a currency for its details, with Unused and Show on Backpack; shift-click shows it on the backpack, or links it while you type in chat.
+  - Honor: this week's cap, your season progress, the next rank's rewards and the season's countdown.
+  - Pet: your pet's level, loyalty, happiness, experience and stats, with its model.
+  - Skills: click a skill for its details, with a weapon's odds against your level and a raid boss.
 - Social: friends in Polestar's look on one list (Battle.net friends marked, favorites first, friend requests on top with Accept and Decline), recent allies, ignored players and the raid, from the social keys. Click whispers, double-click invites, right-click opens the game's menu (set favorites there); add a friend by name or BattleTag. Quick Join and Recruit a Friend stay in the game's window (the chat's friends button).
 - Bank: the banker's Character and Warband tabs in Polestar's look, with search, Deposit all, money in and out, buying a tab, and right-click to your bags. Tab settings stay in the game's bank.
 - Mail: the mailbox in Polestar's look: the inbox, a letter beside it with Take, Return and Delete, Open all, cash on delivery that asks first, and a send page with attachments, money and COD.
