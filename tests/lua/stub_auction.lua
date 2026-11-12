@@ -74,7 +74,7 @@ stub.commodity = { [2589] = { { 120, 200, 0 }, { 125, 100, 0 }, { 140, 50, 20 } 
 stub.itemList = { [6975] = { { 901, 1800000, 1500000, 3 }, { 902, nil, 1200000, 1 }, { 903, 2000000, 1900000, 2, true } } }
 -- The player's auctions: { auctionID, itemID, quantity, buyout, status, timeLeft band }.
 stub.owned = { { 701, 2592, 20, 9000, 0, 2 }, { 702, 6975, 1, 2500000, 0, 3 }, { 703, 2589, 5, 600, 1 } }
-stub.cancelCost = { [701] = 0, [702] = 12500 }
+stub.cancelCost = { [701] = 0, [702] = 12500, [903] = 0, [503] = 0 }
 -- The quote's unit price (nil: the listings' own; false: none to be had).
 stub.quoteUnit = nil
 stub.browseQuery, stub.started, stub.bought, stub.quoteCancelled = nil, nil, nil, 0
@@ -287,6 +287,23 @@ function AH.GetOwnedAuctionInfo(i)
 	local o = stub.owned[i]
 	if o then return { auctionID = o[1], itemKey = key(o[2]), quantity = o[3], buyoutAmount = o[4], status = o[5], timeLeft = o[6] } end
 end
+-- The items among the player's auctions and bids (the stock summary list).
+function AH.GetNumOwnedAuctionTypes()
+	local seen, n = {}, 0
+	for _, o in ipairs(stub.owned) do if not seen[o[2]] then seen[o[2]], n = true, n + 1 end end
+	return n
+end
+function AH.GetOwnedAuctionType(i)
+	local seen, n = {}, 0
+	for _, o in ipairs(stub.owned) do
+		if not seen[o[2]] then
+			seen[o[2]], n = true, n + 1
+			if n == i then return key(o[2]) end
+		end
+	end
+end
+function AH.GetNumBidTypes() return #stub.ahBids end
+function AH.GetBidType(i) return stub.ahBids[i] and key(stub.ahBids[i][2]) end
 function AH.CanCancelAuction(id) return stub.cancelCost[id] ~= nil end
 function AH.GetCancelCost(id) return stub.cancelCost[id] or 0 end
 function AH.CancelAuction(id)

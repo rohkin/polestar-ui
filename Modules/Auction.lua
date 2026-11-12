@@ -1195,7 +1195,7 @@ end
 
 local function cancel(row)
 	local o = row.psData
-	if o.status ~= Enum.AuctionStatus.Active or not AH.CanCancelAuction(o.auctionID) then return end
+	if o.status == Enum.AuctionStatus.Sold or not AH.CanCancelAuction(o.auctionID) then return end
 	local cost = AH.GetCancelCost(o.auctionID) or 0
 	ask({ title = "Cancel this auction?", action = "Cancel auction", danger = true,
 		text = cost > 0 and ("Cancelling costs %s, and the deposit is not returned."):format(coins(cost)) or "The deposit is not returned.",
@@ -1225,6 +1225,51 @@ local function paintOwned()
 			click = cancel, data = o, hint = not sold and "Click to cancel it." or nil }, cols)
 	end
 	return n, y, "You have no auctions."
+end
+
+-- One item of the player's auctions or bids, picked in the sidebar (the
+-- stock summary list): all its listings (SendSearchQuery, the player's own
+-- kept apart), the player's to cancel, the others to buy as on Buy.
+local own -- the item key picked on Auctions or Bids (nil: all of them)
+local function ownCtx(info) return info.isCommodity and "commodity:auctions" or (tab == "bids" and "item:bids" or "item:auctions") end
+local function queryOwn()
+	local info = own and AH.GetItemKeyInfo(own)
+	if info then AH.SendSearchQuery(own, sorts(ownCtx(info)), true) end
+end
+
+local function paintOwnItem()
+	local info = AH.GetItemKeyInfo(own) or {}
+	W.ShellTitle(f, displayName(own, info) or "", "Click yours to cancel it; click another to buy it out, right-click to bid.")
+	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = queryOwn, opts = { icon = "reload" } } }, {})
+	local S = Enum.AuctionHouseSortOrder
+	local cols, y, n
+	if info.isCommodity then
+		cols = { { label = AUCTION_HOUSE_HEADER_UNIT_PRICE or "Unit Price", w = 170 }, { label = AUCTION_HOUSE_BROWSE_HEADER_QUANTITY or "Quantity", w = 110 } }
+		y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols)
+		n = AH.GetNumCommoditySearchResults(own.itemID)
+		for i = 1, n do
+			local r = AH.GetCommoditySearchResultInfo(own.itemID, i)
+			local mine = r.containsOwnerItem
+			fill(i, y, { key = own, line = sellers(r), cells = { { money = r.unitPrice, color = not mine and "textDim" or nil }, { text = count(r.quantity) } },
+				data = r, click = mine and cancel or nil, hint = mine and "Click to cancel it." or nil }, cols)
+		end
+	else
+		cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
+			{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
+			{ label = "", w = 60 }, { label = TIME_LEFT or "Time Left", w = 90 } }
+		y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols, ownCtx(info), queryOwn)
+		n = AH.GetNumItemSearchResults(own)
+		for i = 1, n do
+			local r = AH.GetItemSearchResultInfo(own, i)
+			local mine, status = r.containsOwnerItem, bidStatus(r)
+			fill(i, y, { key = r.itemKey or own, line = BID_TEXT[status] or sellers(r),
+				cells = { (r.bidAmount or r.minBid) and { money = r.bidAmount or r.minBid, color = BID_COLOR[status] or (r.bidAmount and "textDim" or "textMuted") } or { text = "" },
+					r.buyoutAmount and { money = r.buyoutAmount } or { text = "" }, { text = (r.quantity or 1) > 1 and count(r.quantity) or "" },
+					r.timeLeftSeconds and left(r.timeLeftSeconds) or band(r.timeLeft) },
+				data = r, click = mine and cancel or auctionClick, hint = mine and "Click to cancel it." or "Click to buy it out, right-click to bid." }, cols)
+		end
+	end
+	return n, y, "None listed."
 end
 
 -- Bids: the auctions the player bid on (QueryBids), as the stock Bids tab.
@@ -1302,7 +1347,7 @@ local function build()
 			AH.CancelSell()
 			sell.multi = nil
 		end
-		quote, pendingPost, view, searched, sel, sell.loc, sell.listKey = nil, nil, nil, false, {}, nil, nil
+		quote, pendingPost, view, searched, sel, sell.loc, sell.listKey, own = nil, nil, nil, false, {}, nil, nil, nil
 		f.Search:SetText("")
 		PlaySound(SOUNDKIT.AUCTION_WINDOW_CLOSE)
 	end)
@@ -1313,6 +1358,34 @@ end
 -- subcategories (and under the subcategory picked, its own), indented, as the
 -- stock list opens them. A click on the one picked closes it again.
 local function paintNav()
+	-- On Auctions and Bids: all of them, then each item among them (the stock
+	-- summary list, GetOwnedAuctionType / GetBidType).
+	if tab == "auctions" or tab == "bids" then
+		local bids = tab == "bids"
+		local nav, found = { { key = "all", label = bids and (AUCTION_HOUSE_ALL_BIDS or "All bids") or (AUCTION_HOUSE_ALL_AUCTIONS or "All auctions") } }, false
+		local keys = {}
+		for i = 1, bids and AH.GetNumBidTypes() or AH.GetNumOwnedAuctionTypes() do
+			local k = bids and AH.GetBidType(i) or AH.GetOwnedAuctionType(i)
+			local info = k and AH.GetItemKeyInfo(k)
+			if info then
+				keys[i] = k
+				nav[#nav + 1] = { key = i, label = displayName(k, info) }
+				if own and own.itemID == k.itemID and own.itemLevel == k.itemLevel and own.itemSuffix == k.itemSuffix then found = i end
+			end
+		end
+		-- An item no longer among them: back to all (ValidateDisplayMode).
+		if own and not found then own = nil end
+		W.ShellNav(f, nav, found or "all", function(k)
+			own = keys[k]
+			paint()
+			queryOwn()
+		end)
+		for _, b in ipairs(f.navButtons) do
+			b.Icon:ClearAllPoints()
+			b.Icon:SetPoint("LEFT", b, "LEFT", W.SHELL.side, 0)
+		end
+		return
+	end
 	-- Favorites, the stock search bar's star: dimmed while there are none.
 	local nav, depth = { { key = "", label = "All" }, { key = "fav", label = FAVORITES or "Favorites", icon = "star", count = not AH.HasFavorites() and 0 or nil } }, {}
 	local function walk(list, path, d)
@@ -1349,7 +1422,7 @@ end
 
 function paint()
 	W.ShellTabs(f, TABS, tab, function(k)
-		tab = k
+		tab, own = k, nil
 		if k == "auctions" then AH.QueryOwnedAuctions(sorts("owned:auctions")) end
 		if k == "bids" then queryBids() end
 		paint()
@@ -1363,6 +1436,7 @@ function paint()
 	for _, h in ipairs(heads) do h:Hide() end
 	local n, top, empty
 	if tab == "sell" then n, top, empty = paintSell()
+	elseif own and (tab == "auctions" or tab == "bids") then n, top, empty = paintOwnItem()
 	elseif tab == "auctions" then n, top, empty = paintOwned()
 	elseif tab == "bids" then n, top, empty = paintBids()
 	elseif not view then n, top, empty = paintBrowse()
