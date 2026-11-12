@@ -15,3 +15,10 @@ for _, c in ipairs({ PolestarUICharacter.psGear:GetChildren() }) do if c.psLabel
 for _, c in ipairs({ slot[18]:GetChildren() }) do if c.psLabel then slot[0] = c end end
 assert(slot[0].psCount:GetText() == "200", "ammo count")
 assert(slot[8].Icon.desaturated and not slot[7].Icon.desaturated, "lock")
+-- A scaled level shows both, as the stock sheet.
+UnitEffectiveLevel = function() return 20 end
+EFFECTIVE_LEVEL_FORMAT = "%d (%d)"
+PolestarUI.RefreshCharacter()
+assert(PolestarUICharacter.psLine:GetText() == "Level 20 (24) Warrior", "level: " .. PolestarUICharacter.psLine:GetText())
+UnitEffectiveLevel = nil
+PolestarUI.RefreshCharacter()

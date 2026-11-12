@@ -509,7 +509,7 @@ local function fill(r, fn, hideAt, unit)
 	return shown and (hideAt == nil or hideAt ~= fields.numericValue)
 end
 
-local refresh, statsShown, repairLine -- below
+local refresh, statsShown, repairLine, levelLine -- below
 
 -- The stock pane's resistance rows (CharacterStatsPaneScrollBoxMixin:UpdateStats),
 -- written the way a stock stat function writes a row.
@@ -853,6 +853,21 @@ local function paintPage(v)
 	return v.psH + 8
 end
 
+-- "Level 24 Warrior" as the stock sheet writes it (PaperDollFrame_SetLevel):
+-- the effective level beside a scaled one, the specialization when the class
+-- picks one.
+function levelLine(level)
+	local class, _, classID = UnitClass("player")
+	local eff = UnitEffectiveLevel and UnitEffectiveLevel("player") or level
+	local lv = eff ~= level and (EFFECTIVE_LEVEL_FORMAT or "%d (%d)"):format(eff, level) or tostring(level)
+	local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization and C_SpecializationInfo.GetSpecialization()
+	if spec and C_SpecializationInfo.IsSpecSelectionEnabled and C_SpecializationInfo.IsSpecSelectionEnabled(classID) then
+		local _, name = C_SpecializationInfo.GetSpecializationInfo(spec, false, false, nil, UnitSex("player"))
+		if name and name ~= "" then return ("Level %s %s %s"):format(lv, name, class) end
+	end
+	return ("Level %s %s"):format(lv, class)
+end
+
 -- The band's status: how many worn items have lost durability.
 function repairLine()
 	local n = 0
@@ -870,7 +885,7 @@ function statsShown() return not (PolestarUIDB and PolestarUIDB.hideStats) end
 function refresh()
 	local level = UnitLevel("player")
 	f.psName:SetText(playerText(UnitName) or "")
-	f.psLine:SetText(("Level %d %s"):format(level, UnitClass("player")))
+	f.psLine:SetText(levelLine(level))
 	f.psGuild:SetText(playerText(GetGuildInfo) or "")
 	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
