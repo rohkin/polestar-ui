@@ -19,7 +19,7 @@ for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and r.Text 
 assert(pick, "worn item not listed")
 pick:Click()
 assert(t.Name:GetText() == "Breastplate of the Long Watch", "not chosen")
-assert(not f.psMore:IsEnabled(), "more than one enchant on one item")
+assert(not f.psStep.More:IsEnabled(), "more than one enchant on one item")
 craft:Click()
 assert(stub.enchanted[1] == 7420 and stub.enchanted[2] == 1 and stub.enchanted[3] == "Item-worn-5", "not enchanted")
 stub.RunScript(t, "OnClick", "RightButton")

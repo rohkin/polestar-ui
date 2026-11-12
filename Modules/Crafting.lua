@@ -11,7 +11,7 @@ local HEAD_H, ROW_H, TILE_H, PRODUCT, RECENT = 32, 28, 32, 40, 8
 -- The client's recipe difficulty colours: optimal, medium, easy, trivial.
 local DIFFICULTY = { [0] = { 1, 0.5, 0.25 }, [1] = { 1, 1, 0 }, [2] = { 0.25, 0.75, 0.25 }, [3] = { 0.5, 0.5, 0.5 } }
 
-local f, query, sel, selKey, qty = nil, "", nil, nil, 1
+local f, query, sel, selKey, qty, most = nil, "", nil, nil, 1, 1
 -- An enchant's item (its GUID), chosen in the item slot; nil: Craft lets the
 -- game ask for it, as a cast does.
 local target
@@ -454,12 +454,11 @@ end
 local function paintFooter(info)
 	local blocked = not info or viewing() or select(2, notes(info))
 	local can = not blocked and info.count > 0
-	local most = can and info.count or 1
+	most = can and info.count or 1
 	-- An enchant goes on one item; more only into one that stores them (a
 	-- vellum), as the game's window allows.
 	if f.psEnchant and not (target and C_TradeSkillUI.CanStoreEnchantInItem(target)) then most = 1 end
 	qty = math.max(1, math.min(qty, most))
-	if not f.psQty:HasFocus() then f.psQty:SetText(qty) end
 	local function craft(n)
 		if f.psEnchant and target then
 			C_TradeSkillUI.CraftEnchant(info.recipeID, n, nil, C_Item.GetItemLocation(target))
@@ -478,9 +477,7 @@ local function paintFooter(info)
 		b:SetEnabled(on and true or false)
 		b:SetAlpha(on and 1 or 0.45)
 	end
-	enable(f.psLess, can and qty > 1)
-	enable(f.psMore, can and qty < most)
-	enable(f.psMax, can and qty < most)
+	f.psStep.Paint()
 	for _, b in ipairs(f.footerButtons.right) do enable(b, can) end
 end
 
@@ -659,40 +656,12 @@ local function build()
 	end
 
 	-- The quantity stepper: -, the count, +, Max.
-	local function setQty(n)
-		qty = n
-		refresh()
-	end
-	local step = CreateFrame("Frame", nil, f.Footer)
-	step:SetSize(200, 28)
-	step:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
-	f.psLess = W.Button(step, "\226\128\147", function() setQty(qty - 1) end, { width = 28 })
-	f.psLess:SetPoint("LEFT", step, "LEFT", 0, 0)
-	local e = CreateFrame("EditBox", nil, step)
-	e:SetSize(48, 28)
-	e:SetPoint("LEFT", f.psLess, "RIGHT", 4, 0)
-	e:SetAutoFocus(false)
-	e:SetNumeric(true)
-	e:SetMaxLetters(3)
-	e:SetJustifyH("CENTER")
-	Theme.Font(e, "number")
-	W.Color(e, "text")
-	Theme.Skin(e, "editbox")
-	e:SetScript("OnEditFocusGained", function(self)
-		Theme.SetFocused(self, true)
-		self:HighlightText()
-	end)
-	e:SetScript("OnEditFocusLost", function(self)
-		Theme.SetFocused(self, false)
-		setQty(tonumber(self:GetText()) or 1)
-	end)
-	e:SetScript("OnEnterPressed", e.ClearFocus)
-	e:SetScript("OnEscapePressed", e.ClearFocus)
-	f.psQty = e
-	f.psMore = W.Button(step, "+", function() setQty(qty + 1) end, { width = 28 })
-	f.psMore:SetPoint("LEFT", e, "RIGHT", 4, 0)
-	f.psMax = W.Button(step, "Max", function() setQty(math.huge) end, { ghost = true })
-	f.psMax:SetPoint("LEFT", f.psMore, "RIGHT", 8, 0)
+	f.psStep = ns.Stepper(f.Footer, {
+		get = function() return qty end,
+		set = function(n) qty = n; refresh() end,
+		max = function() return most end,
+	})
+	f.psStep:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
 
 	-- The filter acts on the list: it sits at the end of the search row, its
 	-- glyph in the accent while a filter hides recipes.

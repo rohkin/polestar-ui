@@ -124,6 +124,64 @@ function ns.SubjectBlock(f)
 	return { icon = icon, name = name, line = line }
 end
 
+-- A numeric editbox in the Polestar look; done(box) runs as it loses focus.
+local function numberBox(parent, width, letters, done)
+	local Theme, W = Polestar.Theme, Polestar.Widgets
+	local e = CreateFrame("EditBox", nil, parent)
+	e:SetSize(width, 28)
+	e:SetAutoFocus(false)
+	e:SetNumeric(true)
+	e:SetMaxLetters(letters)
+	e:SetJustifyH("CENTER")
+	Theme.Font(e, "number")
+	W.Color(e, "text")
+	Theme.Skin(e, "editbox")
+	e:SetScript("OnEditFocusGained", function(self)
+		Theme.SetFocused(self, true)
+		self:HighlightText()
+	end)
+	e:SetScript("OnEditFocusLost", function(self)
+		Theme.SetFocused(self, false)
+		if done then done(self) end
+	end)
+	e:SetScript("OnEnterPressed", e.ClearFocus)
+	e:SetScript("OnEscapePressed", e.ClearFocus)
+	return e
+end
+
+-- A quantity stepper: -, the count, +, Max. `o`: get(), set(n) (n kept within
+-- 1 and max()), max(). The owner calls stepper.Paint() after its own changes.
+function ns.Stepper(parent, o)
+	local W = Polestar.Widgets
+	local s = CreateFrame("Frame", nil, parent)
+	s:SetSize(200, 28)
+	local function set(n)
+		o.set(math.max(1, math.min(n, o.max())))
+		s.Paint()
+	end
+	s.Less = W.Button(s, "\226\128\147", function() set(o.get() - 1) end, { width = 28 })
+	s.Less:SetPoint("LEFT", s, "LEFT", 0, 0)
+	s.Box = numberBox(s, 48, 3, function(self) set(tonumber(self:GetText()) or 1) end)
+	s.Box:SetPoint("LEFT", s.Less, "RIGHT", 4, 0)
+	s.More = W.Button(s, "+", function() set(o.get() + 1) end, { width = 28 })
+	s.More:SetPoint("LEFT", s.Box, "RIGHT", 4, 0)
+	s.Max = W.Button(s, "Max", function() set(math.huge) end, { ghost = true })
+	s.Max:SetPoint("LEFT", s.More, "RIGHT", 8, 0)
+	-- Disabled as Polestar disables: faded to 45%.
+	local function enable(b, on)
+		b:SetEnabled(on)
+		b:SetAlpha(on and 1 or 0.45)
+	end
+	function s.Paint()
+		local n, most = o.get(), o.max()
+		if not s.Box:HasFocus() then s.Box:SetText(n) end
+		enable(s.Less, n > 1)
+		enable(s.More, n < most)
+		enable(s.Max, n < most)
+	end
+	return s
+end
+
 -- An item quality's colour as r, g, b (nil when the client has none).
 function ns.QualityRGB(q)
 	if q == nil then return end
