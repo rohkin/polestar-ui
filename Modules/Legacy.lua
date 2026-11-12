@@ -12,10 +12,14 @@ local POINTS = LC.LEGACY_POINTS_TRAIT_CURRENCY_ID or 4225
 local ROW_H, ICON, BAR_H, CRIT_H = 56, 36, 64, 24
 -- The sections, on a section rail as the professions are, with the stock
 -- window's tab icons (the Two Families Rule: they are the game's).
+-- What each page is for lives in its rail tooltip; the subtitle is a status line.
 local SECTIONS = {
-	{ key = "track", label = "Rewards", tip = "Reward Track", icon = "Interface/Icons/UI_Chat" },
-	{ key = "challenges", label = "Challenges", icon = "Interface/Icons/achievement_guildperk_honorablemention" },
-	{ key = "tree", label = "Tree", tip = "Legacy Tree", icon = "Interface/Icons/achievement_guildperk_everybodysfriend" },
+	{ key = "track", label = "Rewards", tip = "Reward Track", icon = "Interface/Icons/UI_Chat",
+		about = "Earn legacy points from challenges; each reward unlocks at the points shown." },
+	{ key = "challenges", label = "Challenges", icon = "Interface/Icons/achievement_guildperk_honorablemention",
+		about = "Challenges are shared by all your characters, and each one earns legacy points." },
+	{ key = "tree", label = "Tree", tip = "Legacy Tree", icon = "Interface/Icons/achievement_guildperk_everybodysfriend",
+		about = "Spend legacy points on talents. Your changes wait until you apply them." },
 }
 local f, section = nil, "track"
 local M = {}
@@ -996,7 +1000,7 @@ local function paintRail()
 	W.ShellRail(f, SECTIONS, nil, section, function(key) M.Show(key) end)
 	for i, d in ipairs(SECTIONS) do
 		local b = f.railButtons[i]
-		b.psTip = d.tip or d.label
+		b.psTip, b.psTipLines = d.tip or d.label, { d.about }
 		-- A game icon, not a glyph: the rail's tint taken off, its border cropped.
 		W.Uncolor(b.Icon)
 		b.Icon:SetVertexColor(1, 1, 1, 1)
@@ -1004,6 +1008,11 @@ local function paintRail()
 		b.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 		b.Icon:SetSize(24, 24)
 	end
+end
+
+-- The status line of the track and the challenges: "3 of 65 legacy points earned".
+local function earned(pts)
+	return ("%d of %d legacy points earned"):format(pts, C_Traits.GetMaxAvailableTraitCurrency(POINTS, false) or 0)
 end
 
 function refresh()
@@ -1048,9 +1057,7 @@ function refresh()
 		end
 		if chal.cat and LegacyChallengeViewedUtil then LegacyChallengeViewedUtil.MarkCategoryViewed(chal.cat) end
 		paintCategories(tops)
-		local total = C_Traits.GetMaxAvailableTraitCurrency(POINTS, false) or 0
-		W.ShellTitle(f, chal.cat and GetCategoryInfo(chal.cat) or "Challenges",
-			("%d of %d legacy points earned. Challenges are shared by all your characters."):format(pts, total))
+		W.ShellTitle(f, chal.cat and GetCategoryInfo(chal.cat) or "Challenges", earned(pts))
 		W.ShellTabs(f, nil)
 		-- The glyph in the accent while a filter hides challenges.
 		W.SetIconState(f.psFilter, not (chal.showDone and chal.showTodo))
@@ -1058,7 +1065,7 @@ function refresh()
 	else
 		W.ShellTabs(f, nil)
 		if section == "track" then
-			W.ShellTitle(f, "Reward Track", ("%d legacy points. Earn more from challenges; each reward unlocks at the points shown."):format(pts))
+			W.ShellTitle(f, "Reward Track", earned(pts))
 			h = paintTrack(f.psPages.track)
 		else
 			paintTreeNav()
@@ -1072,7 +1079,7 @@ function refresh()
 			elseif tree.committing then
 				sub = "Applying your changes…"
 			else
-				sub = left == 0 and "No legacy points to spend. Earn more from challenges." or left == 1 and "1 legacy point to spend."
+				sub = left == 0 and "No legacy points to spend." or left == 1 and "1 legacy point to spend."
 					or ("%d legacy points to spend."):format(left)
 				if staged then sub = sub .. " Your changes are not applied yet." end
 			end

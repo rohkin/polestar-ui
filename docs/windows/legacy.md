@@ -47,4 +47,8 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   changes held until `TRAIT_CONFIG_UPDATED` or `CONFIG_COMMIT_FAILED`). Footer:
   Apply, then Undo while something is staged, else Reset (`C_Traits.ResetTree`,
   on a second click). The subtitle says the points left to spend.
+- **Subtitles** are status lines only: "3 of 65 legacy points earned" on
+  Rewards and Challenges, the points left to spend (or the search's matches,
+  or "Applying your changes…") on the Tree. What each page is for is its
+  rail button's tooltip.
 

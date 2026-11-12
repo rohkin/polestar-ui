@@ -8,6 +8,8 @@ assert(f:IsShown() and not LegacySystemFrame:IsShown(), "key")
 stub.pressKey("SHIFT-Y")
 assert(not f:IsShown(), "no toggle")
 PolestarUI.Show("legacy", "track")
+assert(f.Subtitle:GetText() == "3 of 65 legacy points earned", "status line: " .. f.Subtitle:GetText())
+assert(f.railButtons[2].psTipLines[1]:find("shared by all your characters", 1, true), "what a page is for, in its rail tooltip")
 local rows = {}
 for _, r in ipairs(f.psPages.track.rows) do if r:IsShown() then rows[#rows + 1] = r end end
 assert(#rows == 4, "rows: " .. #rows)
