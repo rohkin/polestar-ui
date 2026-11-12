@@ -281,8 +281,13 @@ local function newNode(parent)
 end
 
 -- The search, as the stock frame's: a talent's name or its description.
+-- The stock search options (its SearchOptionsDropdown, kept for the session
+-- as stock): passives left out of the matches; each match's ranks shown.
+local hidePassives, showRanks = false, false
+
 local function matches(spell, def)
 	if query == "" then return true end
+	if hidePassives and spell and C_Spell.IsSpellPassive(spell) then return false end
 	local function has(text)
 		return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:lower():find(query, 1, true)
 	end
@@ -323,9 +328,12 @@ local function paintNode(b, config, n)
 	b.Icon:SetDesaturated(not on)
 	b.Icon:SetAlpha(on and 1 or n.isAvailable and 0.75 or 0.3)
 	local state = rank >= max and "accent" or rank > 0 and "success" or nil
-	b.Rank:SetText(rank)
+	-- "Show ranks": a match shows its ranks of the most ("2/3") while searching.
+	local ranks = showRanks and query ~= "" and match
+	b.Rank:SetText(ranks and ("%d/%d"):format(rank, max) or rank)
+	b.Chip:SetWidth(ranks and math.max(18, math.ceil(b.Rank:GetStringWidth()) + 8) or 18)
 	W.Color(b.Rank, state or "text")
-	b.Chip:SetShown(rank > 0)
+	b.Chip:SetShown(rank > 0 or ranks)
 	if state then
 		local r, g, bl = Polestar.Theme.Color(state)
 		Polestar.Theme.Border(b, r, g, bl, 1)
@@ -505,6 +513,34 @@ local function build()
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
 	-- The way to the stock frame (its search, inspect), on the band.
 	f.psOptions = ns.OptionsButton(f, optionsItems)
+	-- The stock search options, on a filter at the end of the search row (as
+	-- the Spellbook's), lit while one is on.
+	local top = W.SHELL.header - 30
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	local function items()
+		local function flip(set)
+			return function()
+				set()
+				M.Show()
+				W.ShowMenu(f.psFilter, items(), { minWidth = 200 })
+			end
+		end
+		local list = {
+			{ text = CLASS_TALENT_SEARCH_OPTION_HIDE_PASSIVES or "Hide passives", checked = hidePassives, onClick = flip(function() hidePassives = not hidePassives end) },
+			{ text = CLASS_TALENT_SEARCH_OPTION_SHOW_RANKS or "Show ranks", checked = showRanks, onClick = flip(function() showRanks = not showRanks end) },
+		}
+		if hidePassives or showRanks then
+			list[#list + 1] = { separator = true }
+			list[#list + 1] = { text = "Clear filters", onClick = function() hidePassives, showRanks = false, false; M.Show() end }
+		end
+		return list
+	end
+	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Search options", function(self)
+		if W.MenuShown(self) then return W.HideMenu() end
+		W.ShowMenu(self, items(), { minWidth = 200 })
+	end, 14)
+	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
+	Polestar.Theme.Skin(f.psFilter, "editbox")
 	f.psArt, f.psTint, f.psStripe = {}, {}, {}
 	for i = 1, 2 do
 		f.psStripe[i] = f.Content:CreateTexture(nil, "BORDER")
@@ -581,6 +617,7 @@ local function refresh()
 		if staged then sub = sub .. " Your changes are not applied yet." end
 	end
 	W.ShellTitle(f, "Talents", sub)
+	W.SetIconState(f.psFilter, hidePassives or showRanks)
 	W.ShellTabs(f, nil)
 	-- Apply and Undo always there, so the layout never moves; disabled as
 	-- Polestar disables (faded to 45%) while nothing is staged. On the spec

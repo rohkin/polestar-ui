@@ -21,7 +21,12 @@ applied. Not protected, but refused in combat and while
   does nothing, and its tooltip is the stock `TALENT_SPEC_LOCKED`.
 - **Search:** as the stock frame's, a talent matches on its name or its
   description; the others recede to 25%, and the subtitle counts the matches
-  ("7 talents match.").
+  ("7 talents match."). The stock search options on a filter at the end of
+  the search row (a 30px `sliders` square on the search field's well, as the
+  Spellbook's), lit while one is on, kept for the session as stock: "Hide
+  passives" (`C_Spell.IsSpellPassive` talents never match) and "Show ranks"
+  (each match's chip shows its ranks of the most, "2/3", widening to fit),
+  then "Clear filters" while one is on.
 - **Main column:** title "Talents", subtitle the points left ("12 points to
   spend.", "Every point is spent."), then "Your changes are not applied
   yet." while something is staged, and "Applying your talents…" while Apply
