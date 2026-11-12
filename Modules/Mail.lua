@@ -613,8 +613,8 @@ local function buildSend()
 		-- The cursor's item goes in; a right-click takes it back out.
 		well:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 		-- Never while a spell waits for its item: the click would pick up.
-		well:SetScript("OnClick", function(_, button) if not SpellIsTargeting() then ClickSendMailItemButton(i, button == "RightButton") end end)
-		well:SetScript("OnReceiveDrag", function() if not SpellIsTargeting() then ClickSendMailItemButton(i) end end)
+		well:SetScript("OnClick", function(_, button) ns.Pickup(ClickSendMailItemButton, i, button == "RightButton") end)
+		well:SetScript("OnReceiveDrag", function() ns.Pickup(ClickSendMailItemButton, i) end)
 		well:HookScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 			if HasSendMailItem(i) then

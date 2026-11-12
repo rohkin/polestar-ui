@@ -300,6 +300,14 @@ function ns.SetEnabled(b, on, why)
 	b:HookScript("OnLeave", function(self) if GameTooltip:GetOwner() == self then GameTooltip:Hide() end end)
 end
 
+-- A pickup from a bag, bank or window slot: `fn(...)`, never while a spell
+-- waits for its item. Then the click would apply the spell, forbidden to
+-- addon code (docs/CLIENT.md, rule 4); a window that applies it does so from
+-- its secure overlay. No combat block: container pickups are not protected.
+function ns.Pickup(fn, ...)
+	if not SpellIsTargeting() then return fn(...) end
+end
+
 -- A one-line text box in the Polestar look, `w` wide; Enter and Escape leave it.
 function ns.TextField(parent, w, letters)
 	local Theme, W = Polestar.Theme, Polestar.Widgets

@@ -1671,8 +1671,8 @@ end
 local function bagLoc(t) return ItemLocation:CreateFromBagAndSlot(t:GetBagID(), t:GetID()) end
 -- Never in combat, nor while a spell waits for an item: the slot's own click applies it.
 local function bagPickup(t)
-	if InCombatLockdown() or SpellIsTargeting() then return end
-	C_Container.PickupContainerItem(t:GetBagID(), t:GetID())
+	if InCombatLockdown() then return end
+	ns.Pickup(C_Container.PickupContainerItem, t:GetBagID(), t:GetID())
 end
 local function bagClick(t, button)
 	if IsModifiedClick() then return t:OnModifiedClick(button) end

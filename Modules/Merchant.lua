@@ -237,8 +237,8 @@ local function newRow(k)
 	-- Dragged to the bags, as the stock button; never one that asks first,
 	-- and not while a spell waits for its item target.
 	r:SetScript("OnDragStart", function(self)
-		local it = not back(self) and not SpellIsTargeting() and C_MerchantFrame.GetItemInfo(self.psIndex)
-		if it and not it.hasExtendedCost and (it.price or 0) < HIGH then PickupMerchantItem(self.psIndex) end
+		local it = not back(self) and C_MerchantFrame.GetItemInfo(self.psIndex)
+		if it and not it.hasExtendedCost and (it.price or 0) < HIGH then ns.Pickup(PickupMerchantItem, self.psIndex) end
 	end)
 	r:SetScript("OnReceiveDrag", sell)
 	r:SetScript("OnEnter", enter)

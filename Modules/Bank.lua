@@ -41,8 +41,7 @@ end
 -- ACCOUNT_BANK_DEPOSIT_NO_REFUND_CONFIRM).
 -- While a spell waits for its item, picking up is applying it, forbidden to
 -- us: the overlay's secure click does that ("target-bag", below).
-local function pickup(w)
-	if SpellIsTargeting() then return end
+local function pickupNow(w)
 	local held = C_Cursor.GetCursorItem()
 	if held and w.psType == ACCT and C_Bank.CanUseBank(ACCT) and C_Item.CanBeRefunded(held) then
 		local guid = C_Item.GetItemGUID(held)
@@ -54,6 +53,7 @@ local function pickup(w)
 	end
 	C_Container.PickupContainerItem(w.psBag, w.psSlot)
 end
+local function pickup(w) ns.Pickup(pickupNow, w) end
 
 -- Splitting a stack: how many to pick up, on a stepper in Polestar's dialog.
 local stepper, stepN, stepMax
@@ -159,7 +159,7 @@ local function wireBag(b)
 	b:RegisterForDrag("LeftButton")
 	-- A bag goes in or comes out as any item: picked up and placed. A slot
 	-- not bought yet buys the next (the stock Purchase button beside them).
-	local function take(self) if not SpellIsTargeting() then C_Container.PickupContainerItem(bagSlots(self.psType), self.psNum) end end
+	local function take(self) ns.Pickup(C_Container.PickupContainerItem, bagSlots(self.psType), self.psNum) end
 	b:SetScript("OnClick", function(self)
 		if self.psBought then take(self) else buy(self.psType) end
 	end)
