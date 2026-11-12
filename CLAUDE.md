@@ -37,7 +37,7 @@ Docking
 - `ns.LinkPlace(win)` (Professions.lua): windows sharing a `psDockGroup` swap in place.
 Doors and secure parts
 - `ns.Doors(module, Name, {BINDING = fn}, microButton, onMicro)`: override-binding clicks plus a secure button over the micro button (shift-click = stock window).
-- `ns.Interaction(key, types, o)`: NPC window takes the interaction; `o = {frame, close, internal = {events}, bags}`; call from Enable; does nothing without the interaction manager (preview scenes without NPC stubs).
+- `ns.Interaction(key, types, o)`: NPC window takes the interaction; `o = {frame, close, internal = {events}, bags, events = {show, hide}}` (events: fallback open/close on game events, once even if both fire); call from Enable; does nothing without the interaction manager (preview scenes without NPC stubs).
 - `ns.Overlay(name, o)`: one secure button over a hovered target; `o = {enter, pickup, attrs, stale?, setup?}`; returns `place(t)`.
 Shell pieces
 - `ns.Plain(f)`: a shell made with `sidebar = 0` loses its sidebar; `f.Main` hangs off the window.
