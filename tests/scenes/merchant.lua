@@ -1,7 +1,7 @@
 --@ title: Merchant
 --@ roots: PolestarUIMerchant
 --@ stubs: stub_npc.lua, stub_merchant.lua
--- The vendor opens ours, never the stock window, with the bags; closing ours ends the visit once, the game ending it closes ours without ending it again. Every ware on one page in two columns: quality names, prices (danger when short of money), each other cost (a currency, an item) as its count and icon with its own tooltip, the vendor's currencies held by the money, a quest bang on a ware that starts one, stack size and stock left, sold out faded, unusable red. A click buys one, right-click a stack, shift-click asks how many; a high price, a currency, an item above uncommon or a purchase that cannot be refunded asks first (the stock rules); shift-click is capped by the money and the cost items held. A held item dropped on the window is sold. The footer repairs all (guild too, each with the stock tooltip: the cost, the guild's funds, what the player pays on top), one item with the game's repair cursor (on until clicked again or the window closes), and sells junk after asking; the money shows by the tabs; the filter is the game's menu.
+-- The vendor opens ours, never the stock window, with the bags; closing ours ends the visit once, the game ending it closes ours without ending it again. Every ware on one page in two columns: quality names, prices (danger when short of money), each other cost (a currency, an item) as its count and icon with its own tooltip, the vendor's currencies held by the money, a quest bang on a ware that starts one, stack size and stock left, sold out faded, unusable red. A click buys one, right-click a stack, shift-click asks how many; a high price, a currency, an item above uncommon or a purchase that cannot be refunded asks first (the stock rules); shift-click is capped by the money and the cost items held. A held item dropped on the window is sold; one that can still be refunded asks first, naming what comes back, and is refunded (cancel puts it back). The footer repairs all (guild too, each with the stock tooltip: the cost, the guild's funds, what the player pays on top), one item with the game's repair cursor (on until clicked again or the window closes), and sells junk after asking; the money shows by the tabs; the filter is the game's menu.
 local T = Enum.PlayerInteractionType
 local ns = PolestarUI
 local f = function() return PolestarUIMerchant end
@@ -82,6 +82,17 @@ assert(stub.sold == 1 and #stub.bought == 6, "a dropped item not sold")
 stub.cursorItem = true
 rows[3]:Click("LeftButton")
 assert(stub.sold == 2 and #stub.bought == 6, "a click with a held item bought")
+-- A refundable one: asked, then refunded, never sold.
+stub.cursorItem, stub.refund = true, { money = 0, itemCount = 0, currencyCount = 1, refundSeconds = 7000, hasEnchants = false }
+stub.RunScript(rows[3], "OnReceiveDrag")
+assert(PolestarModal:IsShown() and tostring(PolestarModal.Box.Text:GetText()):find("2 Honor") and stub.sold == 2, "no refund dialog")
+PolestarModal.Box.Cancel:Click()
+assert(not stub.cursorItem and not stub.refunded, "cancel did not put it back")
+stub.cursorItem = true
+stub.RunScript(rows[3], "OnReceiveDrag")
+PolestarModal.Box.Action:Click()
+assert(stub.refunded and stub.refunded[2] == 3 and stub.sold == 2, "not refunded")
+stub.refund = nil
 
 -- The footer: repair, guild repair, junk.
 local left = w.footerButtons.left

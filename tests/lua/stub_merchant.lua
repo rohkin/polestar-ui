@@ -65,6 +65,19 @@ function PickupMerchantItem(i)
 	if i == 0 and stub.cursorItem then stub.sold, stub.cursorItem = stub.sold + 1, false end
 end
 function CursorHasItem() return stub.cursorItem end
+-- A held item from bag 0, slot 3; refundable when stub.refund is set (what it gives back).
+C_Cursor = C_Cursor or {}
+function C_Cursor.GetCursorItem()
+	if not stub.cursorItem then return nil end
+	return { IsEquipmentSlot = function() return false end, GetBagAndSlot = function() return 0, 3 end, refundable = stub.refund ~= nil }
+end
+C_Item = C_Item or {}
+function C_Item.CanBeRefunded(loc) return loc.refundable end
+function C_Container.GetContainerItemPurchaseInfo() return stub.refund end
+function C_Container.GetContainerItemPurchaseItem() return nil end
+function C_Container.GetContainerItemPurchaseCurrency(_, _, k) return k == 1 and { name = "Honor", currencyCount = 2, iconFileID = 136998 } or nil end
+function C_Container.ContainerRefundItemPurchase(bag, slot) stub.refunded, stub.cursorItem = { bag, slot }, false end
+function ClearCursor() stub.cursorItem = false end
 
 function GetNumBuybackItems() return #stub.buyback end
 function GetBuybackItemInfo(i)

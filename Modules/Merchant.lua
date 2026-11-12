@@ -113,12 +113,43 @@ local function howMany(i)
 	stepper.Paint()
 end
 
--- A held item dropped on the window is sold, as on the stock window.
-local function sell()
-	if CursorHasItem() then
-		PickupMerchantItem(0)
-		return true
+-- What a refundable item gives back, or nil when it gives nothing
+-- (ContainerFrame_GetExtendedPriceString).
+local function refundText(bag, slot, equipped)
+	local C = C_Container
+	local info = C.GetContainerItemPurchaseInfo(bag, slot, equipped)
+	if not info or not info.refundSeconds or (info.itemCount == 0 and info.money == 0 and info.currencyCount == 0) then return end
+	local parts = {}
+	if info.money > 0 then parts[1] = coins(info.money) end
+	for k = 1, info.itemCount do
+		local it = C.GetContainerItemPurchaseItem(bag, slot, k, equipped)
+		if it and it.hyperlink then parts[#parts + 1] = ("%d %s"):format(it.itemCount or 0, it.hyperlink) end
 	end
+	for k = 1, info.currencyCount do
+		local c = C.GetContainerItemPurchaseCurrency(bag, slot, k, equipped)
+		if c and c.name then parts[#parts + 1] = ("|T%s:0|t %d %s"):format(c.iconFileID or "", c.currencyCount or 0, c.name) end
+	end
+	return ("You get back %s.%s"):format(table.concat(parts, ", "), info.hasEnchants and " Its enchantments and gems are lost." or "")
+end
+
+-- A held item dropped on the window is sold, as on the stock window; one
+-- that can still be refunded asks first and is refunded (CONFIRM_REFUND_TOKEN_ITEM).
+local function sell()
+	if not CursorHasItem() then return end
+	local loc = C_Cursor.GetCursorItem()
+	if loc and C_Item.CanBeRefunded(loc) then
+		local equipped = loc:IsEquipmentSlot()
+		local bag, slot = 0, nil
+		if equipped then slot = loc:GetEquipmentSlot() else bag, slot = loc:GetBagAndSlot() end
+		local text = slot and refundText(bag, slot, equipped)
+		if text then
+			ask({ title = "Refund this item?", text = text, action = "Refund", onCancel = ClearCursor,
+				onAccept = function() C_Container.ContainerRefundItemPurchase(bag, slot, equipped) end })
+			return true
+		end
+	end
+	PickupMerchantItem(0)
+	return true
 end
 
 ---------------------------------------------------------------------------
