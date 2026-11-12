@@ -157,6 +157,15 @@ local function nodeEnter(b)
 	end
 	if draggable(b) then hint[#hint + 1] = "Drag it to an action bar." end
 	if b.psSpell then hint[#hint + 1] = "Shift-click to link it in chat." end
+	-- A learnt talent's spell on no action bar, as the stock tooltip says
+	-- (SpellSearchUtil.GetActionBarStatusForTraitNode); stock code reads the
+	-- bars, so not in combat (docs/CLIENT.md, rule 3).
+	local U = ActionButtonUtil
+	if draggable(b) and not InCombatLockdown() and U and U.GetActionBarStatusForSpell
+		and U.GetActionBarStatusForSpell(b.psSpell, true, false) == U.ActionBarActionStatus.MissingFromAllBars then
+		local c = LIGHTBLUE_FONT_COLOR
+		tip:AddLine(TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR or "Not on your action bars", c and c.r or 0.5, c and c.g or 0.75, c and c.b or 1, true)
+	end
 	if #hint > 0 then ns.TooltipHint(table.concat(hint, " ")) end
 	tip:Show()
 end

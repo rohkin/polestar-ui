@@ -80,7 +80,9 @@ applied. Not protected, but refused in combat and while
   Shift-click to link it in chat."). Shift-click links the spell. A learnt
   talent that is not passive drags its spell to a bar (`C_Spell.PickupSpell`,
   as the stock `TalentButtonBaseMixin:OnDragStart`); not in combat, where the
-  client blocks the pickup from addon code (CLIENT.md, rule 4).
+  client blocks the pickup from addon code (CLIENT.md, rule 4). Such a
+  talent on no action bar says so in its tooltip, as stock (the light blue
+  `TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR`; read out of combat).
 - **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
   `W.Modal`) on the left; "Undo" (default, drops what is staged:
   `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`, the

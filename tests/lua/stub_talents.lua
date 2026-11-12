@@ -240,3 +240,7 @@ function C_Texture.GetAtlasInfo(atlas)
 		return { file = 4567890, width = 1600, height = 800, leftTexCoord = 0, rightTexCoord = 1, topTexCoord = 0, bottomTexCoord = 0.8 }
 	end
 end
+-- The action bars, as ActionButtonUtil reads them: no talent's spell is on one.
+ActionButtonUtil = { ActionBarActionStatus = { NotMissing = 1, MissingFromAllBars = 2 } }
+function ActionButtonUtil.GetActionBarStatusForSpell(id) return 2 end
+TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR = "Not on your action bars"
