@@ -7,9 +7,10 @@ local W = Polestar.Widgets
 local Theme = Polestar.Theme
 
 local NAME = "PolestarUISocial"
-local ROW_H, RAID_H, COL_GAP = 44, 28, 24
+local ROW_H, HEAD_H, RAID_H, COL_GAP = 44, 32, 28, 24
 
 local f, page, query = nil, "friends", ""
+local collapsed, filters, lastSearch = {}, {}, nil
 local M = {}
 local rows, groups = {}, {}
 
@@ -36,16 +37,69 @@ local function detail(level, class, zone)
 	return table.concat(parts, " · ")
 end
 
+-- Presence as the stock social UI reads it (SocialUIUtil.GetPresenceType*).
+local PRESENCE_COLOR = { online = "success", away = "warning", busy = "danger", offline = "textMuted", hidden = "textMuted" }
+
+-- The stock list's filter menu (FriendsListTemplates.lua): status flags and
+-- Battle.net friend tags, handed to C_BattleNet.SearchFriends.
+local STATUS = {
+	{ "isOnline", "Online" }, { "isAFK", "Away" }, { "isDND", "Busy" }, { "isOffline", "Offline" },
+	{ "isInQueue", "In Queue" }, { "isAvailableForQueue", "Available For Queue" },
+}
+local INTERESTS = { { "Professions" }, { "PvP" }, { "Raiding" }, { "Dungeons" }, { "Delves" }, { "Questing" }, { "Roleplaying" } }
+local ROLES = { { "DamagerRole", "DPS" }, { "HealerRole", "Healer" }, { "TankRole", "Tank" } }
+
+-- A tag's enum value, nil when this game type has no such tag (Forever: no Delves).
+local function tagValue(t)
+	local v = Enum.BattleNetFriendTag and Enum.BattleNetFriendTag[t[1]]
+	if v == nil or (C_BattleNet.IsFriendTagSupportedForCurrentGameType and not C_BattleNet.IsFriendTagSupportedForCurrentGameType(v)) then return end
+	return v
+end
+
+-- The search info for the checked filters, nil when none is.
+local function searchInfo()
+	local info, on = { searchText = "", tags = {} }, false
+	for _, o in ipairs(STATUS) do
+		info[o[1]] = filters[o[1]] or false
+		on = on or info[o[1]]
+	end
+	for _, list in ipairs({ INTERESTS, ROLES }) do
+		for _, t in ipairs(list) do
+			local v = filters[t[1]] and tagValue(t)
+			if v then info.tags[#info.tags + 1] = v; on = true end
+		end
+	end
+	return on and info or nil
+end
+
+-- WoW friends have no tags or queue state: only the presence filters keep them.
+local function wowShown(info, connected, afk, dnd)
+	if not info then return true end
+	if #info.tags > 0 or info.isInQueue or info.isAvailableForQueue then return false end
+	return (info.isOnline and connected) or (info.isAFK and afk) or (info.isDND and dnd) or (info.isOffline and not connected) or false
+end
+
 -- The friends list as the stock one orders it (FriendsList_Update): Battle.net
 -- favorites, then online Battle.net and WoW friends, then offline ones; the
 -- client already lists each kind online first, favorites first.
 local function friends()
-	local list = {}
+	local list, filter = {}, searchInfo()
+	-- The client's own filter for Battle.net friends (presence, queue, tags);
+	-- in combat the last result stands.
+	local bnShown
+	if filter then
+		if not InCombatLockdown() then
+			lastSearch = {}
+			for _, i in ipairs(C_BattleNet.SearchFriends(filter) or {}) do lastSearch[i] = true end
+		end
+		bnShown = lastSearch or {}
+	end
 	for i = 1, C_FriendList.GetNumFriends() do
 		local info = C_FriendList.GetFriendInfoByIndex(i)
-		if info then
+		if info and wowShown(filter, info.connected, info.afk, info.dnd) then
 			list[#list + 1] = { name = info.name, online = info.connected, class = classFile(info.guid),
-				rank = info.connected and 2 or 4, order = i,
+				rank = info.connected and 2 or 4, order = i, canInvite = info.connected,
+				status = not info.connected and "offline" or info.dnd and "busy" or info.afk and "away" or "online",
 				sub = info.connected and detail(info.level, info.className, info.area) or "Offline",
 				whisper = function() ChatFrameUtil.SendTell(info.name) end,
 				invite = function() C_PartyInfo.InviteUnit(info.name) end,
@@ -66,12 +120,14 @@ local function friends()
 			else
 				sub = keep("bnr" .. id, g.richPresence) or "Online"
 			end
+			local status = not g.isOnline and "offline" or (a.isAFK or g.isGameAFK) and "away" or (a.isDND or g.isGameBusy) and "busy" or "online"
 			-- Favorites are set from the right-click menu, as in the stock list.
-			list[#list + 1] = { name = name, char = char, online = g.isOnline, class = char and classFile(g.playerGuid), sub = sub,
+			if not bnShown or bnShown[i] then list[#list + 1] = { name = name, char = char, online = g.isOnline, class = char and classFile(g.playerGuid), sub = sub,
 				bnet = true, favorite = a.isFavorite, rank = a.isFavorite and 0 or g.isOnline and 1 or 3, order = 1000 + i,
+				status = status, canInvite = g.isOnline and char ~= nil,
 				whisper = function() ChatFrameUtil.SendBNetTell(name) end,
 				invite = function() FriendsFrame_BattlenetInviteByIndex(i) end,
-				menu = function() FriendsFrame_ShowBNDropdown(name, g.isOnline, nil, nil, nil, 1, id, nil, nil, nil, nil, a.battleTag) end }
+				menu = function() FriendsFrame_ShowBNDropdown(name, g.isOnline, nil, nil, nil, 1, id, nil, nil, nil, nil, a.battleTag) end } end
 		end
 	end
 	table.sort(list, function(x, y)
@@ -132,6 +188,27 @@ local function matches(e)
 	return query == "" or e.name:lower():find(query, 1, true) or (e.char and e.char:lower():find(query, 1, true))
 end
 
+-- The stock list's two folding groups, Favorites and Friends, each headed
+-- "online/total" of the friends shown; requests stay above them.
+local function withHeads(list)
+	local out = {}
+	local heads = { fav = { head = "Favorites", key = "fav", kids = {} }, all = { head = "Friends", key = "all", kids = {} } }
+	for _, e in ipairs(list) do
+		local h = not e.request and heads[e.favorite and "fav" or "all"]
+		if h then h.kids[#h.kids + 1] = e else out[#out + 1] = e end
+	end
+	for _, h in ipairs({ heads.fav, heads.all }) do
+		if #h.kids > 0 then
+			local on = 0
+			for _, e in ipairs(h.kids) do if e.online then on = on + 1 end end
+			h.name, h.online = ("%s %d/%d"):format(h.head, on, #h.kids), true
+			out[#out + 1] = h
+			if not collapsed[h.key] then for _, e in ipairs(h.kids) do out[#out + 1] = e end end
+		end
+	end
+	return out
+end
+
 ---------------------------------------------------------------------------
 -- Friend rows: name over a detail line, in one row panel.
 
@@ -158,6 +235,13 @@ local function newRow(panel, i)
 		d:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
 	end
 	W.Hover(r)
+	-- A group heading's fold chevron; a friend's presence pip in the corner.
+	r.Chevron = W.Tex(r, "ARTWORK", "chevron-down", "textDim")
+	r.Chevron:SetSize(12, 12)
+	r.Chevron:SetPoint("LEFT", r, "LEFT", 16, 0)
+	r.Pip = W.Tex(r, "OVERLAY", "circle", "success")
+	r.Pip:SetSize(8, 8)
+	r.Pip:SetPoint("TOPLEFT", r, "TOPLEFT", 5, -5)
 	r.Name = W.Text(r, "body", "text")
 	r.Sub = W.Text(r, "small", "textDim")
 	r.Sub:SetPoint("TOPLEFT", r, "LEFT", 16, -3)
@@ -166,7 +250,9 @@ local function newRow(panel, i)
 	r.BNet = r:CreateTexture(nil, "ARTWORK")
 	r.BNet:SetTexture("Interface\\FriendsFrame\\PlusManz-BattleNet")
 	r.BNet:SetSize(16, 16)
-	r.BNet:SetPoint("RIGHT", r, "RIGHT", -16, 0)
+	r.Invite = W.IconButton(r, "plus", 24, "Invite to group", function(self) self:GetParent().psEntry.invite() end)
+	r.Invite:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+	r.BNet:SetPoint("RIGHT", r.Invite, "LEFT", -8, 0)
 	r.Fav = W.Tex(r, "ARTWORK", "star", "accent")
 	r.Fav:SetSize(12, 12)
 	r.Fav:SetPoint("RIGHT", r.BNet, "LEFT", -8, 0)
@@ -190,6 +276,10 @@ local function newRow(panel, i)
 	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	r:SetScript("OnClick", function(self, button)
 		local e = self.psEntry
+		if e.head then
+			collapsed[e.key] = not collapsed[e.key] or nil
+			return M.Show() -- at once (docs/CLIENT.md, rule 6)
+		end
 		if not e.whisper then return end
 		if button == "RightButton" then return e.menu() end
 		if self.psWhisper then self.psWhisper:Cancel() end
@@ -212,19 +302,29 @@ local function paintName(t, class, dim)
 end
 
 local function paintRows(list)
-	local p = f.psPanel
+	local p, y = f.psPanel, 0
 	for i, e in ipairs(list) do
 		local r = rows[i] or newRow(p, i)
 		rows[i] = r
 		r.psEntry = e
+		r:SetHeight(e.head and HEAD_H or ROW_H)
+		r:SetPoint("TOPLEFT", p, "TOPLEFT", 0, -y)
+		y = y + r:GetHeight()
 		r.Name:SetText(e.name)
-		paintName(r.Name, e.class, not e.online)
-		r.Sub:SetText(e.sub)
+		if e.head then W.Uncolor(r.Name); W.Color(r.Name, "textDim") else paintName(r.Name, e.class, not e.online) end
+		r.Chevron:SetShown(e.head ~= nil)
+		r.Chevron:SetTexture(Theme.Media(collapsed[e.key] and "chevron-right" or "chevron-down"))
+		r.Pip:SetShown(e.status ~= nil)
+		if e.status then W.Color(r.Pip, PRESENCE_COLOR[e.status]) end
+		r.Invite:SetShown(e.status ~= nil)
+		if e.status then ns.SetEnabled(r.Invite, e.canInvite) end
+		local sub = e.sub or ""
+		r.Sub:SetText(sub)
 		W.Color(r.Sub, e.online and "textDim" or "textMuted")
-		r.Sub:SetShown(e.sub ~= "")
-		local right = e.request and 200 or 64
+		r.Sub:SetShown(sub ~= "")
+		local right = e.request and 200 or e.status and 96 or 64
 		r.Name:ClearAllPoints()
-		r.Name:SetPoint(e.sub ~= "" and "BOTTOMLEFT" or "LEFT", r, "LEFT", 16, e.sub ~= "" and 1 or 0)
+		r.Name:SetPoint(sub ~= "" and "BOTTOMLEFT" or "LEFT", r, "LEFT", e.head and 36 or 16, sub ~= "" and 1 or 0)
 		r.Name:SetPoint("RIGHT", r, "RIGHT", -right, 0)
 		r.Sub:SetPoint("RIGHT", r, "RIGHT", -right, 0)
 		r.BNet:SetShown(e.bnet and not e.request or false)
@@ -235,10 +335,10 @@ local function paintRows(list)
 		r:Show()
 	end
 	for i = #list + 1, #rows do rows[i]:Hide() end
-	p:SetHeight(math.max(1, #list * ROW_H))
+	p:SetHeight(math.max(1, y))
 	p:SetShown(#list > 0)
 	f.psEmpty:SetShown(#list == 0)
-	return 24 + #list * ROW_H + 24
+	return 24 + y + 24
 end
 
 ---------------------------------------------------------------------------
@@ -315,16 +415,19 @@ local optionsItems = {
 	{ text = "There: Quick Join, Recruit a Friend, and the raid's groups and ready check", disabled = true },
 }
 
+-- A one-line field for a modal's body; Enter takes the modal's action.
+local function fieldBody()
+	local body = CreateFrame("Frame", nil, f)
+	body:SetSize(352, 30)
+	local e = ns.TextField(body, 352)
+	e:SetAllPoints(body)
+	e:SetScript("OnEnterPressed", function() PolestarModal.Box.Action:Click() end)
+	body.Box = e
+	return body
+end
+
 local function addFriend()
-	if not f.psAdd then
-		local body = CreateFrame("Frame", nil, f)
-		body:SetSize(352, 30)
-		local e = ns.TextField(body, 352)
-		e:SetAllPoints(body)
-		e:SetScript("OnEnterPressed", function() PolestarModal.Box.Action:Click() end)
-		body.Box = e
-		f.psAdd = body
-	end
+	f.psAdd = f.psAdd or fieldBody()
 	local e = f.psAdd.Box
 	e:SetText("")
 	ns.ModalWith({ title = "Add friend", text = "A character's name, or a BattleTag (Name#1234) for Battle.net.", action = "Add",
@@ -337,8 +440,89 @@ local function addFriend()
 	e:SetFocus()
 end
 
+-- The filter menu: the stock list's Status and Tags submenus in one list;
+-- a pick keeps it open.
+local function filterItems()
+	local items = {}
+	local function section(title, list, always)
+		local any = false
+		for _, o in ipairs(list) do
+			local k = o[1]
+			if always or tagValue(o) ~= nil then
+				if not any then
+					if #items > 0 then items[#items + 1] = { separator = true } end
+					items[#items + 1] = { text = title, disabled = true }
+					any = true
+				end
+				items[#items + 1] = { text = o[2] or o[1], checked = filters[k], onClick = function()
+					filters[k] = not filters[k] or nil
+					M.Show()
+					W.ShowMenu(f.psFilter, filterItems(), { minWidth = 200 })
+				end }
+			end
+		end
+	end
+	section("Status", STATUS, true)
+	if not C_BattleNet.AreFriendTagsEnabled or C_BattleNet.AreFriendTagsEnabled() then
+		section("Interests", INTERESTS)
+		section("Roles", ROLES)
+	end
+	if next(filters) then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Clear filters", onClick = function() filters = {}; M.Show() end }
+	end
+	return items
+end
+
+-- The player's Battle.net presence and BattleTag (the stock BattleNetBar).
+local function presence()
+	local _, _, _, _, afk, dnd, _, hidden = BNGetInfo()
+	return hidden and "hidden" or afk and "away" or dnd and "busy" or "online"
+end
+
+local function setPresence(p)
+	-- As SocialUIUtil.SetBattleNetPresenceFromSocialUIPresence.
+	if p == "online" then
+		C_BattleNet.SetAFK(false); C_BattleNet.SetDND(false); C_BattleNet.SetAppearOffline(false)
+	elseif p == "away" then C_BattleNet.SetAFK(true)
+	elseif p == "busy" then C_BattleNet.SetDND(true)
+	else C_BattleNet.SetAppearOffline(true) end
+	M.Show() -- at once, not on BN_INFO_CHANGED (docs/CLIENT.md, rule 6)
+end
+
+local function battleTag() return keep("tag", (select(2, BNGetInfo()))) or "" end
+
+-- shortcut: a selected field to copy from, not CopyToClipboard (restricted and
+-- unproven from addon code); switch once it is seen to work in game.
+local function copyTag()
+	f.psCopy = f.psCopy or fieldBody()
+	local e = f.psCopy.Box
+	e:SetText(battleTag())
+	ns.ModalWith({ title = "Copy BattleTag", text = "Press Ctrl+C to copy your BattleTag.", action = "Done", onAccept = function() end }, f.psCopy)
+	e:SetFocus()
+	e:HighlightText()
+end
+
+local function presenceItems()
+	local now, items = presence(), {}
+	for _, o in ipairs({ { "online", "Online" }, { "away", "Away" }, { "busy", "Busy" }, { "hidden", "Appear offline" } }) do
+		items[#items + 1] = { text = o[2], checked = now == o[1], onClick = function() setPresence(o[1]) end }
+	end
+	items[#items + 1] = { separator = true }
+	items[#items + 1] = { text = "Copy BattleTag", onClick = copyTag }
+	return items
+end
+
+-- A band button left of another, built as Options is.
+local function bandButton(items, rightOf)
+	local b = ns.OptionsButton(f, items)
+	b:ClearAllPoints()
+	b:SetPoint("RIGHT", rightOf, "LEFT", -8, 0)
+	return b
+end
+
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, sidebar = 240, searchPlaceholder = "Search friends",
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, sidebar = 240, searchPlaceholder = "Search for keywords",
 		onSearch = function(text)
 			query = (text or ""):lower()
 			if f:IsShown() then M.Show() end
@@ -352,6 +536,12 @@ local function build()
 	f.psDot:SetSize(10, 10)
 	f.psDot:SetPoint("CENTER", f.psClass:GetParent(), "BOTTOMRIGHT", -2, 2)
 	f.psOptions = ns.OptionsButton(f, optionsItems)
+	f.psFilter = bandButton(filterItems, f.psOptions)
+	f.psStatus = bandButton(presenceItems, f.psFilter)
+	f.psStatus.Dot = W.Tex(f.psStatus, "ARTWORK", "circle", "success")
+	f.psStatus.Dot:SetSize(8, 8)
+	f.psStatus.Dot:SetPoint("LEFT", f.psStatus, "LEFT", 10, 0)
+	f.psStatus.Label:SetPoint("LEFT", f.psStatus, "LEFT", 24, 0)
 	f.psPanel = W.RowPanel(f.Body)
 	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
@@ -364,9 +554,7 @@ local function build()
 end
 
 local function statusColor()
-	if not BNConnected() then return "textMuted" end
-	local afk, dnd = select(5, BNGetInfo())
-	return dnd and "danger" or afk and "warning" or "success"
+	return BNConnected() and PRESENCE_COLOR[presence()] or "textMuted"
 end
 
 local PAGES = {
@@ -385,6 +573,14 @@ local function refresh()
 	f.psLine:SetText(("%d of %d friends online"):format(online, #lists.friends))
 	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
 	W.Color(f.psDot, statusColor())
+	local st, n = f.psStatus, 0
+	for _ in pairs(filters) do n = n + 1 end
+	f.psFilter.Label:SetText(n > 0 and ("Filter (%d)"):format(n) or "Filter")
+	f.psFilter:SetShown(page == "friends")
+	st.Label:SetText(BNConnected() and battleTag() or "Battle.net offline")
+	st:SetWidth(st.Label:GetStringWidth() + 24 + 30)
+	W.Color(st.Dot, statusColor())
+	ns.SetEnabled(st, BNConnected())
 	local nFriends, inv = #lists.friends, requests()
 	-- Requests head the list unless a search is on.
 	if query == "" then
@@ -412,8 +608,9 @@ local function refresh()
 	else
 		local list = {}
 		for _, e in ipairs(lists[page]) do if matches(e) then list[#list + 1] = e end end
+		if page == "friends" then list = withHeads(list) end
 		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
-		f.psEmpty:SetText(not ready and "Loading recent allies..." or query ~= "" and "No one matches." or p[3])
+		f.psEmpty:SetText(not ready and "Loading recent allies..." or (query ~= "" or next(filters)) and "No one matches." or p[3])
 		h = paintRows(list)
 	end
 	W.ShellBody(f, h)

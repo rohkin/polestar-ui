@@ -23,8 +23,9 @@ stub.inCombat = false
 -- The sidebar counts each page; the subject block counts friends online.
 assert(f.psLine:GetText() == "5 of 8 friends online", "subject line: " .. tostring(f.psLine:GetText()))
 assert(f.psName:GetText() == "Testchar", "player name")
--- One list, as the stock one orders it: the friend request, Battle.net favorites, online
--- Battle.net then WoW friends, offline ones; Battle.net rows carry the game's mark, favorites a star.
+-- One list, as the stock one orders it: the friend request, then the Favorites and Friends
+-- groups headed online/total, online Battle.net then WoW friends before offline ones;
+-- Battle.net rows carry the game's mark, favorites a star.
 local function rowsInOrder()
 	local t = {}
 	for _, r in ipairs({ f.psPanel:GetChildren() }) do
@@ -40,7 +41,7 @@ local function row(name)
 		if r:IsShown() and r.Name and r.Name:GetText() == name then return r end
 	end
 end
-assert(rowsInOrder() == "Rook,Sefa,Mira,Jon,Aelric,Brannoc,Corwyn,Dovaline,Eldric", "order: " .. rowsInOrder())
+assert(rowsInOrder() == "Rook,Favorites 0/1,Sefa,Friends 5/7,Mira,Jon,Aelric,Brannoc,Corwyn,Dovaline,Eldric", "order: " .. rowsInOrder())
 assert(row("Sefa").Fav:IsShown() and row("Sefa").BNet:IsShown() and not row("Mira").Fav:IsShown(), "favorite mark")
 assert(row("Mira").BNet:IsShown() and not row("Aelric").BNet:IsShown(), "Battle.net mark")
 assert(row("Aelric").Sub:GetText() == "Level 24 Paladin · Elwynn Forest", "detail: " .. tostring(row("Aelric").Sub:GetText()))

@@ -24,7 +24,7 @@ end
 -- { name, connected, level, class, zone }
 local WOW = {
 	{ "Aelric", true, 24, "PALADIN", "Elwynn Forest" },
-	{ "Brannoc", true, 22, "PRIEST", "Westfall" },
+	{ "Brannoc", true, 22, "PRIEST", "Westfall", afk = true },
 	{ "Corwyn", true, 25, "ROGUE", "Redridge Mountains" },
 	{ "Dovaline", false, 19, "MAGE" },
 	{ "Eldric", false, 30, "HUNTER" },
@@ -36,7 +36,7 @@ function C_FriendList.GetNumOnlineFriends() return 3 end
 function C_FriendList.GetFriendInfoByIndex(i)
 	local w = WOW[i]
 	return w and { name = w[1], connected = w[2], level = w[2] and w[3] or 0, className = w[2] and CLASSES[w[4]] or nil,
-		area = w[5], guid = "Player-" .. w[4] .. "-" .. i }
+		area = w[5], afk = w.afk, guid = "Player-" .. w[4] .. "-" .. i }
 end
 function C_FriendList.GetNumIgnores() return #ignores end
 function C_FriendList.GetIgnoreName(i) return ignores[i] end
@@ -49,21 +49,51 @@ function BNSendFriendInvite(tag) stub.added = tag end
 
 -- Battle.net: one in WoW, one in the app, one offline. In combat their names
 -- reach addon code secret, as on some clients. The client lists favorites
--- first (Sefa, offline), then the online ones.
+-- first (Sefa, offline), then the online ones. Mira is away and free to
+-- queue, Jon busy; tags are the friends' own (Enum.BattleNetFriendTag).
+Enum.BattleNetFriendTag = { Professions = 0, PvP = 1, Raiding = 2, Dungeons = 3, Delves = 4, Questing = 5, Roleplaying = 6,
+	DamagerRole = 7, HealerRole = 8, TankRole = 9 }
+local TAG = Enum.BattleNetFriendTag
 local BN = {
-	{ name = "Sefa", tag = "Sefa#4410", online = false, last = 3 * 86400, favorite = true },
-	{ name = "Mira", tag = "Mira#1123", online = true, char = "Thessaly", level = 26, class = "DRUID", zone = "Darkshore" },
-	{ name = "Jon", tag = "Jon#2871", online = true, rich = "In the Battle.net app" },
+	{ name = "Sefa", tag = "Sefa#4410", online = false, last = 3 * 86400, favorite = true, tags = { TAG.Raiding } },
+	{ name = "Mira", tag = "Mira#1123", online = true, char = "Thessaly", level = 26, class = "DRUID", zone = "Darkshore",
+		afk = true, free = true, tags = { TAG.Raiding, TAG.HealerRole } },
+	{ name = "Jon", tag = "Jon#2871", online = true, rich = "In the Battle.net app", dnd = true, tags = { TAG.Roleplaying } },
 }
 C_BattleNet = {}
 function BNGetNumFriends() return #BN, 2, 1, 0 end
 function BNConnected() return true end
-function BNGetInfo() return 1, "Testchar#1000", nil, "", stub.bnAFK or false, false, true end
+-- The player's presence: stub.bnAFK, stub.bnDND, stub.bnHidden; the Set calls change it.
+function BNGetInfo() return 1, "Testchar#1000", nil, "", stub.bnAFK or false, stub.bnDND or false, true, stub.bnHidden or false end
+function C_BattleNet.SetAFK(on) stub.bnAFK = on end
+function C_BattleNet.SetDND(on) stub.bnDND = on end
+function C_BattleNet.SetAppearOffline(on) stub.bnHidden = on end
+-- Forever's game type has no Delves tag.
+function C_BattleNet.AreFriendTagsEnabled() return true end
+function C_BattleNet.IsFriendTagSupportedForCurrentGameType(t) return t ~= TAG.Delves end
+-- The client's search, as the stub reads it: any checked status, then any
+-- checked tag. stub.searchInfo is the last search asked for.
+function C_BattleNet.SearchFriends(info)
+	stub.searchInfo = info
+	local out = {}
+	for i, b in ipairs(BN) do
+		local anyStatus = info.isOnline or info.isOffline or info.isAFK or info.isDND or info.isInQueue or info.isAvailableForQueue
+		local status = not anyStatus or (info.isOnline and b.online) or (info.isOffline and not b.online)
+			or (info.isAFK and b.afk) or (info.isDND and b.dnd) or (info.isAvailableForQueue and b.free)
+		local tagged = #info.tags == 0
+		for _, want in ipairs(info.tags) do
+			for _, t in ipairs(b.tags or {}) do if t == want then tagged = true end end
+		end
+		if status and tagged then out[#out + 1] = i end
+	end
+	return out
+end
 function C_BattleNet.GetFriendAccountInfo(i)
 	local b = BN[i]
 	if not b then return nil end
 	local secret = InCombatLockdown() and stub.SECRET
 	return { bnetAccountID = 100 + i, accountName = secret or b.name, isFavorite = b.favorite or false, battleTag = b.tag, lastOnlineTime = b.last and time() - b.last,
+		isAFK = b.afk or false, isDND = b.dnd or false, friendTags = b.tags or {},
 		gameAccountInfo = { isOnline = b.online, characterName = b.char and (secret or b.char), characterLevel = b.level,
 			className = b.class and CLASSES[b.class], areaName = b.zone, richPresence = b.rich,
 			playerGuid = b.class and "Player-" .. b.class .. "-9" } }
