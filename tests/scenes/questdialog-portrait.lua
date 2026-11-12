@@ -20,7 +20,7 @@ q.areaTrigger = nil
 stub.popUps[7] = "OFFER"
 stub.fire("QUEST_DETAIL", 0)
 local f = PolestarUIQuestDialog
-assert(f:IsShown() and not f.Close:IsEnabled() and not f.footerButtons.left[1], "auto-accept: closable or a Decline")
+assert(f:IsShown() and not f.Close:IsEnabled() and f.Close.psReason and not f.footerButtons.left[1], "auto-accept: closable, no reason, or a Decline")
 f:Hide()
 assert(not stub.popUps[7], "the pop-up stayed")
 q.auto = false
@@ -33,7 +33,7 @@ q.criteriaSpell = { 2580, "Find Minerals", 136025 }
 q.group = 3
 stub.fire("QUEST_DETAIL", 0)
 local accept = f.footerButtons.right[1]
-assert(not accept:IsEnabled() and f.psDesc.gradient == 0, "Accept before the text is in")
+assert(not accept:IsEnabled() and accept.psReason and f.psDesc.gradient == 0, "Accept before the text is in, or no reason")
 stub.advance(5)
 assert(accept:IsEnabled(), "Accept still off after the text")
 stub.cvars.instantQuestText = nil
