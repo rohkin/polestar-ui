@@ -48,21 +48,22 @@ function C_FriendList.AddFriend(name) stub.added = name end
 function BNSendFriendInvite(tag) stub.added = tag end
 
 -- Battle.net: one in WoW, one in the app, one offline. In combat their names
--- reach addon code secret, as on some clients.
+-- reach addon code secret, as on some clients. The client lists favorites
+-- first (Sefa, offline), then the online ones.
 local BN = {
+	{ name = "Sefa", tag = "Sefa#4410", online = false, last = 3 * 86400, favorite = true },
 	{ name = "Mira", tag = "Mira#1123", online = true, char = "Thessaly", level = 26, class = "DRUID", zone = "Darkshore" },
 	{ name = "Jon", tag = "Jon#2871", online = true, rich = "In the Battle.net app" },
-	{ name = "Sefa", tag = "Sefa#4410", online = false, last = 3 * 86400 },
 }
 C_BattleNet = {}
-function BNGetNumFriends() return #BN, 2 end
+function BNGetNumFriends() return #BN, 2, 1, 0 end
 function BNConnected() return true end
 function BNGetInfo() return 1, "Testchar#1000", nil, "", stub.bnAFK or false, false, true end
 function C_BattleNet.GetFriendAccountInfo(i)
 	local b = BN[i]
 	if not b then return nil end
 	local secret = InCombatLockdown() and stub.SECRET
-	return { bnetAccountID = 100 + i, accountName = secret or b.name, battleTag = b.tag, lastOnlineTime = b.last and time() - b.last,
+	return { bnetAccountID = 100 + i, accountName = secret or b.name, isFavorite = b.favorite or false, battleTag = b.tag, lastOnlineTime = b.last and time() - b.last,
 		gameAccountInfo = { isOnline = b.online, characterName = b.char and (secret or b.char), characterLevel = b.level,
 			className = b.class and CLASSES[b.class], areaName = b.zone, richPresence = b.rich,
 			playerGuid = b.class and "Player-" .. b.class .. "-9" } }
@@ -98,3 +99,34 @@ function GetRaidRosterInfo(i)
 	if not m then return end
 	return m[1], 0, m[2], 25, CLASSES[m[3]], m[3], "", m[5] ~= false, false, nil, false, m[4]
 end
+
+-- Pending Battle.net friend requests: stub.accepted / stub.declined record the answer.
+local invites = { { inviteID = 7, accountName = "Rook" } }
+function BNGetNumFriendInvites() return #invites end
+function C_BattleNet.GetFriendInviteInfo(i) return invites[i] end
+local function answer(id)
+	for i, v in ipairs(invites) do if v.inviteID == id then table.remove(invites, i) end end
+end
+function BNAcceptFriendInvite(id) stub.accepted = id; answer(id) end
+function BNDeclineFriendInvite(id) stub.declined = id; answer(id) end
+
+-- Recent allies, presorted by the client; stub.alliesReady = false while it loads.
+local CLASS_IDS = { [1] = "WARRIOR", [4] = "ROGUE", [8] = "MAGE" }
+C_CreatureInfo = { GetClassInfo = function(id) local f = CLASS_IDS[id]; return f and { classFile = f, className = CLASSES[f] } end }
+stub.alliesReady = true
+C_RecentAllies = {
+	IsSystemEnabled = function() return true end,
+	IsRecentAllyDataReady = function() return stub.alliesReady end,
+	TryRequestRecentAlliesData = function() stub.alliesRequested = true end,
+	GetRecentAllies = function()
+		return {
+			{ characterData = { guid = "Player-ROGUE-20", name = "Vessa", fullName = "Vessa-Realm", level = 23, classID = 4 },
+				stateData = { isOnline = true, currentLocation = "The Deadmines" },
+				interactionData = { interactions = { { description = "Grouped in The Deadmines" } } } },
+			{ characterData = { guid = "Player-MAGE-21", name = "Orrin", fullName = "Orrin-Realm", level = 21, classID = 8 },
+				stateData = { isOnline = false },
+				interactionData = { interactions = { { description = "Grouped in Westfall" } } } },
+		}
+	end,
+}
+function UnitPopup_OpenMenu(which, context) stub.popup = { which, context.name } end

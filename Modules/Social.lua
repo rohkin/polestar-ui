@@ -36,24 +36,22 @@ local function detail(level, class, zone)
 	return table.concat(parts, " · ")
 end
 
--- The pages' entries, online first as the client already orders each list.
+-- The friends list as the stock one orders it (FriendsList_Update): Battle.net
+-- favorites, then online Battle.net and WoW friends, then offline ones; the
+-- client already lists each kind online first, favorites first.
 local function friends()
 	local list = {}
 	for i = 1, C_FriendList.GetNumFriends() do
 		local info = C_FriendList.GetFriendInfoByIndex(i)
 		if info then
 			list[#list + 1] = { name = info.name, online = info.connected, class = classFile(info.guid),
+				rank = info.connected and 2 or 4, order = i,
 				sub = info.connected and detail(info.level, info.className, info.area) or "Offline",
 				whisper = function() ChatFrameUtil.SendTell(info.name) end,
 				invite = function() C_PartyInfo.InviteUnit(info.name) end,
 				menu = function() FriendsFrame_ShowDropdown(info.name, info.connected, nil, nil, nil, 1, nil, nil, nil, nil, info.guid) end }
 		end
 	end
-	return list
-end
-
-local function battlenet()
-	local list = {}
 	for i = 1, (BNGetNumFriends()) do
 		local a = C_BattleNet.GetFriendAccountInfo(i)
 		if a then
@@ -68,14 +66,58 @@ local function battlenet()
 			else
 				sub = keep("bnr" .. id, g.richPresence) or "Online"
 			end
+			-- Favorites are set from the right-click menu, as in the stock list.
 			list[#list + 1] = { name = name, char = char, online = g.isOnline, class = char and classFile(g.playerGuid), sub = sub,
+				bnet = true, favorite = a.isFavorite, rank = a.isFavorite and 0 or g.isOnline and 1 or 3, order = 1000 + i,
 				whisper = function() ChatFrameUtil.SendBNetTell(name) end,
 				invite = function() FriendsFrame_BattlenetInviteByIndex(i) end,
 				menu = function() FriendsFrame_ShowBNDropdown(name, g.isOnline, nil, nil, nil, 1, id, nil, nil, nil, nil, a.battleTag) end }
 		end
 	end
+	table.sort(list, function(x, y)
+		if x.rank ~= y.rank then return x.rank < y.rank end
+		return x.order < y.order
+	end)
 	return list
 end
+
+-- Pending Battle.net friend requests, above the friends as in the stock list.
+local function requests()
+	local list = {}
+	for i = 1, BNGetNumFriendInvites() do
+		local inv = C_BattleNet.GetFriendInviteInfo(i)
+		if inv then
+			list[#list + 1] = { name = keep("inv" .. inv.inviteID, inv.accountName) or "", online = true, bnet = true,
+				sub = "Wants to be your Battle.net friend", request = inv.inviteID }
+		end
+	end
+	return list
+end
+
+-- Recent allies (C_RecentAllies, presorted by the client: pinned, online, latest).
+local function allies()
+	local list = {}
+	if not C_RecentAllies.IsRecentAllyDataReady() then return list end
+	for _, a in ipairs(C_RecentAllies.GetRecentAllies() or {}) do
+		local c, st = a.characterData, a.stateData
+		local cls = C_CreatureInfo.GetClassInfo(c.classID)
+		local recent = a.interactionData and a.interactionData.interactions and a.interactionData.interactions[1]
+		local parts = { detail(c.level, cls and cls.className, st.isOnline and st.currentLocation) }
+		if recent and recent.description and recent.description ~= "" then parts[2] = recent.description end
+		local full = c.fullName
+		list[#list + 1] = { name = c.name or full, online = st.isOnline, class = cls and cls.classFile,
+			sub = table.concat(parts, " · "),
+			whisper = function() ChatFrameUtil.SendTell(full) end,
+			invite = function() C_PartyInfo.InviteUnit(full) end,
+			menu = function()
+				UnitPopup_OpenMenu(st.isOnline and "RECENT_ALLY" or "RECENT_ALLY_OFFLINE",
+					{ recentAllyData = a, name = full, guid = c.guid, isOffline = not st.isOnline })
+			end }
+	end
+	return list
+end
+
+local function alliesOn() return C_RecentAllies and C_RecentAllies.IsSystemEnabled() end
 
 local function ignored()
 	local list = {}
@@ -93,9 +135,12 @@ end
 ---------------------------------------------------------------------------
 -- Friend rows: name over a detail line, in one row panel.
 
+-- A click whispers only once no second click made it a double-click (invite).
+local DOUBLE_CLICK = 0.3
+
 local function rowEnter(r)
 	local e = r.psEntry
-	if e.unignore then return end
+	if not e.whisper then return end
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	GameTooltip:SetText(e.name)
 	ns.TooltipHint("Click to whisper. Double-click to invite to your group. Right-click for more.")
@@ -114,24 +159,47 @@ local function newRow(panel, i)
 	end
 	W.Hover(r)
 	r.Name = W.Text(r, "body", "text")
-	r.Name:SetPoint("BOTTOMLEFT", r, "LEFT", 16, 1)
-	r.Name:SetPoint("RIGHT", r, "RIGHT", -48, 0)
 	r.Sub = W.Text(r, "small", "textDim")
 	r.Sub:SetPoint("TOPLEFT", r, "LEFT", 16, -3)
-	r.Sub:SetPoint("RIGHT", r, "RIGHT", -48, 0)
 	for _, t in ipairs({ r.Name, r.Sub }) do t:SetJustifyH("LEFT") end
+	-- The game's own Battle.net mark, and a favorite's star left of it.
+	r.BNet = r:CreateTexture(nil, "ARTWORK")
+	r.BNet:SetTexture("Interface\\FriendsFrame\\PlusManz-BattleNet")
+	r.BNet:SetSize(16, 16)
+	r.BNet:SetPoint("RIGHT", r, "RIGHT", -16, 0)
+	r.Fav = W.Tex(r, "ARTWORK", "star", "accent")
+	r.Fav:SetSize(12, 12)
+	r.Fav:SetPoint("RIGHT", r.BNet, "LEFT", -8, 0)
 	r.Remove = W.IconButton(r, "close", 24, "Stop ignoring", function(self)
 		C_FriendList.DelIgnore(self:GetParent().psEntry.unignore)
 		M.Show() -- at once, not on the client's event (docs/CLIENT.md, rule 6)
 	end)
 	r.Remove:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+	r.Decline = W.Button(r, "Decline", function(self)
+		BNDeclineFriendInvite(self:GetParent().psEntry.request)
+		M.Show()
+	end)
+	r.Decline:SetWidth(84)
+	r.Decline:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+	r.Accept = W.Button(r, "Accept", function(self)
+		BNAcceptFriendInvite(self:GetParent().psEntry.request)
+		M.Show()
+	end, { primary = true })
+	r.Accept:SetWidth(84)
+	r.Accept:SetPoint("RIGHT", r.Decline, "LEFT", -8, 0)
 	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	r:SetScript("OnClick", function(self, button)
 		local e = self.psEntry
 		if not e.whisper then return end
-		if button == "RightButton" then e.menu() else e.whisper() end
+		if button == "RightButton" then return e.menu() end
+		if self.psWhisper then self.psWhisper:Cancel() end
+		self.psWhisper = C_Timer.NewTimer(DOUBLE_CLICK, function() self.psWhisper = nil; e.whisper() end)
 	end)
-	r:SetScript("OnDoubleClick", function(self) if self.psEntry.invite then self.psEntry.invite() end end)
+	r:SetScript("OnDoubleClick", function(self, button)
+		if button == "RightButton" or not self.psEntry.invite then return end
+		if self.psWhisper then self.psWhisper:Cancel(); self.psWhisper = nil end
+		self.psEntry.invite()
+	end)
 	r:SetScript("OnEnter", rowEnter)
 	r:SetScript("OnLeave", W.HideTooltip)
 	return r
@@ -154,10 +222,16 @@ local function paintRows(list)
 		r.Sub:SetText(e.sub)
 		W.Color(r.Sub, e.online and "textDim" or "textMuted")
 		r.Sub:SetShown(e.sub ~= "")
+		local right = e.request and 200 or 64
 		r.Name:ClearAllPoints()
 		r.Name:SetPoint(e.sub ~= "" and "BOTTOMLEFT" or "LEFT", r, "LEFT", 16, e.sub ~= "" and 1 or 0)
-		r.Name:SetPoint("RIGHT", r, "RIGHT", -48, 0)
+		r.Name:SetPoint("RIGHT", r, "RIGHT", -right, 0)
+		r.Sub:SetPoint("RIGHT", r, "RIGHT", -right, 0)
+		r.BNet:SetShown(e.bnet and not e.request or false)
+		r.Fav:SetShown(e.favorite or false)
 		r.Remove:SetShown(e.unignore ~= nil)
+		r.Accept:SetShown(e.request ~= nil)
+		r.Decline:SetShown(e.request ~= nil)
 		r:Show()
 	end
 	for i = #list + 1, #rows do rows[i]:Hide() end
@@ -319,26 +393,30 @@ end
 
 local PAGES = {
 	friends = { "Friends", "Click a friend to whisper, double-click to invite.", "No friends yet. Add one below." },
-	bnet = { "Battle.net", "Your Battle.net friends, in any game.", "No Battle.net friends here." },
+	allies = { "Recent allies", "Players you grouped or played with lately.", "No recent allies yet." },
 	ignored = { "Ignored", "You see nothing these players say.", "You ignore no one." },
 	raid = { "Raid", "Your raid by group. To move players, see Options.", nil },
 }
 
 local function refresh()
-	local lists = { friends = friends(), bnet = battlenet(), ignored = ignored() }
-	local bnTotal, bnOnline = BNGetNumFriends()
-	local total, online = #lists.friends + bnTotal, C_FriendList.GetNumOnlineFriends() + bnOnline
+	if page == "allies" and not alliesOn() then page = "friends" end
+	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {} }
+	local _, bnOnline = BNGetNumFriends()
+	local online = C_FriendList.GetNumOnlineFriends() + bnOnline
 	f.psName:SetText(keep("player", UnitName("player")) or "")
-	f.psLine:SetText(("%d of %d friends online"):format(online, total))
+	f.psLine:SetText(("%d of %d friends online"):format(online, #lists.friends))
 	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
 	W.Color(f.psDot, statusColor())
-	local raidN = IsInRaid() and GetNumGroupMembers() or 0
-	W.ShellNav(f, {
-		{ key = "friends", label = "Friends", icon = "star", count = #lists.friends },
-		{ key = "bnet", label = "Battle.net", icon = "compact", count = bnTotal },
-		{ key = "ignored", label = "Ignored", icon = "close", count = #lists.ignored },
-		{ key = "raid", label = "Raid", icon = "bolt", count = raidN },
-	}, page, function(k) page = k; M.Show() end)
+	local nFriends, inv = #lists.friends, requests()
+	-- Requests head the list unless a search is on.
+	if query == "" then
+		for i = #inv, 1, -1 do table.insert(lists.friends, 1, inv[i]) end
+	end
+	local nav = { { key = "friends", label = "Friends", icon = "star", count = nFriends } }
+	if alliesOn() then nav[#nav + 1] = { key = "allies", label = "Recent allies", icon = "compact", count = #lists.allies } end
+	nav[#nav + 1] = { key = "ignored", label = "Ignored", icon = "close", count = #lists.ignored }
+	nav[#nav + 1] = { key = "raid", label = "Raid", icon = "bolt", count = IsInRaid() and GetNumGroupMembers() or 0 }
+	W.ShellNav(f, nav, page, function(k) page = k; M.Show() end)
 	local p = PAGES[page]
 	W.ShellTitle(f, p[1], p[2])
 	W.ShellTabs(f, nil)
@@ -356,7 +434,8 @@ local function refresh()
 	else
 		local list = {}
 		for _, e in ipairs(lists[page]) do if matches(e) then list[#list + 1] = e end end
-		f.psEmpty:SetText(query ~= "" and "No one matches." or p[3])
+		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
+		f.psEmpty:SetText(not ready and "Loading recent allies..." or query ~= "" and "No one matches." or p[3])
 		h = paintRows(list)
 	end
 	W.ShellBody(f, h)
@@ -365,6 +444,7 @@ end
 function M.Show(key)
 	if not f then build() end
 	page = key or page
+	if page == "allies" and alliesOn() then C_RecentAllies.TryRequestRecentAlliesData() end
 	refresh()
 	f:Show()
 end
@@ -383,14 +463,15 @@ function M.Enable()
 		TOGGLERAIDTAB = function() M.Toggle("raid") end,
 	})
 	local function changed() if f and f:IsShown() then refresh() end end
-	for _, ev in ipairs({ "FRIENDLIST_UPDATE", "IGNORELIST_UPDATE", "BN_DISCONNECTED", "BN_INFO_CHANGED", "GROUP_ROSTER_UPDATE", "PLAYER_REGEN_ENABLED" }) do
+	for _, ev in ipairs({ "FRIENDLIST_UPDATE", "IGNORELIST_UPDATE", "BN_DISCONNECTED", "BN_INFO_CHANGED", "GROUP_ROSTER_UPDATE", "PLAYER_REGEN_ENABLED",
+		"BN_FRIEND_INVITE_ADDED", "BN_FRIEND_INVITE_REMOVED", "BN_FRIEND_INVITE_LIST_INITIALIZED", "RECENT_ALLIES_CACHE_UPDATE" }) do
 		Polestar.RegisterEvent(ev, changed)
 	end
 	-- Battle.net reads also run hidden, so a window first opened in combat
 	-- has the names last read clean.
 	local function bnet()
 		if f and f:IsShown() then return refresh() end
-		battlenet()
+		friends()
 		keep("player", UnitName("player"))
 	end
 	for _, ev in ipairs({ "BN_FRIEND_INFO_CHANGED", "BN_FRIEND_LIST_SIZE_CHANGED", "BN_CONNECTED" }) do Polestar.RegisterEvent(ev, bnet) end

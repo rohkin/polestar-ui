@@ -23,22 +23,44 @@ stub.inCombat = false
 -- The sidebar counts each page; the subject block counts friends online.
 assert(f.psLine:GetText() == "5 of 8 friends online", "subject line: " .. tostring(f.psLine:GetText()))
 assert(f.psName:GetText() == "Testchar", "player name")
--- Rows: online first; click whispers, double-click invites, right-click opens the game's menu.
+-- One list, as the stock one orders it: the friend request, Battle.net favorites, online
+-- Battle.net then WoW friends, offline ones; Battle.net rows carry the game's mark, favorites a star.
+local function rowsInOrder()
+	local t = {}
+	for _, r in ipairs({ f.psPanel:GetChildren() }) do
+		if r:IsShown() and r.Name then t[#t + 1] = { r, -select(5, r:GetPoint(1)) } end
+	end
+	table.sort(t, function(a, b) return a[2] < b[2] end)
+	local names = {}
+	for i, e in ipairs(t) do names[i] = e[1].Name:GetText() end
+	return table.concat(names, ",")
+end
 local function row(name)
 	for _, r in ipairs({ f.psPanel:GetChildren() }) do
 		if r:IsShown() and r.Name and r.Name:GetText() == name then return r end
 	end
 end
-assert(row("Aelric") and row("Eldric"), "rows")
-assert(select(2, row("Aelric"):GetPoint(1)) == f.psPanel and select(5, row("Aelric"):GetPoint(1)) == 0, "online first")
+assert(rowsInOrder() == "Rook,Sefa,Mira,Jon,Aelric,Brannoc,Corwyn,Dovaline,Eldric", "order: " .. rowsInOrder())
+assert(row("Sefa").Fav:IsShown() and row("Sefa").BNet:IsShown() and not row("Mira").Fav:IsShown(), "favorite mark")
+assert(row("Mira").BNet:IsShown() and not row("Aelric").BNet:IsShown(), "Battle.net mark")
 assert(row("Aelric").Sub:GetText() == "Level 24 Paladin · Elwynn Forest", "detail: " .. tostring(row("Aelric").Sub:GetText()))
 assert(row("Eldric").Sub:GetText() == "Offline", "offline")
+-- A click whispers once no second click follows; a double-click only invites.
 stub.RunScript(row("Brannoc"), "OnClick", "LeftButton")
+assert(stub.told == nil, "whispered before a double-click could follow")
+stub.advance(0.5)
 assert(stub.told == "Brannoc", "click whispers")
-stub.RunScript(row("Brannoc"), "OnDoubleClick", "LeftButton")
-assert(stub.invited == "Brannoc", "double-click invites")
+stub.told = nil
+stub.RunScript(row("Corwyn"), "OnClick", "LeftButton")
+stub.RunScript(row("Corwyn"), "OnDoubleClick", "LeftButton")
+stub.advance(0.5)
+assert(stub.invited == "Corwyn" and stub.told == nil, "double-click whispered too")
 stub.RunScript(row("Eldric"), "OnClick", "RightButton")
 assert(stub.popup[1] == "FRIEND" and stub.popup[2] == "Eldric", "right-click menu")
+-- The friend request: Accept answers it and it leaves the list.
+assert(row("Rook").Accept:IsShown() and row("Rook").Decline:IsShown() and not row("Rook").BNet:IsShown(), "request row")
+row("Rook").Accept:Click()
+assert(stub.accepted == 7 and not row("Rook"), "accept")
 -- Add friend: our dialog with a name field.
 f.footerButtons.right[1]:Click()
 assert(PolestarModal:IsShown(), "no add friend dialog")
