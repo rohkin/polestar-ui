@@ -474,7 +474,7 @@ local function footer()
 		end }
 	end
 	local r, lines = restock()
-	W.ShellFooter(f, left, { r })
+	ns.Footer(f, left, { r })
 	for i, b in ipairs(f.footerButtons.left) do b.psTip, b.psTipLines = tips[i] and tips[i][1], tips[i] and tips[i][2] end
 	if r then
 		local b = f.footerButtons.right[1]

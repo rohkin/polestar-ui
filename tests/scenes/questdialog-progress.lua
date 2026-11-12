@@ -13,6 +13,12 @@ f = PolestarUIQuestDialog
 assert(f:IsShown() and not QuestFrame:IsShown(), "ours closed or the stock window open")
 assert(look(f.Body, "Kobold Camp Cleanup") and look(f.Body, "cleared the camp") and look(f.Body, "Kobold Ear") and look(f.Body, "3/4"), "progress, required item as have/need")
 assert(not f.footerButtons.right[1]:IsEnabled() and f.footerButtons.right[1].psReason == "You don't have everything this quest asks for yet.", "Continue enabled on an unfinished quest, or no reason")
+-- The footer's buttons are reused: the next page's is not left greyed.
+stub.fire("QUEST_COMPLETE")
+local go = f.footerButtons.right[1]
+assert(go:IsEnabled() and go:GetAlpha() == 1 and not go.psReason, "Complete left greyed from the progress page")
+stub.quest.completable = false
+stub.fire("QUEST_PROGRESS")
 
 -- Done, and it takes money the player is short of: the money in danger.
 stub.quest.completable, stub.quest.have[50001], stub.quest.money = true, 4, 99999999

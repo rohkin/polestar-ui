@@ -610,7 +610,7 @@ end
 local function paintFooter(info)
 	f.psStep:SetShown(not C_TradeSkillUI.IsTradeSkillGuild())
 	if C_TradeSkillUI.IsTradeSkillGuild() then
-		W.ShellFooter(f, {}, { { label = GUILD_TRADE_SKILL_VIEW_CRAFTERS or "View crafters", onClick = viewCrafters, opts = { primary = true } } })
+		ns.Footer(f, {}, { { label = GUILD_TRADE_SKILL_VIEW_CRAFTERS or "View crafters", onClick = viewCrafters, opts = { primary = true } } })
 		local noRecipe = not (info and info.learned) and "No recipe chosen" or nil
 		ns.SetEnabled(f.footerButtons.right[1], not noRecipe, noRecipe)
 		return
@@ -631,7 +631,7 @@ local function paintFooter(info)
 		remember(info.recipeID)
 		refresh()
 	end
-	W.ShellFooter(f, {}, {
+	ns.Footer(f, {}, {
 		{ label = info and info.alternateVerb or "Craft", onClick = function() craft(qty) end, opts = { primary = true } },
 		{ label = "Craft all", onClick = function() craft(most) end },
 	})

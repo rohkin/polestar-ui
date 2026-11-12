@@ -1166,7 +1166,7 @@ local function refresh()
 	W.ShellTitle(f, p[1], p[2](page == "raid" and raidInfo and raidLocks() or lists[page] or {}))
 	W.ShellTabs(f, nil)
 	local lead = UnitIsGroupLeader("player")
-	W.ShellFooter(f, page == "raid" and {
+	ns.Footer(f, page == "raid" and {
 		-- The stock Raid Info button: on while there are saved instances.
 		{ label = raidInfo and "Groups" or "Raid info", onClick = function() raidInfo = not raidInfo; M.Show() end },
 	} or {}, page == "raid" and (not IsInRaid() and {
@@ -1181,8 +1181,6 @@ local function refresh()
 		{ label = "Send message", onClick = function() ChatFrameUtil.OpenChat(SLASH_WHISPER1 .. " ") end },
 	})
 	local fb = f.footerButtons
-	-- Footer buttons are pooled: one greyed on another page comes back on.
-	for _, side in pairs(fb) do for _, b in ipairs(side) do ns.SetEnabled(b, true) end end
 	if page ~= "raid" then
 		ns.SetEnabled(fb.right[1], page == "ignored" or not C_SocialRestrictions.IsFriendsDisabled(), "Adding friends is disabled.")
 	elseif not IsInRaid() then

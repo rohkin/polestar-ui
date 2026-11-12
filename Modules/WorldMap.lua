@@ -239,7 +239,7 @@ local function build()
 	f.psName, f.psLine = b.name, b.line
 	f.psName:SetText("World Map")
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, {})
+	ns.Footer(f, {}, {})
 	-- No body here: its scroll area would take the mouse wheel from the map
 	-- and the quest log over it.
 	f.Scroll:Hide()

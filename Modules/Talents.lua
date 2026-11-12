@@ -619,7 +619,7 @@ local function refresh()
 	local why = not active and "Not your active spec" or committing and "Applying your talents…" or nil
 	local first = active and { label = "Apply", onClick = apply, opts = { primary = true } }
 		or { label = TALENT_SPEC_ACTIVATE or "Activate", onClick = activate, opts = { primary = true } }
-	W.ShellFooter(f, { { label = "Reset", onClick = reset } }, { first, { label = "Undo", onClick = undo } })
+	ns.Footer(f, { { label = "Reset", onClick = reset } }, { first, { label = "Undo", onClick = undo } })
 	local reset_ = f.footerButtons.left[1]
 	reset_.psDanger = true
 	W.RepaintButton(reset_)

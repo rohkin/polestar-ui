@@ -73,6 +73,16 @@ function ns.Plain(f, left)
 	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
 end
 
+-- W.ShellFooter, its buttons back on at full alpha: the footer reuses them page
+-- to page, and one greyed on the last page would stay greyed. The caller greys
+-- its own after (ns.SetEnabled).
+function ns.Footer(f, left, right)
+	Polestar.Widgets.ShellFooter(f, left, right)
+	for _, side in pairs(f.footerButtons) do
+		for _, b in ipairs(side) do ns.SetEnabled(b, true) end
+	end
+end
+
 -- A flyout: a window-skinned panel on the right edge of window `f`, as tall as
 -- it and `width` wide, that takes the mouse. The caller shows it and calls
 -- ns.DockFlyout.

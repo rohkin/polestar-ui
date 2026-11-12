@@ -418,7 +418,7 @@ function paint()
 			right[#right + 1] = { label = "Deposit all", onClick = function() deposit(t) end, opts = { primary = true } }
 		end
 	end
-	W.ShellFooter(f, left, right)
+	ns.Footer(f, left, right)
 	-- Off says why in its tooltip.
 	for i, b in ipairs(f.footerButtons.left) do
 		local g = gates[i]

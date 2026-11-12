@@ -302,7 +302,7 @@ local function refresh()
 	f.psTabs(nil)
 	W.ShellTitle(f, "Professions", ("%d of 2 professions learnt."):format(learnt))
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, {})
+	ns.Footer(f, {}, {})
 	local y = 0
 	for g, group in ipairs(GROUPS) do
 		local head = f.psHeads[g]

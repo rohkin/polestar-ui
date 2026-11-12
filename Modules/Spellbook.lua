@@ -471,7 +471,7 @@ local function refresh()
 	end
 	gameIcons(cats)
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, {})
+	ns.Footer(f, {}, {})
 	W.ShellBody(f, paintList(list))
 end
 

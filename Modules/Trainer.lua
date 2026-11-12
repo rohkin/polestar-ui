@@ -213,7 +213,7 @@ local function build()
 	f.psRows = rows
 	-- What the player has to spend, at the footer's left as the stock frame's
 	-- bottom: the money, or a pet's training points (with the stock tooltip).
-	W.ShellFooter(f, {}, { { label = "Train", onClick = train, opts = { primary = true } } })
+	ns.Footer(f, {}, { { label = "Train", onClick = train, opts = { primary = true } } })
 	f.psMoney = ns.Money(f.Footer)
 	f.psMoney:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
 	f.psPoints = CreateFrame("Frame", nil, f.Footer)

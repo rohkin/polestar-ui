@@ -438,7 +438,7 @@ local function paintInbox()
 	local _, total = GetInboxNumItems()
 	W.ShellTitle(f, "Inbox", total > n and ("%d of %d letters. The rest arrive as you make room."):format(n, total)
 		or n == 0 and "No mail." or n == 1 and "1 letter." or n .. " letters.")
-	W.ShellFooter(f, { { label = taking == "all" and "Opening..." or "Open all", onClick = function() startTaking("all") end } }, {})
+	ns.Footer(f, { { label = taking == "all" and "Opening..." or "Open all", onClick = function() startTaking("all") end } }, {})
 	ns.SetEnabled(f.footerButtons.left[1], taking ~= "all" and n > 0, taking == "all" and "Opening your mail now." or "No mail to open.")
 	return 16 + n * (ROW + 4) + 12
 end
@@ -559,7 +559,7 @@ local function paintSend()
 	local price = GetSendMailPrice()
 	ns.SetMoney(send.Postage, price, price > GetMoney() and "danger" or nil)
 	W.ShellTitle(f, "Send mail", n == 0 and "No attachments." or ("%d of %d attachments."):format(n, SEND))
-	W.ShellFooter(f, {}, { { label = "Send", onClick = function()
+	ns.Footer(f, {}, { { label = "Send", onClick = function()
 		sending = true
 		canSend()
 		SetSendMailCOD(0)

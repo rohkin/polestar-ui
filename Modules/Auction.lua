@@ -815,7 +815,7 @@ local function paintToken()
 	else line = ("Market price: %s"):format(coins(price)) end
 	W.ShellTitle(f, TOKEN_FILTER_LABEL or "WoW Token", line)
 	local why = (token.disabled or token.noneUntil) and line or price and GetMoney() < price and (ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") or nil
-	W.ShellFooter(f, {}, { price and { label = BUYOUT or "Buy", onClick = buyToken, opts = { primary = true } } or nil })
+	ns.Footer(f, {}, { price and { label = BUYOUT or "Buy", onClick = buyToken, opts = { primary = true } } or nil })
 	if price then ns.SetEnabled(f.footerButtons.right[1], not why, why) end
 	return 0, 24, TUTORIAL_TOKEN_ABOUT_TOKENS or ""
 end
@@ -854,7 +854,7 @@ local function paintBrowse()
 	local list = searched and AH.GetBrowseResults() or {}
 	W.ShellTitle(f, favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
 		searched and not browseFailed and many(#list, "%s result", "%s results") or nil)
-	W.ShellFooter(f, {}, {})
+	ns.Footer(f, {}, {})
 	-- The column a category adds (required level, slots, skill), as the stock layout.
 	local detail = sel[1] and tree[sel[1]].detail
 	local S = Enum.AuctionHouseSortOrder
@@ -929,7 +929,7 @@ local function paintCommodity()
 	local got, total = aggregate(id, view.n)
 	-- The stock refresh frame: how many are up, and the list asked for again.
 	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetCommoditySearchResultsQuantity(id))))
-	W.ShellFooter(f, viewFooter(),
+	ns.Footer(f, viewFooter(),
 		{ got > 0 and { label = ("Buy %d (%s)"):format(got, coins(total)), onClick = buyCommodity, opts = { primary = true } } or nil })
 	-- More than the player has: off, as the stock buy button.
 	if got > 0 then ns.SetEnabled(f.footerButtons.right[1], total <= GetMoney(), ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") end
@@ -954,7 +954,7 @@ end
 
 local function paintItem()
 	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetItemSearchResultsQuantity(view.key))))
-	W.ShellFooter(f, viewFooter(), {})
+	ns.Footer(f, viewFooter(), {})
 	local S = Enum.AuctionHouseSortOrder
 	-- The stock item list: current bid, buyout, quantity, time left.
 	local cols = { { label = AUCTION_HOUSE_HEADER_CURRENT_BID or "Current Bid", sort = S.Bid, w = 150 },
@@ -1314,7 +1314,7 @@ local function paintSell()
 	s.Reason:SetText(sell.multi and (AUCTION_CREATING or "Creating auction %d of %d"):format(sell.multi[1], sell.multi[2]) or loc and (why or tip) or "")
 	W.Color(s.Reason, (sell.multi or tip) and "textDim" or "danger")
 	W.ShellTitle(f, "Sell", loc and ("%s in your bags"):format(count(AH.GetAvailablePostCount(loc))) or "No item chosen")
-	W.ShellFooter(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
+	ns.Footer(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
 		{ loc and { label = "Post", onClick = post, opts = { primary = true } } or nil })
 	local p = f.footerButtons.right[1]
 	if loc and p then ns.SetEnabled(p, not why, why ~= "" and why or nil) end
@@ -1359,7 +1359,7 @@ local function paintOwned()
 	end
 	W.ShellTitle(f, "Your auctions", many(n, "%s auction", "%s auctions") .. (sold > 0 and (" \194\183 %d sold"):format(sold) or ""))
 	-- The stock list's refresh button.
-	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end, opts = { icon = "reload" } } }, {})
+	ns.Footer(f, { { label = REFRESH or "Refresh", onClick = function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	-- The stock auctions list: name, bid, buyout, time left.
 	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
@@ -1395,7 +1395,7 @@ local function paintOwnItem()
 	local info = AH.GetItemKeyInfo(own) or {}
 	local listed = info.isCommodity and AH.GetNumCommoditySearchResults(own.itemID) or AH.GetNumItemSearchResults(own)
 	W.ShellTitle(f, displayName(own, info) or "", many(listed, "%s listing", "%s listings"))
-	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = queryOwn, opts = { icon = "reload" } } }, {})
+	ns.Footer(f, { { label = REFRESH or "Refresh", onClick = queryOwn, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols, y, n
 	if info.isCommodity then
@@ -1435,7 +1435,7 @@ local function paintBids()
 		if b and bidStatus(b) == "outbid" then lost = lost + 1 end
 	end
 	W.ShellTitle(f, AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", many(n, "%s bid", "%s bids") .. (lost > 0 and (" \194\183 %d outbid"):format(lost) or ""))
-	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = queryBids, opts = { icon = "reload" } } }, {})
+	ns.Footer(f, { { label = REFRESH or "Refresh", onClick = queryBids, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
 		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
@@ -1621,8 +1621,6 @@ function paint()
 	W.SetIconState(f.psFilter, on > 0)
 	f.psFilter.psTip = on > 0 and ("Search options (%d on)"):format(on) or "Search options"
 	ns.SetMoney(money, GetMoney())
-	-- The footer's buttons are reused page to page: each page turns off its own.
-	for _, side in pairs(f.footerButtons) do for _, b in ipairs(side) do ns.SetEnabled(b, true) end end
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
 	f.psBuy:SetShown(commodity and true or false)

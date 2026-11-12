@@ -1123,7 +1123,7 @@ function refresh()
 					why = busy or "No points are spent in this tree." } }
 		end
 	end
-	W.ShellFooter(f, {}, foot)
+	ns.Footer(f, {}, foot)
 	-- Disabled as Polestar disables (faded to 45%), so the layout never moves.
 	for i, d in ipairs(foot) do
 		local b = f.footerButtons.right[i]

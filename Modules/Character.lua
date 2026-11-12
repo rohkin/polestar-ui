@@ -896,7 +896,7 @@ function refresh()
 	else
 		W.ShellTabs(f, nil)
 	end
-	W.ShellFooter(f, {}, {})
+	ns.Footer(f, {}, {})
 	local panes = #panesOf(section) > 0
 	f.psGear:SetShown(gear)
 	f.psOptions:SetShown(panes)

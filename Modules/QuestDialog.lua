@@ -309,16 +309,14 @@ function paint()
 		end
 	end
 	c.End()
-	W.ShellFooter(f, left, right)
-	-- Footer buttons are pooled: each page sets its own, with the reason a greyed one gives.
+	ns.Footer(f, left, right)
+	-- Each page greys its own, with the reason a greyed one gives.
 	local go = f.footerButtons.right[1]
 	if page == "progress" then
 		ns.SetEnabled(go, IsQuestCompletable(), "You don't have everything this quest asks for yet.")
 	elseif page == "detail" then
 		if fading and f.psDesc.SetAlphaGradient then f.psDesc:SetAlphaGradient(fading, GRADIENT) end
 		ns.SetEnabled(go, not fading, "The quest text is still writing in.")
-	elseif go then
-		ns.SetEnabled(go, true)
 	end
 	-- An auto-accepted quest is taken, not closed (QuestFrameDetailPanel_OnShow).
 	ns.SetEnabled(f.Close, not (page == "detail" and QuestGetAutoAccept()), "This quest is already yours: press OK.")

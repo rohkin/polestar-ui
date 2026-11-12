@@ -38,7 +38,7 @@ local function refresh()
 	W.ShellNav(f, { { key = "main", label = "${Name}", icon = "bolt" } }, "main", function() M.Show() end)
 	W.ShellTitle(f, "${Name}", "")
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, {})
+	ns.Footer(f, {}, {})
 	W.ShellBody(f, 0)
 end
 
