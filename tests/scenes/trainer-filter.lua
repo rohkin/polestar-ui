@@ -24,3 +24,13 @@ item("Categorize"):Click()
 assert(not stub.categorize and not f.navButtons[2]:IsShown() and shown() == 4, "categories still shown")
 item("Categorize"):Click()
 assert(stub.categorize and f.navButtons[2]:IsShown(), "categories not back")
+
+-- The sliders button counts the types it hides in its tooltip; Clear filters shows them all again.
+assert(f.psFilter.psTip == "Filter (2 on)", "filter tip: " .. tostring(f.psFilter.psTip))
+item("Clear filters"):Click()
+assert(stub.typeFilter.used and stub.typeFilter.unavailable and shown() == 8 and f.psFilter.psTip == "Filter", "Clear filters did not show all")
+-- The sidebar search keeps to the services whose name has it.
+f.Search:SetText("shield"); stub.RunScript(f.Search, "OnTextChanged")
+assert(shown() == 2, "search rows: " .. shown())
+f.Search:SetText(""); stub.RunScript(f.Search, "OnTextChanged")
+assert(shown() == 8, "search not cleared")

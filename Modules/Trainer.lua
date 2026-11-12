@@ -14,6 +14,7 @@ local ALL = "all"
 local f, subject
 local rows = {}
 local cat, sel = ALL, nil -- the shown category; the selected service's index
+local query = "" -- the sidebar search, lowercased
 local M = {}
 local paint
 
@@ -195,7 +196,10 @@ local function filterMenu(anchor)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600 })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, searchPlaceholder = "Search", onSearch = function(text)
+		query = (text or ""):lower()
+		if f:IsShown() then paint() end
+	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "trainer")
 	subject = ns.SubjectBlock(f)
@@ -242,7 +246,7 @@ function paint()
 	local step = GetTrainerServiceStepIndex and GetTrainerServiceStepIndex()
 	local list, cats, order, open = {}, {}, {}, 0
 	for i = 1, GetNumTrainerServices() do
-		local _, kind, _, _, _, category = GetTrainerServiceInfo(i)
+		local name, kind, _, _, _, category = GetTrainerServiceInfo(i)
 		if kind ~= "header" then
 			category = byCat and (category or "") ~= "" and category or nil
 			local n = kind == "available" and 1 or 0
@@ -251,7 +255,9 @@ function paint()
 				if not cats[category] then order[#order + 1] = category end
 				cats[category] = (cats[category] or 0) + n
 			end
-			if i == step then table.insert(list, 1, i)
+			local found = query == "" or (name or ""):lower():find(query, 1, true)
+			if not found then -- the search hides it
+			elseif i == step then table.insert(list, 1, i)
 			elseif cat == ALL or cat == category then list[#list + 1] = i end
 		end
 	end
@@ -313,7 +319,8 @@ end
 
 function M.Show()
 	if not f then build() end
-	cat, sel = ALL, nil
+	cat, sel, query = ALL, nil, ""
+	f.Search:SetText("")
 	paint()
 	f:Show()
 end
