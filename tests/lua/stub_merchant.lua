@@ -63,7 +63,10 @@ end
 function BuyMerchantItem(i, n) stub.bought[#stub.bought + 1] = { i, n } end
 function PickupMerchantItem(i)
 	if i == 0 and stub.cursorItem then stub.sold, stub.cursorItem = stub.sold + 1, false end
+	if i > 0 then stub.pickedUp = i end
 end
+-- A spell (an enchant, a stone) waiting for its item: stub.targeting.
+function SpellIsTargeting() return stub.targeting or false end
 function SetPortraitTexture(tex, unit) tex:SetTexture(132355) end
 function CursorHasItem() return stub.cursorItem end
 -- A held item from bag 0, slot 3; refundable when stub.refund is set (what it gives back).

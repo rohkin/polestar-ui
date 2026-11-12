@@ -36,6 +36,14 @@ local token
 for _, c in ipairs({ w.TabRow:GetChildren() }) do if c.psID then token = c end end
 assert(token and token:IsShown() and tostring(token.Text:GetText()) == "1500", "the Honor held")
 assert(tostring(rows[5].Money.psParts[1].text:GetText()) == "180", "the price")
+-- A drag picks the ware up, never while a spell waits for its item.
+stub.targeting = true
+stub.RunScript(rows[1], "OnDragStart")
+assert(not stub.pickedUp, "picked up while targeting")
+stub.targeting = false
+stub.RunScript(rows[1], "OnDragStart")
+assert(stub.pickedUp == 1, "a drag did not pick it up")
+stub.pickedUp = nil
 -- The sidebar search keeps the wares whose names match.
 w.Search:SetText("bread"); stub.RunScript(w.Search, "OnTextChanged", true)
 local shown = 0
