@@ -1,7 +1,7 @@
 --@ title: Mail: send
 --@ roots: PolestarUIMail
 --@ stubs: stub_npc.lua, stub_mail.lua
--- The Send page. To suggests friends and guild members (our list, realm left off) as the player types; a pick fills it. The wells take the cursor's item (ClickSendMailItemButton), a right-click takes it back; the postage follows. An item dropped on the page goes in the first free well, and the bags' right-click attaches while the page shows (SetSendMailShowing). The subject follows the first item until the player writes one. Money or COD: the switch picks which the amount is, and needs an item; a COD over 10,000 gold says so. Send is off until To and Subject are filled, and while the server answers; it sets only the money or the COD and calls SendMail; MAIL_SEND_SUCCESS empties the page. A refundable item attached asks first in Polestar's dialog, its answer sent back to the client (RespondMailLockSendItem); the client's unlock closes the dialog. A trial account has no Send page.
+-- The Send page. To suggests friends and guild members (our list, realm left off) as the player types; a pick fills it. The wells take the cursor's item (ClickSendMailItemButton), a right-click takes it back; the postage follows. An item dropped on the page goes in the first free well, and the bags' right-click attaches while the page shows (SetSendMailShowing). The subject follows the first item until the player writes one, and empties when the last goes. Money or COD: the switch picks which the amount is, and needs an item; a COD over 10,000 gold says so. Send is off until To and Subject are filled, and while the server answers; it sets only the money or the COD and calls SendMail; MAIL_SEND_SUCCESS empties the page. A refundable item attached asks first in Polestar's dialog, its answer sent back to the client (RespondMailLockSendItem); the client's unlock closes the dialog. A trial account has no Send page.
 local T = Enum.PlayerInteractionType
 stub.interact(T.MailInfo)
 local f = PolestarUIMail
@@ -35,30 +35,45 @@ assert(not sendBtn:IsEnabled() and sendBtn.psReason == "Enter a subject.", "Send
 -- Attachments: the cursor's item goes in, a right-click takes it out; the postage follows.
 -- Never while a spell waits for its item.
 local wells = send.Wells
-stub.cursor, stub.targeting = stub.mailItem("Runecloth", 14047, 132903, 20, 1), true
-wells[1]:Click()
+local function attach(i, ...) stub.cursor = stub.mailItem(...); wells[i]:Click() end
+local function detach(i) stub.RunScript(wells[i], "OnClick", "RightButton") end
+local function subject() return tostring(send.Subject:GetText()) end
+stub.targeting = true
+attach(1, "Runecloth", 14047, 132903, 20, 1)
 assert(not stub.sendItems[1], "attached while a spell waits for its item")
 stub.targeting = false
-stub.cursor = stub.mailItem("Runecloth", 14047, 132903, 20, 1)
-wells[1]:Click()
-stub.cursor = stub.mailItem("Arcanite Bar", 12360, 133220, 1, 2)
-wells[2]:Click()
-stub.fire("MAIL_SEND_INFO_UPDATE")
+-- The subject, as SendMailFrame_Update: the first item's name and stack.
+attach(1, "Runecloth", 14047, 132903, 20, 1)
+assert(subject() == "Runecloth (20)", "the subject not filled from the item: " .. subject())
+attach(2, "Arcanite Bar", 12360, 133220, 1, 2)
+assert(subject() == "Runecloth (20)", "a second item renamed it")
 assert(tostring(wells[1].psCount:GetText()) == "20" and stub.sendItems[2], "attached")
-assert(tostring(send.Subject:GetText()) == "Runecloth (20)" and sendBtn:IsEnabled() and send.COD:IsEnabled(), "the subject not filled from the item")
+assert(sendBtn:IsEnabled() and send.COD:IsEnabled(), "Send or COD off with To, a subject and an item")
 assert(tostring(f.Subtitle:GetText()) == "2 of 12 attachments." and not send.COD.psTip, "the status: " .. tostring(f.Subtitle:GetText()))
 -- Dropped on the page: the first free well.
 stub.cursor = stub.mailItem("Thorium Bar", 12359, 133221, 5, 1)
 stub.RunScript(send, "OnMouseUp")
 assert(stub.sendItems[3] and stub.sendItems[3][1] == "Thorium Bar", "a drop on the page not attached")
-stub.sendItems[3] = nil
-assert(tostring(send.Postage.psParts[3].text:GetText()) == "60", "postage")
-stub.RunScript(wells[2], "OnClick", "RightButton")
-stub.fire("MAIL_SEND_INFO_UPDATE")
-assert(not stub.sendItems[2] and tostring(send.Postage.psParts[3].text:GetText()) == "30", "taken back")
+assert(tostring(send.Postage.psParts[3].text:GetText()) == "90", "postage")
+detach(3)
+assert(not stub.sendItems[3] and tostring(send.Postage.psParts[3].text:GetText()) == "60", "taken back")
+-- The first item out: the subject follows the next; the last out empties it.
+detach(1)
+assert(subject() == "Arcanite Bar", "the subject did not follow: " .. subject())
+detach(2)
+assert(subject() == "" and not send.COD:IsEnabled(), "the subject outlived the items: " .. subject())
+-- A subject the player wrote stays, items in or out.
+attach(1, "Runecloth", 14047, 132903, 20, 1)
+send.Subject:SetText("Runecloth")
+stub.RunScript(send.Subject, "OnTextChanged", true)
+attach(2, "Arcanite Bar", 12360, 133220, 1, 2)
+detach(1)
+detach(2)
+assert(subject() == "Runecloth", "the player's subject replaced: " .. subject())
+attach(1, "Runecloth", 14047, 132903, 20, 1)
+assert(subject() == "Runecloth", "the player's subject replaced on attach")
 
 -- COD: 1g 50s, set as COD only.
-send.Subject:SetText("Runecloth")
 send.Body:SetText("As asked.")
 send.COD:Click()
 local g = send.Money:GetChildren()
@@ -106,6 +121,4 @@ f.tabButtons[2]:Click()
 send.To:SetText("Thrall")
 send.Subject:SetText("Silk for the front")
 send.Body:SetText("Twenty bolts, as promised. More when the next shipment lands in Ratchet.")
-stub.cursor = stub.mailItem("Bolt of Silk Cloth", 4305, 132905, 20, 1)
-wells[1]:Click()
-stub.fire("MAIL_SEND_INFO_UPDATE")
+attach(1, "Bolt of Silk Cloth", 4305, 132905, 20, 1)

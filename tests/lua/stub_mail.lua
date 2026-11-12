@@ -105,6 +105,8 @@ function ClickSendMailItemButton(i, clear)
 	elseif stub.cursor then
 		stub.sendItems[i or #stub.sendItems + 1], stub.cursor = stub.cursor, nil
 	end
+	-- The client says the attachments changed, as it does after each one.
+	stub.fire("MAIL_SEND_INFO_UPDATE")
 end
 function HasSendMailItem(i) return stub.sendItems[i] ~= nil end
 function GetSendMailItem(i)

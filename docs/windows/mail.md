@@ -39,8 +39,10 @@ Opened by the interaction manager (MailInfo), taken as above
   well; `SetSendMailShowing` while the page shows, so the bags' right-click
   attaches), Money or COD (COD needs an item, capped at 10,000 gold with the
   stock error; the switch's tooltip says it needs an item), the postage. The
-  subtitle counts the attachments ("2 of 12 attachments."). The subject follows the first item until the
-  player writes one. "Send" is off until To and Subject are filled, and from
+  subtitle counts the attachments ("2 of 12 attachments."). The subject follows the first item (its name, and
+  the stack as "Name (20)") while it is empty or still the last one filled in,
+  and empties when the last item goes; one the player wrote stays
+  (`SendMailFrame_Update`). "Send" is off until To and Subject are filled, and from
   the press until `MAIL_SUCCESS` or `MAIL_FAILED`, its tooltip saying which. A refundable attachment
   (`MAIL_LOCK_SEND_ITEMS`) asks in Polestar's dialog and answers
   `RespondMailLockSendItem`; `MAIL_UNLOCK_SEND_ITEMS` closes it. A reply sent
@@ -53,6 +55,7 @@ Opened by the interaction manager (MailInfo), taken as above
   perform it. The stationery art and the gamepad options menu have no counterpart.
 - **Taint:** no protected calls.
 - **Tests:** `stub_mail.lua` (inbox headers, attachments, COD, invoices,
-  waiting mail, the send lock); scenes `mail` (inbox, no emote, Open all, waiting mail,
+  waiting mail, the send lock; its attach fires `MAIL_SEND_INFO_UPDATE` as
+  the client does); scenes `mail` (inbox, no emote, Open all, waiting mail,
   shift-click), `mail-open` (a letter with its copy, attachments and COD,
   Reply, Delete and Return), `mail-invoice`, `mail-send`.
