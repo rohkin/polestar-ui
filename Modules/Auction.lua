@@ -1639,7 +1639,11 @@ end
 -- right-click puts the item on the Sell page; its other clicks and drags are
 -- the slot's, as the stock bag button's.
 local function bagLoc(t) return ItemLocation:CreateFromBagAndSlot(t:GetBagID(), t:GetID()) end
-local function bagPickup(t) C_Container.PickupContainerItem(t:GetBagID(), t:GetID()) end
+-- Never in combat, nor while a spell waits for an item: the slot's own click applies it.
+local function bagPickup(t)
+	if InCombatLockdown() or SpellIsTargeting() then return end
+	C_Container.PickupContainerItem(t:GetBagID(), t:GetID())
+end
 local function bagClick(t, button)
 	if IsModifiedClick() then return t:OnModifiedClick(button) end
 	if button == "RightButton" then
@@ -1661,7 +1665,7 @@ local function bagDoor(shown)
 			GameTooltip:Show()
 		end,
 		pickup = bagPickup,
-		stale = function() return not shown() end,
+		stale = function() return not shown() or SpellIsTargeting() end,
 		setup = function(over)
 			over:HookScript("PostClick", function(self, button) bagClick(self.psTarget, button) end)
 			over:HookScript("OnReceiveDrag", function(self) bagPickup(self.psTarget) end)
@@ -1669,7 +1673,7 @@ local function bagDoor(shown)
 		attrs = function() end,
 	})
 	EventRegistry:RegisterCallback("ContainerFrameItemButton.EnterButton", function(_, b)
-		if not shown() or InCombatLockdown() or not b.GetBagID then return end
+		if not shown() or InCombatLockdown() or SpellIsTargeting() or not b.GetBagID then return end
 		local loc = bagLoc(b)
 		if not loc:IsValid() or not (tab == "sell" or AH.IsSellItemValid(loc, false)) then return end
 		place(b)

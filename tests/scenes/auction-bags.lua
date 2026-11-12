@@ -35,6 +35,11 @@ stub.inCombat = true
 hover(axe)
 assert(not over:IsShown(), "placed in combat")
 stub.inCombat = false
+-- Not while a spell waits for an item: the slot's own click applies it.
+stub.targeting = true
+hover(axe)
+assert(not over:IsShown(), "placed while a spell waits for an item")
+stub.targeting = false
 -- From Buy, the axe.
 f.tabButtons[1]:Click()
 hover(axe)
