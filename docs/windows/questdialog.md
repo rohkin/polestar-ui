@@ -15,7 +15,8 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
   `PanningModelSceneMixinTemplate` scene set up as the stock `QuestModelScene`
   (scene 309, mount and rider actors, -1 the player), the name, the text.
 - **Pages:** greeting (Current Quests, then Available Quests, under their
-  headings, as `QuestFrameGreetingPanel_OnShow`), detail (title, objectives,
+  headings, as `QuestFrameGreetingPanel_OnShow`; a long title wraps and its
+  row grows; no band subtitle), detail (title, objectives,
   a spell to learn `GetCriteriaSpell`, the suggested group, the giver's
   signature, the description, rewards: the World Map's details layout),
   progress (required items as Reagent Tiles, "3/4"), reward (choices with
@@ -27,6 +28,9 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
   tracker pop-up), Continue, Complete; the PvP and expensive confirms are
   `W.Modal`. With `instantQuestText` off the description writes itself in
   (`SetAlphaGradient`, 70 a second, the write sound) and Accept waits.
+  A greyed button says why in its tooltip (`ns.SetEnabled`): Continue until
+  the quest's needs are met, Accept while the text writes in, ✕ on an
+  auto-accepted quest (OK takes it).
 - **Offers elsewhere** (`QuestFrame_OnEvent`): one an item starts
   (`QUEST_DETAIL`'s item ID) or an auto-accepted area trigger goes to the
   objective tracker as a pop-up (the client's `AddAutoQuestPopUp`) and the
@@ -42,4 +46,4 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
 - **Polestar's chat line:** Polestar prints "Best reward: ..." when it could
   not mark the stock buttons (`Rewards.Mark` finds no `QuestInfoFrame`); with
   ours showing the marks the line is redundant, and is Polestar's to drop.
-- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events, portraits, the offer's origin, the tracker's pop-ups); scenes `questdialog`, `questdialog-greeting`, `questdialog-progress`, `questdialog-reward` (Polestar's marks), `questdialog-portrait` (portraits, extras, write-in, offers elsewhere, auto-accept), each asserting `QuestFrame` never shows.
+- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events, portraits, the offer's origin, the tracker's pop-ups); scenes `questdialog`, `questdialog-greeting` (a long title wraps), `questdialog-progress`, `questdialog-reward` (Polestar's marks), `questdialog-portrait` (portraits, extras, write-in, offers elsewhere, auto-accept), each asserting `QuestFrame` never shows.
