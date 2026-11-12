@@ -36,9 +36,29 @@ local function call(name, ...) stub.questCalls[#stub.questCalls + 1] = { name, .
 local unitName = UnitName
 -- The NPC's name, unless another stub (stub_gossip.lua) already gives one.
 function UnitName(unit, ...)
-	if unit == "npc" and unitName(unit, ...) == nil then return stub.quest.npc end
+	if (unit == "npc" or unit == "questnpc") and unitName(unit, ...) == nil then return stub.quest.npc end
 	return unitName(unit, ...)
 end
+-- The NPC's portrait (SetPortraitTexture) when there is one; its 3D portrait
+-- (GetQuestPortraitGiver/TurnIn: display ID, text, name, mount, scene; 0 is none).
+UnitExists = UnitExists or function(unit) return UnitName(unit) ~= nil end
+SetPortraitTexture = SetPortraitTexture or function(tex) tex:SetTexture(132355) end
+function GetQuestPortraitGiver() local p = stub.quest.giver or {}; return p[1] or 0, p[2], p[3], p[4] or 0, p[5] end
+function GetQuestPortraitTurnIn() local p = stub.quest.turnIn or {}; return p[1] or 0, p[2], p[3] end
+-- The offer's extras: a spell objective (spellID, name, icon), a suggested group, the giver's signature.
+function GetCriteriaSpell() local s = stub.quest.criteriaSpell; if s then return s[1], s[2], s[3], false end end
+function GetSuggestedGroupSize() return stub.quest.group or 0 end
+-- Where the offer came from, and the tracker's pop-ups the client keeps.
+function QuestIsFromAreaTrigger() return stub.quest.areaTrigger or false end
+function QuestIsFromAdventureMap() return false end
+stub.popUps = {}
+function AddAutoQuestPopUp(id, kind) stub.popUps[id] = kind; return true end
+function RemoveAutoQuestPopUp(id) stub.popUps[id] = nil end
+-- No friendship NPC unless stub_gossip.lua gives one.
+C_GossipInfo = C_GossipInfo or {}
+C_GossipInfo.GetFriendshipReputation = C_GossipInfo.GetFriendshipReputation or function() return { friendshipFactionID = 0 } end
+-- The client's text write-in: true while the gradient still runs.
+stub.Methods.SetAlphaGradient = stub.Methods.SetAlphaGradient or function(self, start) self.gradient = start; return start < #tostring(self.text or "") end
 function GetQuestID() return stub.quest.questID end
 function GetTitleText() return stub.quest.title end
 function GetGreetingText() return stub.quest.greeting end

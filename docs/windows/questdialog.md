@@ -1,21 +1,46 @@
 #### Quest dialog (`QuestFrame`) — Risk: medium
-Polestar export: the reward marks (the `QoL.Rewards` ranking) needs a new export from Polestar, which needs a Polestar PR
-approved first. The window feature-detects it and ships without the reward marks until
-Polestar has it, as the World Map does with `Polestar.MapCanvas.Add`.
 `QuestFrame` registers its own events (`QUEST_GREETING`, `QUEST_DETAIL`,
 `QUEST_PROGRESS`, `QUEST_COMPLETE`, `QUEST_FINISHED`, `QuestFrame_OnLoad`) and
 ends the quest dialog as it hides (`CloseQuest`). No manager, no `GameEvent`
-route: to replace it, ours would unregister those five events on
-`QuestFrame` (a widget call, no Lua value written; client rule 15's
-exception allows it, for these open events only). Polestar's reward
-marks hang on `QuestInfoFrame`'s reward buttons; ours shows them through
-Polestar's ranking (`QoL.Rewards`, exported for it).
-- **Shell:** plain, 560×600. Band: the quest's title, the NPC's name.
-- **Pages:** greeting (as Gossip's list), detail (description, objectives,
-  rewards: the World Map's quest details layout), progress (required items as
-  Reagent Tiles, "3/4"), reward (choices as Reagent Tiles with Polestar's
-  marks, a click selects). Footer: Accept / Decline, Continue, Complete
-  (`AcceptQuest`, `CompleteQuest`, `GetQuestReward(choice)`); the stock
-  expensive and PvP confirms become `W.Modal`.
-- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events); scenes `quest-detail`, `quest-progress`, `quest-reward` (Polestar's marks), each asserting `QuestFrame` never shows.
-
+route: ours unregisters the four open events on `QuestFrame` (a widget call,
+no Lua value written; client rule 15's exception allows it, for these open
+events only) and answers them. Off waits for `/reload`. Polestar's reward
+marks (`QoL.Rewards`, feature-detected) sit on our choices.
+- **Shell:** plain, 640×600. Band: the quest NPC's portrait and name
+  (`questnpc`, the quest book with none, as `QuestFrame_SetPortrait`). A
+  friendship NPC's standing heads the body (`ns.FriendshipBar`, Gossip.lua).
+- **3D portrait:** the giver's on an offer (`GetQuestPortraitGiver`), the
+  turn-in's on the reward page (`GetQuestPortraitTurnIn`), in a flyout off
+  the right edge (`ns.Flyout`, `ns.DockFlyout`): our own
+  `PanningModelSceneMixinTemplate` scene set up as the stock `QuestModelScene`
+  (scene 309, mount and rider actors, -1 the player), the name, the text.
+- **Pages:** greeting (Current Quests, then Available Quests, under their
+  headings, as `QuestFrameGreetingPanel_OnShow`), detail (title, objectives,
+  a spell to learn `GetCriteriaSpell`, the suggested group, the giver's
+  signature, the description, rewards: the World Map's details layout),
+  progress (required items as Reagent Tiles, "3/4"), reward (choices with
+  Polestar's marks, a click selects). Rewards: the shared column
+  (`ns.QuestRewards`: choices, spells and followers, title, XP, money, skill
+  points, items, currencies, honor), then here a major faction's reputation
+  and the War Mode bonus where the client has them. Footer: Accept / Decline
+  (OK alone, and no close, for an auto-accepted quest; closing one removes its
+  tracker pop-up), Continue, Complete; the PvP and expensive confirms are
+  `W.Modal`. With `instantQuestText` off the description writes itself in
+  (`SetAlphaGradient`, 70 a second, the write sound) and Accept waits.
+- **Offers elsewhere** (`QuestFrame_OnEvent`): one an item starts
+  (`QUEST_DETAIL`'s item ID) or an auto-accepted area trigger goes to the
+  objective tracker as a pop-up (the client's `AddAutoQuestPopUp`) and the
+  dialog ends; one from the adventure map stays the map's.
+- **Left out (client):** the stock pop-up goes through the tracker's Lua
+  (`QuestObjectiveTracker:AddAutoQuestPopUp`), which also expands the tracker
+  and shows the item's icon; from our code that would taint the tracker, so
+  ours calls the client's function and the tracker draws it on its next
+  update, without the item icon. The stock detail also hides the objectives
+  and rewards until the text is in; ours shows them (World Map layout).
+  "Choose your reward:" (`REWARD_CHOOSE`) on the reward page is the shared
+  column's (Core.lua) to say. Quest text contrast and the parchment
+  materials are the stock art's.
+- **Polestar's chat line:** Polestar prints "Best reward: ..." when it could
+  not mark the stock buttons (`Rewards.Mark` finds no `QuestInfoFrame`); with
+  ours showing the marks the line is redundant, and is Polestar's to drop.
+- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events, portraits, the offer's origin, the tracker's pop-ups); scenes `questdialog`, `questdialog-greeting`, `questdialog-progress`, `questdialog-reward` (Polestar's marks), `questdialog-portrait` (portraits, extras, write-in, offers elsewhere, auto-accept), each asserting `QuestFrame` never shows.

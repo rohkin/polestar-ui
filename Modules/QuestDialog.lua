@@ -16,7 +16,7 @@ local f, page, choice, ended, cost
 local M = { reloadOff = true }
 
 local c -- the page's text and tiles (ns.QuestRewards)
-local rows = {}
+local rows, rows2 = {}, {} -- the greeting's lists: current quests, available quests
 
 -- Polestar's reward marks (QoL/Rewards.lua), drawn on our choices as Polestar
 -- draws them on the stock buttons: the upgrade arrow, the coin on the highest
@@ -107,26 +107,17 @@ local function required()
 	end
 end
 
--- The NPC's quests (QuestFrameGreetingPanel_OnShow): to hand in, then to take.
-local function greeting()
-	local list = {}
-	for i = 1, GetNumActiveQuests() do
-		local title, done = GetActiveTitle(i)
-		local icon, atlas = QuestUtil.GetQuestIconActiveForQuestID(GetActiveQuestID(i), done)
-		list[#list + 1] = { title, icon, atlas, IsActiveQuestTrivial(i), function() SelectActiveQuest(i) end }
-	end
-	for i = 1, GetNumAvailableQuests() do
-		local trivial, frequency, repeatable, legendary, id, important, meta, infoID = GetAvailableQuestInfo(i)
-		local icon, atlas = QuestUtil.GetQuestIconOfferForQuestID(id, legendary, frequency, repeatable, important, meta, infoID)
-		list[#list + 1] = { GetAvailableTitle(i), icon, atlas, trivial, function() SelectAvailableQuest(i) end }
-	end
-	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(c.y + 16))
+-- One list of the greeting: its heading, then a row per quest in its panel.
+local function list(panel, pool, head, entries)
+	if #entries == 0 then return panel:Hide() end
+	c.text("heading", "text", head, 24)
+	panel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(c.y + 12))
 	local ph = 0
-	for i, e in ipairs(list) do
-		local r = rows[i]
+	for i, e in ipairs(entries) do
+		local r = pool[i]
 		if not r then
-			r = CreateFrame("Button", nil, f.psPanel)
-			r:SetPoint("RIGHT", f.psPanel, "RIGHT", 0, 0)
+			r = CreateFrame("Button", nil, panel)
+			r:SetPoint("RIGHT", panel, "RIGHT", 0, 0)
 			if i > 1 then
 				local d = W.Divider(r)
 				d:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
@@ -142,7 +133,7 @@ local function greeting()
 				PlaySound(SOUNDKIT.IG_QUEST_LIST_SELECT)
 				self.psPick()
 			end)
-			rows[i] = r
+			pool[i] = r
 		end
 		r.psPick = e[5]
 		if e[3] then r.Icon:SetAtlas(e[2]) else r.Icon:SetTexture(e[2]) end
@@ -151,14 +142,32 @@ local function greeting()
 		r.Text:SetText(e[1])
 		W.Color(r.Text, e[4] and "textMuted" or "text")
 		r:SetHeight(ROW_H)
-		r:SetPoint("TOPLEFT", f.psPanel, "TOPLEFT", 0, -ph)
+		r:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -ph)
 		ph = ph + ROW_H
 		r:Show()
 	end
-	for i = #list + 1, #rows do rows[i]:Hide() end
-	f.psPanel:SetHeight(math.max(1, ph))
-	f.psPanel:Show()
-	c.y = c.y + 16 + ph
+	for i = #entries + 1, #pool do pool[i]:Hide() end
+	panel:SetHeight(ph)
+	panel:Show()
+	c.y = c.y + 12 + ph
+end
+
+-- The NPC's quests (QuestFrameGreetingPanel_OnShow): Current Quests (to
+-- hand in), then Available Quests (to take), each under its heading.
+local function greeting()
+	local active, available = {}, {}
+	for i = 1, GetNumActiveQuests() do
+		local title, done = GetActiveTitle(i)
+		local icon, atlas = QuestUtil.GetQuestIconActiveForQuestID(GetActiveQuestID(i), done)
+		active[#active + 1] = { title, icon, atlas, IsActiveQuestTrivial(i), function() SelectActiveQuest(i) end }
+	end
+	for i = 1, GetNumAvailableQuests() do
+		local trivial, frequency, repeatable, legendary, id, important, meta, infoID = GetAvailableQuestInfo(i)
+		local icon, atlas = QuestUtil.GetQuestIconOfferForQuestID(id, legendary, frequency, repeatable, important, meta, infoID)
+		available[#available + 1] = { GetAvailableTitle(i), icon, atlas, trivial, function() SelectAvailableQuest(i) end }
+	end
+	list(f.psPanel, rows, CURRENT_QUESTS or "Current Quests", active)
+	list(f.psPanel2, rows2, AVAILABLE_QUESTS or "Available Quests", available)
 end
 
 -- Accept (QuestDetailAcceptButton_OnClick): a PvP quest asks first, in our dialog.
@@ -188,24 +197,100 @@ local function complete()
 		onCancel = function() DeclineQuest(); PlaySound(SOUNDKIT.IG_QUEST_CANCEL) end }, cost)
 end
 
+-- The quest giver's portrait (QuestFrame_ShowQuestPortrait) in a flyout off
+-- the window's right edge: the model in our own scene, set up as the stock
+-- QuestModelScene (scene 309, the mount and rider actors; -1 is the player),
+-- the name under it, then the text.
+local PORTRAIT_SCENE = 309
+local function portrait(display, text, name, mount, sceneID)
+	local p = f.psPortrait
+	if not display or display == 0 then return p:Hide() end
+	p.Name:SetText(name or "")
+	p.Text:SetText(text or "")
+	p:Show()
+	local m = p.Model
+	if not m.TransitionToModelSceneID then return end
+	m:ClearScene()
+	m:TransitionToModelSceneID(sceneID or PORTRAIT_SCENE, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
+	if display == -1 then
+		local actor = m:GetPlayerActor("player")
+		if actor then actor:SetModelByUnit("player", false) end
+		return
+	end
+	local riderTag, mountActor = "rider", nil
+	if (mount or 0) > 0 then
+		mountActor = m:GetActorByTag("mount")
+		if mountActor then mountActor:SetModelByCreatureDisplayID(mount) end
+	else
+		riderTag = "mount" -- no mount: the mount actor carries the rider, as the stock scene
+	end
+	local rider = m:GetActorByTag(riderTag)
+	if rider then rider:SetModelByCreatureDisplayID(display) end
+	if mountActor and rider then mountActor:AttachToMount(rider, 91, 0) end
+end
+
+-- The stock detail text writes itself in (instantQuestText off): the
+-- description's alpha gradient at QUEST_DESCRIPTION_GRADIENT_CPS, Accept
+-- off until it is done.
+local CPS, GRADIENT = 70, 30
+local fading
+
+-- What the offer asks besides its objectives (QUEST_TEMPLATE_DETAIL): a spell
+-- to learn, the group it suggests, the giver's signature.
+local function extras(id)
+	local spellID, spellName, spellIcon = GetCriteriaSpell()
+	if spellID then
+		c.head(LEARN_SPELL_OBJECTIVE or "Learn Spell:")
+		c.tile("spell", nil, spellID, spellName, spellIcon)
+	end
+	local group = GetSuggestedGroupSize() or 0
+	if group > 0 then c.text("body", "textDim", (QUEST_SUGGESTED_GROUP_NUM or "Suggested Players: [%d]"):format(group), 14) end
+	local theme = C_QuestLog.GetQuestDetailsTheme and C_QuestLog.GetQuestDetailsTheme(id)
+	if theme and (theme.signature or "") ~= "" then c.text("body", "textDim", theme.signature, 14):SetJustifyH("RIGHT") end
+end
+
+-- Rewards the shared reward column (ns.QuestRewards, Core.lua) does not draw
+-- yet: a major faction's reputation and the War Mode bonus, after the rest.
+local function moreRewards(id)
+	if page ~= "reward" and not C_QuestLog.ShouldShowQuestRewards(id) then return end
+	local reps = C_QuestOffer.GetQuestOfferMajorFactionReputationRewards and C_QuestOffer.GetQuestOfferMajorFactionReputationRewards() or {}
+	for _, r in ipairs(reps) do
+		local data = C_MajorFactions and C_MajorFactions.GetMajorFactionData(r.factionID)
+		c.pair(data and data.name or REPUTATION or "Reputation", "+" .. BreakUpLargeNumbers(r.rewardAmount))
+	end
+	if C_QuestLog.QuestCanHaveWarModeBonus and C_QuestLog.QuestCanHaveWarModeBonus(id) and C_PvP and C_PvP.IsWarModeDesired() then
+		c.pair(PVP_LABEL_WAR_MODE or "War Mode", (PLUS_PERCENT_FORMAT or "+%d%%"):format(C_PvP.GetWarModeRewardBonus()))
+	end
+end
+
 function paint()
 	c.Begin(0)
 	local left, right = {}, {}
 	f.psPanel:Hide()
-	-- The NPC heads the band; a quest's title, too long for a 560 band beside
-	-- its tools, heads the body as on the World Map's details.
-	W.ShellTitle(f, ns.Clean(UnitName("npc")) or "", page == "greeting" and "Click a quest." or nil)
+	f.psPanel2:Hide()
+	f.psDesc = nil
+	-- The NPC heads the band, its portrait beside it (QuestFrame_SetPortrait:
+	-- the quest's NPC, the quest book with none); a quest's title, too long for
+	-- a 640 band beside its tools, heads the body as on the World Map's details.
+	W.ShellTitle(f, ns.Clean(UnitName("questnpc")) or "", page == "greeting" and "Click a quest." or nil)
+	f.psPortraitPaint("questnpc")
+	-- A friendship NPC's standing heads the body (QuestFrame_OnShow).
+	f.psFriend.Paint()
+	if f.psFriend:IsShown() then c.y = 24 + 32 end
 	if page == "greeting" then
 		c.text("body", "text", GetGreetingText(), 24)
 		greeting()
 	else
+		local id = GetQuestID()
 		c.text("title", "text", GetTitleText(), 24)
 		if page == "detail" then
 			-- The World Map's details: objectives, then the story, then the rewards.
 			c.text("body", "text", GetObjectiveText(), 8)
+			extras(id)
 			c.text("heading", "text", "Description", 24)
-			c.text("body", "textDim", GetQuestText(), 8)
+			f.psDesc = c.text("body", "textDim", GetQuestText(), 8)
 			rewards()
+			moreRewards(id)
 			local auto = QuestGetAutoAccept()
 			if not auto then left[1] = { label = "Decline", onClick = function() f:Hide(); PlaySound(SOUNDKIT.IG_QUEST_CANCEL) end } end
 			right[1] = { label = auto and "OK" or "Accept", onClick = accept, opts = { primary = true } }
@@ -216,32 +301,75 @@ function paint()
 		else
 			c.text("body", "text", GetRewardText(), 8)
 			rewards()
+			moreRewards(id)
 			right[1] = { label = "Complete quest", onClick = complete, opts = { primary = true } }
 		end
 	end
 	c.End()
 	W.ShellFooter(f, left, right)
 	if page == "progress" then f.footerButtons.right[1]:SetEnabled(IsQuestCompletable() and true or false) end
+	if page == "detail" then
+		if fading and f.psDesc.SetAlphaGradient then f.psDesc:SetAlphaGradient(fading, GRADIENT) end
+		ns.SetEnabled(f.footerButtons.right[1], not fading)
+	end
+	-- An auto-accepted quest is taken, not closed (QuestFrameDetailPanel_OnShow).
+	ns.SetEnabled(f.Close, not (page == "detail" and QuestGetAutoAccept()))
 	W.ShellBody(f, c.y + 24)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 600, sidebar = 0 })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 600, sidebar = 0 })
 	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "questdialog")
 	c = ns.QuestRewards(f.Body, { x = W.SHELL.pad, width = f.BodyWidth, tip = tileTip, click = tileClick,
 		selected = function(type, index) return page == "reward" and type == "choice" and index == choice end })
 	W.ShellTabs(f, nil)
+	f.psPortraitPaint = ns.NpcPortrait(f)
+	f.psFriend = ns.FriendshipBar(f.Body)
+	f.psFriend:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psFriend:SetWidth(f.BodyWidth)
 	f.psPanel = W.RowPanel(f.Body)
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psPanel2 = W.RowPanel(f.Body)
+	f.psPanel2:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	local p = ns.Flyout(f, NAME .. "Portrait", 232)
+	p.Model = CreateFrame("ModelScene", nil, p, "PanningModelSceneMixinTemplate")
+	p.Model:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -16)
+	p.Model:SetSize(200, 240)
+	p.Name = W.Text(p, "heading", "text")
+	p.Name:SetPoint("TOPLEFT", p.Model, "BOTTOMLEFT", 0, -12)
+	p.Name:SetWidth(200)
+	p.Text = W.Text(p, "body", "textDim")
+	p.Text:SetPoint("TOPLEFT", p.Name, "BOTTOMLEFT", 0, -8)
+	p.Text:SetWidth(200)
+	p.Text:SetWordWrap(true)
+	p.Text:SetSpacing(2)
+	p:Hide()
+	f.psPortrait = p
+	ns.DockFlyout(f, p, 1)
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_QUEST_LIST_OPEN) end)
+	f:SetScript("OnUpdate", function(_, elapsed)
+		if not (fading and f.psDesc) then return end
+		fading = fading + elapsed * CPS
+		PlaySound(SOUNDKIT.IG_WRITE_QUEST)
+		if not (f.psDesc.SetAlphaGradient and f.psDesc:SetAlphaGradient(fading, GRADIENT)) then
+			fading = nil
+			ns.SetEnabled(f.footerButtons.right[1], true)
+		end
+	end)
 	-- As the stock OnHide: closed by the player, ours ends the quest dialog;
-	-- closed by the game (QUEST_FINISHED), never again.
+	-- closed by the game (QUEST_FINISHED), never again. An auto-accepted
+	-- quest's tracker pop-up goes with it.
 	f:HookScript("OnHide", function()
 		PlaySound(SOUNDKIT.IG_QUEST_LIST_CLOSE)
+		if page == "detail" and QuestGetAutoAccept() then
+			RemoveAutoQuestPopUp(GetQuestID())
+			PlaySound(SOUNDKIT.UI_AUTO_QUEST_COMPLETE)
+		end
 		if not ended then CloseQuest() end
-		ended, page = nil, nil
+		ended, page, fading = nil, nil, nil
+		f.psPortrait:Hide()
 	end)
 	Polestar.CloseOnEscape(NAME)
 end
@@ -250,18 +378,41 @@ end
 function M.Show()
 	if not page then return end
 	if not f then build() end
+	fading = page == "detail" and GetCVar("instantQuestText") == "0" and 0 or nil
 	paint()
+	-- The giver on an offer, the one who takes it on the reward page; none on the others.
+	if page == "detail" then
+		portrait(GetQuestPortraitGiver())
+	elseif page == "reward" then
+		local display, text, name = GetQuestPortraitTurnIn()
+		portrait(display, text, name, 0)
+	else
+		f.psPortrait:Hide()
+	end
 	W.ScrollTo(f.Scroll, 0)
 	f:Show()
+end
+
+-- An offer the stock frame does not show (QuestFrame_OnEvent): one an item
+-- starts, or an auto-accepted one from an area trigger, goes to the objective
+-- tracker as a pop-up (the client's AddAutoQuestPopUp; the tracker draws it
+-- on its next update) and the dialog ends; one from the adventure map stays
+-- the map's.
+local function offerElsewhere(itemID)
+	if QuestIsFromAdventureMap and QuestIsFromAdventureMap() then return true end
+	if (itemID and itemID ~= 0) or (QuestGetAutoAccept() and QuestIsFromAreaTrigger()) then
+		if AddAutoQuestPopUp(GetQuestID(), "OFFER") then PlaySound(SOUNDKIT.UI_AUTO_QUEST_COMPLETE) end
+		CloseQuest()
+		return true
+	end
 end
 
 function M.Enable()
 	for event, p in pairs(OPEN) do
 		-- The stock window's own open, stopped (docs/CLIENT.md, rule 15's exception).
 		if QuestFrame then QuestFrame:UnregisterEvent(event) end
-		Polestar.RegisterEvent(event, function()
-			-- An offer from the adventure map stays the map's (QuestFrame_OnEvent).
-			if p == "detail" and QuestIsFromAdventureMap and QuestIsFromAdventureMap() then return end
+		Polestar.RegisterEvent(event, function(_, itemID)
+			if p == "detail" and offerElsewhere(itemID) then return end
 			page, choice = p, nil
 			M.Show()
 		end)
@@ -271,8 +422,8 @@ function M.Enable()
 		ended = true
 		f:Hide()
 	end)
-	-- Late item data and the quest log redraw the open page.
-	for _, e in ipairs({ "QUEST_ITEM_UPDATE", "QUEST_LOG_UPDATE", "GET_ITEM_INFO_RECEIVED", "LEARNED_SPELL_IN_SKILL_LINE" }) do
+	-- Late item data, the quest log and the NPC's portrait redraw the open page.
+	for _, e in ipairs({ "QUEST_ITEM_UPDATE", "QUEST_LOG_UPDATE", "GET_ITEM_INFO_RECEIVED", "LEARNED_SPELL_IN_SKILL_LINE", "UNIT_PORTRAIT_UPDATE", "PORTRAITS_UPDATED" }) do
 		Polestar.RegisterEvent(e, function() if f and f:IsShown() then paint() end end)
 	end
 	-- Polestar's verdicts and its mark setting redraw the marks.
