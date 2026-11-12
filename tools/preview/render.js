@@ -425,7 +425,7 @@ function svg(dump, { fonts, textures, roots, margin = 28, prefix = 'p', shared, 
 				x0 = Math.max(x0, r.x); y0 = Math.max(y0, r.y);
 				x1 = Math.min(x1, r.x + r.w); y1 = Math.min(y1, r.y + r.h);
 			}
-			const id = `${prefix}c${c.id}`;
+			const id = `${prefix}c${clipIds.size}`;
 			defs.push(`<clipPath id="${id}"><rect x="${f2(x0 - ox)}" y="${f2(y0 - oy)}" width="${f2(Math.max(0, x1 - x0))}" height="${f2(Math.max(0, y1 - y0))}"/></clipPath>`);
 			clipIds.set(c.id, id);
 		}
@@ -436,13 +436,14 @@ function svg(dump, { fonts, textures, roots, margin = 28, prefix = 'p', shared, 
 	// the mask's alpha is: an SVG mask over the mask's own rectangle, nothing
 	// outside it (the client's CLAMPTOBLACKADDITIVE).
 	const maskIds = new Map();
+	let gradN = 0; // ids count first uses within this SVG, never the dump's global frame ids
 	const maskAttr = (o) => {
 		const m = o.mask != null ? byId.get(o.mask) : null;
 		const mr = m && rects.get(m.id);
 		const name = m && textureName(m.texture);
 		if (!mr || !name) return '';
 		if (!maskIds.has(m.id)) {
-			const id = `${prefix}m${m.id}`;
+			const id = `${prefix}m${maskIds.size}`;
 			const box = `x="${f2(mr.x - ox)}" y="${f2(mr.y - oy)}" width="${f2(mr.w)}" height="${f2(mr.h)}"`;
 			const uri = name === 'white' ? null : textures.uri(name, [1, 1, 1, 1], null, 0);
 			const shape = uri ? `<image ${box} preserveAspectRatio="none" href="${uri}"/>` : `<rect ${box} fill="#fff"/>`;
@@ -521,7 +522,7 @@ function svg(dump, { fonts, textures, roots, margin = 28, prefix = 'p', shared, 
 		if (name === 'white' && !t.texCoord && t.gradient) {
 			// SetGradient: VERTICAL runs from min (bottom) to max (top), HORIZONTAL left to right.
 			const g = t.gradient;
-			const id = `${prefix}g${t.id}`;
+			const id = `${prefix}g${gradN++}`;
 			const vertical = g.orientation === 'VERTICAL';
 			const stop = (c, off) => `<stop offset="${off}" stop-color="rgb(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)})" stop-opacity="${f2(c[3] ?? 1)}"/>`;
 			defs.push(`<linearGradient id="${id}" x1="0" y1="${vertical ? 1 : 0}" x2="${vertical ? 0 : 1}" y2="0">${stop(g.min, 0)}${stop(g.max, 1)}</linearGradient>`);
