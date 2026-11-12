@@ -1,7 +1,7 @@
 --@ title: Mail: send
 --@ roots: PolestarUIMail
 --@ stubs: stub_npc.lua, stub_mail.lua
--- The Send page. To suggests friends and guild members (our list, realm left off) as the player types; a pick fills it. The wells take the cursor's item (ClickSendMailItemButton), a right-click takes it back; the postage follows. An item dropped on the page goes in the first free well, and the bags' right-click attaches while the page shows (SetSendMailShowing). The subject follows the first item until the player writes one. Money or COD: the switch picks which the amount is, and needs an item; a COD over 10,000 gold says so. Send is off until To and Subject are filled, and while the server answers; it sets only the money or the COD and calls SendMail; MAIL_SEND_SUCCESS empties the page. A trial account has no Send page.
+-- The Send page. To suggests friends and guild members (our list, realm left off) as the player types; a pick fills it. The wells take the cursor's item (ClickSendMailItemButton), a right-click takes it back; the postage follows. An item dropped on the page goes in the first free well, and the bags' right-click attaches while the page shows (SetSendMailShowing). The subject follows the first item until the player writes one. Money or COD: the switch picks which the amount is, and needs an item; a COD over 10,000 gold says so. Send is off until To and Subject are filled, and while the server answers; it sets only the money or the COD and calls SendMail; MAIL_SEND_SUCCESS empties the page. A refundable item attached asks first in Polestar's dialog, its answer sent back to the client (RespondMailLockSendItem); the client's unlock closes the dialog. A trial account has no Send page.
 local T = Enum.PlayerInteractionType
 stub.interact(T.MailInfo)
 local f = PolestarUIMail
@@ -69,6 +69,18 @@ assert(stub.sent and stub.sent.to == "Jaina" and stub.sent.subject == "Runecloth
 assert(stub.sent.cod == 10000 and stub.sent.money == 0, "COD set as money")
 stub.fire("MAIL_SEND_SUCCESS")
 assert(tostring(send.To:GetText()) == "" and tostring(send.MoneyCaption:GetText()) == "Money to send", "not emptied")
+
+-- A refundable item: the client asks, ours answers.
+stub.fire("MAIL_LOCK_SEND_ITEMS", 2, "item:12360")
+assert(PolestarModal:IsShown() and tostring(PolestarModal.Box.Text:GetText()):find("Arcanite Bar"), "no refund dialog")
+PolestarModal.Box.Cancel:Click()
+assert(stub.lockAnswer[1] == 2 and stub.lockAnswer[2] == false, "cancel not sent")
+stub.fire("MAIL_LOCK_SEND_ITEMS", 2, "item:12360")
+PolestarModal.Box.Action:Click()
+assert(stub.lockAnswer[2] == true, "accept not sent")
+stub.fire("MAIL_LOCK_SEND_ITEMS", 2, "item:12360")
+stub.fire("MAIL_UNLOCK_SEND_ITEMS")
+assert(not PolestarModal:IsShown(), "the dialog outlived the unlock")
 
 f.tabButtons[1]:Click()
 assert(not stub.sendShowing, "the bags still attach on the inbox")

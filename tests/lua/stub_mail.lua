@@ -119,6 +119,10 @@ stub.mailItem = item
 stub.sendShowing = false
 function SetSendMailShowing(v) stub.sendShowing = v end
 function CursorHasItem() return stub.cursor ~= nil end
+-- A refundable attachment: the client asks, the answer recorded.
+function RespondMailLockSendItem(slot, ok) stub.lockAnswer = { slot, ok } end
+C_Item = C_Item or {}
+function C_Item.GetItemInfo(link) return link == "item:12360" and "Arcanite Bar" or nil end
 -- A trial account cannot send mail.
 function GameLimitedMode_IsActive() return stub.trial or false end
 

@@ -606,6 +606,23 @@ local function buildSend()
 	send.Postage:SetPoint("LEFT", send, "TOPLEFT", x + w - 120, -(y + 18 + 14))
 end
 
+-- A refundable item attached: the client holds the page until the player
+-- says the refund may go (MAIL_LOCK_SEND_ITEMS, the stock
+-- CONFIRM_MAIL_ITEM_UNREFUNDABLE), in Polestar's dialog.
+local lockSpec
+local function lockAsk(_, slot, link)
+	local name = link and C_Item.GetItemInfo(link) or "this item"
+	lockSpec = { title = "Mail a refundable item?", action = "Mail it",
+		text = ("You can no longer sell %s back for a refund once it is mailed."):format(name),
+		onAccept = function() RespondMailLockSendItem(slot, true) end,
+		onCancel = function() RespondMailLockSendItem(slot, false) end }
+	W.Modal(lockSpec)
+end
+local function lockEnd()
+	if lockSpec and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == lockSpec then PolestarModal:Hide() end
+	lockSpec = nil
+end
+
 local function resetSend(quiet)
 	send.To:SetText("")
 	send.Subject:SetText("")
@@ -643,6 +660,7 @@ local function build()
 		open = nil
 		-- As the stock hide: the page emptied, the bags' right-click theirs again.
 		SetSendMailShowing(false)
+		lockEnd()
 		resetSend(true)
 	end)
 	Polestar.CloseOnEscape(NAME)
@@ -688,6 +706,8 @@ function M.Enable()
 		PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
 		resetSend()
 	end)
+	Polestar.RegisterEvent("MAIL_LOCK_SEND_ITEMS", lockAsk)
+	Polestar.RegisterEvent("MAIL_UNLOCK_SEND_ITEMS", lockEnd)
 	Polestar.RegisterEvent("MAIL_SUCCESS", function()
 		sending = nil
 		if shown() then canSend() end
