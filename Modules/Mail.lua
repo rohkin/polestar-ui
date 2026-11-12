@@ -554,10 +554,8 @@ local function paintSend()
 		if subject == autoSubject then send.Subject:SetText("") end
 		autoSubject, cod = "", false
 	end
-	send.psNoItems = n == 0
 	send.MoneyCaption:SetText(cod and "COD amount" or "Money to send")
-	send.COD.psTip = send.psNoItems and "Attach an item to send it cash on delivery." or nil
-	send.COD:Refresh()
+	ns.SetEnabled(send.COD, n > 0, "Attach an item to send it cash on delivery.")
 	local price = GetSendMailPrice()
 	ns.SetMoney(send.Postage, price, price > GetMoney() and "danger" or nil)
 	W.ShellTitle(f, "Send mail", n == 0 and "No attachments." or ("%d of %d attachments."):format(n, SEND))
@@ -639,9 +637,6 @@ local function buildSend()
 	send.Money:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
 	send.COD = W.Switch(send, function() return cod end, function(v) cod = v; paintSend() end)
 	send.COD:SetPoint("LEFT", send.Money, "RIGHT", 24, 0)
-	W.SetDisabledWhen(send.COD, function() return send.psNoItems end)
-	-- Off without an item, saying why.
-	send.COD:SetMotionScriptsWhileDisabled(true)
 	local codText = W.Text(send, "label", "text")
 	codText:SetPoint("LEFT", send.COD, "RIGHT", 8, 0)
 	codText:SetText("Cash on delivery")

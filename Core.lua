@@ -272,8 +272,19 @@ end
 
 -- Enables or disables a button as Polestar disables: faded to 45%. `why`,
 -- when given, is the reason a disabled one shows in its tooltip (the client
--- sends a disabled button its mouse-overs only when asked).
+-- sends a disabled button its mouse-overs only when asked). A Polestar switch
+-- (W.Switch) dims itself on each Refresh: it is told through
+-- W.SetDisabledWhen, and its reason is its own tooltip while off.
 function ns.SetEnabled(b, on, why)
+	if rawget(b, "Knob") then
+		if b.psOwnTip == nil then
+			b.psOwnTip = b.psTip or false
+			b:SetMotionScriptsWhileDisabled(true)
+			Polestar.Widgets.SetDisabledWhen(b, function() return b.psOff end)
+		end
+		b.psOff, b.psTip = not on, not on and why or b.psOwnTip or nil
+		return b:Refresh()
+	end
 	b:SetEnabled(on and true or false)
 	b:SetAlpha(on and 1 or 0.45)
 	b.psReason = not on and why or nil
