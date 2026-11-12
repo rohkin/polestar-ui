@@ -438,12 +438,7 @@ end
 -- The drawer: its own window skin, flush with the window's right edge, its
 -- heading over a scrolling column.
 local function buildStats()
-	local d = CreateFrame("Frame", NAME .. "Stats", f)
-	d:SetPoint("TOPLEFT", f, "TOPRIGHT", -1, 0)
-	d:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", -1, 0)
-	d:SetWidth(STATS_W)
-	d:EnableMouse(true)
-	Polestar.Theme.Skin(d, "window")
+	local d = ns.Flyout(f, NAME .. "Stats", STATS_W)
 	local title = W.Text(d, "heading", "text")
 	title:SetPoint("LEFT", d, "TOPLEFT", 24, -STATS_TOP / 2)
 	title:SetText("Stats")

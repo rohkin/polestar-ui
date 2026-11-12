@@ -66,6 +66,19 @@ function ns.Plain(f)
 	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
 end
 
+-- A flyout: a window-skinned panel on the right edge of window `f`, as tall as
+-- it and `width` wide, that takes the mouse. The caller shows it and calls
+-- ns.DockFlyout.
+function ns.Flyout(f, name, width)
+	local d = CreateFrame("Frame", name, f)
+	d:SetPoint("TOPLEFT", f, "TOPRIGHT", -1, 0)
+	d:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", -1, 0)
+	d:SetWidth(width)
+	d:EnableMouse(true)
+	Polestar.Theme.Skin(d, "window")
+	return d
+end
+
 -- The band's Options button, a menu of `items` (or a function(button) returning
 -- them) that a second click closes. Returns the button.
 function ns.OptionsButton(f, items)

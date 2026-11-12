@@ -79,12 +79,7 @@ local function discard()
 end
 
 local function buildLetter()
-	letter = CreateFrame("Frame", NAME .. "Letter", f)
-	letter:SetPoint("TOPLEFT", f, "TOPRIGHT", -1, 0)
-	letter:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", -1, 0)
-	letter:SetWidth(LETTER_W)
-	letter:EnableMouse(true)
-	Theme.Skin(letter, "window")
+	letter = ns.Flyout(f, NAME .. "Letter", LETTER_W)
 	letter:Hide()
 	local w = LETTER_W - 48
 	letter.Close = W.IconButton(letter, "close", 28, "Close", function() M.Open(nil) end, 14)
