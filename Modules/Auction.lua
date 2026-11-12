@@ -133,7 +133,7 @@ local ERRORS = {
 }
 
 local AH -- C_AuctionHouse, set in Enable
-local f, money
+local f, money, subject
 local tab = "buy"
 local sel, searched = {}, nil -- the browse: the category path ({ top, sub, subsub } indexes); whether a search ran
 local view -- an item's listings: { key, info, n (commodity count) }
@@ -1435,7 +1435,7 @@ local function build()
 	ns.Dock(f)
 	ns.WindowMenu(f, "auction")
 	local b = ns.SubjectBlock(f)
-	b.icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_02")
+	subject = b
 	b.name:SetText("Auction House")
 	money = ns.Money(f.Sidebar)
 	money:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -6)
@@ -1618,6 +1618,8 @@ end
 function M.Show()
 	tree = tree or buildTree()
 	if not f then build() end
+	-- The auctioneer's portrait, as the stock frame (SetPortraitToUnit("npc")).
+	SetPortraitTexture(subject.icon, "npc")
 	tab = "buy"
 	paint()
 	f:Show()

@@ -388,3 +388,5 @@ function UnitName(unit, ...)
 	return unitName(unit, ...)
 end
 GameTooltip.SetItemKey = GameTooltip.SetItemKey or function(self, id) self:SetText(stub.ahItems[id][1]) end
+-- The auctioneer's portrait (the stock frame's SetPortraitToUnit("npc")).
+SetPortraitTexture = SetPortraitTexture or function(tex) tex:SetTexture(132355) end
