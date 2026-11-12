@@ -12,10 +12,13 @@ with autoloot the window flashes, as the stock one.
   `LootFrameMixin:Open` lists them: Item Well (32px), the name in quality
   colour (legible) over the quality ("Uncommon", the stock tag), count; a
   quest item's mark over the icon (the stock border, the bang on one that
-  starts a quest); a locked one red; a currency container as what it holds
+  starts a quest, the stock `TEXTURE_ITEM_QUEST_BANG`/`_BORDER`); a locked one red; a currency container as what it holds
   (`CurrencyContainerUtil`). A coin slot shows the game's money text, a line
   per coin, as the stock row (the client gives no copper amount). Click loots
-  (`LootSlot`); Shift-click links. Empty loot plays the stock empty sound.
+  (`LootSlot`); a modified click links or dresses up. Hovered, the game's
+  tooltip is drawn again each frame (a modifier shows the comparison) and the
+  cursor follows the dress-up modifier (`CursorUpdate`, `CursorOnUpdate`),
+  as the stock row's `OnUpdate`. Empty loot plays the stock empty sound.
 - **Combat:** a name the client hands over secret shows through a string on
   a game font (ours take no secret, CLIENT.md rule 3); the other values are
   read through `ns.Clean`.
@@ -37,4 +40,4 @@ with autoloot the window flashes, as the stock one.
   (it then binds nothing: the loot is closed). Gamepad smart navigation and
   "Loot All" (`C_LootFrame.TryAutoLoot`, the gamepad footer's) are the
   gamepad UI's, where this module is off by default.
-- **Tests:** `stub_loot.lua` (`LootFrame` with its events and Edit Mode place, `GetLootSlotInfo` with quest items and a coin slot, master loot's candidates and the game's menu); scenes `loot` (`LootSlot` on click, `LootFrame` never shows, quest marks, quality tags, empty sound), `loot-cursor` (`lootUnderMouse`), `loot-master` (the menu, the confirm, a raid's classes), `loot-moved` (the Edit Mode place, secret names in combat).
+- **Tests:** `stub_loot.lua` (`LootFrame` with its events and Edit Mode place, `GetLootSlotInfo` with quest items and a coin slot, master loot's candidates and the game's menu); scenes `loot` (`LootSlot` on click, `LootFrame` never shows, quest marks, quality tags, the hovered tooltip and cursor, empty sound), `loot-cursor` (`lootUnderMouse`), `loot-master` (the menu, the confirm, a raid's classes), `loot-moved` (the Edit Mode place, secret names in combat).
