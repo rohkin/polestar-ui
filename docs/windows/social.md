@@ -1,17 +1,21 @@
 #### Social (`FriendsFrame`) — Risk: medium
-Forever loads `Blizzard_FriendsFrame`'s Camelot files: three bottom tabs,
-Contacts (`FriendsListFrame`, its header's Battle.net status and the ignore
-list as a toggle inside it; `RecentAlliesFrame`), Raid (`RaidFrame`) and
-Quick Join. No Who tab (Who is `LFGVanilla`'s, `TOGGLEWHOTAB`) and no guild
-tab (`TOGGLEGUILDTAB` opens Communities): both stay the game's.
+In game the stock window is the Social UI (`SocialUIFrame`,
+`Blizzard_SocialUI`), which `ToggleFriendsFrame` opens in place of the
+Camelot `FriendsFrame`: a Battle.net bar (status, BattleTag, its menu's
+Ignore List) and side tabs Friends, Recent Allies, Friend Requests and Raid
+(the user's screenshots), plus Quick Join and Recruit a Friend only where
+`C_SocialQueue.IsSystemEnabled` / `C_RecruitAFriend.IsSystemEnabled` (not
+seen on Forever). No Who tab (Who is `LFGVanilla`'s, `TOGGLEWHOTAB`) and no
+guild tab (`TOGGLEGUILDTAB` opens Communities): both stay the game's.
 `FriendsFrame`'s show and hide run `UpdateMicroButtons`, so it is never
 touched (CLIENT.md, rule 8): `TOGGLESOCIAL`, `TOGGLEFRIENDSTAB` and
 `TOGGLERAIDTAB` open ours through `ns.Doors` (keys only: Forever has no
 social micro button). The chat's friends button (`QuickJoinToastButton`),
 Battle.net toasts, `/friends` and the gamepad radial call
 `ToggleFriendsFrame` and stay the game's: they are the way to the stock
-window (its Quick Join and Recruit a Friend, until ours has them: the
-Nothing Lost Rule, said in the Options menu).
+window (its Quick Join and Recruit a Friend where the game has them: the
+Nothing Lost Rule, said in the Options menu). `M.stock()` answers
+`SocialUIFrame` or `FriendsFrame`, whichever is shown.
 - **Shell:** 760×600 with sidebar (240). Subject block: the class icon with
   the player's Battle.net presence as a dot, the player's name, and the
   BattleTag in Small textDim ("Battle.net offline" when disconnected). The
@@ -113,9 +117,21 @@ Nothing Lost Rule, said in the Options menu).
   `C_RaidLocks.IsRaidLockExtendFeatureSupported`; "Groups" goes back),
   then "Ready check" (`DoReadyCheck`, leader or assistant; the stock raid
   manager's) and "Convert to party" (`AllowedToDoPartyConversion(false)`).
-- **Taint:** no protected or restricted calls (`C_FriendList`,
-  `BNSendWhisper`, `C_PartyInfo.InviteUnit` are not; never
-  `C_RecentAllies.TryRequestRecentAlliesData`). Battle.net names and notes
+- **Taint:** never `C_RecentAllies.TryRequestRecentAlliesData` (forbidden
+  to addons: ADDON_ACTION_FORBIDDEN in game). The calls the API docs mark
+  `HasRestrictions` (`C_FriendList.AddFriend`, `C_BattleNet.SetAFK`/`SetDND`/
+  `SetAppearOffline`/`SetBlocked`/`SetCustomMessage`/
+  `SendTitleFriendInviteByName`, `C_PartyInfo.ConvertToRaid`/
+  `ConvertToParty`/`SetEveryoneIsAssistant`, `DoReadyCheck`,
+  `C_ReportSystem.SendReport` behind the report frame) run only from a
+  click of the player's, out of combat where they touch the group;
+  unproven in game: a BugGrabber entry for one moves it to the stock
+  window (Options) and to the deferred list. `SetRaidSubgroup` /
+  `SwapRaidSubgroup` are not in the API docs (old globals); called out of
+  combat only.
+- **Deferred:** Copy BattleTag stays a selected field (`CopyToClipboard`
+  is `HasRestrictions`); Quick Join and Recruit a Friend (and the friend
+  card's RAF summon) stay the game's, off on Forever as far as seen. Battle.net names and notes
   are secret in combat on some clients: read out of combat, `issecretvalue`
   guard (rule 3).
 - **Tests:** `stub_social.lua` (a `FriendsFrame` whose `Hide`/`Show` error

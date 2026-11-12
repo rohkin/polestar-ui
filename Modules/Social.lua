@@ -1235,6 +1235,11 @@ function M.Enable()
 end
 
 -- The stock window, for the button that switches back to ours (Core.lua).
-function M.stock() return FriendsFrame and FriendsFrame:IsShown() and FriendsFrame end
+-- In game the Social UI (SocialUIFrame) stands in for FriendsFrame (ToggleFriendsFrame).
+function M.stock()
+	for _, fr in ipairs({ SocialUIFrame or false, FriendsFrame or false }) do
+		if fr and fr:IsShown() then return fr end
+	end
+end
 
 ns.Module("social", M)
