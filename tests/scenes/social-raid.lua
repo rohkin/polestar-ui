@@ -85,6 +85,7 @@ stub.RunScript(row("Lorne"), "OnEnter")
 stub.RunScript(over, "OnDragStart")
 stub.RunScript(over, "OnDragStop")
 assert(stub.moved == nil and not f.psRaidBar.All:IsEnabled(), "member arranged the raid")
+assert(f.psRaidBar.All.psReason == "Only the raid leader can set this.", "all assist reason")
 stub.notLeader = false
 PolestarUI.Show("social", "raid")
 -- Footer: Ready check, Convert to party (refused for a raid this size), Raid info.
