@@ -874,15 +874,27 @@ local function setItem(loc)
 	if sell.multi then return end -- the stock disabled overlay while a multisell runs
 	sell.loc, sell.n, sell.touched, pendingPost = loc, 1, false, nil
 	sell.bid, sell.buyoutOnly = 0, true
+	sell.from = nil
 	if loc then
 		sell.key = AH.GetItemKeyFromItem(loc)
 		sell.commodity = AH.GetItemCommodityStatus(loc) == Enum.ItemCommodityStatus.Commodity
+		-- The listings shown under the form, kept after a post (the stock
+		-- refreshListWithPreviousItem); equipment's without its level and
+		-- suffix, to compare alike (ConvertItemSellItemKey).
+		local k = AH.GetItemKeyFromItem(loc)
+		local info = AH.GetItemKeyInfo(k)
+		if info and info.isEquipment then k.itemLevel, k.itemSuffix = 0, 0 end
+		sell.listKey, sell.listCommodity = k, sell.commodity
 		sell.price = defaultPrice(C_Item.GetItemID(loc))
 		-- A commodity starts at the stack's count, an item at one.
 		if sell.commodity then sell.n = math.max(1, math.min(C_Item.GetStackCount(loc) or 1, AH.GetAvailablePostCount(loc))) end
 		f.psSell.Price.Set(sell.price)
 		f.psSell.Bid.Set(0)
-		AH.SendSellSearchQuery(sell.key, sorts(sell.commodity and "commodity:sell" or "item:sell"), true)
+		AH.SendSellSearchQuery(sell.listKey, sorts(sell.commodity and "commodity:sell" or "item:sell"), true)
+	else
+		sell.price = 0
+		f.psSell.Price.Set(0)
+		f.psSell.Bid.Set(0)
 	end
 	paint()
 	return true
@@ -893,17 +905,41 @@ local function take()
 	if loc and setItem(loc) then ClearCursor() end
 end
 
--- The lowest listing becomes the price, until the player types one (as the
--- stock sell frames' UpdatePriceSelection).
+-- The listing a price is taken from: an item's cheapest buyout at its own
+-- item level (any level for an uncommon one), as the stock GetBestEntry; a
+-- commodity's cheapest.
+local function bestEntry()
+	if sell.commodity then return AH.GetCommoditySearchResultInfo(sell.key.itemID, 1) end
+	local lvl = C_Item.GetCurrentItemLevel(sell.loc)
+	local any = C_Item.GetItemQuality(sell.loc) == 2
+	local best
+	for i = 1, AH.GetNumItemSearchResults(sell.listKey) do
+		local r = AH.GetItemSearchResultInfo(sell.listKey, i)
+		if r and (any or r.itemKey.itemLevel == lvl) then
+			local a, b = r.buyoutAmount or math.huge, best and (best.buyoutAmount or math.huge) or math.huge
+			if not best or a < b or (a == b and (r.bidAmount or math.huge) < (best.bidAmount or math.huge)) then best = r end
+		end
+	end
+	return best
+end
+
+-- A listing taken (clicked, or the best one until the player types a
+-- price): its buyout (and an item's bid, when a starting price shows), as
+-- the stock sell frames' OnSearchResultSelected.
+local function takePrice(r)
+	sell.price = r.unitPrice or r.buyoutAmount or 0
+	sell.from = sell.price
+	f.psSell.Price.Set(sell.price)
+	if not sell.commodity and not sell.buyoutOnly then
+		sell.bid = r.bidAmount or 0
+		f.psSell.Bid.Set(sell.bid)
+	end
+end
+
 local function listed(id)
 	if tab ~= "sell" or not sell.loc or sell.touched or sell.key.itemID ~= id or not AH.ShouldAutoPopulatePrice() then return end
-	local r
-	if sell.commodity then r = AH.GetCommoditySearchResultInfo(id, 1) else r = AH.GetItemSearchResultInfo(sell.key, 1) end
-	local low = r and (r.unitPrice or r.buyoutAmount)
-	if low then
-		sell.price = low
-		f.psSell.Price.Set(low)
-	end
+	local r = bestEntry()
+	if r then takePrice(r) end
 end
 
 -- The bid and buyout an item goes up with: none for a zero (GetPrice).
@@ -1048,6 +1084,48 @@ local function buildSell()
 	return s
 end
 
+-- The listings while posting, as the stock commodity and item sell lists:
+-- a click takes a listing's price.
+local function sellRequery()
+	if sell.listKey then AH.SendSellSearchQuery(sell.listKey, sorts(sell.listCommodity and "commodity:sell" or "item:sell"), true) end
+end
+local function pickListing(row)
+	if not sell.loc then return end
+	sell.touched = true
+	takePrice(row.psData)
+	paint()
+end
+local function paintSellList(top)
+	local k = sell.listKey
+	if not k then return 0, top, nil end
+	local S = Enum.AuctionHouseSortOrder
+	local cols, y, n
+	local hint = sell.loc and "Click to take its price." or nil
+	if sell.listCommodity then
+		cols = { { label = AUCTION_HOUSE_HEADER_UNIT_PRICE or "Unit Price", w = 170 }, { label = AUCTION_HOUSE_BROWSE_HEADER_QUANTITY or "Quantity", w = 110 } }
+		y = header(top, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols)
+		n = AH.GetNumCommoditySearchResults(k.itemID)
+		for i = 1, n do
+			local r = AH.GetCommoditySearchResultInfo(k.itemID, i)
+			fill(i, y, { key = k, line = sellers(r), cells = { { money = r.unitPrice }, { text = count(r.quantity) } },
+				data = r, click = pickListing, hint = hint }, cols)
+		end
+	else
+		cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
+			{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 }, { label = "", w = 60 } }
+		y = header(top, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols, "item:sell", sellRequery)
+		n = AH.GetNumItemSearchResults(k)
+		for i = 1, n do
+			local r = AH.GetItemSearchResultInfo(k, i)
+			fill(i, y, { key = r.itemKey or k, line = sellers(r),
+				cells = { r.bidAmount and { money = r.bidAmount, color = "textDim" } or { text = "" },
+					r.buyoutAmount and { money = r.buyoutAmount } or { text = "" }, { text = (r.quantity or 1) > 1 and count(r.quantity) or "" } },
+				data = r, click = pickListing, hint = hint }, cols)
+		end
+	end
+	return n, y, AUCTION_HOUSE_NONE_AVAILABLE or "None listed."
+end
+
 local function paintSell()
 	local s, loc = f.psSell, sell.loc
 	local info = loc and AH.GetItemKeyInfo(sell.key) or {}
@@ -1082,14 +1160,16 @@ local function paintSell()
 	ns.SetMoney(s.Deposit, d, d > GetMoney() and "danger" or nil)
 	ns.SetMoney(s.Total, loc and sell.n * (buy or bid or 0) or 0)
 	local why = cannotPost()
-	s.Reason:SetText(sell.multi and (AUCTION_CREATING or "Creating auction %d of %d"):format(sell.multi[1], sell.multi[2]) or loc and why or "")
-	W.Color(s.Reason, sell.multi and "textDim" or "danger")
+	-- A price a silver under a listing's: the stock undercut tip.
+	local tip = not why and sell.from and sell.price == sell.from - SILVER and (AUCTION_HOUSE_UNDERCUT_TUTORIAL or "Undercutting by a silver is enough.")
+	s.Reason:SetText(sell.multi and (AUCTION_CREATING or "Creating auction %d of %d"):format(sell.multi[1], sell.multi[2]) or loc and (why or tip) or "")
+	W.Color(s.Reason, (sell.multi or tip) and "textDim" or "danger")
 	W.ShellTitle(f, "Sell", "Drop an item on the well, set its price, and post it.")
 	W.ShellFooter(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
 		{ loc and { label = "Post", onClick = post, opts = { primary = true } } or nil })
 	local p = f.footerButtons.right[1]
 	if loc and p then ns.SetEnabled(p, not why) end
-	return 0, s.psHeight, nil
+	return paintSellList(s.psHeight)
 end
 
 -- Several of an item post one by one (AUCTION_MULTISELL_*): their progress
@@ -1222,7 +1302,7 @@ local function build()
 			AH.CancelSell()
 			sell.multi = nil
 		end
-		quote, pendingPost, view, searched, sel, sell.loc = nil, nil, nil, false, {}, nil
+		quote, pendingPost, view, searched, sel, sell.loc, sell.listKey = nil, nil, nil, false, {}, nil, nil
 		f.Search:SetText("")
 		PlaySound(SOUNDKIT.AUCTION_WINDOW_CLOSE)
 	end)
@@ -1293,7 +1373,7 @@ function paint()
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -top)
 	f.psEmpty:SetText(empty or "")
 	f.psEmpty:SetShown(n == 0 and empty ~= nil)
-	W.ShellBody(f, tab == "sell" and top or top + math.max(1, n) * ROW_H + 24)
+	W.ShellBody(f, top + math.max(1, n) * ROW_H + 24)
 end
 
 function M.Show()

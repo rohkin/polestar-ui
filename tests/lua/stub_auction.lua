@@ -162,7 +162,10 @@ function AH.SendSearchQuery(k, sorts, separate, minLevel, maxLevel)
 	stub.searchQuery = { key = k, sorts = sorts, minLevel = minLevel, maxLevel = maxLevel }
 	search(k)
 end
-function AH.SendSellSearchQuery(k) search(k) end
+function AH.SendSellSearchQuery(k, sorts)
+	stub.sellQuery = { key = k, sorts = sorts }
+	search(k)
+end
 function AH.GetNumCommoditySearchResults(id) return #(stub.commodity[id] or {}) end
 function AH.GetCommoditySearchResultInfo(id, i)
 	local c = (stub.commodity[id] or {})[i]
@@ -221,6 +224,8 @@ function C_Item.GetItemInfo(id, ...)
 	if itemInfo then return itemInfo(id, ...) end
 end
 stub.stackCount = { [2589] = 20 }
+function C_Item.GetCurrentItemLevel(loc) return 0 end
+function C_Item.GetItemQuality(loc) return stub.ahItems[loc.itemID][3] end
 function C_Item.GetStackCount(loc) return stub.stackCount[loc.itemID] or 1 end
 stub.throttled, stub.sellCancelled, stub.multisellSteps = false, 0, nil
 function AH.IsThrottledMessageSystemReady() return not stub.throttled end
