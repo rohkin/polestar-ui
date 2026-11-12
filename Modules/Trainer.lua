@@ -104,6 +104,7 @@ local function newRow(i)
 	W.Painter(r.Sel, function(t) t:SetVertexColor(Theme.Wash("selected")) end)
 	local well
 	well, r.Icon = ns.ItemWell(r, ICON)
+	r.Well = well
 	well:SetPoint("LEFT", r, "LEFT", 6, 0)
 	r.Money = ns.Money(r)
 	r.Money:SetPoint("RIGHT", r, "RIGHT", -8, 0)
@@ -140,6 +141,10 @@ local function paintRow(r, i)
 	W.Color(r.Name, kind == "unavailable" and "textMuted" or "text")
 	r.Sub:SetText(used and (ITEM_SPELL_KNOWN or "Already known") or needs(i))
 	W.Color(r.Sub, used and "textMuted" or "textDim")
+	-- One line (no needs) sits in the row's middle.
+	r.Name:ClearAllPoints()
+	if r.Sub:GetText() == "" then r.Name:SetPoint("LEFT", r.Well, "RIGHT", 12, 0) else r.Name:SetPoint("BOTTOMLEFT", r.Well, "RIGHT", 12, 1) end
+	r.Name:SetPoint("RIGHT", r, "RIGHT", -120, 0)
 	local cost = GetTrainerServiceCost(i) or 0
 	local pet = petTrainer()
 	r.Money:SetShown(not used and not pet and cost > 0)
@@ -281,7 +286,7 @@ function paint()
 		local r = rows[n] or newRow(n)
 		r:ClearAllPoints()
 		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad - 6, -(24 + (n - 1) * ROW_H))
-		r:SetWidth(f.BodyWidth - 2 * W.SHELL.pad + 12)
+		r:SetWidth(f.BodyWidth + 12)
 		paintRow(r, i)
 		r:Show()
 	end
