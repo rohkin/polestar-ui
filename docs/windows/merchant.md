@@ -8,29 +8,36 @@ whole: Vendor and Keep (sell junk, repair) run on `MERCHANT_SHOW`, no
 frame; Restock hangs its button under `MerchantFrame`, so ours carries it in
 the footer instead (Polestar's `QoL.Restock.Plan`/`Run`, its total in the
 label; gone when the plan is empty).
-- **Shell:** plain, 640×600, no sidebar; band: the NPC's name, subtitle "Click
-  an item to buy it. Right-click an item in your bags to sell it."
-- **Tabs:** Buy, Buyback (`W.ShellTabs`; the stock `MerchantFrameTab1/2`). By
-  the tabs: the vendor's currencies the player holds
-  (`C_MerchantFrame.GetMerchantCurrencies`, each with its tooltip), then the
-  money.
+- **Shell:** 880×600: the sidebar and the 640 stock-sized page. Subject
+  block: the vendor's portrait and name (the stock `SetPortraitToUnit`,
+  `SetTitle`), the player's money under it. Sidebar: the search (the wares'
+  names, on both tabs) and, ending its row, the filter (`MENU_MERCHANT_FRAME`,
+  the game's Menu kept, with "Clear filters"): lit while it hides anything
+  (the visit starts on the class, as the stock show resets it), "Filter (1
+  on)" in its tooltip, gone under the `MerchantFilterDisabled` game rule.
+  Band: "Merchant" or "Buyback", subtitle how many items ("9 items for sale",
+  "1 of 9 items for sale" while searching, "2 items to buy back").
+- **Tabs:** Buy, Buyback (`W.ShellTabs`; the stock `MerchantFrameTab1/2`). At
+  the tab row's right: the vendor's currencies the player holds
+  (`C_MerchantFrame.GetMerchantCurrencies`, each with its tooltip).
 - **Buy:** every item on one scrolling page (the stock 10 a page is gone):
   two columns of item rows, each an Item Well (36px), the name in Label
-  (quality colour, legible), under it the price as a Money line and each other
+  (quality colour, legible; one line, truncated; centred on the well when
+  nothing is under it), under it the price as a Money line and each other
   cost (a currency or an item, up to 3) as its count and icon with its own
   tooltip (`SetMerchantCostItem`), danger when not affordable; stack size
   "×5", stock left or "Sold out"; red when unusable (never an heirloom), faded
   when sold out or an heirloom already owned; the quest bang on a ware that
   starts a quest. Click buys one (`BuyMerchantItem`), shift-click asks how
   many (a stepper in `W.Modal`, capped by the money and the cost items held),
-  right-click buys a stack, ctrl-click previews; tooltip
-  `GameTooltip:SetMerchantItem`, the game's buy cursor. The stock confirms
+  right-click buys a stack, ctrl-click previews, a drag picks it up (never
+  one that asks first, nor while a spell waits for its item); tooltip
+  `GameTooltip:SetMerchantItem` ending with the clicks and selling as a hint,
+  the game's buy cursor. The stock confirms
   become `W.Modal` on the stock rules (`MerchantFrame_ConfirmExtendedItemCost`):
   a high price; a currency; an item above uncommon; a purchase that cannot be
   refunded; a limited currency's remainder; with the specs the item is for.
   Under the wares, the last item sold, to buy back (`MerchantBuyBackItem`).
-  The filter (`MENU_MERCHANT_FRAME`) is the sliders button on the band, the
-  game's Menu kept, gone under the `MerchantFilterDisabled` game rule.
 - **Buyback:** the 12 buyback items, same rows (`BuybackItem`), the game's
   buy-back cursor.
 - **Footer:** left: Repair all (`RepairAllItems`, with its cost; guild repair
@@ -53,4 +60,4 @@ label; gone when the plan is empty).
   the Replacement Contract forbids; a right-click sell of a refundable item
   sells it without asking.
 - **Taint:** no protected calls (`ShowRepairCursor` is not protected).
-- **Tests:** `stub_merchant.lua` (interaction manager, `GetMerchantItemInfo`, costs, currencies, buyback, repair, refunds); scenes `merchant` (`RegisterPlayerInteraction` took the type; `MerchantFrame` never shown; closing ours ends the interaction once), `merchant-buyback`, `merchant-restock` (Polestar's plan shows in the footer).
+- **Tests:** `stub_merchant.lua` (interaction manager, `GetMerchantItemInfo`, costs, currencies, buyback, repair, refunds); scenes `merchant` (`RegisterPlayerInteraction` took the type; `MerchantFrame` never shown; closing ours ends the interaction once; the subject block, the search, the filter lit and cleared, no drag while targeting), `merchant-buyback`, `merchant-restock` (Polestar's plan shows in the footer).
