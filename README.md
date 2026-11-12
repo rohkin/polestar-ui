@@ -10,6 +10,7 @@ Still early: more windows are on the way. Done so far:
 - **Professions**: a card per profession with its rank, spells and the game's card art.
 - **Crafting**: recipes by category with "Can make now" and "Recent", search and the game's filters, reagents, and Craft or Craft all; switch professions from the rail.
 - **Legacy**: the reward track, the challenges by category with search, filters and objectives, and the legacy tree with points staged until you Apply.
+- **World Map and Quest Log**: the game's own map canvas with zones in the sidebar, zoom steps and full screen, and the quest log beside it.
 - **Tooltips**: the game's own tooltips in Polestar's look, with every line other addons add to them.
 - **Chat**: the game's own chat windows, tabs and input line in Polestar's look, at your chat opacity, with every line other addons add.
 
