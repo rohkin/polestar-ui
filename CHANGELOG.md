@@ -14,6 +14,9 @@
 - World Map: a filter button and a map pin button at the map's top right, as the game's map has them: the filters work with the quest log shut, and the pin places a waypoint you can track.
 - World Map: your coordinates and the cursor's at the map's bottom left, following the game's map coordinate options.
 - Quest log: right-click a quest to track, focus (point your guide to it), share or abandon it, or a header to track or untrack all its quests; the focused quest is marked, and a quest's tooltip lists its objectives. Quests show party members on them and the money they still need, campaign headers always show, and the count turns red when the log is over full.
+- Spellbook: a Filter button beside the search with the game's Hide passives, Use flyouts and Show all ranks; flyouts such as portals as one entry that lists its spells; the game's skill-line icons on the categories; spells on no action bar marked; the assisted combat spell under General where the game has one.
+- Talents: Activate on the spec you are not using, Reset (staged until you apply it), the game's search options Hide passives and Show ranks, learnt talents drag to your bars, and disabled buttons say why.
+- Professions: favorite recipes (a star on the recipe, a right-click menu, Favorites first), Track recipe, Link profession and posting it to a channel from Options, Clear filters, item-level search (~20 or 10-20), skill-up chance in a recipe's tooltip, View crafters for the guild's recipes, and Craft says why it is disabled.
 
 ## 0.0.5
 
