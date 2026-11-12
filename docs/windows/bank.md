@@ -5,8 +5,8 @@ Camelot's `BankFrame.lua` over the mainline `BankFrameTemplates`: a bank of
 bags (`C_Bank.ShouldUsePlayerBagsInBank`). The Bank and the Warband bank each
 have bought bags (`C_Bank.FetchPurchasedBankTabData`, the first the bank
 itself) and bag slots to put more in.
-- **Shell:** 760×600 with sidebar. Subject block: the bank icon, "Bank", the
-  player's money.
+- **Shell:** 760×600 with sidebar. Subject block: the banker's portrait (the
+  stock `SetPortraitToUnit("npc")`), "Bank", the player's money.
 - **Sidebar:** a row per viewable bank, "Bank" and "Warband bank" (the stock
   page tabs' icons). A client that reports tabs instead lists each bank's tabs
   under its heading, with "Buy a tab" (the mainline layout).
@@ -20,13 +20,13 @@ itself) and bag slots to put more in.
   cost too, as the stock "Cost:" beside Purchase). Then an Item Grid of every
   bought bag's slots (36px wells, 4px apart; the stock pages of 88 are one
   scrolling grid): count, quality border, locked faded, quest marks and
-  cooldown sweep as `BankPanelItemButtonMixin:Refresh`; the search on the band
-  dims what does not match. A bank with nothing bought says what buying gives,
+  cooldown sweep as `BankPanelItemButtonMixin:Refresh`; the sidebar search
+  (`C_Container.SetItemSearch`) dims what does not match. A bank with nothing bought says what buying gives,
   with Buy and its cost; a locked bank (`FetchBankLockedReason`) says why.
 - **Footer:** Clean up (`C_Container.SortBank`, asked first while
   `bankConfirmTabCleanUp` is on, with "Do not ask again"); on Warband
   "Deposit money" / "Withdraw money" (`W.Modal` with a Money Input; off as
-  `CanDepositMoney`/`CanWithdrawMoney` say); "Deposit all"
+  `CanDepositMoney`/`CanWithdrawMoney` say, the reason in the tooltip); "Deposit all"
   (`C_Bank.AutoDepositItemsIntoBank`, asked first on Warband).
 - **Slots:** drag and left-click pick up and place
   (`C_Container.PickupContainerItem`, not protected); a refundable item placed
@@ -34,6 +34,10 @@ itself) and bag slots to put more in.
   (`ACCOUNT_BANK_DEPOSIT_NO_REFUND_CONFIRM`); right-click moves the item to the
   bags, which is the protected `UseContainerItem`: a secure button of ours
   over the hovered slot (`ns.Overlay`, type `item`, "bag slot"), out of combat.
+  While a spell waits for its item (an enchant, a stone), picking up is
+  applying it, forbidden to us: the overlay's secure click applies it
+  (`*target-bag*`, `*target-slot*`), and our own clicks and drags, on slots
+  and bag slots, pick nothing up.
   Split with shift-click (`C_Container.SplitContainerItem`, a stepper
   `W.Modal`). Our dialogs close with the bank.
 - **Left to the stock code:** tab settings (name, icon, filters, "Assign to")
@@ -43,4 +47,4 @@ itself) and bag slots to put more in.
   right-click into the bank is the stock bag button's code: it deposits into
   `BankFrame:GetActiveBankType()` and warns of refunds only while the stock
   bank shows, so with ours it cannot pick the Warband bank or warn.
-- **Tests:** `stub_bank.lua` (bags, bag slots, `C_Container` slots, `C_Bank`, the cursor); scenes `bank` (grid, bag slots, overlay type `item` on the hovered slot, none in combat, Clean up), `bank-warband` (money, the refund prompt, the lock), `bank-buy-tab` (bag slots, the first purchase, the tab layout).
+- **Tests:** `stub_bank.lua` (bags, bag slots, `C_Container` slots, `C_Bank`, the cursor); scenes `bank` (grid, the banker's portrait, bag slots, overlay type `item` and the secure target on the hovered slot, none in combat, nothing picked up while targeting, Clean up), `bank-warband` (money, Withdraw off with its reason, the refund prompt, the lock), `bank-buy-tab` (bag slots, the first purchase, the tab layout).
