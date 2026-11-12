@@ -111,8 +111,6 @@ local function noteLine(note, online)
 	if note and note ~= "" then tipLine("Note: " .. note, online and "accent" or "textMuted") end
 end
 
-local function clean(v) return v ~= nil and not (issecretvalue and issecretvalue(v)) and v or nil end
-
 local function bnTip(i, a, g, id)
 	local online = g.isOnline
 	local note = keep("bnn" .. id, a.note)
@@ -159,9 +157,9 @@ local function bnTip(i, a, g, id)
 		if o and not o.hasFocus and o.clientProgram ~= "App" and o.clientProgram ~= "BSAp" and shown < 4 then
 			if shown == 0 then GameTooltip:AddLine(" ") end
 			shown = shown + 1
-			local name = clean(o.characterName) or ""
+			local name = ns.Clean(o.characterName) or ""
 			tipLine(o.characterLevel and o.wowProjectID == WOW_PROJECT_ID and ("%s, Level %d %s"):format(name, o.characterLevel, o.className or "") or name, "accent")
-			local rich = clean(o.richPresence)
+			local rich = ns.Clean(o.richPresence)
 			if rich and rich ~= "" then tipLine(rich, "text") end
 		end
 	end
@@ -998,7 +996,7 @@ local function setBroadcast()
 	f.psCast = f.psCast or fieldBody()
 	local e = f.psCast.Box
 	e:SetMaxLetters(127)
-	local now = clean(select(4, BNGetInfo())) or ""
+	local now = ns.Clean((select(4, BNGetInfo()))) or ""
 	e:SetText(now)
 	ns.ModalWith({ title = "Broadcast", text = "A message your Battle.net friends see.", action = "Update",
 		onAccept = function()
