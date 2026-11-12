@@ -363,6 +363,25 @@ function GameTooltip.SetHyperlink(self, link, ...)
 	self:SetText(link)
 end
 
+-- The WoW Token: shown in the auction house only where the client says so.
+LE_TOKEN_RESULT_SUCCESS, LE_TOKEN_RESULT_ERROR_OTHER, LE_TOKEN_RESULT_ERROR_DISABLED = 0, 1, 2
+LE_TOKEN_RESULT_ERROR_NONE_FOR_SALE, LE_TOKEN_RESULT_ERROR_AUCTIONABLE_TOKEN_OWNED = 4, 5
+stub.tokenShown, stub.tokenPrice, stub.tokenBought, stub.tokenResult = false, 2500000, 0, 0
+C_WowTokenUI = { ShouldDisplayInAuctionHouse = function() return stub.tokenShown end }
+C_WowTokenPublic = {
+	GetCommerceSystemStatus = function() return true end,
+	UpdateMarketPrice = function() stub.fire("TOKEN_MARKET_PRICE_UPDATED", 0) end,
+	GetCurrentMarketPrice = function() return stub.tokenPrice end,
+	BuyToken = function()
+		stub.tokenBought = stub.tokenBought + 1
+		stub.fire("TOKEN_BUY_RESULT", stub.tokenResult)
+	end,
+	IsAuctionableWowToken = function(id) return id == 122270 end,
+	UpdateTokenCount = function() end,
+}
+stub.ahItems[122270] = { "WoW Token", 1121394, 1, false, 0 }
+stub.bagItems[0][4] = 122270
+
 local unitName = UnitName
 function UnitName(unit, ...)
 	if unit == "npc" then return "Auctioneer Beardo" end

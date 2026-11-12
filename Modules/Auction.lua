@@ -786,6 +786,66 @@ end
 
 -- Each page fills its rows and returns how many, where they start, and the
 -- text shown when there are none.
+-- The WoW Token, a category of its own where the client shows it
+-- (C_WowTokenUI.ShouldDisplayInAuctionHouse), as the stock token results:
+-- the market price, and Buy (C_WowTokenPublic.BuyToken, from its click),
+-- which the game's own token dialog confirms.
+local token = {}
+local function tokenShown() return C_WowTokenUI and C_WowTokenUI.ShouldDisplayInAuctionHouse() end
+local function tokenPage()
+	tab, view, searched, sel = "buy", nil, "token", {}
+	token.disabled = not C_WowTokenPublic.GetCommerceSystemStatus()
+	C_WowTokenPublic.UpdateMarketPrice()
+	paint()
+end
+local function buyToken()
+	C_WowTokenPublic.BuyToken()
+	PlaySound(SOUNDKIT.IG_MAINMENU_OPEN)
+end
+local function paintToken()
+	local price = C_WowTokenPublic.GetCurrentMarketPrice()
+	local line
+	if token.disabled then line = TOKEN_AUCTIONS_UNAVAILABLE or "WoW Tokens are unavailable now."
+	elseif not price then line = TOKEN_MARKET_PRICE_NOT_AVAILABLE or "The market price is not available."
+	elseif token.noneUntil then line = TOKEN_NONE_FOR_SALE or "None for sale; try again in a minute."
+	else line = ("Market price: %s"):format(coins(price)) end
+	W.ShellTitle(f, TOKEN_FILTER_LABEL or "WoW Token", line)
+	local can = price and not token.disabled and not token.noneUntil and GetMoney() >= price
+	W.ShellFooter(f, {}, { price and { label = BUYOUT or "Buy", onClick = buyToken, opts = { primary = true } } or nil })
+	local b = f.footerButtons.right[1]
+	if price and b then ns.SetEnabled(b, can and true or false) end
+	return 0, 24, TUTORIAL_TOKEN_ABOUT_TOKENS or ""
+end
+
+-- TOKEN_BUY_RESULT, as the stock token results take it.
+local function tokenBought(_, result)
+	if result == LE_TOKEN_RESULT_ERROR_DISABLED then
+		token.disabled = true
+	elseif result == LE_TOKEN_RESULT_ERROR_NONE_FOR_SALE then
+		-- None for sale: Buy waits a minute.
+		token.noneUntil = GetTime() + 60
+		C_Timer.After(60, function()
+			token.noneUntil = nil
+			if f:IsShown() then paint() end
+		end)
+		ask({ title = TOKEN_FILTER_LABEL or "WoW Token", text = TOKEN_NONE_FOR_SALE or "None for sale now.", action = "OK" })
+	elseif result == LE_TOKEN_RESULT_ERROR_AUCTIONABLE_TOKEN_OWNED then
+		ask({ title = TOKEN_FILTER_LABEL or "WoW Token", text = TOKEN_AUCTIONABLE_TOKEN_OWNED or "You already have a WoW Token to sell.", action = "OK" })
+	elseif result == LE_TOKEN_RESULT_ERROR_TOO_MANY_TOKENS then
+		UIErrorsFrame:AddExternalErrorMessage(SPELL_FAILED_TOO_MANY_OF_ITEM)
+	elseif result == LE_TOKEN_RESULT_ERROR_TRIAL_RESTRICTED then
+		UIErrorsFrame:AddExternalErrorMessage(ERR_RESTRICTED_ACCOUNT_TRIAL)
+	elseif result == LE_TOKEN_RESULT_ERROR_NOT_ENOUGH_PURCHASED_GAME_TIME then
+		UIErrorsFrame:AddExternalErrorMessage(ERR_NOT_ENOUGH_PURCHASED_GAME_TIME)
+	elseif result ~= LE_TOKEN_RESULT_SUCCESS then
+		UIErrorsFrame:AddExternalErrorMessage(ERR_AUCTION_DATABASE_ERROR)
+	else
+		system((ERR_AUCTION_WON_S or "You won an auction for %s"):format(C_Item.GetItemInfo(WOW_TOKEN_ITEM_ID or 122284) or ""))
+		C_WowTokenPublic.UpdateTokenCount()
+	end
+	if f and f:IsShown() then paint() end
+end
+
 local function paintBrowse()
 	local favs = searched == "fav"
 	W.ShellTitle(f, favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
@@ -934,6 +994,13 @@ local function duration() return tonumber(GetCVar("auctionHouseDurationDropdown"
 
 local function setItem(loc)
 	if loc and not (loc:IsValid() and AH.IsSellItemValid(loc, true)) then return end
+	-- A WoW Token sells only through the client's own token code
+	-- (C_WowTokenUI.StartTokenSell takes no call from an addon's): the game's window.
+	if loc and C_WowTokenPublic and C_WowTokenPublic.IsAuctionableWowToken(C_Item.GetItemID(loc)) then
+		ask({ title = TOKEN_FILTER_LABEL or "WoW Token", action = "OK",
+			text = "A WoW Token is sold from the game's own auction window: choose \"Use game window\" in this window's menu, then /reload." })
+		return
+	end
 	if sell.multi then return end -- the stock disabled overlay while a multisell runs
 	sell.loc, sell.n, sell.touched, pendingPost = loc, 1, false, nil
 	sell.bid, sell.buyoutOnly = 0, true
@@ -1461,8 +1528,10 @@ local function paintNav()
 		end
 	end
 	walk(tree, "", 0)
-	local active = tab == "buy" and not view and searched and (searched == "fav" and "fav" or table.concat(sel, ".") .. (#sel > 0 and "." or "")) or false
+	if tokenShown() then nav[#nav + 1] = { key = "token", label = TOKEN_FILTER_LABEL or "WoW Token" } end
+	local active = tab == "buy" and not view and searched and ((searched == "fav" or searched == "token") and searched or table.concat(sel, ".") .. (#sel > 0 and "." or "")) or false
 	W.ShellNav(f, nav, active, function(k)
+		if k == "token" then return tokenPage() end
 		if k == "fav" then
 			if AH.HasFavorites() then favorites() end
 			return
@@ -1523,6 +1592,7 @@ function paint()
 	elseif own and (tab == "auctions" or tab == "bids") then n, top, empty = paintOwnItem()
 	elseif tab == "auctions" then n, top, empty = paintOwned()
 	elseif tab == "bids" then n, top, empty = paintBids()
+	elseif searched == "token" and not view then n, top, empty = paintToken()
 	elseif not view then n, top, empty = paintBrowse()
 	elseif commodity then n, top, empty = paintCommodity()
 	else n, top, empty = paintItem() end
@@ -1628,6 +1698,16 @@ function M.Enable()
 		research()
 	end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_PURCHASE_COMPLETED", research)
+	Polestar.RegisterEvent("TOKEN_BUY_RESULT", tokenBought)
+	Polestar.RegisterEvent("TOKEN_MARKET_PRICE_UPDATED", function(_, result)
+		if result == LE_TOKEN_RESULT_ERROR_DISABLED then token.disabled = true end
+		changed()
+	end)
+	Polestar.RegisterEvent("TOKEN_STATUS_CHANGED", function()
+		token.disabled = C_WowTokenPublic and not C_WowTokenPublic.GetCommerceSystemStatus()
+		if shown() and searched == "token" then C_WowTokenPublic.UpdateMarketPrice() end
+		changed()
+	end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_BROWSE_FAILURE", function()
 		browseFailed = true
 		changed()
