@@ -207,11 +207,17 @@ end
 
 local function alliesOn() return C_RecentAllies and C_RecentAllies.IsSystemEnabled() end
 
+-- The stock ignore list (SocialUIIgnoreListMixin): ignored players, then
+-- the Battle.net accounts whose invites are blocked.
 local function ignored()
 	local list = {}
 	for i = 1, C_FriendList.GetNumIgnores() do
 		local name = C_FriendList.GetIgnoreName(i)
 		if name then list[#list + 1] = { name = name, online = true, sub = "", unignore = name } end
+	end
+	for i = 1, BNGetNumBlocked() do
+		local id, name = BNGetBlockedInfo(i)
+		if id then list[#list + 1] = { name = keep("blk" .. id, name) or "", online = true, sub = "", unblock = id } end
 	end
 	return list
 end
@@ -247,6 +253,10 @@ end
 local FRIEND_HEADS = {
 	{ key = "fav", test = function(e) return e.favorite end, label = function(on, n) return ("Favorites %d/%d"):format(on, n) end },
 	{ key = "all", label = function(on, n) return ("Friends %d/%d"):format(on, n) end },
+}
+local IGNORE_HEADS = {
+	{ key = "ign", test = function(e) return e.unignore end, label = function(_, n) return ("Ignored players (%d)"):format(n) end },
+	{ key = "blk", label = function(_, n) return ("Blocked Battle.net invites (%d)"):format(n) end },
 }
 local REQUEST_HEADS = { { key = "recv", label = function(_, n) return ("Received (%d)"):format(n) end } }
 
@@ -324,7 +334,8 @@ local function newRow(panel, i)
 	r.Fav = r:CreateTexture(nil, "ARTWORK")
 	r.Fav:SetSize(14, 14)
 	r.Remove = W.IconButton(r, "close", 24, "Stop ignoring", function(self)
-		C_FriendList.DelIgnore(self:GetParent().psEntry.unignore)
+		local e = self:GetParent().psEntry
+		if e.unblock then C_BattleNet.SetBlocked(e.unblock, false) else C_FriendList.DelIgnore(e.unignore) end
 		M.Show() -- at once, not on the client's event (docs/CLIENT.md, rule 6)
 	end)
 	r.Remove:SetPoint("RIGHT", r, "RIGHT", -12, 0)
@@ -411,7 +422,8 @@ local function paintRows(list)
 			r.Fav:ClearAllPoints()
 			r.Fav:SetPoint("LEFT", r.Name, "LEFT", math.min(r.Name:GetStringWidth(), r.Name:GetWidth()) + 4, 0)
 		end
-		r.Remove:SetShown(e.unignore ~= nil)
+		r.Remove:SetShown(e.unignore ~= nil or e.unblock ~= nil)
+		r.Remove.psTip = e.unblock and "Unblock invites" or "Stop ignoring"
 		r.Accept:SetShown(e.request ~= nil)
 		r.Decline:SetShown(e.request ~= nil)
 		r:Show()
@@ -519,6 +531,24 @@ local function addFriend()
 			-- As the stock dialog decides (AddFriendTemplates.lua).
 			if name:find("#", 1, true) then BNSendFriendInvite(name, "") else C_FriendList.AddFriend(name) end
 		end }, f.psAdd)
+	e:SetFocus()
+end
+
+-- The stock ignore list's Block button: the target if a friendly player,
+-- else a name (the ADD_IGNORE dialog).
+local function ignorePlayer()
+	if UnitCanCooperate("player", "target") and UnitIsHumanPlayer("target") then
+		C_FriendList.AddIgnore(GetUnitName("target", true))
+		return M.Show()
+	end
+	f.psIgnore = f.psIgnore or fieldBody()
+	local e = f.psIgnore.Box
+	e:SetText("")
+	ns.ModalWith({ title = "Ignore player", text = "The character to ignore: you see nothing they say.", action = "Ignore",
+		onAccept = function()
+			local name = strtrim(e:GetText() or "")
+			if name ~= "" then C_FriendList.AddIgnore(name); M.Show() end
+		end }, f.psIgnore)
 	e:SetFocus()
 end
 
@@ -708,7 +738,9 @@ local function refresh()
 	local p = PAGES[page]
 	W.ShellTitle(f, p[1], p[2] or ("%d of %d friends online"):format(online, nFriends))
 	W.ShellTabs(f, nil)
-	W.ShellFooter(f, {}, page == "raid" and {} or {
+	W.ShellFooter(f, {}, page == "raid" and {} or page == "ignored" and {
+		{ label = "Ignore player", onClick = ignorePlayer, opts = { primary = true } },
+	} or {
 		{ label = "Add friend", onClick = addFriend, opts = { primary = true } },
 		{ label = "Send message", onClick = function() ChatFrameUtil.OpenChat(SLASH_WHISPER1 .. " ") end },
 	})
@@ -724,6 +756,7 @@ local function refresh()
 		for _, e in ipairs(lists[page]) do if matches(e) then list[#list + 1] = e end end
 		if page == "friends" then list = grouped(list, FRIEND_HEADS) end
 		if page == "requests" then list = grouped(list, REQUEST_HEADS) end
+		if page == "ignored" then list = grouped(list, IGNORE_HEADS) end
 		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
 		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab." or (query ~= "" or next(filters)) and "No one matches." or p[3])
 		h = paintRows(list)

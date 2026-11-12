@@ -59,7 +59,12 @@ Nothing Lost Rule, said in the Options menu).
   (addon code may not call it): until the data is ready the page says to
   load it in the game's window (/friends, its Recent Allies tab), and
   `RECENT_ALLIES_DATA_READY` fills it.
-- **Ignored:** rows with an ✕ (`C_FriendList.DelIgnore`).
+- **Ignored:** the stock ignore list (its Battle.net bar menu's Ignore List)
+  in full: "Ignored players (2)", then "Blocked Battle.net invites (1)"
+  (`BNGetBlockedInfo`), each row with an ✕ (`C_FriendList.DelIgnore`,
+  `C_BattleNet.SetBlocked(id, false)`). Footer: "Ignore player", the stock
+  Block button: a friendly player targeted is ignored at once, else a name
+  dialog (`ADD_IGNORE`'s).
 - **Raid:** the eight groups as two columns of row panels (name, class
   colour, role), read only; the stock drag between groups and the raid
   ready check stay on the stock tab (pointed to in Options).
@@ -73,5 +78,5 @@ Nothing Lost Rule, said in the Options menu).
   icons); scenes `social` (keys through override bindings, refused in
   combat; order, client icons, row slots), `social-battlenet`,
   `social-filter` (filter menu, groups, pips, invite, presence),
-  `social-requests`, `social-allies`, `social-raid`, `social-secret` (names secret in combat
+  `social-requests`, `social-ignored`, `social-allies`, `social-raid`, `social-secret` (names secret in combat
   keep the last read).

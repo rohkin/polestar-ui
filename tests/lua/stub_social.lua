@@ -45,6 +45,11 @@ function C_FriendList.DelIgnore(name)
 	return false
 end
 function C_FriendList.AddFriend(name) stub.added = name end
+function C_FriendList.AddIgnore(name) ignores[#ignores + 1] = name; stub.ignoredName = name end
+-- The target: stub.target = name of a friendly player, else none.
+function UnitCanCooperate() return stub.target ~= nil end
+function UnitIsHumanPlayer() return stub.target ~= nil end
+function GetUnitName() return stub.target end
 function BNSendFriendInvite(tag) stub.added = tag end
 
 -- Battle.net: one in WoW, one in the app, one offline. In combat their names
@@ -145,7 +150,14 @@ local invites = {
 	{ inviteID = 8, accountName = "Wren", friendLevel = Enum.BattleNetFriendLevel.Title },
 	{ inviteID = 9, accountName = "Tamsin Ashby", friendLevel = Enum.BattleNetFriendLevel.RealID, creationTimestamp = time() - 5 * 86400 },
 }
-function C_BattleNet.SetBlocked(id, on) stub.blocked = on and id or nil end
+-- Battle.net accounts whose invites are blocked: { id, name }.
+local blocks = { { 31, "Hexley" } }
+function BNGetNumBlocked() return #blocks end
+function BNGetBlockedInfo(i) local b = blocks[i]; if b then return b[1], b[2] end end
+function C_BattleNet.SetBlocked(id, on)
+	stub.blocked = on and id or nil
+	for i, b in ipairs(blocks) do if b[1] == id and not on then table.remove(blocks, i); stub.unblocked = id end end
+end
 Enum.ReportType = { Friend = 3 }
 ReportInfo = { CreateReportInfoFromType = function(_, t) return { reportType = t } end }
 PlayerLocation = { CreateFromBattleNetID = function(_, id) return { bnetID = id } end }
