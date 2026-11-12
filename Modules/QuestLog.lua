@@ -9,7 +9,7 @@
 local ADDON, ns = ...
 local W, Theme = Polestar.Widgets, Polestar.Theme
 
-local HEAD_H, HEAD, TOP = 28, 44, 44 + 30 + 12
+local HEAD_H, HEAD, TOP, SLOT = 28, 44, 44 + 30 + 12, 14
 
 function ns.QuestLog(win, canvas, width)
 	local p = CreateFrame("Frame", nil, win.Main)
@@ -214,10 +214,19 @@ function ns.QuestLog(win, canvas, width)
 		r.Bar:SetPoint("TOPLEFT")
 		r.Bar:SetPoint("BOTTOMLEFT")
 		W.Color(r.Bar, "accent")
-		-- Complete, or tracked: a glyph at the right of the title line.
+		-- Two fixed slots at the right of the title line: tracked at the end
+		-- (the stock checkbox's mark), and left of it done, failed or the
+		-- quest's stock tag, so one never hides the other.
+		r.Tracked = r:CreateTexture(nil, "ARTWORK")
+		r.Tracked:SetAtlas("questlog-icon-checkmark-yellow")
+		r.Tracked:SetSize(SLOT, SLOT)
+		r.Tracked:SetPoint("TOPRIGHT", r, "TOPRIGHT", -W.SHELL.side, -8)
 		r.Mark = W.Tex(r, "ARTWORK", "check", "success")
-		r.Mark:SetSize(14, 14)
-		r.Mark:SetPoint("TOPRIGHT", r, "TOPRIGHT", -W.SHELL.side, -8)
+		r.Mark:SetSize(SLOT, SLOT)
+		r.Mark:SetPoint("TOPRIGHT", r, "TOPRIGHT", -(W.SHELL.side + SLOT + 6), -8)
+		r.Tag = r:CreateTexture(nil, "ARTWORK")
+		r.Tag:SetSize(SLOT, SLOT)
+		r.Tag:SetPoint("CENTER", r.Mark, "CENTER", 0, 0)
 		r.Name = W.Text(r, "body", "text")
 		r.Name:SetPoint("TOPLEFT", r, "TOPLEFT", W.SHELL.side, -8)
 		r.Name:SetJustifyH("LEFT")
@@ -269,11 +278,24 @@ function ns.QuestLog(win, canvas, width)
 	local function paintQuest(r, info)
 		r.psQuest, r.psTitle = info.questID, info.title
 		questName(r.Name, info)
-		local done, watched = C_QuestLog.IsComplete(info.questID), QuestUtils_IsQuestWatched(info.questID)
-		r.Mark:SetShown(done or watched)
-		r.Mark:SetTexture(Theme.Media(done and "check" or "star"))
-		W.Color(r.Mark, done and "success" or "accent")
-		r.Name:SetWidth(textW - ((done or watched) and 14 + 8 or 0))
+		local id = info.questID
+		local done, failed = C_QuestLog.IsComplete(id), C_QuestLog.IsFailed(id)
+		r.Tracked:SetShown(QuestUtils_IsQuestWatched(id))
+		r.Mark:SetShown(done or failed)
+		r.Mark:SetTexture(Theme.Media(done and "check" or "close"))
+		W.Color(r.Mark, done and "success" or "danger")
+		-- The stock tag (QuestLogQuests_AddQuestButton): account-wide first, else the quest's own.
+		local tag
+		if not (done or failed) and not QuestUtil.IsQuestTagIconHidden() then
+			local t = C_QuestLog.GetQuestTagInfo(id)
+			tag = C_QuestLog.IsAccountQuest(id) and "questlog-questtypeicon-account" or (t and QuestUtils_GetQuestTagAtlas(t.tagID))
+		end
+		r.Tag:SetShown(tag ~= nil)
+		if tag then
+			r.Tag:SetAtlas(tag)
+			r.Tag:SetDesaturated(C_QuestLog.IsQuestDisabledForSession(id))
+		end
+		r.Name:SetWidth(textW - 2 * (SLOT + 6))
 		local g = GetCVarBool("showQuestObjectivesInLog") and goals(info) or ""
 		r.Goals:SetText(g)
 		r.Goals:SetShown(g ~= "")

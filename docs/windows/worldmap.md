@@ -34,8 +34,11 @@ zoom and click-to-open are the game's.
   (CLIENT.md, rule 6); hidden quests, tasks and unfinished bounties stay
   out. A quest row: "[level] title" in Body in its difficulty colour
   (legible), what is left under it in Small textDim (the unfinished
-  objectives, or the hand-in line once done), a check (success) when done
-  or a star (accent) when tracked. Hover lights its area on the map (the
+  objectives, or the hand-in line once done), and two fixed slots at the
+  right of the title: tracked at the end (the stock checkbox's
+  `questlog-icon-checkmark-yellow`), and left of it a check (success) when
+  done, a cross (danger) when failed, else the quest's stock tag
+  (`QuestUtils_GetQuestTagAtlas`, account-wide first). Hover lights its area on the map (the
   canvas's `SetHighlightedQuestID`); a click shows its map with its area in
   focus, selects it and opens its details; shift-click tracks it (the stock
   toggle); with a chat box open, a click links it. A search under the head

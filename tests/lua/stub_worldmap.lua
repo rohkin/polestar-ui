@@ -96,7 +96,7 @@ local LOG = {
 	{ title = "Hidden", questID = 99, level = 1, isHidden = true },
 }
 for i, q in ipairs(LOG) do q.questLogIndex = i end
-stub.watched = { [7] = true }
+stub.watched = { [7] = true, [33] = true }
 function C_QuestLog.IsEliteQuest(id) for _, q in ipairs(LOG) do if q.questID == id then return q.elite or false end end return false end
 function C_QuestLog.GetNumQuestLogEntries()
 	local n = 0
@@ -163,7 +163,12 @@ C_SpellBook.IsSpellInSpellBook = C_SpellBook.IsSpellInSpellBook or function() re
 REWARD_CHOICES, REWARD_ITEMS, REWARD_ITEMS_ONLY, REWARD_SPELL = "You will be able to choose one of these rewards:", "You will also receive:", "You will receive:", "You will learn:"
 function GameTooltip.SetQuestLogItem(self, kind, i) self.lines = { "quest log " .. kind .. " " .. i } end
 function GameTooltip_ShowCompareItem() end
-QuestUtil = { CanRemoveQuestWatch = function() return true end }
+QuestUtil = { CanRemoveQuestWatch = function() return not stub.cannotUntrack end, IsQuestTagIconHidden = function() return false end }
+-- The Defias Brotherhood is a group quest (its stock tag); none has failed.
+function C_QuestLog.IsFailed() return false end
+function C_QuestLog.IsAccountQuest() return false end
+function C_QuestLog.GetQuestTagInfo(id) return id == 65 and { tagID = 1 } or nil end
+function QuestUtils_GetQuestTagAtlas(tag) return tag == 1 and "questlog-questtypeicon-group" or nil end
 function C_QuestLog.IsPushableQuest(id) return sel().questID == id and sel().pushable or false end
 function C_QuestLog.CanAbandonQuest() return true end
 function IsInGroup() return stub.inGroup or false end
