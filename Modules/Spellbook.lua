@@ -40,9 +40,11 @@ local function categories()
 end
 
 -- A category's spells as the stock book shows them: its passives and lower
--- ranks per the stock settings (the same CVars), flyouts as their loose spells.
+-- ranks per the stock settings (the same CVars), which a search ignores, as
+-- the stock book's does; flyouts as their loose spells.
 local function spells(cat, out, match)
-	local hidePassive, allRanks = GetCVarBool("spellBookHidePassives"), GetCVarBool("ShowAllSpellRanks")
+	local hidePassive = not match and GetCVarBool("spellBookHidePassives")
+	local allRanks = match or GetCVarBool("ShowAllSpellRanks")
 	for slot = cat.offset + 1, cat.offset + cat.n do
 		local info = C_SpellBook.GetSpellBookItemInfo(slot, cat.bank)
 		local t = info and info.itemType
@@ -249,12 +251,43 @@ local function whatsTraining()
 	return ldb and ldb:GetDataObjectByName("WhatsTrainingMinimap")
 end
 
+-- The stock book's settings (its CVars), as its settings menu: no ranks for
+-- Rogue and Warrior.
+local function settings()
+	local list = { { "spellBookHidePassives", SPELLBOOK_FILTER_PASSIVES or "Hide passives" } }
+	local _, cls = UnitClass("player")
+	if cls ~= "ROGUE" and cls ~= "WARRIOR" then list[#list + 1] = { "ShowAllSpellRanks", SHOW_ALL_SPELL_RANKS or "Show all ranks" } end
+	return list
+end
+
+local function default(cvar) return C_CVar and C_CVar.GetCVarDefault and C_CVar.GetCVarDefault(cvar) or "0" end
+
+-- The filter menu: each setting, then "Clear filters" while one is off its
+-- default. A search ignores them, so they wait while one runs, as stock.
+-- -> items, whether one is off its default.
+local function filterItems()
+	local items, any = {}, false
+	for _, s in ipairs(settings()) do
+		local cvar = s[1]
+		any = any or (GetCVar(cvar) or "0") ~= default(cvar)
+		items[#items + 1] = { text = s[2], checked = GetCVarBool(cvar), disabled = query ~= "", onClick = function()
+			SetCVar(cvar, GetCVarBool(cvar) and "0" or "1")
+			M.Show()
+			W.ShowMenu(f.psFilter, (filterItems()), { minWidth = 200 })
+		end }
+	end
+	if any then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Clear filters", onClick = function()
+			for _, s in ipairs(settings()) do SetCVar(s[1], default(s[1])) end
+			M.Show()
+		end }
+	end
+	return items, any
+end
+
 local function optionsItems(self)
-	local function flip(cvar) return function() SetCVar(cvar, GetCVarBool(cvar) and "0" or "1"); M.Show() end end
 	local items = {
-		{ text = "Show passive spells", checked = not GetCVarBool("spellBookHidePassives"), onClick = flip("spellBookHidePassives") },
-		{ text = "Show all ranks", checked = GetCVarBool("ShowAllSpellRanks"), onClick = flip("ShowAllSpellRanks") },
-		{ separator = true },
 		{ text = "Game's spellbook: shift-click its micro button", disabled = true },
 	}
 	local wt = whatsTraining()
@@ -274,8 +307,18 @@ local function build()
 	-- The subject block names the window, in place of Polestar's lockup.
 	local b = ns.SubjectBlock(f)
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The stock book's settings and the ways to its own view, on the band.
+	-- The ways to the stock book's own view, on the band.
 	f.psOptions = ns.OptionsButton(f, optionsItems)
+	-- The stock book's settings act on the list: a filter at the end of the
+	-- search row, as Crafting's, its glyph in the accent while one is off its default.
+	local top = W.SHELL.header - 30
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", function(self)
+		if W.MenuShown(self) then return W.HideMenu() end
+		W.ShowMenu(self, (filterItems()), { minWidth = 200 })
+	end, 14)
+	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
+	Polestar.Theme.Skin(f.psFilter, "editbox")
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psEmpty:SetText("No spells here.")
@@ -293,6 +336,7 @@ local function refresh()
 	f.psName:SetText(UnitClass("player"))
 	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
 	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
+	W.SetIconState(f.psFilter, select(2, filterItems()))
 	local list = {}
 	if query ~= "" then
 		for _, c in ipairs(cats) do spells(c, list, query) end
