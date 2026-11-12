@@ -45,3 +45,7 @@ assert(stub.bids[2][1] == 802 and stub.bids[2][2] == 25000000, "not bought out f
 r[2]:Click("RightButton")
 box().Action:Click()
 assert(stub.bids[3][1] == 802 and stub.bids[3][2] == 21000000, "the least bid not placed")
+-- The stock list's refresh button asks again.
+stub.bidsQueried = nil
+f.footerButtons.left[1]:Click()
+assert(stub.bidsQueried and stub.bidsQueried.ids[1] == 801, "Refresh did not ask again")

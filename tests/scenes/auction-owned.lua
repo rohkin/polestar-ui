@@ -28,3 +28,9 @@ stub.fire("AUCTION_CANCELED", 702)
 local n = 0
 for _, b in ipairs({ f.Body:GetChildren() }) do if b.psKey and b:IsShown() then n = n + 1 end end
 assert(n == 2, "the list not asked for again")
+-- The stock list's refresh button asks again.
+table.insert(stub.owned, 1, { 704, 2244, 1, 30000000, 0, 1 })
+f.footerButtons.left[1]:Click()
+n = 0
+for _, b in ipairs({ f.Body:GetChildren() }) do if b.psKey and b:IsShown() then n = n + 1 end end
+assert(n == 3, "Refresh did not ask again")

@@ -1334,7 +1334,8 @@ end
 
 local function paintOwned()
 	W.ShellTitle(f, "Your auctions", "Click an auction to cancel it. Sold items' money comes by mail.")
-	W.ShellFooter(f, {}, {})
+	-- The stock list's refresh button.
+	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	-- The stock auctions list: name, bid, buyout, time left.
 	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
@@ -1405,7 +1406,7 @@ end
 -- Bids: the auctions the player bid on (QueryBids), as the stock Bids tab.
 local function paintBids()
 	W.ShellTitle(f, AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", "Click an auction to buy it out; right-click to bid again.")
-	W.ShellFooter(f, {}, {})
+	W.ShellFooter(f, { { label = REFRESH or "Refresh", onClick = queryBids, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
 		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
