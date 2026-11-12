@@ -1,0 +1,14 @@
+--@ title: Character: stats put away
+--@ roots: PolestarUICharacter, PolestarUICharacterStats
+PolestarUI.Show("character")
+local probe = CreateFrame("Frame", nil, UIParent)
+probe:SetSize(100, 100)
+probe:Hide()
+PolestarUI.Dock(probe)
+probe:Show()
+local open = select(4, probe:GetPoint(1))
+PolestarUICharacter.psToggle:Click()
+assert(not PolestarUICharacterStats:IsShown(), "still shown")
+assert(PolestarUIDB.hideStats, "not kept")
+assert(open - select(4, probe:GetPoint(1)) == PolestarUICharacterStats:GetWidth() - 1, "the dock left no room for the drawer: " .. open .. " then " .. select(4, probe:GetPoint(1)))
+probe:Hide()
