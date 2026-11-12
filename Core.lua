@@ -245,6 +245,38 @@ local function numberBox(parent, width, letters, done)
 	return e
 end
 
+-- Gold, silver and copper fields, each with its coin; onChange(copper) as the
+-- player types. Returns the frame; frame.Set(copper) fills it.
+function ns.MoneyInput(parent, onChange)
+	local m = CreateFrame("Frame", nil, parent)
+	m:SetHeight(28)
+	local boxes, x = {}, 0
+	local function total()
+		local c = 0
+		for i, b in ipairs(boxes) do c = c + (tonumber(b:GetText()) or 0) * COINS[i][1] end
+		return c
+	end
+	for i, c in ipairs(COINS) do
+		local b = numberBox(m, i == 1 and 64 or 36, i == 1 and 6 or 2)
+		b:SetPoint("LEFT", m, "LEFT", x, 0)
+		b:SetScript("OnTextChanged", function(_, user) if user then onChange(total()) end end)
+		local coin = m:CreateTexture(nil, "ARTWORK")
+		coin:SetSize(COIN, COIN)
+		coin:SetTexture(c[2])
+		coin:SetPoint("LEFT", b, "RIGHT", 4, 0)
+		x = x + b:GetWidth() + 4 + COIN + 10
+		boxes[i] = b
+	end
+	m:SetWidth(x - 10)
+	function m.Set(copper)
+		copper = math.floor(copper or 0)
+		boxes[1]:SetText(math.floor(copper / 10000))
+		boxes[2]:SetText(math.floor(copper / 100) % 100)
+		boxes[3]:SetText(copper % 100)
+	end
+	return m
+end
+
 -- A quantity stepper: -, the count, +, Max. `o`: get(), set(n) (n kept within
 -- 1 and max()), max(). The owner calls stepper.Paint() after its own changes.
 function ns.Stepper(parent, o)
@@ -275,6 +307,31 @@ function ns.Stepper(parent, o)
 		enable(s.More, n < most)
 		enable(s.Max, n < most)
 	end
+	return s
+end
+
+-- Polestar's dialog (W.Modal, `spec` as there) with a body of ours under its
+-- text: a stepper, a money input, a field. The body hides with the dialog, or
+-- when the next dialog takes its place.
+local modalBody
+function ns.ModalWith(spec, body)
+	if not modalBody then
+		hooksecurefunc(Polestar.Widgets, "Modal", function() if modalBody then modalBody:Hide() end end)
+	end
+	local s = Polestar.Widgets.Modal(spec)
+	local box = s.Box
+	if not body.psModal then
+		body.psModal = true
+		s:HookScript("OnHide", function() body:Hide() end)
+	end
+	body:SetParent(box)
+	-- Its text ends 20 above the footer (54 tall): the body takes that place.
+	local top = box:GetHeight() - 20 - 54
+	body:ClearAllPoints()
+	body:SetPoint("TOPLEFT", box, "TOPLEFT", 24, -(top + 8))
+	box:SetHeight(box:GetHeight() + body:GetHeight() + 20)
+	modalBody = body
+	body:Show()
 	return s
 end
 
