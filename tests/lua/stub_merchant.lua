@@ -77,6 +77,14 @@ function BuybackItem(i) stub.boughtBack[#stub.boughtBack + 1] = i end
 function CanMerchantRepair() return stub.repairCost ~= nil end
 function GetRepairAllCost() return stub.repairCost or 0, (stub.repairCost or 0) > 0 end
 function CanGuildBankRepair() return stub.guildRepair end
+-- The repair cursor (one item at a time); the guild's funds.
+stub.repairMode = false
+function InRepairMode() return stub.repairMode end
+function ShowRepairCursor() stub.repairMode = true end
+function HideRepairCursor() stub.repairMode = false end
+stub.guildFunds, stub.guildBank = 10000, 500000
+function GetGuildBankWithdrawMoney() return stub.guildFunds end
+function GetGuildBankMoney() return stub.guildBank end
 function RepairAllItems(guild) stub.repaired[#stub.repaired + 1] = guild and "guild" or "own" end
 
 -- A quality per item, from either list, by link.

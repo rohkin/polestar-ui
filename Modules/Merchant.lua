@@ -305,6 +305,7 @@ local function build()
 	end)
 	f:HookScript("OnHide", function()
 		if asked and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == asked then PolestarModal:Hide() end
+		if InRepairMode() then HideRepairCursor() end
 		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
 	end)
 	Polestar.CloseOnEscape(NAME)
@@ -363,16 +364,46 @@ local function restock()
 	return { label = ("Restock (%s)"):format(coins(total)), onClick = function() R.Run() end, opts = { primary = true } }, lines
 end
 
+-- The repair buttons' tooltips, as the stock ones: the cost, the guild's
+-- funds and what the player still pays, or that the money is short.
+local function repairTips(cost)
+	local dr, dg, db = Polestar.Theme.Color("danger")
+	local own = { "Costs " .. coins(cost) }
+	if cost > GetMoney() then own[2] = { "You do not have enough money.", dr, dg, db } end
+	local guild = { "Costs " .. coins(cost) }
+	if CanGuildBankRepair() then
+		local funds, bank = GetGuildBankWithdrawMoney(), GetGuildBankMoney()
+		funds = funds == -1 and bank or math.min(funds, bank)
+		guild[2] = "The guild pays up to " .. coins(funds) .. "."
+		if cost > funds then
+			guild[3] = cost - funds <= GetMoney() and ("You pay the other " .. coins(cost - funds) .. ".") or { "You do not have enough money.", dr, dg, db }
+		end
+	end
+	return own, guild
+end
+
 local function footer()
-	local left = {}
+	local left, tips = {}, {}
 	if CanMerchantRepair() then
 		local cost, can = GetRepairAllCost()
 		if can and cost > 0 then
-			left[1] = { label = ("Repair all (%s)"):format(coins(cost)), onClick = function() RepairAllItems() end }
-			if CanGuildBankRepair and CanGuildBankRepair() then
+			local own, guild = repairTips(cost)
+			left[1] = { label = ("Repair all (%s)"):format(coins(cost)), onClick = function()
+				RepairAllItems()
+				PlaySound(SOUNDKIT.ITEM_REPAIR)
+			end }
+			tips[1] = { "Repair all items", own }
+			if CanGuildBankRepair() then
 				left[2] = { label = "Guild repair", onClick = function() RepairAllItems(true) end }
+				tips[2] = { "Repair all items with guild funds", guild }
 			end
 		end
+		-- One item: the game's repair cursor, then a click on the item (MerchantRepairItemButton).
+		left[#left + 1] = { label = InRepairMode() and "Stop repairing" or "Repair an item", onClick = function()
+			if InRepairMode() then HideRepairCursor() else ShowRepairCursor() end
+			paint() -- at once: the client says nothing (docs/CLIENT.md, rule 6)
+		end }
+		tips[#left] = { "Repair an item", { "Then click a damaged item, worn or in your bags." } }
 	end
 	local MF = C_MerchantFrame
 	if MF.IsSellAllJunkEnabled and MF.IsSellAllJunkEnabled() and MF.GetNumJunkItems() > 0 then
@@ -382,6 +413,7 @@ local function footer()
 	end
 	local r, lines = restock()
 	W.ShellFooter(f, left, { r })
+	for i, b in ipairs(f.footerButtons.left) do b.psTip, b.psTipLines = tips[i] and tips[i][1], tips[i] and tips[i][2] end
 	if r then
 		local b = f.footerButtons.right[1]
 		b.psTip, b.psTipLines = "Restock", lines

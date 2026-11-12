@@ -1,7 +1,7 @@
 --@ title: Merchant
 --@ roots: PolestarUIMerchant
 --@ stubs: stub_npc.lua, stub_merchant.lua
--- The vendor opens ours, never the stock window, with the bags; closing ours ends the visit once, the game ending it closes ours without ending it again. Every ware on one page in two columns: quality names, prices (danger when short of money), each other cost (a currency, an item) as its count and icon with its own tooltip, the vendor's currencies held by the money, a quest bang on a ware that starts one, stack size and stock left, sold out faded, unusable red. A click buys one, right-click a stack, shift-click asks how many; a high price, a currency, an item above uncommon or a purchase that cannot be refunded asks first (the stock rules); shift-click is capped by the money and the cost items held. A held item dropped on the window is sold. The footer repairs (guild too) and sells junk after asking; the money shows by the tabs; the filter is the game's menu.
+-- The vendor opens ours, never the stock window, with the bags; closing ours ends the visit once, the game ending it closes ours without ending it again. Every ware on one page in two columns: quality names, prices (danger when short of money), each other cost (a currency, an item) as its count and icon with its own tooltip, the vendor's currencies held by the money, a quest bang on a ware that starts one, stack size and stock left, sold out faded, unusable red. A click buys one, right-click a stack, shift-click asks how many; a high price, a currency, an item above uncommon or a purchase that cannot be refunded asks first (the stock rules); shift-click is capped by the money and the cost items held. A held item dropped on the window is sold. The footer repairs all (guild too, each with the stock tooltip: the cost, the guild's funds, what the player pays on top), one item with the game's repair cursor (on until clicked again or the window closes), and sells junk after asking; the money shows by the tabs; the filter is the game's menu.
 local T = Enum.PlayerInteractionType
 local ns = PolestarUI
 local f = function() return PolestarUIMerchant end
@@ -85,21 +85,33 @@ assert(stub.sold == 2 and #stub.bought == 6, "a click with a held item bought")
 
 -- The footer: repair, guild repair, junk.
 local left = w.footerButtons.left
-assert(tostring(left[1].Label:GetText()) == "Repair all (2g 34s 56c)" and tostring(left[2].Label:GetText()) == "Sell junk", "repair and junk")
+assert(tostring(left[1].Label:GetText()) == "Repair all (2g 34s 56c)" and tostring(left[2].Label:GetText()) == "Repair an item"
+	and tostring(left[3].Label:GetText()) == "Sell junk", "repair and junk")
+assert(left[1].psTip == "Repair all items" and left[1].psTipLines[1] == "Costs 2g 34s 56c" and not left[1].psTipLines[2], "the repair tooltip")
 left[1]:Click()
 assert(stub.repaired[1] == "own", "repair all")
+-- One item: the repair cursor, on and off.
 left[2]:Click()
+assert(stub.repairMode and tostring(left[2].Label:GetText()) == "Stop repairing", "no repair cursor")
+left[2]:Click()
+assert(not stub.repairMode and tostring(left[2].Label:GetText()) == "Repair an item", "the repair cursor stayed")
+left[2]:Click()
+w:Hide()
+assert(not stub.repairMode, "the repair cursor outlived the window")
+stub.interact(T.Merchant)
+left[3]:Click()
 assert(stub.junkSold == 0 and PolestarModal:IsShown(), "junk sold without asking")
 PolestarModal.Box.Action:Click()
 assert(stub.junkSold == 1, "junk not sold")
 stub.guildRepair = true
 stub.fire("PLAYER_MONEY")
-assert(tostring(left[2].Label:GetText()) == "Guild repair" and left[3]:IsShown(), "guild repair not offered")
+assert(tostring(left[2].Label:GetText()) == "Guild repair" and left[4]:IsShown(), "guild repair not offered")
+assert(left[2].psTipLines[2] == "The guild pays up to 1g 0s 0c." and left[2].psTipLines[3] == "You pay the other 1g 34s 56c.", "the guild tooltip")
 left[2]:Click()
 assert(stub.repaired[2] == "guild", "guild repair")
-stub.repairCost, stub.junk, stub.guildRepair = 0, 0, false
+stub.repairCost, stub.junk, stub.guildRepair = nil, 0, false
 stub.fire("UPDATE_INVENTORY_DURABILITY")
-assert(not w.Footer:IsShown(), "nothing to repair or sell, yet a footer")
+assert(not w.Footer:IsShown(), "no repairs or junk here, yet a footer")
 stub.repairCost, stub.junk = 23456, 3
 stub.fire("MERCHANT_UPDATE")
 
