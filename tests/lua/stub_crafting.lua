@@ -150,3 +150,7 @@ GetChannelList = GetChannelList or function() return 1, "General", false end
 ChatFrameUtil = ChatFrameUtil or {}
 ChatFrameUtil.InsertLink = ChatFrameUtil.InsertLink or function(link) stub.linked = link end
 function ChatFrameUtil.OpenChat(text) stub.posted = text end
+-- Tracked recipes (their reagents on the objective tracker).
+stub.trackedRecipes = {}
+function T.IsRecipeTracked(id, recraft) return stub.trackedRecipes[id] or false end
+function T.SetRecipeTracked(id, on, recraft) stub.trackedRecipes[id] = on or nil end

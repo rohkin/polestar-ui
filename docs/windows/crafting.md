@@ -65,7 +65,11 @@ it from tainted code.
     description in textDim, the reagents under a "Reagents" heading as reagent
     tiles (two columns, 8px apart), then the tools and places line ("Requires
     Moonwell"), the cooldown and the game's own reason in Note (warning while
-    they stop the craft).
+    they stop the craft), then "Track recipe", the stock page's checkbox
+    (`SetRecipeTracked`: its reagents on the objective tracker), for the
+    player's own recipes with reagents; the box and its label toggle it. A
+    shift-click on a recipe row tracks it too while the chat line is closed
+    (`RECIPEWATCHTOGGLE`), and links it while it is open, as the stock list.
 - **Footer:** quantity stepper (−, a 48px field, +, "Max") on the left,
   "Craft all" (default) and "Craft" (primary, the recipe's own verb when it has
   one) on the right; all faded to 45% while the game would refuse the craft or

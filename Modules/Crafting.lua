@@ -125,6 +125,14 @@ local function setFavorite(id, on)
 	refresh()
 end
 
+-- Tracking a recipe or not (C_TradeSkillUI.SetRecipeTracked), redrawn at once
+-- (docs/CLIENT.md, rule 6).
+local function setTracked(id, on)
+	C_TradeSkillUI.SetRecipeTracked(id, on, false)
+	PlaySound(SOUNDKIT.UI_PROFESSION_TRACK_RECIPE_CHECKBOX)
+	refresh()
+end
+
 local function insertLink(link)
 	local insert = (ChatFrameUtil and ChatFrameUtil.InsertLink) or ChatEdit_InsertLink
 	if link and insert then insert(link) end
@@ -220,7 +228,16 @@ local function recipeRow(i)
 			return W.ShowMenu(self, { { text = on and (BATTLE_PET_UNFAVORITE or "Remove favorite") or (BATTLE_PET_FAVORITE or "Set favorite"),
 				onClick = function() setFavorite(id, not on) end } }, { minWidth = 160 })
 		end
-		if IsModifiedClick("CHATLINK") then return insertLink(C_TradeSkillUI.GetRecipeLink(id)) end
+		-- The tracking key (shift-click, as the link's): a link while the chat
+		-- line is open, else tracking, as the stock list.
+		local chat = ChatFrameUtil and ChatFrameUtil.GetActiveWindow and ChatFrameUtil.GetActiveWindow()
+		if IsModifiedClick("CHATLINK") and (chat or not IsModifiedClick("RECIPEWATCHTOGGLE")) then
+			return insertLink(C_TradeSkillUI.GetRecipeLink(id))
+		end
+		if IsModifiedClick("RECIPEWATCHTOGGLE") then
+			if self.psRecipe.learned and not viewing() then setTracked(id, not C_TradeSkillUI.IsRecipeTracked(id, false)) end
+			return
+		end
 		if id ~= sel then qty, target = 1, nil end
 		sel, selKey = id, self.psKey
 		refresh()
@@ -463,8 +480,20 @@ local function paintPage(info)
 			y = y + fs:GetStringHeight()
 		end
 	end
+	-- "Track recipe", as the stock page's checkbox: its reagents on the
+	-- objective tracker. Only for the player's own recipes with reagents.
+	local tr = f.psTrack
+	tr:SetShown(#slots > 0 and info.learned and not viewing())
+	if tr:IsShown() then
+		y = y + 16
+		tr:ClearAllPoints()
+		tr:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
+		tr.Box:SetChecked(C_TradeSkillUI.IsRecipeTracked(id, false))
+		y = y + tr:GetHeight()
+	end
 	return y + 24
 end
+
 
 local function hidePage()
 	f.psProduct:Hide()
@@ -472,6 +501,7 @@ local function hidePage()
 	f.psHead:Hide()
 	f.psHead2:Hide()
 	f.psTarget:Hide()
+	f.psTrack:Hide()
 	f.psEnchant = false
 	for _, t in ipairs(tiles) do t:Hide() end
 	for _, fs in ipairs(f.psNotes) do fs:Hide() end
@@ -748,6 +778,17 @@ local function build()
 		f.psNotes[i]:SetJustifyH("LEFT")
 		f.psNotes[i]:SetWordWrap(true)
 	end
+	-- The "Track recipe" checkbox: the box and its label click alike.
+	local tr = CreateFrame("Button", nil, f.Body)
+	tr:SetSize(160, 18)
+	local function toggle() setTracked(sel, not C_TradeSkillUI.IsRecipeTracked(sel, false)) end
+	tr.Box = W.Checkbox(tr, toggle)
+	tr.Box:SetPoint("LEFT", tr, "LEFT", 0, 0)
+	tr.Label = W.Text(tr, "label", "textDim")
+	tr.Label:SetPoint("LEFT", tr.Box, "RIGHT", 8, 0)
+	tr.Label:SetText(PROFESSIONS_TRACK_RECIPE or "Track recipe")
+	tr:SetScript("OnClick", toggle)
+	f.psTrack = tr
 
 	-- The quantity stepper: -, the count, +, Max.
 	f.psStep = ns.Stepper(f.Footer, {
@@ -824,7 +865,7 @@ function M.Enable()
 		end)
 	end
 	for _, e in ipairs({ "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_NAME_UPDATE", "BAG_UPDATE_DELAYED", "SKILL_LINES_CHANGED",
-		"GET_ITEM_INFO_RECEIVED", "SPELL_UPDATE_COOLDOWN" }) do
+		"GET_ITEM_INFO_RECEIVED", "SPELL_UPDATE_COOLDOWN", "TRACKED_RECIPE_UPDATE" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	Theme.OnChanged(changed)
