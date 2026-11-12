@@ -89,3 +89,12 @@ assert(#q == 2 and q[1].sortOrder == S.Name and not q[1].reverseSort and q[2].so
 assert(PolestarUIDB.auctionSorts.browse[1].sortOrder == S.Name and header("Name").Arrow:IsShown() and not header("Price").Arrow:IsShown(), "not kept")
 header("Name"):Click()
 header("Name"):Click()
+
+-- The stock Search button: the same as Enter.
+f.Search:SetText("wool")
+stub.RunScript(f.Search, "OnTextChanged", true)
+f.psSearchGo:Click()
+assert(stub.browseQuery.searchString == "wool" and #rows() == 1, "the Search button did not search")
+f.Search:SetText("")
+stub.RunScript(f.Search, "OnTextChanged", true)
+f.psSearchGo:Click()

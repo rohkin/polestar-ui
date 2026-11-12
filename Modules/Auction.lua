@@ -1445,7 +1445,14 @@ local function build()
 	f.Scroll:HookScript("OnVerticalScroll", function() moreResults() end)
 	-- The search options at the end of the search row, lit while one is set.
 	local top = W.SHELL.header - 30
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 2 * (30 + 6)), -top)
+	-- The stock search bar's Search button: the same as Enter.
+	f.psSearchGo = W.IconButton(f.Sidebar, "search", 30, AUCTION_HOUSE_SEARCH_BUTTON or "Search", function()
+		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+		browse()
+	end, 14)
+	f.psSearchGo:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	Polestar.Theme.Skin(f.psSearchGo, "editbox")
 	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Search options", filterMenu, 14)
 	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
 	Polestar.Theme.Skin(f.psFilter, "editbox")
