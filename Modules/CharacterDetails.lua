@@ -232,3 +232,63 @@ ns.CharacterPanes.honor = { page = "PVPRankFrame", label = PVP or "Honor", order
 		end
 		sf.Finish()
 	end }
+
+---------------------------------------------------------------------------
+-- Skills: the chosen skill's rank, bar and description; for a weapon skill,
+-- the stock odds against a foe of your level and a raid boss
+-- (SkillDetailFrameMixin:AddWeaponSkillRows).
+
+local RANKS_PER_LEVEL, BOSS_LEVEL = 5, 63
+-- Weapon skill lines, true for the ranged ones.
+local WEAPON = { [43] = false, [44] = false, [45] = true, [46] = true, [54] = false, [55] = false, [136] = false, [160] = false,
+	[172] = false, [173] = false, [176] = true, [226] = true, [228] = true, [229] = false, [162] = false, [3014] = false }
+
+local function signed(v)
+	if v == 0 then v = 0 end
+	local t = ("%.2f%%"):format(v)
+	return v > 0 and "+" .. t or t
+end
+
+-- Hit (and dodge, parry) and crit change against a target `offset` levels up.
+local function odds(offset, skill)
+	local diff = (UnitLevel("player") + offset) * RANKS_PER_LEVEL - skill
+	return signed(diff * -0.04), signed(diff * -0.04)
+end
+
+ns.CharacterPanes.skill = { page = "SkillsFrame", label = SKILLS or "Skills", order = 1,
+	build = function(holder) return detailView(holder, 0) end,
+	paint = function(sf)
+		sf.Begin()
+		local i = C_SkillInfo.GetSelectedSkill()
+		local d = i and i > 0 and C_SkillInfo.GetSkillLineInfo(i)
+		if not d or d.isHeader then
+			sf.psTitle = SKILLS or "Skills"
+			return sf.Finish("Choose a skill to see its details.")
+		end
+		local c = sf.c
+		sf.psTitle = d.name
+		if d.skillID == 95 and UnitDefenseSkill then d.modifier = select(2, UnitDefenseSkill("player")) end
+		local mod = d.modifier or 0
+		c.text("number", "textDim", mod ~= 0 and ("%d (%+d) / %d"):format(d.rank, mod, d.maxRank) or ("%d / %d"):format(d.rank, d.maxRank), 0)
+		sf.bar(d.maxRank > 0 and d.rank / d.maxRank or 0)
+		if d.description and d.description ~= "" then c.text("body", "textDim", d.description, 14) end
+		local ranged = WEAPON[d.skillID]
+		if ranged ~= nil then
+			local skill = d.rank + mod
+			local hit, crit = odds(0, skill)
+			c.head(WEAPON_SKILL_DETAIL_SAME_LEVEL_HEADER or "Against your level")
+			c.text("body", "text", ((ranged and WEAPON_SKILL_DETAIL_SAME_LEVEL_RANGED or WEAPON_SKILL_DETAIL_SAME_LEVEL)
+				or "Hit %s, crit %s"):format(hit, crit), 4)
+			hit, crit = odds(BOSS_LEVEL - UnitLevel("player"), skill)
+			c.head(WEAPON_SKILL_DETAIL_BOSS_HEADER or "Against a raid boss")
+			if ranged then
+				c.text("body", "text", (WEAPON_SKILL_DETAIL_BOSS_RANGED or "Hit %s, crit %s"):format(hit, crit), 4)
+			else
+				local def = BOSS_LEVEL * RANKS_PER_LEVEL
+				local chance = ("%.0f%%"):format(GetGlancingBlowChance(skill, def) * 100)
+				local penalty = ("%.0f%%"):format(GetGlancingBlowPenalty(skill, def) * 100)
+				c.text("body", "text", (WEAPON_SKILL_DETAIL_BOSS or "Hit %s, crit %s; %s of hits glance for %s less"):format(hit, crit, chance, penalty), 4)
+			end
+		end
+		sf.Finish()
+	end }

@@ -199,10 +199,14 @@ local SKILLS = {
 	skill("Mining", 112, 150),
 	skill("Blacksmithing", 95, 150),
 	skill("Weapon Skills", 0, 0, { isHeader = true, skillID = 6 }),
-	skill("Swords", 118, 120, { modifier = 5 }),
+	skill("Swords", 118, 120, { modifier = 5, skillID = 43, description = "Allows the use of one-handed swords." }),
 	skill("Two-Handed Swords", 64, 120),
 }
-C_SkillInfo = { GetNumSkillLines = function() return #SKILLS end, GetSkillLineInfo = function(i) return SKILLS[i] end }
+local selectedSkill = 0
+C_SkillInfo = { GetNumSkillLines = function() return #SKILLS end, GetSkillLineInfo = function(i) return SKILLS[i] end,
+	GetSelectedSkill = function() return selectedSkill end, SetSelectedSkill = function(i) selectedSkill = i end }
+function GetGlancingBlowChance(skill, def) return 0.4 end
+function GetGlancingBlowPenalty(skill, def) return 0.35 end
 
 Enum.PvPRanks = { Rank_1 = 5 }
 PVP_RANK_9_1, PVP_RANK_NUMBER = "Sergeant", "Rank %d"

@@ -360,22 +360,28 @@ end)
 
 local CLASS_SKILLS = 7 -- the stock page's HIDDEN_SKILL_LINE_CATEGORIES
 
+local DEFENSE_SKILL = 95
+
 local skillSpec = {
 	height = BAR_ROW_H,
 	new = function(r)
 		newBarRow(r)
 		r.Mark:Hide()
+		-- A click chooses it for the drawer's details (its weapon odds too).
+		r:SetScript("OnClick", function(self) choose(function() C_SkillInfo.SetSelectedSkill(self.psData.index) end) end)
 		r:SetScript("OnEnter", function(self)
 			local d = self.psData
-			if not (d and d.description and d.description ~= "") then return end
+			if not d then return end
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 			GameTooltip:SetText(d.name)
-			GameTooltip:AddLine(d.description, 1, 1, 1, true)
+			if d.description and d.description ~= "" then GameTooltip:AddLine(d.description, 1, 1, 1, true) end
+			ns.TooltipHint("Click for its details.")
 			GameTooltip:Show()
 		end)
 	end,
 	draw = function(r, d)
 		r.psData = d
+		r.Sel:SetShown(d.index == C_SkillInfo.GetSelectedSkill())
 		r.Name:SetText(d.name)
 		local text = ("%d/%d"):format(d.rank, d.maxRank)
 		if d.modifier and d.modifier ~= 0 then text = ("%s (%+d)"):format(text, d.modifier) end
@@ -385,9 +391,14 @@ local skillSpec = {
 }
 
 pages.SkillsFrame = pageOf(function(v)
-	local groups, cur, n = {}, nil, 0
+	local groups, cur, n, first = {}, nil, 0, nil
 	for i = 1, C_SkillInfo.GetNumSkillLines() do
 		local d = C_SkillInfo.GetSkillLineInfo(i)
+		if d then
+			d.index = i
+			-- Defense counts its gear bonus, as the stock page reads it.
+			if d.skillID == DEFENSE_SKILL and UnitDefenseSkill then d.modifier = select(2, UnitDefenseSkill("player")) end
+		end
 		if d and d.parentSkillLineID == 0 then
 			if d.isHeader then
 				if d.skillID == CLASS_SKILLS then
@@ -401,9 +412,15 @@ pages.SkillsFrame = pageOf(function(v)
 				end
 			elseif cur and d.skillLineCategoryID ~= CLASS_SKILLS then
 				cur.rows[#cur.rows + 1] = d
+				n = n + 1
+				first = first or i
 			end
 		end
 	end
+	-- The first skill is chosen when none is (SelectFirstSkillIfNoneSelected).
+	local sel = C_SkillInfo.GetSelectedSkill()
+	local sd = sel and sel > 0 and C_SkillInfo.GetSkillLineInfo(sel)
+	if (not sd or sd.isHeader) and first then C_SkillInfo.SetSelectedSkill(first) end
 	v.psSub = count(n, "skill", "skills")
 	return paintList(v, groups, skillSpec)
 end)
