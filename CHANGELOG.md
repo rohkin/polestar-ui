@@ -13,7 +13,7 @@
 - Auction House: the auctioneer in Polestar's look: search and categories, commodity buying with a quote that asks again if the price rises, item buyout and bids, posting with duration and deposit, and your auctions with cancel.
 - World Map: a filter button and a map pin button at the map's top right, as the game's map has them: the filters work with the quest log shut, and the pin places a waypoint you can track.
 - World Map: your coordinates and the cursor's at the map's bottom left, following the game's map coordinate options.
-- Quest log: right-click a quest to track, focus (point your guide to it), share or abandon it, or a header to track or untrack all its quests; the focused quest is marked, and a quest's tooltip lists its objectives.
+- Quest log: right-click a quest to track, focus (point your guide to it), share or abandon it, or a header to track or untrack all its quests; the focused quest is marked, and a quest's tooltip lists its objectives. Quests show party members on them and the money they still need, campaign headers always show, and the count turns red when the log is over full.
 
 ## 0.0.5
 

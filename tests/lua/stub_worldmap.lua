@@ -102,6 +102,8 @@ local LOG = {
 	{ title = "Westfall", isHeader = true, isCollapsed = true },
 	{ title = "The Defias Brotherhood", questID = 65, level = 14 },
 	{ title = "Hidden", questID = 99, level = 1, isHidden = true },
+	-- A campaign's header with nothing under it: shown once stub.campaign sets its campaign.
+	{ title = "Heroes of the Alliance", isHeader = true, isCollapsed = false, campaign = true },
 }
 for i, q in ipairs(LOG) do q.questLogIndex = i end
 stub.watched = { [7] = true, [33] = true }
@@ -116,6 +118,7 @@ function C_QuestLog.GetInfo(i)
 	if not q then return nil end
 	local t = {}
 	for k, v in pairs(q) do t[k] = v end
+	t.campaignID = q.campaign and stub.campaign or nil
 	return t
 end
 function C_QuestLog.GetMaxNumQuestsCanAccept() return 25 end
@@ -142,7 +145,11 @@ function C_QuestLog.GetSelectedQuest() return selected end
 function C_QuestLog.GetLogIndexForQuestID(id) for i, q in ipairs(LOG) do if q.questID == id then return i end end end
 function GetQuestLogQuestText() return sel().text or "", sel().summary or "" end
 function C_QuestLog.GetNextWaypointText() return nil end
-function C_QuestLog.GetRequiredMoney() return 0 end
+-- The Defias Brotherhood takes 5s the player (1s 20c) lacks; in a group, two
+-- party members are on A Threat Within.
+function C_QuestLog.GetRequiredMoney(id) return (id or selected) == 65 and 500 or 0 end
+function GetMoney() return 120 end
+function QuestUtils_GetNumPartyMembersOnQuest(id) return stub.inGroup and id == 783 and 2 or 0 end
 function C_QuestLog.GetSuggestedGroupSize() return 0 end
 function C_QuestLog.ShouldShowQuestRewards() return true end
 function GetNumQuestLogRewards() return #(sel().rewards or {}) end

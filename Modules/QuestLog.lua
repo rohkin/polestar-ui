@@ -207,6 +207,7 @@ function ns.QuestLog(win, canvas, width)
 		GameTooltip:SetText(r.psTitle, 1, 1, 1, 1, true)
 		if C_QuestLog.IsQuestDisabledForSession(id) then GameTooltip:AddLine(QUEST_SESSION_ON_HOLD_TOOLTIP_TITLE or "On hold", 0.5, 0.5, 0.5) end
 		if C_QuestLog.IsFailed(id) then GameTooltip:AddLine(FAILED or "Failed", 1, 0.13, 0.13) end
+		if GameTooltip_CheckAddQuestTimeToTooltip then GameTooltip_CheckAddQuestTimeToTooltip(GameTooltip, id) end
 		if index then
 			GameTooltip:AddLine(" ")
 			if C_QuestLog.IsComplete(id) then
@@ -342,13 +343,20 @@ function ns.QuestLog(win, canvas, width)
 			local text, _, finished = GetQuestLogLeaderBoard(i, info.questLogIndex)
 			if text and text ~= "" and not finished then t[#t + 1] = text end
 		end
+		-- Money it takes that the player lacks: "have / need", as the stock row.
+		local need = C_QuestLog.GetRequiredMoney(info.questID) or 0
+		if need > GetMoney() then t[#t + 1] = ns.Coins(GetMoney()) .. " / " .. ns.Coins(need) end
 		return table.concat(t, "\n")
 	end
 
 	-- "[level] title" in its difficulty colour, lifted to read; the level and
 	-- the colour as the map's filters say.
 	local function questName(fs, info)
-		fs:SetText(GetCVarBool("showQuestLevel") and ("[%d%s] %s"):format(info.level or 0, C_QuestLog.IsEliteQuest(info.questID) and "+" or "", info.title or "") or info.title or "")
+		local title = info.title or ""
+		-- Party members on it nearby, as the stock title: "[2] title".
+		local party = QuestUtils_GetNumPartyMembersOnQuest and QuestUtils_GetNumPartyMembersOnQuest(info.questID) or 0
+		if party > 0 then title = ("[%d] %s"):format(party, title) end
+		fs:SetText(GetCVarBool("showQuestLevel") and ("[%d%s] %s"):format(info.level or 0, C_QuestLog.IsEliteQuest(info.questID) and "+" or "", title) or title)
 		local diff = GetCVarBool("showQuestDifficultyColor") and C_PlayerInfo.GetContentDifficultyQuestForPlayer and C_PlayerInfo.GetContentDifficultyQuestForPlayer(info.questID)
 		local c = diff and GetDifficultyColor(diff)
 		W.Uncolor(fs)
@@ -424,7 +432,8 @@ function ns.QuestLog(win, canvas, width)
 			total = total + #g.quests
 			-- Searching, every match shows, its header open.
 			local folded = h and h.isCollapsed and query == ""
-			if h and (folded or #g.quests > 0) then
+			-- A campaign's header always shows, unless searching (as the stock list).
+			if h and (folded or #g.quests > 0 or (h.campaignID and query == "")) then
 				hi = hi + 1
 				local b = headRow(hi)
 				b.psIndex, b.psCollapsed = h.questLogIndex, h.isCollapsed
@@ -450,6 +459,8 @@ function ns.QuestLog(win, canvas, width)
 		local _, quests = C_QuestLog.GetNumQuestLogEntries()
 		local max = C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()
 		p.Count:SetText(max and ("%d/%d"):format(quests or total, max) or (quests or total))
+		-- Over the most it holds: in danger, as the stock count turns red.
+		W.Color(p.Count, max and (quests or total) > max and "danger" or "textMuted")
 		p.Empty:SetText(query ~= "" and "No quests match." or "Your quest log is empty.")
 		p.Empty:SetShown(hi == 0 and ri == 0)
 		p.Scroll.Child:SetWidth(width - 1)

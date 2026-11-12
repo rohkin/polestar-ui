@@ -47,9 +47,13 @@ zoom and click-to-open are the game's.
   most it holds. The log as the stock panel lists it: header rows (label
   face, chevron, count) fold through the client and redraw at once
   (CLIENT.md, rule 6); hidden quests, tasks and unfinished bounties stay
-  out. A quest row: "[level] title" in Body in its difficulty colour
+  out; a campaign's header always shows (unless searching). The head's
+  count turns danger past the most the log holds. A quest row: "[level]
+  title" (with "[n]" before the title for party members on it, as the
+  stock title) in Body in its difficulty colour
   (legible), what is left under it in Small textDim (the unfinished
-  objectives, or the hand-in line once done), and two fixed slots at the
+  objectives and the money it takes the player lacks, "have / need", or the
+  hand-in line once done), and two fixed slots at the
   right of the title: tracked at the end (the stock checkbox's
   `questlog-icon-checkmark-yellow`), and left of it a check (success) when
   done, a cross (danger) when failed, else the quest's stock tag

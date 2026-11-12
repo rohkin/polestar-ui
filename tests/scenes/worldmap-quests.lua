@@ -20,6 +20,17 @@ assert(wolves.Name:GetWidth() == row("A Threat Within").Name:GetWidth(), "the ti
 assert(row("Wolves Across the Border").Name:GetText() == "[3+] Wolves Across the Border", "elite mark")
 row("Westfall"):Click()
 assert(row("The Defias Brotherhood"), "header did not unfold at once")
+assert(row("The Defias Brotherhood").Goals:GetText() == "1s 20c / 5s 0c", "the money it takes, have / need: " .. tostring(row("The Defias Brotherhood").Goals:GetText()))
+assert(not row("Heroes of the Alliance"), "an empty header")
+stub.campaign = 5
+q.Paint()
+assert(row("Heroes of the Alliance"), "a campaign's header always shows")
+stub.campaign = nil
+stub.inGroup = true
+q.Paint()
+assert(row("A Threat Within").Name:GetText() == "[1] [2] A Threat Within", "party members on it")
+stub.inGroup = false
+q.Paint()
 assert(row("The Defias Brotherhood").Tag:IsShown() and row("The Defias Brotherhood").Tag:GetAtlas() == "questlog-questtypeicon-group", "the stock tag")
 stub.RunScript(row("Kobold Camp Cleanup"), "OnEnter")
 assert(c.events[#c.events][1] == "SetHighlightedQuestID" and c.events[#c.events][2] == 7, "hover")
