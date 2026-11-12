@@ -122,7 +122,8 @@ local function sections()
 		end
 	end
 	table.sort(list, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.n < b.n end)
-	if query ~= "" then return list, byID end
+	-- Another player's or the guild's recipes: their categories only.
+	if query ~= "" or viewing() then return list, byID end
 	local make, last = { key = "make", label = "Can make now", recipes = {} }, { key = "recent", label = "Recent", recipes = {} }
 	for _, c in ipairs(list) do
 		for _, r in ipairs(c.recipes) do
@@ -584,7 +585,52 @@ end
 
 -- The footer: the quantity stepper on the left, Craft all and Craft on the
 -- right, each enabled only when the game would take it.
+-- The guild's recipes: "View crafters" asks the client who in the guild
+-- knows the recipe (C_GuildInfo.QueryGuildMembersForRecipe), as the stock
+-- button; the answer (GUILD_RECIPE_KNOWN_BY_MEMBERS) lists them in a menu
+-- under it, the online ones in their class colour, a click whispering one.
+local crafters -- { skill line, recipe } asked for, until the answer comes
+local function craftersMenu(b)
+	local items = {}
+	if crafters then
+		items[1] = { text = SEARCH_LOADING_TEXT or "Loading…", disabled = true }
+	else
+		for i = 1, select(3, GetGuildRecipeInfoPostQuery()) or 0 do
+			local name, full, cls, online = GetGuildRecipeMember(i)
+			local c = online and cls and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cls]
+			items[#items + 1] = { text = c and c.colorStr and ("|c%s%s|r"):format(c.colorStr, name) or name, disabled = not online,
+				onClick = function() ChatFrameUtil.SendTell(full) end }
+		end
+		if #items == 0 then items[1] = { text = "No one in your guild knows it.", disabled = true } end
+	end
+	W.ShowMenu(b, items, { minWidth = 180, point = "BOTTOMRIGHT", relPoint = "TOPRIGHT" })
+end
+
+local function viewCrafters(b)
+	if W.MenuShown(b) then return W.HideMenu() end
+	local p = profession()
+	local skill = p and (p.parentProfessionID or p.professionID)
+	local id = skill and sel and C_GuildInfo.QueryGuildMembersForRecipe(skill, sel)
+	if not id then return end
+	crafters = { skill, id }
+	craftersMenu(b)
+end
+
+local function guildRecipeKnown()
+	local skill, id = GetGuildRecipeInfoPostQuery()
+	if not (crafters and crafters[1] == skill and crafters[2] == id) then return end
+	crafters = nil
+	local b = f and f.footerButtons.right[1]
+	if b and W.MenuShown(b) then craftersMenu(b) end
+end
+
 local function paintFooter(info)
+	f.psStep:SetShown(not C_TradeSkillUI.IsTradeSkillGuild())
+	if C_TradeSkillUI.IsTradeSkillGuild() then
+		W.ShellFooter(f, {}, { { label = GUILD_TRADE_SKILL_VIEW_CRAFTERS or "View crafters", onClick = viewCrafters, opts = { primary = true } } })
+		reason(f.footerButtons.right[1], not (info and info.learned) and "No recipe chosen" or nil)
+		return
+	end
 	local why = whyNot(info)
 	local can = why == nil
 	most = can and info.count or 1
@@ -921,6 +967,7 @@ function M.Enable()
 			if f:IsShown() and not (C_TradeSkillUI.IsDataSourceChanging and C_TradeSkillUI.IsDataSourceChanging()) then refresh() end
 		end)
 	end
+	Polestar.RegisterEvent("GUILD_RECIPE_KNOWN_BY_MEMBERS", guildRecipeKnown)
 	for _, e in ipairs({ "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_NAME_UPDATE", "BAG_UPDATE_DELAYED", "SKILL_LINES_CHANGED",
 		"GET_ITEM_INFO_RECEIVED", "SPELL_UPDATE_COOLDOWN", "TRACKED_RECIPE_UPDATE" }) do
 		Polestar.RegisterEvent(e, changed)

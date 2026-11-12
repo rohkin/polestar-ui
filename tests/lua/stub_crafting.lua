@@ -51,7 +51,7 @@ function T.GetBaseProfessionInfo()
 end
 function T.GetTradeSkillTexture() return 136249 end
 function T.IsTradeSkillLinked() return false end
-function T.IsTradeSkillGuild() return false end
+function T.IsTradeSkillGuild() return stub.guildView or false end
 function T.IsDataSourceChanging() return false end
 -- The client's filters: skill-ups (not trivial), materials, item slots
 -- (slot 1 Chest: the vest; slot 2 Feet: the boots; slot 3 Bag).
@@ -161,3 +161,13 @@ function ChatFrameUtil.OpenChat(text) stub.posted = text end
 stub.trackedRecipes = {}
 function T.IsRecipeTracked(id, recraft) return stub.trackedRecipes[id] or false end
 function T.SetRecipeTracked(id, on, recraft) stub.trackedRecipes[id] = on or nil end
+-- The guild's crafters of a recipe (stub.guildView: the guild's recipes):
+-- asked for, then answered with GUILD_RECIPE_KNOWN_BY_MEMBERS by stub.answerGuild().
+C_GuildInfo = C_GuildInfo or {}
+local asked
+function C_GuildInfo.QueryGuildMembersForRecipe(skill, id) asked = { skill, id }; return id end
+function GetGuildRecipeInfoPostQuery() return asked[1], asked[2], 2 end
+local MEMBERS = { { "Aelric", "Aelric-Realm", "MAGE", true }, { "Brannoc", "Brannoc-Realm", "WARRIOR", false } }
+function GetGuildRecipeMember(i) return unpack(MEMBERS[i]) end
+function stub.answerGuild() stub.fire("GUILD_RECIPE_KNOWN_BY_MEMBERS") end
+function ChatFrameUtil.SendTell(name) stub.told = name end

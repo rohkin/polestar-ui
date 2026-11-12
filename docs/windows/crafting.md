@@ -79,6 +79,16 @@ it from tainted code.
     player's own recipes with reagents; the box and its label toggle it. A
     shift-click on a recipe row tracks it too while the chat line is closed
     (`RECIPEWATCHTOGGLE`), and links it while it is open, as the stock list.
+- **Guild's recipes** (`IsTradeSkillGuild`, opened from the guild's
+  profession list): no crafting, so no stepper; "View crafters" (primary,
+  the stock `GUILD_TRADE_SKILL_VIEW_CRAFTERS`) on the right asks the client
+  who in the guild knows the recipe (`C_GuildInfo.QueryGuildMembersForRecipe`)
+  and lists them in a menu over the button ("Loading…" until
+  `GUILD_RECIPE_KNOWN_BY_MEMBERS`): the online ones in their class colour,
+  a click whispering one (`ChatFrameUtil.SendTell`), the offline ones
+  disabled, as the stock list. Another player's or the guild's recipes list
+  their categories only (no Favorites, Can make now or Recent: those are
+  the player's own).
 - **Footer:** quantity stepper (−, a 48px field, +, "Max") on the left,
   "Craft all" (default) and "Craft" (primary, the recipe's own verb when it has
   one) on the right; all faded to 45% while the game would refuse the craft or
