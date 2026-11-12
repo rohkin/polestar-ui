@@ -11,7 +11,7 @@ applied. Not protected, but refused in combat and while
 `C_ClassTalents.CanChangeTalents` says no; switching spec is a cast.
 - **Shell:** 1100×680 with sidebar: wider than the shell's 960, so three
   four-column trees stand apart.
-- **Subject block:** the class icon, the class in Title, "Level 60" in Small
+- **Subject block:** the class icon (the class atlas, `GetClassAtlas`), the class in Title, "Level 60" in Small
   textDim.
 - **Sidebar:** the shell's search ("Search talents"), then the stock tabs as
   nav rows, Primary and Secondary (`DUAL_SPEC_PRIMARY`/`SECONDARY`): the
@@ -47,7 +47,7 @@ applied. Not protected, but refused in combat and while
   (`posX`, `posY`), which sit a few units off it: one cell is the smallest
   step between positions that is at least a quarter of the largest, and each
   node rounds to the nearest cell. A node reads as the stock one: a 40px game
-  icon on an inset well; partly learnt, its 1px border and rank in success;
+  icon on an inset well (`ns.ItemWell`, a button); partly learnt, its 1px border and rank in success;
   maxed, in the accent; open to a point, the hairline and no rank. Greyed as
   the stock button greys (`CalculateVisualState`): a talent keeps its colour
   while it has points or can take one now (`canPurchaseRank`, prerequisites
@@ -71,8 +71,11 @@ applied. Not protected, but refused in combat and while
   (`AppendInfo("GetTraitEntry")`), then the tier gate it waits on ("Requires
   10 points in Affliction", `C_Traits.GetConditionInfo`) and an unmet
   prerequisite; after a blank line, the hint for what a click does now ("Click
-  to learn a rank. Right-click to take one back. Shift-click to link it in
-  chat."). Shift-click links the spell.
+  to learn a rank. Right-click to take one back. Drag it to an action bar.
+  Shift-click to link it in chat."). Shift-click links the spell. A learnt
+  talent that is not passive drags its spell to a bar (`C_Spell.PickupSpell`,
+  as the stock `TalentButtonBaseMixin:OnDragStart`); not in combat, where the
+  client blocks the pickup from addon code (CLIENT.md, rule 4).
 - **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
   `W.Modal`) on the left; "Undo" (default, drops what is staged:
   `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`, the

@@ -11,11 +11,11 @@ profession opens (`TRADE_SKILL_SHOW`), as ours takes the crafting window.
 - **Professions rail:** the crafting window's (`ns.ProfessionTabs`, below),
   "Overview" marked; a profession's section opens its crafting window.
 - **Main column:** title "Professions", subtitle "2 of 2 professions learnt."
-  and what the player can do. The
+  only (what a spell does is in its tooltip). The
   stock page's five slots as cards on the panel ground under two headings:
   Primary (one to a row: wide, short cards, the spells side by side, as the
   stock page and its art), then Secondary (Cooking, Fishing, First Aid, three
-  to a row). A card: the profession's icon (40px on an inset well), its name in
+  to a row). A card: the profession's icon (40px on an inset well, `ns.ItemWell`), its name in
   Title, its skill bar with the rank ("145/150 (+5)") above its right end, then
   its spells as the Spellbook's rows (`ns.SpellRow`: click casts through the
   secure button, drag, shift-click links, cooldown). An empty slot: the stock
