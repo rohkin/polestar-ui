@@ -655,6 +655,90 @@ local function paintFooter(info)
 	for _, b in ipairs(f.footerButtons.right) do reason(b, why) end
 end
 
+-- The profession's tool and gear slots, as the stock page's
+-- (ConfigureInventorySlots): each slot the client lists for the profession
+-- (GetProfessionSlots) and has enabled, worn items in Polestar's wells on the
+-- band, left of Options. A slot name the client lacks is skipped.
+local GEAR_SLOTS = { "Prof0ToolSlot", "Prof0Gear0Slot", "Prof0Gear1Slot", "Prof1ToolSlot", "Prof1Gear0Slot", "Prof1Gear1Slot",
+	"CookingToolSlot", "CookingGear0Slot", "FishingToolSlot", "FishingGear0Slot", "FishingGear1Slot" }
+local GEAR = 28
+
+local function gearEnter(s)
+	GameTooltip:SetOwner(s, "ANCHOR_BOTTOM")
+	if not GameTooltip:SetInventoryItem("player", s:GetID()) then GameTooltip:SetText(s.psLabel) end
+	GameTooltip:Show()
+end
+
+-- Left: pick up or put down (the stock slot's own call); with a modifier,
+-- the client's link and try-on. While a spell targets an item, picking up is
+-- applying it, which is not ours to call (docs/CLIENT.md, rule 4).
+local function gearPickup(s) if not SpellIsTargeting() then PickupInventoryItem(s:GetID()) end end
+local function gearClick(s, button)
+	local link = GetInventoryItemLink("player", s:GetID())
+	if link and IsModifiedClick() and HandleModifiedItemClick(link) then return end
+	if button == "LeftButton" then gearPickup(s) end
+end
+
+-- Using a worn item (right-click) is protected: out of combat a secure button
+-- takes the hovered slot's place (ns.Overlay), its right click the game's
+-- "item" action; the rest it hands back to the slot, as the Character's.
+local overGear = ns.Overlay("PolestarUICraftingGear", {
+	enter = gearEnter,
+	pickup = gearPickup,
+	setup = function(over)
+		over:HookScript("PostClick", function(self, button) gearClick(self.psTarget, button) end)
+		over:HookScript("OnReceiveDrag", function(self) gearPickup(self.psTarget) end)
+	end,
+	attrs = function(over, s)
+		local id = s:GetID()
+		over:SetAttribute("type2", GetInventoryItemID("player", id) and "item" or nil)
+		over:SetAttribute("item", tostring(id))
+	end,
+})
+
+local function gearSlot(name, id)
+	f.psGear = f.psGear or {}
+	local s = f.psGear[name]
+	if s then return s end
+	s = ns.ItemWell(f.Header, GEAR, "Button")
+	s:SetID(id)
+	s.psLabel = _G[name:upper()] or name
+	W.Hover(s)
+	s:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	s:RegisterForDrag("LeftButton")
+	s:SetScript("OnClick", gearClick)
+	s:SetScript("OnDragStart", gearPickup)
+	s:SetScript("OnReceiveDrag", gearPickup)
+	s:SetScript("OnEnter", function(self) gearEnter(self); overGear(self) end)
+	s:SetScript("OnLeave", W.HideTooltip)
+	f.psGear[name] = s
+	return s
+end
+
+-- Right to left from Options, as the stock row: the tool, then its gear,
+-- 12px between a profession's tool and its gear.
+local function paintGear(p)
+	for _, s in pairs(f.psGear or {}) do s:Hide() end
+	local T = C_TradeSkillUI
+	if viewing() or not (p.profession and T.GetProfessionSlots) then return end
+	local wanted = {}
+	for _, id in ipairs(T.GetProfessionSlots(p.profession) or {}) do wanted[id] = true end
+	local x, prev = -(20 + 96 + 12), nil
+	for _, name in ipairs(GEAR_SLOTS) do
+		local ok, id = pcall(C_PaperDollInfo.GetInventorySlotInfo, name)
+		if ok and id and wanted[id] and C_PaperDollInfo.IsInventorySlotEnabled(name) then
+			local s = gearSlot(name, id)
+			if prev then x = x - GEAR - (prev.psTool and 12 or 4) end
+			s.psTool = name:find("ToolSlot") ~= nil
+			s:ClearAllPoints()
+			s:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", x, 10)
+			ns.PaintItem(s, { icon = GetInventoryItemTexture("player", id), quality = GetInventoryItemQuality("player", id) })
+			s:Show()
+			prev = s
+		end
+	end
+end
+
 -- The first section holding the recipe, `key`'s if it is one of them.
 local function sectionOf(list, id, key)
 	local first
@@ -701,6 +785,7 @@ function refresh()
 	end
 	W.ShellWatermark(f, info == nil)
 	W.SetIconState(f.psFilter, filtering())
+	paintGear(p)
 	paintFooter(info)
 end
 
@@ -969,7 +1054,7 @@ function M.Enable()
 	end
 	Polestar.RegisterEvent("GUILD_RECIPE_KNOWN_BY_MEMBERS", guildRecipeKnown)
 	for _, e in ipairs({ "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_NAME_UPDATE", "BAG_UPDATE_DELAYED", "SKILL_LINES_CHANGED",
-		"GET_ITEM_INFO_RECEIVED", "SPELL_UPDATE_COOLDOWN", "TRACKED_RECIPE_UPDATE" }) do
+		"GET_ITEM_INFO_RECEIVED", "SPELL_UPDATE_COOLDOWN", "TRACKED_RECIPE_UPDATE", "PLAYER_EQUIPMENT_CHANGED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	Theme.OnChanged(changed)

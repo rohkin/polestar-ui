@@ -47,7 +47,7 @@ local T = C_TradeSkillUI
 function T.GetChildProfessionInfo() return { professionID = 0 } end
 function T.GetBaseProfessionInfo()
 	if stub.tradeSkill ~= "ready" then return { professionID = 0 } end
-	return { professionID = 197, professionName = "Tailoring", skillLevel = 112, maxSkillLevel = 150, skillModifier = 0 }
+	return { professionID = 197, professionName = "Tailoring", skillLevel = 112, maxSkillLevel = 150, skillModifier = 0, profession = 7 }
 end
 function T.GetTradeSkillTexture() return 136249 end
 function T.IsTradeSkillLinked() return false end
@@ -171,3 +171,18 @@ local MEMBERS = { { "Aelric", "Aelric-Realm", "MAGE", true }, { "Brannoc", "Bran
 function GetGuildRecipeMember(i) return unpack(MEMBERS[i]) end
 function stub.answerGuild() stub.fire("GUILD_RECIPE_KNOWN_BY_MEMBERS") end
 function ChatFrameUtil.SendTell(name) stub.told = name end
+-- Profession tool and gear slots (stub.profSlots: the client has them, for
+-- the first profession: a tool worn, its two gear slots empty).
+local PROF_SLOTS = { Prof0ToolSlot = 20, Prof0Gear0Slot = 21, Prof0Gear1Slot = 22 }
+local slotInfo = C_PaperDollInfo.GetInventorySlotInfo
+function C_PaperDollInfo.GetInventorySlotInfo(name)
+	if PROF_SLOTS[name] then return PROF_SLOTS[name], "", false end
+	return slotInfo(name)
+end
+function C_PaperDollInfo.IsInventorySlotEnabled(name) return true end
+function T.GetProfessionSlots(prof) return stub.profSlots and prof == 7 and { 20, 21, 22 } or {} end
+local itemTexture, itemQuality = GetInventoryItemTexture, GetInventoryItemQuality
+function GetInventoryItemTexture(unit, id) if id == 20 then return 134400 end return itemTexture(unit, id) end
+function GetInventoryItemQuality(unit, id) if id == 20 then return 3 end return itemQuality(unit, id) end
+local itemID = GetInventoryItemID
+function GetInventoryItemID(unit, id) if id == 20 then return 6219 end return itemID and itemID(unit, id) end

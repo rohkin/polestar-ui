@@ -79,6 +79,16 @@ it from tainted code.
     player's own recipes with reagents; the box and its label toggle it. A
     shift-click on a recipe row tracks it too while the chat line is closed
     (`RECIPEWATCHTOGGLE`), and links it while it is open, as the stock list.
+- **Tool and gear slots:** as the stock page (`ConfigureInventorySlots`):
+  the slots the client lists for the profession (`GetProfessionSlots`,
+  enabled by `C_PaperDollInfo.IsInventorySlotEnabled`; a slot name the client
+  lacks is skipped) as 28px item wells on the band's bottom row, left of
+  Options: right to left the tool, then 12px on its gear, 4px apart. None
+  show without slot data, or for another player's or the guild's recipes. A
+  click picks the worn item up or puts one down, a modified click links it,
+  the tooltip is the item's (the slot's name when empty); right-click uses it
+  through a secure button over the hovered slot (`ns.Overlay`, out of combat),
+  as the Character window's slots.
 - **Guild's recipes** (`IsTradeSkillGuild`, opened from the guild's
   profession list): no crafting, so no stepper; "View crafters" (primary,
   the stock `GUILD_TRADE_SKILL_VIEW_CRAFTERS`) on the right asks the client
