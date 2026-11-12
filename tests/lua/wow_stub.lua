@@ -925,6 +925,10 @@ function DEFAULT_CHAT_FRAME.AddMessage(_, msg) table.insert(stub.messages, tostr
 CHAT_FRAMES = {}
 function FCF_OpenTemporaryWindow() end
 function FCFTab_UpdateColors() end
+function FCF_MinimizeFrame() end
+function FCF_SetButtonSide() end
+Menu = { ModifyMenu = function() end }
+C_ChatBubbles = { GetAllChatBubbles = function() return {} end }
 ColorPickerFrame = CreateFrame("Frame", "ColorPickerFrame", UIParent)
 function ColorPickerFrame.SetupColorPickerAndShow(self, info) self.info = info; self:Show() end
 function ColorPickerFrame.GetColorRGB() return 1, 1, 1 end

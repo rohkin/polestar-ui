@@ -304,11 +304,22 @@ frame of our own (`Modules/Chat.lua`). A frame other code types into (the
 chat edit box: slash commands, macros) gets no script hook; read its state
 (`HasFocus`) from our own frame.
 
+The game's menus (Blizzard_Menu) are pooled frames every menu shares, and a
+menu frame refuses `CreateTexture`. Restyle one only by its tag
+(`Menu.ModifyMenu`, then the root's `AddMenuAcquiredCallback`), with art
+added through the menu's own `AttachTexture`: the pool frees it and resets
+what was faded when the menu closes, so no other menu inherits it. Chat
+bubbles come only from `C_ChatBubbles.GetAllChatBubbles()`, which leaves out
+the forbidden ones (every bubble in an instance); never touch a frame whose
+`IsForbidden()` is true.
+
 **Caught by:** the `tooltips` scene: another addon's hook adds its line, the
 look holds through a style reset (embedded and back), and switched off, the
 stock art and fonts are back. The `chat` scene: a filtered message and
 another addon's `AddMessage` line show, a new whisper window is restyled,
-our ground follows the window alpha, and switched off, the stock art is back.
+our ground follows the window alpha, and switched off, the stock art is back;
+beside it, the tab menu is restyled and the next menu on the same pooled
+frame is the game's, and a forbidden bubble is never touched.
 
 ## Reading errors from the game
 
