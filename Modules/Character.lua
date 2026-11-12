@@ -125,6 +125,7 @@ end
 local function paintSlot(s, up)
 	local id = s:GetID()
 	paintGems(s)
+	s.psOut:SetShown(ns.CharacterSlotLeftOut and ns.CharacterSlotLeftOut(id) or false)
 	s.psUp:SetShown(up and up[id] or false)
 	local icon = GetInventoryItemTexture("player", id)
 	s.Icon:SetTexture(icon or s.psEmpty)
@@ -169,13 +170,14 @@ local function slotEnter(s)
 		else
 			local use = canUse(s:GetID()) and (fight and "Using it waits for the fight to end. " or "Right-click to use it. ") or ""
 			local gems = socketCount(GetInventoryItemLink("player", s:GetID())) > 0 and " Shift-right-click to socket gems." or ""
-			ns.TooltipHint(use .. "Drag to take it off. Shift-click to link it in chat." .. gems)
+			ns.TooltipHint(use .. "Drag to take it off. Shift-click to link it in chat. Hold Alt for other items for this slot." .. gems)
 		end
 	else
 		GameTooltip:SetText(s.psLabel)
-		ns.TooltipHint("Drag an item here to equip it.")
+		ns.TooltipHint("Drag an item here to equip it. Hold Alt for the items that fit.")
 	end
 	GameTooltip:Show()
+	if ns.CharacterFlyout then ns.CharacterFlyout(s) end
 end
 
 -- Left: pick up or put down (the stock slot's own call, unprotected); with a
@@ -240,6 +242,11 @@ local function newSlot(parent, name, layer, side, size)
 	s.psUp:SetSize(18, 18)
 	s.psUp:SetPoint("TOPLEFT", s, "TOPLEFT", 0, 0)
 	s.psGems = {}
+	-- Left out of the chosen gear set (the flyout's "Leave out of the set").
+	s.psOut = W.Tex(s, "OVERLAY", "close", "danger")
+	s.psOut:SetSize(16, 16)
+	s.psOut:SetPoint("CENTER", s, "CENTER", 0, 0)
+	s.psOut:Hide()
 	-- Pressed, the icon nudges 1px, as an icon button's glyph.
 	s:SetScript("OnMouseDown", function(self)
 		self.Icon:SetPoint("TOPLEFT", 2, -2)
@@ -343,6 +350,12 @@ local function showModel()
 		cam:SetMaxZoomDistance(cam:GetMaxZoomDistance() * ZOOM_OUT)
 		cam:SetZoomDistance(d * BACK_OFF)
 	end
+end
+
+-- The gear slot under the cursor, if any (the flyout's Alt key).
+function ns.CharacterSlotUnderMouse()
+	if not (f and f:IsShown() and f.psGear:IsShown()) then return end
+	for _, s in ipairs(slots) do if s:IsShown() and s:IsMouseOver() then return s end end
 end
 
 local function paintGear()

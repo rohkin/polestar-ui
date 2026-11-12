@@ -271,3 +271,22 @@ function C_Item.GetItemNumSockets(link) return link:match("item:1:") and 2 or 0 
 function C_Item.GetItemGemID(link, i) if i == 1 then return 23094 end end
 function C_Item.GetItemIconByID(id) return 134085 end
 function SocketInventoryItem(id) stub.socketed = id end
+
+-- The slot flyout: a helm and a sword in the backpack (locations 101, 102);
+-- the client's GetInventoryItemsForSlot lists the worn item too (location 201).
+-- Wearing one records stub.wornFrom = { bag, slot } and stub.pickedUp.
+INVSLOTS_EQUIPABLE_IN_COMBAT = { [16] = true, [17] = true, [18] = true }
+local FLY_LOCS = { [101] = { isBags = true, bag = 0, slot = 1 }, [102] = { isBags = true, bag = 0, slot = 2 }, [201] = { isPlayer = true, slot = 1 } }
+function EquipmentManager_GetLocationData(loc) return FLY_LOCS[loc] or {} end
+function GetInventoryItemsForSlot(slot, t)
+	if slot == 1 then t[101], t[201] = 9101, 1 end
+	if slot == 16 then t[102] = 9102 end
+end
+function C_Container.GetContainerItemInfo(bag, slot) return { iconFileID = 134400, quality = slot == 1 and 3 or 2 } end
+function C_Container.GetContainerNumFreeSlots(bag) return bag == 0 and 4 or 0 end
+function C_Container.ContainerIDToInventoryID(bag) return 30 + bag end
+function C_Container.PickupContainerItem(bag, slot) stub.wornFrom = { bag, slot }; stub.cursorFits = {} end
+function ClearCursor() stub.cursorFits = nil end
+function PutItemInBackpack() stub.toBags = true; stub.cursorFits = nil end
+function PutItemInBag(id) stub.toBags = id; stub.cursorFits = nil end
+function GameTooltip.SetBagItem(self, bag, slot) self.lines = { "Bag item " .. bag .. "/" .. slot } end
