@@ -156,10 +156,18 @@ local function paintRow(r, i)
 	r.Sel:SetShown(i == sel)
 end
 
+local TYPES = { { "available", AVAILABLE or "Available" }, { "unavailable", UNAVAILABLE or "Unavailable" }, { "used", USED or "Used" } }
+-- How many service types the filter hides.
+local function hidden()
+	local n = 0
+	for _, k in ipairs(TYPES) do if not GetTrainerServiceTypeFilter(k[1]) then n = n + 1 end end
+	return n
+end
+
 local function filterMenu(anchor)
 	if W.MenuShown(anchor) then return W.HideMenu() end
 	local items = {}
-	for _, k in ipairs({ { "available", AVAILABLE or "Available" }, { "unavailable", UNAVAILABLE or "Unavailable" }, { "used", USED or "Used" } }) do
+	for _, k in ipairs(TYPES) do
 		items[#items + 1] = { text = k[2], checked = GetTrainerServiceTypeFilter(k[1]), onClick = function()
 			SetTrainerServiceTypeFilter(k[1], not GetTrainerServiceTypeFilter(k[1]))
 			-- The list comes back on TRAINER_UPDATE; redraw now too (docs/CLIENT.md, rule 6).
@@ -176,6 +184,13 @@ local function filterMenu(anchor)
 			filterMenu(anchor)
 		end }
 	end
+	if hidden() > 0 then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Clear filters", onClick = function()
+			for _, k in ipairs(TYPES) do SetTrainerServiceTypeFilter(k[1], true) end
+			paint()
+		end }
+	end
 	W.ShowMenu(anchor, items, { minWidth = 160 })
 end
 
@@ -190,7 +205,7 @@ local function build()
 	Theme.Skin(f.psFilter, "editbox")
 	f.psEmpty = W.Text(f.Body, "body", "textMuted")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
-	f.psEmpty:SetText("Nothing to show. Check the filter.")
+	f.psEmpty:SetText("Nothing to show.")
 	f.psRows = rows
 	-- What the player has to spend, at the footer's left as the stock frame's
 	-- bottom: the money, or a pet's training points (with the stock tooltip).
@@ -283,7 +298,9 @@ function paint()
 	end
 	for n = #list + 1, #rows do rows[n]:Hide() end
 	f.psEmpty:SetShown(#list == 0)
-	W.SetIconState(f.psFilter, not (GetTrainerServiceTypeFilter("available") and GetTrainerServiceTypeFilter("unavailable") and GetTrainerServiceTypeFilter("used")))
+	local off = hidden()
+	W.SetIconState(f.psFilter, off > 0)
+	f.psFilter.psTip = off > 0 and ("Filter (%d on)"):format(off) or "Filter"
 
 	local why = blocked(sel)
 	ns.SetEnabled(f.footerButtons.right[1], not why, why)
