@@ -40,7 +40,7 @@ Doors and secure parts
 - `ns.Interaction(key, types, o)`: NPC window takes the interaction; `o = {frame, close, internal = {events}, bags, events = {show, hide}}` (events: fallback open/close on game events, once even if both fire); call from Enable; does nothing without the interaction manager (preview scenes without NPC stubs).
 - `ns.Overlay(name, o)`: one secure button over a hovered target; `o = {enter, pickup, attrs, stale?, setup?}`; returns `place(t)`.
 Shell pieces
-- `ns.Plain(f)`: a shell made with `sidebar = 0` loses its sidebar; `f.Main` hangs off the window.
+- `ns.Plain(f, left?)`: a shell made with `sidebar = 0` loses its sidebar and Polestar's emblem; `f.Main` hangs off the window, `left` past its edge (a rail's width).
 - `ns.OptionsButton(f, items)`: the band's Options button; `items` = menu items, or `function(button)` returning them.
 - `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
@@ -53,7 +53,7 @@ Widgets
 - `ns.Coins(copper)`: coins as plain text ("1g 2s 3c") for labels and dialogs.
 - `ns.Money(parent)` / `ns.SetMoney(m, copper, colorToken?)`: coin line as `GetMoneyString` writes it.
 - `ns.TextField(parent, w, letters?)`: one-line edit box (Enter and Escape leave it).
-- `ns.SetEnabled(button, on)`: enable and fade to 45% as Polestar does.
+- `ns.SetEnabled(button, on, why?)`: enable and fade to 45% as Polestar does; `why`, the reason a disabled one shows in its tooltip.
 - `ns.QuestRewards(parent, {x, width, tip, click, selected?})`: pooled text and reward tiles shared by Quest dialog and quest log; `c.Begin(y)`, `c.text/head/pair/tile`, `c.money(label, copper, color?)` (coins, `ns.Money`), `c.Rewards(id, d)`, `c.End()`, `c.y`.
 - `ns.MoneyInput(parent, onChange(copper))`: g/s/c fields; `m.Set(copper)`.
 - `ns.Stepper(parent, {get, set, max})`: -, count, +, Max; caller calls `s.Paint()` after its own changes.
