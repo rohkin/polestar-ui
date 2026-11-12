@@ -37,8 +37,12 @@ Docking
 - `ns.LinkPlace(win)` (Professions.lua): windows sharing a `psDockGroup` swap in place.
 Doors and secure parts
 - `ns.Doors(module, Name, {BINDING = fn}, microButton, onMicro)`: override-binding clicks plus a secure button over the micro button (shift-click = stock window).
-- `ns.Interaction(key, types, o)`: NPC window takes the interaction; `o = {frame, close, internal = {events}, bags}`; call from Enable.
+- `ns.Interaction(key, types, o)`: NPC window takes the interaction; `o = {frame, close, internal = {events}, bags}`; call from Enable; does nothing without the interaction manager (preview scenes without NPC stubs).
 - `ns.Overlay(name, o)`: one secure button over a hovered target; `o = {enter, pickup, attrs, stale?, setup?}`; returns `place(t)`.
+Shell pieces
+- `ns.Plain(f)`: a shell made with `sidebar = 0` loses its sidebar; `f.Main` hangs off the window.
+- `ns.OptionsButton(f, items)`: the band's Options button; `items` = menu items, or `function(button)` returning them.
+- `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
 - `ns.GameIcon(parent, layer)`: texture cropped of the client's icon border.
 - `ns.ItemWell(parent, size, kind?)`: inset icon well; returns `well, icon` (`well.Icon`).
@@ -47,6 +51,9 @@ Widgets
 - `ns.QualityRGB(q)`: item quality as r,g,b or nil.
 - `ns.SubjectBlock(f)`: sidebar head replacing Polestar's lockup; returns `{icon, name, line}`.
 - `ns.Money(parent)` / `ns.SetMoney(m, copper, colorToken?)`: coin line as `GetMoneyString` writes it.
+- `ns.TextField(parent, w, letters?)`: one-line edit box (Enter and Escape leave it).
+- `ns.SetEnabled(button, on)`: enable and fade to 45% as Polestar does.
+- `ns.QuestRewards(parent, {x, width, tip, click, selected?})`: pooled text and reward tiles shared by Quest dialog and quest log; `c.Begin(y)`, `c.text/head/pair/tile`, `c.Rewards(id, d)`, `c.End()`, `c.y`.
 - `ns.MoneyInput(parent, onChange(copper))`: g/s/c fields; `m.Set(copper)`.
 - `ns.Stepper(parent, {get, set, max})`: -, count, +, Max; caller calls `s.Paint()` after its own changes.
 - `ns.ModalWith(spec, body)`: `W.Modal(spec)` with our frame (stepper, input) under its text.
@@ -66,7 +73,7 @@ Generic (Polestar `wow_stub.lua`, `stub_ui.lua`; `stub_client.lua`)
 - `stub.openMenu(owner, tag, labels)` / `stub.closeMenu()`, `stub.chatEvent`, `stub.activateChat`, `stub.makeChat`, `stub.chatBubble(name, text, x, y, forbidden)`, `stub.openOverflow()`, `stub.loadCombatLog()`, `stub.withShoppingTooltip()`: chat/tooltip scenes (`stub_chat.lua`, `wow_stub_local.lua`).
 Per window (set before `Show`, read after)
 - Crafting: `stub.openTradeSkill()` (TRADE_SKILL_SHOW then list update), `stub.enchanting = true`, results in `stub.crafted = {id, n}`, `stub.enchanted = {id, n, guid}`, `stub.closed`, `stub.unrouted[event]`.
-- NPC (`stub_npc.lua`): `stub.interact(type)`, `stub.endInteraction(type)`, `stub.npcClosed[CloseFn]` counts, `stub.bagsOpen`/`stub.bagsOpener`, `stub.money`, `stub.bag`, `stub.unrouted[event]`.
+- NPC (`stub_npc.lua`): `stub.interact(type)`, `stub.endInteraction(type)`, `stub.npcClosed[CloseFn]` counts (`CloseMerchant`, `CloseTrainer`, `CloseMail`, `C_Bank.CloseBankFrame`), `stub.bagsOpen`/`stub.bagsOpener`, `stub.money`, `stub.bag`, `stub.unrouted[event]`.
 - Character: `stub.secretStats`, `stub.targeting`, `stub.cursorFits[slot]`. Spellbook: `stub.pet`, `stub.linked`. Talents: `stub.dual`, `stub.noPoints`, `stub.finishCommit()`.
 - Legacy: `stub.treePoints`, `stub.searched`, `stub.tracked`, `stub.modified`, `stub.finishLegacyCommit()`. World Map: `stub.watched`, `stub.abandoned`, `stub.shared`, `stub.inGroup`, `stub.xpMax`, `stub.maxLevel`, `stub.trivialOut`, `stub.caveListed`, `stub.chatOpen`. Professions: `stub.abandoned`.
 Scene file: leading `--@ key: value` lines (`title`, `roots` = frames drawn, `stubs` = files in `tests/lua`, `saved` = saved-variable Lua); the rest is Lua run after login. `--@ panel` starts another panel (own roots/stubs/saved header). Asserts fail the scene.
