@@ -226,4 +226,38 @@ function IsTitleKnown(i) return TITLES[i] and TITLES[i][2] or false end
 function GetTitleName(i) return TITLES[i][1]:gsub("%%s", ""), true end
 function GetCurrentTitle() return currentTitle end
 function SetCurrentTitle(i) currentTitle, stub.title = i, i end
-function strtrim(s) return (s:gsub("^%s+", ""):gsub("%s+$", "")) end
+
+-- Gear sets: two saved, the first worn; the second misses an item. Calls are
+-- recorded: stub.equippedSet, stub.savedSet, stub.ignoredForSave.
+function UIErrorsFrame:AddExternalErrorMessage(msg) stub.uiError = msg end
+function UnitCastingInfo(unit) end
+local SETS = { [3] = { "Tanking", 132341, true, 0 }, [7] = { "Fishing", 136245, false, 1 } }
+local setOrder = { 3, 7 }
+stub.ignoredForSave = {}
+C_EquipmentSet = {
+	GetEquipmentSetIDs = function() local t = {}; for i, id in ipairs(setOrder) do t[i] = id end; return t end,
+	GetNumEquipmentSets = function() return #setOrder end,
+	GetEquipmentSetInfo = function(id)
+		local s = SETS[id]
+		if s then return s[1], s[2], id, s[3], 10, 9, 1, s[4], 0 end
+	end,
+	GetEquipmentSetID = function(name) for id, s in pairs(SETS) do if s[1] == name then return id end end end,
+	EquipmentSetContainsLockedItems = function() return false end,
+	UseEquipmentSet = function(id) stub.equippedSet = id; return true end,
+	PickupEquipmentSet = function(id) stub.pickedSet = id end,
+	CreateEquipmentSet = function(name, icon)
+		SETS[9] = { name, icon, false, 0 }
+		setOrder[#setOrder + 1] = 9
+	end,
+	ModifyEquipmentSet = function(id, name, icon) SETS[id][1], SETS[id][2] = name, icon end,
+	SaveEquipmentSet = function(id, icon) stub.savedSet = id end,
+	DeleteEquipmentSet = function(id)
+		SETS[id] = nil
+		for i, s in ipairs(setOrder) do if s == id then table.remove(setOrder, i) break end end
+	end,
+	ClearIgnoredSlotsForSave = function() stub.ignoredForSave = {} end,
+	IgnoreSlotForSave = function(slot) stub.ignoredForSave[slot] = true end,
+	UnignoreSlotForSave = function(slot) stub.ignoredForSave[slot] = nil end,
+	GetIgnoredSlots = function(id) return { [4] = true } end,
+}
+function GameTooltip.SetEquipmentSet(self, id) self.lines = { SETS[id] and SETS[id][1] or "" } end
