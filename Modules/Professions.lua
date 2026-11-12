@@ -312,7 +312,7 @@ local function refresh()
 	local list = slots()
 	local learnt = (list[1].index and 1 or 0) + (list[2].index and 1 or 0)
 	f.psTabs(nil)
-	W.ShellTitle(f, "Professions", ("%d of 2 professions learnt. Click a profession's spell to open it, or drag it to your action bars."):format(learnt))
+	W.ShellTitle(f, "Professions", ("%d of 2 professions learnt."):format(learnt))
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})
 	local y = 0

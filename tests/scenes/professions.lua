@@ -28,3 +28,4 @@ assert(select(2, PolestarUIProfessions.Main:GetPoint(1)) == PolestarUIProfession
 -- A spell with no second line (a profession's, no rank or cost) has its name on the well's middle.
 local one = byName["Smelting"]
 assert(one.Sub:GetText() == "" and one.Name:GetPoint(1) == "LEFT", "name not centred: " .. tostring(one.Sub:GetText()))
+assert(PolestarUIProfessions.Subtitle:GetText() == "2 of 2 professions learnt.", "subtitle: " .. PolestarUIProfessions.Subtitle:GetText())
