@@ -328,7 +328,7 @@ local function picked()
 	return c
 end
 
-local function browseCtx() return "browse" .. (sel[1] or "") end
+local function browseCtx() return searched == "fav" and "browse:fav" or "browse" .. (sel[1] or "") end
 
 local function browse()
 	tab, view, searched = "buy", nil, true
@@ -337,6 +337,30 @@ local function browse()
 	local o = options()
 	AH.SendBrowseQuery({ searchString = f.Search:GetText() or "", sorts = sorts(browseCtx()), itemClassFilters = c and c.filters or {},
 		filters = filterList(), minLevel = o.minLevel, maxLevel = o.maxLevel })
+end
+
+-- The favorites list (QueryAll(AllFavorites)): the stock star search.
+local function favorites()
+	tab, view, searched, sel = "buy", nil, "fav", {}
+	paint()
+	AH.SearchForFavorites(sorts(browseCtx()))
+end
+
+-- A favorite set or not, as the stock star (AuctionHouseFavoriteButtonBaseMixin):
+-- not while favorites are unavailable, nor past the most allowed. Redrawn at once.
+local function canFavorite(key) return AH.FavoritesAreAvailable() and (AH.IsFavoriteItem(key) or not AH.HasMaxFavorites()) end
+local function setFavorite(key, on)
+	if not canFavorite(key) then return end
+	AH.SetFavoriteItem(key, on)
+	paint()
+end
+
+-- The stock favorite menu (AuctionHouseFavoriteContextMenu).
+local function favoriteMenu(owner, key)
+	local on = AH.IsFavoriteItem(key)
+	W.ShowMenu(owner, { { text = on and (AUCTION_HOUSE_DROPDOWN_REMOVE_FAVORITE or "Remove favorite") or (AUCTION_HOUSE_DROPDOWN_SET_FAVORITE or "Set favorite"),
+		disabled = not canFavorite(key), onClick = function() setFavorite(key, not on) end } },
+		{ point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 160 })
 end
 
 local function research()
@@ -457,6 +481,17 @@ local function row(k)
 	r.Line:SetPoint("TOPLEFT", r.Well, "RIGHT", 10, -3)
 	r.Line:SetJustifyH("LEFT")
 	r.Line:SetWordWrap(false)
+	-- The browse list's favorite star (AuctionHouseTableCellFavoriteMixin).
+	r.Fav = W.IconButton(r, "star", 24, nil, function(self)
+		local k = self:GetParent().psKey
+		setFavorite(k, not AH.IsFavoriteItem(k))
+	end, 14)
+	r.Fav:SetScript("OnEnter", function(self)
+		local k = self:GetParent().psKey
+		if canFavorite(k) then return enter(self:GetParent()) end
+		W.Tooltip(self, "ANCHOR_RIGHT", AUCTION_HOUSE_FAVORITES_MAXED_TOOLTIP or "You have the most favorites allowed.")
+	end)
+	r.Fav:Hide()
 	r.Cells = {}
 	for i = 1, MAX_COLS do
 		local c = { Text = W.Text(r, "label", "text"), Money = ns.Money(r) }
@@ -568,6 +603,12 @@ local function fill(k, top, o, cols)
 			c.Money:SetPoint("RIGHT", r, "LEFT", right[i], 0)
 		end
 	end
+	r.Fav:SetShown(o.fav ~= nil)
+	if o.fav ~= nil then
+		r.Fav:ClearAllPoints()
+		r.Fav:SetPoint("RIGHT", r, "LEFT", right[#cols], 0)
+		W.SetIconState(r.Fav, o.fav)
+	end
 	r.psKey, r.psClick, r.psHint, r.psData = o.key, o.click, o.hint, o.data
 	r:Show()
 end
@@ -610,7 +651,8 @@ end
 -- Each page fills its rows and returns how many, where they start, and the
 -- text shown when there are none.
 local function paintBrowse()
-	W.ShellTitle(f, picked() and picked().name or "Browse",
+	local favs = searched == "fav"
+	W.ShellTitle(f, favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
 		searched and "Click an item to see its listings." or "Search for an item (Enter), or pick a category.")
 	W.ShellFooter(f, {}, {})
 	local list = searched and AH.GetBrowseResults() or {}
@@ -621,8 +663,9 @@ local function paintBrowse()
 	if detail then cols[#cols + 1] = { label = detail, sort = S.Level, w = 90 } end
 	cols[#cols + 1] = { label = AUCTION_HOUSE_BROWSE_HEADER_QUANTITY or "Available", w = 90 }
 	cols[#cols + 1] = { label = AUCTION_HOUSE_BROWSE_HEADER_PRICE or "Price", sort = S.Price, w = 170 }
+	cols[#cols + 1] = { label = "", w = 34 }
 	local y = 24
-	if searched then y = header(y, { label = AUCTION_HOUSE_BROWSE_HEADER_NAME or "Name", sort = S.Name }, cols, browseCtx(), browse) end
+	if searched then y = header(y, { label = AUCTION_HOUSE_BROWSE_HEADER_NAME or "Name", sort = S.Name }, cols, browseCtx(), favs and favorites or browse) end
 	for i, b in ipairs(list) do
 		local info = AH.GetItemKeyInfo(b.itemKey) or {}
 		local none = b.totalQuantity == 0
@@ -636,15 +679,27 @@ local function paintBrowse()
 		cells[#cells + 1] = { text = count(b.totalQuantity), color = none and "textMuted" or nil }
 		cells[#cells + 1] = none and { text = AUCTION_HOUSE_NONE_AVAILABLE or "None available", color = "textMuted" } or cost(b.minPrice)
 		fill(i, y, { key = b.itemKey, name = displayName(b.itemKey, info, detail ~= nil), cells = cells, dim = none,
-			line = b.containsOwnerItem and "Yours among them" or nil,
-			click = function() open(b.itemKey) end, hint = "Click to see its listings." }, cols)
+			line = b.containsOwnerItem and "Yours among them" or nil, fav = AH.IsFavoriteItem(b.itemKey),
+			-- A right-click: the stock favorite menu (AuctionHouseFavoritableLineTemplate).
+			click = function(r, button)
+				if button == "RightButton" then return favoriteMenu(r, b.itemKey) end
+				open(b.itemKey)
+			end, hint = "Click to see its listings; right-click to set it as a favorite." }, cols)
 	end
-	return #list, y, searched and "Nothing found." or ""
+	return #list, y, searched and "Nothing found." or (AUCTION_HOUSE_BROWSE_FAVORITES_TIP or "Tip: right-click an item to set it as a favorite.")
 end
 
 local function back()
 	view = nil
 	paint()
+end
+
+-- An item's listings: Back, and its favorite as the stock item display's star.
+local function viewFooter()
+	local k, on = view.key, AH.IsFavoriteItem(view.key)
+	return { { label = "Back", onClick = back },
+		canFavorite(k) and { label = on and (AUCTION_HOUSE_DROPDOWN_REMOVE_FAVORITE or "Remove favorite") or (AUCTION_HOUSE_DROPDOWN_SET_FAVORITE or "Set favorite"),
+			onClick = function() setFavorite(k, not on) end, opts = { icon = "star" } } or nil }
 end
 
 local function paintCommodity()
@@ -653,7 +708,7 @@ local function paintCommodity()
 	view.n = math.max(1, math.min(view.n, most))
 	local got, total = aggregate(id, view.n)
 	W.ShellTitle(f, view.info.itemName, "Pick how many; Buy asks the auction house for its price first.")
-	W.ShellFooter(f, { { label = "Back", onClick = back } },
+	W.ShellFooter(f, viewFooter(),
 		{ got > 0 and { label = ("Buy %d (%s)"):format(got, coins(total)), onClick = buyCommodity, opts = { primary = true } } or nil })
 	local strip = f.psBuy
 	strip.Stepper.Paint()
@@ -674,7 +729,7 @@ end
 
 local function paintItem()
 	W.ShellTitle(f, view.info.itemName, "Click an auction to buy it out; right-click to bid.")
-	W.ShellFooter(f, { { label = "Back", onClick = back } }, {})
+	W.ShellFooter(f, viewFooter(), {})
 	local S = Enum.AuctionHouseSortOrder
 	-- The stock item list: current bid, buyout, quantity, time left.
 	local cols = { { label = AUCTION_HOUSE_HEADER_CURRENT_BID or "Current Bid", sort = S.Bid, w = 150 },
@@ -926,7 +981,8 @@ end
 -- subcategories (and under the subcategory picked, its own), indented, as the
 -- stock list opens them. A click on the one picked closes it again.
 local function paintNav()
-	local nav, depth = { { key = "", label = "All" } }, {}
+	-- Favorites, the stock search bar's star: dimmed while there are none.
+	local nav, depth = { { key = "", label = "All" }, { key = "fav", label = FAVORITES or "Favorites", icon = "star", count = not AH.HasFavorites() and 0 or nil } }, {}
 	local function walk(list, path, d)
 		for i, c in ipairs(list) do
 			local key = path .. i .. "."
@@ -936,8 +992,12 @@ local function paintNav()
 		end
 	end
 	walk(tree, "", 0)
-	local active = tab == "buy" and not view and searched and (table.concat(sel, ".") .. (#sel > 0 and "." or "")) or false
+	local active = tab == "buy" and not view and searched and (searched == "fav" and "fav" or table.concat(sel, ".") .. (#sel > 0 and "." or "")) or false
 	W.ShellNav(f, nav, active, function(k)
+		if k == "fav" then
+			if AH.HasFavorites() then favorites() end
+			return
+		end
 		local path = {}
 		for n in k:gmatch("%d+") do path[#path + 1] = tonumber(n) end
 		-- One on the picked path again closes it, as the stock list's toggle.
@@ -988,6 +1048,8 @@ function M.Show()
 	tab = "buy"
 	paint()
 	f:Show()
+	-- As the stock window opens: the favorites listed when there are any.
+	if AH.HasFavorites() then favorites() end
 end
 
 local function onError(_, err)
@@ -1006,7 +1068,7 @@ function M.Enable()
 	local function shown() return f and f:IsShown() end
 	local function changed() if shown() then paint() end end
 	for _, e in ipairs({ "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "ITEM_KEY_ITEM_INFO_RECEIVED",
-		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY" }) do
+		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	Polestar.RegisterEvent("COMMODITY_SEARCH_RESULTS_UPDATED", function(_, id) listed(id); changed() end)

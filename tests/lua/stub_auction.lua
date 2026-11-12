@@ -120,6 +120,22 @@ function AH.GetExtraBrowseInfo(k) return 0 end
 function AH.ShouldAutoPopulatePrice() return true end
 function AH.SupportsCopperValues() return true end
 
+-- Favorites: kept by item ID; the favorites search lists them.
+stub.favorites, stub.maxFavorites = {}, 3
+function AH.FavoritesAreAvailable() return true end
+function AH.IsFavoriteItem(k) return stub.favorites[k.itemID] or false end
+function AH.HasFavorites() return next(stub.favorites) ~= nil end
+function AH.HasMaxFavorites()
+	local n = 0
+	for _ in pairs(stub.favorites) do n = n + 1 end
+	return n >= stub.maxFavorites
+end
+function AH.SetFavoriteItem(k, on) stub.favorites[k.itemID] = on or nil end
+function AH.SearchForFavorites(sorts)
+	stub.browseQuery = { searchString = "", favorites = true, sorts = sorts }
+	stub.fire("AUCTION_HOUSE_BROWSE_RESULTS_UPDATED")
+end
+
 -- Browse: the search text and class filters narrow the list.
 function AH.SendBrowseQuery(q)
 	stub.browseQuery = q
@@ -130,6 +146,7 @@ function AH.GetBrowseResults()
 	for _, b in ipairs(stub.browse) do
 		local fits = not q.itemClassFilters or #q.itemClassFilters == 0
 		for _, c in ipairs(q.itemClassFilters or {}) do fits = fits or c.classID == b[4] end
+		if q.favorites then fits = stub.favorites[b[1]] end
 		if fits and stub.ahItems[b[1]][1]:lower():find(q.searchString:lower(), 1, true) then
 			out[#out + 1] = { itemKey = key(b[1]), totalQuantity = b[2], minPrice = b[3], containsOwnerItem = false }
 		end
