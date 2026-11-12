@@ -94,6 +94,79 @@ local function wowShown(info, connected, afk, dnd)
 	return (info.isOnline and connected) or (info.isAFK and afk) or (info.isDND and dnd) or (info.isOffline and not connected) or false
 end
 
+-- The stock friend card's tooltip (FriendsListSocialCardMixin:BuildTooltip):
+-- what is secret in combat keeps its last clean read.
+local TAG_LABEL = { DamagerRole = "DPS", HealerRole = "Healer", TankRole = "Tank" }
+local function tagLabels(tags)
+	local names = {}
+	for _, t in ipairs(tags or {}) do
+		for k, v in pairs(Enum.BattleNetFriendTag or {}) do
+			if v == t then names[#names + 1] = TAG_LABEL[k] or k end
+		end
+	end
+	return table.concat(names, ", ")
+end
+
+local function noteLine(note, online)
+	if note and note ~= "" then tipLine("Note: " .. note, online and "accent" or "textMuted") end
+end
+
+local function clean(v) return v ~= nil and not (issecretvalue and issecretvalue(v)) and v or nil end
+
+local function bnTip(i, a, g, id)
+	local online = g.isOnline
+	local note = keep("bnn" .. id, a.note)
+	if online and g.gameAccountID then
+		GameTooltip:AddLine(" ")
+		local char = keep("bnc" .. id, g.characterName)
+		if g.clientProgram == BNET_CLIENT_WOW and g.wowProjectID == WOW_PROJECT_ID and g.areaName then
+			tipLine(char or "", "accent")
+			tipLine(("Level %d %s"):format(g.characterLevel or 0, g.className or ""), "text")
+			if g.raceName then tipLine(g.raceName, "text") end
+			tipLine(keep("bnz" .. id, g.areaName) or "", "text")
+			if g.factionName then tipLine(g.factionName, "text") end
+			if g.playerGuid and C_SocialQueue and C_SocialQueue.IsSystemSupported() and C_SocialQueue.GetGroupForPlayer(g.playerGuid) then
+				tipLine("In a group", "text")
+			end
+		else
+			if char then tipLine(char, "accent") end
+			local rich = keep("bnr" .. id, g.richPresence)
+			if rich and rich ~= "" then tipLine(rich, "text") end
+		end
+	elseif (note or "") ~= "" or #(a.friendTags or {}) > 0 then
+		GameTooltip:AddLine(" ")
+	end
+	noteLine(note, online)
+	local tags = tagLabels(a.friendTags)
+	if tags ~= "" then tipLine("Tags: " .. tags, online and "text" or "textMuted") end
+	-- The friend's broadcast, and when it was sent.
+	local msg = keep("bnm" .. id, a.customMessage)
+	if msg and msg ~= "" then
+		GameTooltip:AddLine(" ")
+		local when = a.customMessageTime and a.customMessageTime > 0 and FriendsFrame_GetLastOnline
+			and (" (%s ago)"):format(FriendsFrame_GetLastOnline(a.customMessageTime)) or ""
+		tipLine(msg .. when, "accent")
+	end
+	if not online then
+		GameTooltip:AddLine(" ")
+		tipLine(lastOnline(a.lastOnlineTime), "textMuted")
+	end
+	-- Other game accounts, as the stock tooltip lists them (at most four).
+	local n = online and C_BattleNet.GetFriendNumGameAccounts and C_BattleNet.GetFriendNumGameAccounts(i) or 0
+	local shown = 0
+	for k = 1, n > 1 and n or 0 do
+		local o = C_BattleNet.GetFriendGameAccountInfo(i, k)
+		if o and not o.hasFocus and o.clientProgram ~= "App" and o.clientProgram ~= "BSAp" and shown < 4 then
+			if shown == 0 then GameTooltip:AddLine(" ") end
+			shown = shown + 1
+			local name = clean(o.characterName) or ""
+			tipLine(o.characterLevel and o.wowProjectID == WOW_PROJECT_ID and ("%s, Level %d %s"):format(name, o.characterLevel, o.className or "") or name, "accent")
+			local rich = clean(o.richPresence)
+			if rich and rich ~= "" then tipLine(rich, "text") end
+		end
+	end
+end
+
 -- The friends list as the stock one orders it (FriendsList_Update): Battle.net
 -- favorites, then online Battle.net and WoW friends, then offline ones; the
 -- client already lists each kind online first, favorites first.
@@ -118,7 +191,15 @@ local function friends()
 				sub = info.connected and detail(info.level, info.className, info.area, classFile(info.guid)) or "Offline",
 				whisper = function() ChatFrameUtil.SendTell(info.name) end,
 				invite = function() C_PartyInfo.InviteUnit(info.name) end,
-				menu = function() FriendsFrame_ShowDropdown(info.name, info.connected, nil, nil, nil, 1, nil, nil, nil, nil, info.guid) end }
+				menu = function() FriendsFrame_ShowDropdown(info.name, info.connected, nil, nil, nil, 1, nil, nil, nil, nil, info.guid) end,
+				tip = function()
+					if info.connected then
+						GameTooltip:AddLine(" ")
+						tipLine(("Level %d %s"):format(info.level or 0, info.className or ""), "text")
+						if info.area then tipLine(info.area, "text") end
+					end
+					noteLine(info.notes, info.connected)
+				end }
 		end
 	end
 	for i = 1, (BNGetNumFriends()) do
@@ -127,6 +208,7 @@ local function friends()
 			local g, id = a.gameAccountInfo or {}, a.bnetAccountID
 			local name = keep("bn" .. id, a.accountName) or a.battleTag or ""
 			local char = keep("bnc" .. id, g.characterName)
+			keep("bnn" .. id, a.note); keep("bnm" .. id, a.customMessage) -- read out of combat for the tooltip
 			local sub
 			if not g.isOnline then
 				sub = lastOnline(a.lastOnlineTime)
@@ -145,7 +227,8 @@ local function friends()
 				status = status, canInvite = g.isOnline and char ~= nil,
 				whisper = function() ChatFrameUtil.SendBNetTell(name) end,
 				invite = function() FriendsFrame_BattlenetInviteByIndex(i) end,
-				menu = function() FriendsFrame_ShowBNDropdown(name, g.isOnline, nil, nil, nil, 1, id, nil, nil, nil, nil, a.battleTag) end } end
+				menu = function() FriendsFrame_ShowBNDropdown(name, g.isOnline, nil, nil, nil, 1, id, nil, nil, nil, nil, a.battleTag) end,
+				tip = function() bnTip(i, a, g, id) end } end
 		end
 	end
 	table.sort(list, function(x, y)

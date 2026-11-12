@@ -43,7 +43,12 @@ Nothing Lost Rule, said in the Options menu).
   friend's client icon as the stock card sets it
   (`C_Texture.SetTitleIconTexture`, `Enum.TitleIconVersion.Small`; faded
   for another WoW project, none offline), then the invite "+", faint when
-  disabled with a tooltip saying why. Click whispers, right-click opens the
+  disabled with a tooltip saying why. The row's tooltip is the stock
+  card's: the character (level, class, race, zone, faction, "In a group")
+  or the rich presence, the note ("Note: ..."), the tags, the broadcast and
+  when it was sent, "Last online" offline, and the other game accounts; a
+  WoW friend's level, zone and note. Notes are set from the right-click
+  menu (Set Note), as in the stock list. Click whispers, right-click opens the
   game's menu (`FriendsFrame_ShowDropdown`/`ShowBNDropdown`, where favorites
   are set), double-click invites. Footer: "Add friend" (primary; `W.Modal`
   with a name field, a BattleTag sends a Battle.net invite), "Send message".

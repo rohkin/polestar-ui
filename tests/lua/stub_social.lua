@@ -23,7 +23,7 @@ end
 
 -- { name, connected, level, class, zone }
 local WOW = {
-	{ "Aelric", true, 24, "PALADIN", "Elwynn Forest" },
+	{ "Aelric", true, 24, "PALADIN", "Elwynn Forest", notes = "Guild officer" },
 	{ "Brannoc", true, 22, "PRIEST", "Westfall", afk = true },
 	{ "Corwyn", true, 25, "ROGUE", "Redridge Mountains" },
 	{ "Dovaline", false, 19, "MAGE" },
@@ -36,7 +36,7 @@ function C_FriendList.GetNumOnlineFriends() return 3 end
 function C_FriendList.GetFriendInfoByIndex(i)
 	local w = WOW[i]
 	return w and { name = w[1], connected = w[2], level = w[2] and w[3] or 0, className = w[2] and CLASSES[w[4]] or nil,
-		area = w[5], afk = w.afk, guid = "Player-" .. w[4] .. "-" .. i }
+		area = w[5], afk = w.afk, notes = w.notes, guid = "Player-" .. w[4] .. "-" .. i }
 end
 function C_FriendList.GetNumIgnores() return #ignores end
 function C_FriendList.GetIgnoreName(i) return ignores[i] end
@@ -62,7 +62,7 @@ local TAG = Enum.BattleNetFriendTag
 local BN = {
 	{ name = "Sefa", tag = "Sefa#4410", online = false, last = 3 * 86400, favorite = true, tags = { TAG.Raiding } },
 	{ name = "Mira", tag = "Mira#1123", online = true, client = "WoW", char = "Thessaly", level = 26, class = "DRUID", zone = "Darkshore",
-		afk = true, free = true, tags = { TAG.Raiding, TAG.HealerRole } },
+		afk = true, free = true, tags = { TAG.Raiding, TAG.HealerRole }, note = "Raid healer", broadcast = "LFG Deadmines" },
 	{ name = "Jon", tag = "Jon#2871", online = true, client = "App", rich = "In the Battle.net app", dnd = true, tags = { TAG.Roleplaying } },
 }
 C_BattleNet = {}
@@ -98,8 +98,9 @@ function C_BattleNet.GetFriendAccountInfo(i)
 	if not b then return nil end
 	local secret = InCombatLockdown() and stub.SECRET
 	return { bnetAccountID = 100 + i, accountName = secret or b.name, isFavorite = b.favorite or false, battleTag = b.tag, lastOnlineTime = b.last and time() - b.last,
-		isAFK = b.afk or false, isDND = b.dnd or false, friendTags = b.tags or {},
-		gameAccountInfo = { isOnline = b.online, clientProgram = b.client or "", wowProjectID = b.client == "WoW" and WOW_PROJECT_ID or nil, characterName = b.char and (secret or b.char), characterLevel = b.level,
+		isAFK = b.afk or false, isDND = b.dnd or false, friendTags = b.tags or {}, note = b.note or "", customMessage = b.broadcast or "",
+		customMessageTime = b.broadcast and time() - 3600 or 0,
+		gameAccountInfo = { isOnline = b.online, gameAccountID = b.online and 500 + i or nil, raceName = b.class and "Night Elf", factionName = b.class and "Alliance", clientProgram = b.client or "", wowProjectID = b.client == "WoW" and WOW_PROJECT_ID or nil, characterName = b.char and (secret or b.char), characterLevel = b.level,
 			className = b.class and CLASSES[b.class], areaName = b.zone, richPresence = b.rich,
 			playerGuid = b.class and "Player-" .. b.class .. "-9" } }
 end
