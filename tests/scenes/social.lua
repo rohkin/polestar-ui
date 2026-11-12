@@ -24,7 +24,7 @@ stub.inCombat = false
 assert(f.psSubtitle == "5 of 8 friends online", "subtitle: " .. tostring(f.psSubtitle))
 assert(f.psLine:GetText() == "Testchar#1000", "subject line: " .. tostring(f.psLine:GetText()))
 assert(f.psName:GetText() == "Testchar", "player name")
--- One list, as the stock one orders it: the friend request, then the Favorites and Friends
+-- One list, as the stock one orders it: the Favorites and Friends
 -- groups headed online/total, online Battle.net then WoW friends before offline ones;
 -- online Battle.net rows carry their client's icon, favorites a star after the name.
 local function rowsInOrder()
@@ -43,7 +43,7 @@ local function row(name)
 		if r:IsShown() and r.Name and r.Name:GetText() == name then return r end
 	end
 end
-assert(rowsInOrder() == "Rook,Favorites 0/1,Sefa,Friends 5/7,Mira,Jon,Aelric,Brannoc,Corwyn,Dovaline,Eldric", "order: " .. rowsInOrder())
+assert(rowsInOrder() == "Favorites 0/1,Sefa,Friends 5/7,Mira,Jon,Aelric,Brannoc,Corwyn,Dovaline,Eldric", "order: " .. rowsInOrder())
 assert(row("Sefa").Fav:IsShown() and row("Sefa").Fav.atlas == "friends-icon-favorites-dis" and not row("Mira").Fav:IsShown(), "favorite mark")
 assert(row("Mira").Client:IsShown() and row("Mira").Client.psClient == "WoW" and row("Jon").Client.psClient == "App", "client icon")
 assert(row("Mira").Client.psVersion == Enum.TitleIconVersion.Small, "client icon size")
@@ -68,10 +68,6 @@ stub.advance(0.5)
 assert(stub.invited == "Corwyn" and stub.told == nil, "double-click whispered too")
 stub.RunScript(row("Eldric"), "OnClick", "RightButton")
 assert(stub.popup[1] == "FRIEND" and stub.popup[2] == "Eldric", "right-click menu")
--- The friend request: Accept answers it and it leaves the list.
-assert(row("Rook").Accept:IsShown() and row("Rook").Decline:IsShown() and not row("Rook").Client:IsShown(), "request row")
-row("Rook").Accept:Click()
-assert(stub.accepted == 7 and not row("Rook"), "accept")
 -- Add friend: our dialog with a name field.
 f.footerButtons.right[1]:Click()
 assert(PolestarModal:IsShown(), "no add friend dialog")

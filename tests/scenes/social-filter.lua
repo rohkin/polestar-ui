@@ -31,7 +31,7 @@ local function is(name, token)
 	return row(name).Pip:IsShown() and math.abs(c[1] - w[1]) < 0.01 and math.abs(c[2] - w[2]) < 0.01
 end
 assert(is("Aelric", "success") and is("Brannoc", "warning") and is("Mira", "warning") and is("Jon", "danger") and is("Eldric", "textMuted"), "pips")
-assert(not row("Rook").Pip:IsShown() and not row("Favorites 0/1").Pip:IsShown(), "pip on a request or heading")
+assert(not row("Favorites 0/1").Pip:IsShown(), "pip on a heading")
 -- Invite: a friend in WoW only; the app and offline ones show it disabled.
 assert(row("Mira").Invite:IsShown() and row("Mira").Invite:IsEnabled(), "invite in WoW")
 assert(not row("Jon").Invite:IsEnabled() and not row("Eldric").Invite:IsEnabled(), "invite out of WoW")

@@ -137,8 +137,19 @@ function GetRaidRosterInfo(i)
 	return m[1], 0, m[2], 25, CLASSES[m[3]], m[3], "", m[5] ~= false, false, nil, false, m[4]
 end
 
--- Pending Battle.net friend requests: stub.accepted / stub.declined record the answer.
-local invites = { { inviteID = 7, accountName = "Rook" } }
+-- Pending Battle.net friend requests: stub.accepted / stub.declined record the
+-- answer, stub.blocked the blocked account, stub.reported the report asked for.
+Enum.BattleNetFriendLevel = { BattleTag = 0, RealID = 1, Title = 2 }
+local invites = {
+	{ inviteID = 7, accountName = "Rook", friendLevel = Enum.BattleNetFriendLevel.BattleTag, creationTimestamp = time() - 2 * 86400 },
+	{ inviteID = 8, accountName = "Wren", friendLevel = Enum.BattleNetFriendLevel.Title },
+	{ inviteID = 9, accountName = "Tamsin Ashby", friendLevel = Enum.BattleNetFriendLevel.RealID, creationTimestamp = time() - 5 * 86400 },
+}
+function C_BattleNet.SetBlocked(id, on) stub.blocked = on and id or nil end
+Enum.ReportType = { Friend = 3 }
+ReportInfo = { CreateReportInfoFromType = function(_, t) return { reportType = t } end }
+PlayerLocation = { CreateFromBattleNetID = function(_, id) return { bnetID = id } end }
+ReportFrame = { InitiateReport = function(_, info, name, loc) stub.reported = { info.reportType, name, loc.bnetID } end }
 function BNGetNumFriendInvites() return #invites end
 function C_BattleNet.GetFriendInviteInfo(i) return invites[i] end
 local function answer(id)

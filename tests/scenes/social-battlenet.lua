@@ -3,8 +3,7 @@
 --@ stubs: stub_social.lua
 -- Battle.net friends on the Friends page: in WoW (character, level, class, zone), in the app,
 -- offline (last online). Click whispers the account, right-click opens its menu (where the stock
--- list sets a favorite). Declining a request removes it. The search finds a character name too,
--- and hides the requests while it runs.
+-- list sets a favorite). The search finds a character name too.
 PolestarUI.Show("social", "friends")
 local f = PolestarUISocial
 local function plain(t) return (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
@@ -21,8 +20,6 @@ stub.advance(0.5)
 assert(stub.told == "Mira", "whisper")
 stub.RunScript(row("Sefa"), "OnClick", "RightButton")
 assert(stub.popup[1] == "BN_FRIEND" and stub.popup[2] == "Sefa", "menu")
-row("Rook").Decline:Click()
-assert(stub.declined == 7 and not row("Rook"), "decline")
 f.Search:SetText("thess")
 stub.RunScript(f.Search, "OnTextChanged")
 assert(row("Mira") and not row("Jon") and not row("Aelric"), "search by character")

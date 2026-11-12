@@ -26,6 +26,12 @@ local function classFile(guid)
 	return guid and select(2, GetPlayerInfoByGUID(guid))
 end
 
+-- A tooltip line in a theme colour.
+local function tipLine(text, token)
+	local r, g, b = Theme.Color(token or "textDim")
+	GameTooltip:AddLine(text, r, g, b, true)
+end
+
 local function lastOnline(t)
 	return t and t > 0 and FriendsFrame_GetLastOnline and ("Last online %s ago"):format(FriendsFrame_GetLastOnline(t)) or "Offline"
 end
@@ -147,14 +153,30 @@ local function friends()
 	return list
 end
 
--- Pending Battle.net friend requests, above the friends as in the stock list.
+-- Pending Battle.net friend requests: the stock Friend Requests tab's cards
+-- (FriendRequestsListTemplates.lua): who, what kind, and when it was sent.
+local function requestKind(level)
+	local L = Enum.BattleNetFriendLevel or {}
+	return level == L.RealID and "Real ID friend" or level == L.Title and "WoW friend" or "Battle.net friend"
+end
+
 local function requests()
 	local list = {}
+	local L = Enum.BattleNetFriendLevel or {}
 	for i = 1, BNGetNumFriendInvites() do
 		local inv = C_BattleNet.GetFriendInviteInfo(i)
 		if inv then
+			local sent = inv.creationTimestamp and inv.creationTimestamp > 0 and FriendsFrame_GetLastOnline
+				and ("Sent %s ago"):format(FriendsFrame_GetLastOnline(inv.creationTimestamp))
+			local kind = requestKind(inv.friendLevel)
 			list[#list + 1] = { name = keep("inv" .. inv.inviteID, inv.accountName) or "", online = true, bnet = true,
-				sub = "Wants to be your Battle.net friend", request = inv.inviteID }
+				sub = sent and kind .. " · " .. sent or kind, request = inv.inviteID, realID = inv.friendLevel == L.RealID,
+				-- As FriendsListUtil.CanAddFriendRequestSenderToBattleNetBlockList: not a WoW friend's.
+				blockable = inv.friendLevel ~= nil and inv.friendLevel ~= L.Title,
+				tip = function()
+					if sent then tipLine(sent, "text") end
+					tipLine(kind, "textDim")
+				end }
 		end
 	end
 	return list
@@ -198,26 +220,35 @@ local function matches(e)
 	return query == "" or e.name:lower():find(query, 1, true) or (e.char and e.char:lower():find(query, 1, true))
 end
 
--- The stock list's two folding groups, Favorites and Friends, each headed
--- "online/total" of the friends shown; requests stay above them.
-local function withHeads(list)
-	local out = {}
-	local heads = { fav = { head = "Favorites", key = "fav", kids = {} }, all = { head = "Friends", key = "all", kids = {} } }
+-- Folding groups as the stock lists head them, each entry under the first
+-- head whose test it passes; `label(online, total)` names the head. An empty
+-- group shows no head.
+local function grouped(list, heads)
+	local kids, out = {}, {}
+	for i in ipairs(heads) do kids[i] = {} end
 	for _, e in ipairs(list) do
-		local h = not e.request and heads[e.favorite and "fav" or "all"]
-		if h then h.kids[#h.kids + 1] = e else out[#out + 1] = e end
+		for i, h in ipairs(heads) do
+			if not h.test or h.test(e) then kids[i][#kids[i] + 1] = e; break end
+		end
 	end
-	for _, h in ipairs({ heads.fav, heads.all }) do
-		if #h.kids > 0 then
+	for i, h in ipairs(heads) do
+		local k = kids[i]
+		if #k > 0 then
 			local on = 0
-			for _, e in ipairs(h.kids) do if e.online then on = on + 1 end end
-			h.name, h.online = ("%s %d/%d"):format(h.head, on, #h.kids), true
-			out[#out + 1] = h
-			if not collapsed[h.key] then for _, e in ipairs(h.kids) do out[#out + 1] = e end end
+			for _, e in ipairs(k) do if e.online then on = on + 1 end end
+			out[#out + 1] = { head = true, key = h.key, name = h.label(on, #k), online = true }
+			if not collapsed[h.key] then for _, e in ipairs(k) do out[#out + 1] = e end end
 		end
 	end
 	return out
 end
+
+-- The stock friends list's Favorites and Friends groups, "online/total" of those shown.
+local FRIEND_HEADS = {
+	{ key = "fav", test = function(e) return e.favorite end, label = function(on, n) return ("Favorites %d/%d"):format(on, n) end },
+	{ key = "all", label = function(on, n) return ("Friends %d/%d"):format(on, n) end },
+}
+local REQUEST_HEADS = { { key = "recv", label = function(_, n) return ("Received (%d)"):format(n) end } }
 
 ---------------------------------------------------------------------------
 -- Friend rows: name over a detail line, in one row panel.
@@ -227,11 +258,36 @@ local DOUBLE_CLICK = 0.3
 
 local function rowEnter(r)
 	local e = r.psEntry
-	if not e.whisper then return end
+	if not e.whisper and not e.tip then return end
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
-	GameTooltip:SetText(e.name)
-	ns.TooltipHint("Click to whisper. Double-click to invite to your group. Right-click for more.")
+	GameTooltip:SetText(e.title or e.name)
+	-- The stock card's tooltip lines (details, note, tags, broadcast...).
+	if e.tip then e.tip() end
+	if e.whisper then ns.TooltipHint("Click to whisper. Double-click to invite to your group. Right-click for more.") end
 	GameTooltip:Show()
+end
+
+-- The stock Decline menu (FriendRequestsListSocialCardDeclineButtonMixin).
+local function declineItems(e)
+	local id = e.request
+	local items = {
+		{ text = "Decline", onClick = function() BNDeclineFriendInvite(id); M.Show() end },
+		{ text = "Report player", onClick = function()
+			ReportFrame:InitiateReport(ReportInfo:CreateReportInfoFromType(Enum.ReportType.Friend), e.name,
+				PlayerLocation:CreateFromBattleNetID(id), true)
+		end },
+	}
+	if e.blockable then
+		items[#items + 1] = { text = "Block invites", onClick = function()
+			W.Modal({ title = "Block invites", text = ("Block all future invites from %s?"):format(e.name), action = "Block", danger = true,
+				onAccept = function()
+					C_BattleNet.SetBlocked(id, true)
+					BNDeclineFriendInvite(id)
+					M.Show() -- at once (docs/CLIENT.md, rule 6)
+				end })
+		end }
+	end
+	return items
 end
 
 local function newRow(panel, i)
@@ -272,9 +328,10 @@ local function newRow(panel, i)
 		M.Show() -- at once, not on the client's event (docs/CLIENT.md, rule 6)
 	end)
 	r.Remove:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+	-- Decline opens the stock card's menu: Decline, Report player, Block invites.
 	r.Decline = W.Button(r, "Decline", function(self)
-		BNDeclineFriendInvite(self:GetParent().psEntry.request)
-		M.Show()
+		if W.MenuShown(self) then return W.HideMenu() end
+		W.ShowMenu(self, declineItems(self:GetParent().psEntry), { minWidth = 160 })
 	end)
 	r.Decline:SetWidth(84)
 	r.Decline:SetPoint("RIGHT", r, "RIGHT", -12, 0)
@@ -606,13 +663,27 @@ end
 local PAGES = {
 	friends = { "Friends", nil, "No friends yet. Add one below." }, -- subtitle: friends online
 	allies = { "Recent allies", "Players you grouped or played with lately.", "No recent allies yet." },
+	requests = { "Friend requests", "Players who asked to be your friend.", "No friend requests." },
 	ignored = { "Ignored", "You see nothing these players say.", "You ignore no one." },
 	raid = { "Raid", "Your raid by group. To move players, see Options.", nil },
 }
 
+-- The stock Friend Requests tab's one-time notice: a Real ID friend sees
+-- your real name (FriendRequestsListRealIDWarningMixin; CVar pendingInviteInfoShown).
+local function realIDWarning()
+	if GetCVarBool("pendingInviteInfoShown") or not select(7, BNGetInfo()) then return end
+	for _, e in ipairs(requests()) do
+		if e.realID then
+			return W.Modal({ title = "Real ID friend requests", action = "Continue",
+				text = "Accepting a Real ID friend request shares your real name with that player, and theirs with you.",
+				onAccept = function() SetCVar("pendingInviteInfoShown", 1) end })
+		end
+	end
+end
+
 local function refresh()
 	if page == "allies" and not alliesOn() then page = "friends" end
-	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {} }
+	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {}, requests = requests() }
 	local _, bnOnline = BNGetNumFriends()
 	local online = C_FriendList.GetNumOnlineFriends() + bnOnline
 	f.psName:SetText(keep("player", UnitName("player")) or "")
@@ -627,13 +698,10 @@ local function refresh()
 	st.Label:SetText(BNConnected() and battleTag() or "Battle.net offline")
 	st:SetEnabled(BNConnected())
 	st.Arrow:SetShown(BNConnected())
-	local nFriends, inv = #lists.friends, requests()
-	-- Requests head the list unless a search is on.
-	if query == "" then
-		for i = #inv, 1, -1 do table.insert(lists.friends, 1, inv[i]) end
-	end
+	local nFriends = #lists.friends
 	local nav = { { key = "friends", label = "Friends", icon = "star", count = nFriends } }
 	if alliesOn() then nav[#nav + 1] = { key = "allies", label = "Recent allies", icon = "compact", count = #lists.allies } end
+	nav[#nav + 1] = { key = "requests", label = "Friend requests", icon = "plus", count = #lists.requests }
 	nav[#nav + 1] = { key = "ignored", label = "Ignored", icon = "close", count = #lists.ignored }
 	nav[#nav + 1] = { key = "raid", label = "Raid", icon = "bolt", count = IsInRaid() and GetNumGroupMembers() or 0 }
 	W.ShellNav(f, nav, page, function(k) page = k; M.Show() end)
@@ -654,7 +722,8 @@ local function refresh()
 	else
 		local list = {}
 		for _, e in ipairs(lists[page]) do if matches(e) then list[#list + 1] = e end end
-		if page == "friends" then list = withHeads(list) end
+		if page == "friends" then list = grouped(list, FRIEND_HEADS) end
+		if page == "requests" then list = grouped(list, REQUEST_HEADS) end
 		local ready = page ~= "allies" or C_RecentAllies.IsRecentAllyDataReady()
 		f.psEmpty:SetText(not ready and "Recent allies load in the game's Social window: type /friends and open its Recent Allies tab." or (query ~= "" or next(filters)) and "No one matches." or p[3])
 		h = paintRows(list)
@@ -669,6 +738,7 @@ function M.Show(key)
 	-- stock Recent Allies tab asks, and RECENT_ALLIES_DATA_READY fills ours.
 	refresh()
 	f:Show()
+	if page == "requests" then realIDWarning() end
 end
 
 function M.Toggle(key)

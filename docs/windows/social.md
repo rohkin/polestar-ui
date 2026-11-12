@@ -29,10 +29,9 @@ Nothing Lost Rule, said in the Options menu).
   For Queue), then the Interests and Roles tags this game type supports (no
   Delves on Forever), and Clear filters; a pick keeps it open. Battle.net
   friends filter through `C_BattleNet.SearchFriends`; WoW friends stay only
-  for the presence filters. Then Friends, Recent allies, Ignored, Raid as
+  for the presence filters. Then Friends, Recent allies, Friend requests, Ignored, Raid as
   nav rows, each with its count.
-- **Friends:** pending Battle.net requests first (Accept, Decline), then the
-  stock list's folding groups "Favorites 2/5" and "Friends 9/54" (online of
+- **Friends:** the stock list's folding groups "Favorites 2/5" and "Friends 9/54" (online of
   shown), Battle.net favorites, then online Battle.net and WoW friends, then
   offline ones. Each row: the presence pip in its top-left corner (success,
   warning, danger, textMuted), the name in Body (a WoW friend in class
@@ -48,6 +47,13 @@ Nothing Lost Rule, said in the Options menu).
   game's menu (`FriendsFrame_ShowDropdown`/`ShowBNDropdown`, where favorites
   are set), double-click invites. Footer: "Add friend" (primary; `W.Modal`
   with a name field, a BattleTag sends a Battle.net invite), "Send message".
+- **Friend requests:** the stock Friend Requests tab: a folding "Received
+  (3)" group of cards, each the requester, the kind (Battle.net, Real ID or
+  WoW friend) and "Sent 2 days ago"; Accept, and Decline's menu as the
+  stock card's: Decline, Report player (`ReportFrame:InitiateReport`, a
+  Friend report) and, for a Battle.net request, Block invites behind a
+  confirm (`C_BattleNet.SetBlocked`, then decline). A Real ID request shows
+  the stock tab's one-time notice (CVar `pendingInviteInfoShown`).
 - **Recent allies:** `C_RecentAllies` in the client's order: level, class,
   where they are and how you met. `TryRequestRecentAlliesData` is restricted
   (addon code may not call it): until the data is ready the page says to
@@ -67,5 +73,5 @@ Nothing Lost Rule, said in the Options menu).
   icons); scenes `social` (keys through override bindings, refused in
   combat; order, client icons, row slots), `social-battlenet`,
   `social-filter` (filter menu, groups, pips, invite, presence),
-  `social-allies`, `social-raid`, `social-secret` (names secret in combat
+  `social-requests`, `social-allies`, `social-raid`, `social-secret` (names secret in combat
   keep the last read).
