@@ -309,6 +309,20 @@ local function paintList(list)
 	return 24 + half * ROW_H
 end
 
+-- The stock book shows the assisted combat spell above its pages
+-- (AssistedCombatManager's action spell, where the client has one): ours
+-- lists it first under General, a spell row like any other.
+local function assisted(cat, out)
+	local m = AssistedCombatManager
+	if cat.key ~= "line1" or not (m and m.HasActionSpell and m:HasActionSpell()) then return out end
+	local slot, b = C_SpellBook.FindSpellBookSlotForSpell(m:GetActionSpellID(), true)
+	if slot and (slot <= cat.offset or slot > cat.offset + cat.n) then
+		local info = C_SpellBook.GetSpellBookItemInfo(slot, b)
+		if info then out[#out + 1] = { slot = slot, bank = b, info = info } end
+	end
+	return out
+end
+
 -- WhatsTraining shows its own window from the launcher it registers.
 local function whatsTraining()
 	local ldb = LibStub and LibStub("LibDataBroker-1.1", true)
@@ -412,7 +426,7 @@ local function refresh()
 		local cur
 		for _, c in ipairs(cats) do if c.key == section then cur = c end end
 		W.ShellNav(f, cats, section, function(k) section = k; M.Show() end)
-		if cur then spells(cur, list) end
+		if cur then spells(cur, assisted(cur, list)) end
 		-- An opened flyout's spells are not counted again.
 		local n = 0
 		for _, s in ipairs(list) do if not s.member then n = n + 1 end end

@@ -35,6 +35,9 @@ Talents window's.
   "Passive", or for a spell not learned yet "Learn at level 26" with the name
   in textMuted and the icon desaturated. With no second line the name sits on
   the well's middle. Lower ranks and flyouts follow the stock settings.
+- **Assisted combat:** where the client has an assisted combat spell
+  (`AssistedCombatManager`'s action spell, which the stock book shows above
+  its pages), it is the first row under General.
 - **Flyouts** (portals, for example): with "Use flyouts", as the stock book,
   a flyout is one entry ("2 spells" under its name) and its loose spells are
   left out; a click lists its known spells (`GetFlyoutSlotInfo`, found in
