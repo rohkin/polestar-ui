@@ -262,3 +262,4 @@ C_RecentAllies = {
 	end,
 }
 function UnitPopup_OpenMenu(which, context) stub.popup = { which, context.name } end
+function SpellIsTargeting() return stub.targeting or false end

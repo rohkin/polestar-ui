@@ -675,7 +675,9 @@ local overRaid = ns.Overlay("PolestarUISocialRaidUnit", {
 		ns.TooltipHint(canArrange() and "Click to target. Drag to another group. Right-click for more." or "Click to target. Right-click for more.")
 		GameTooltip:Show()
 	end,
-	pickup = function(r) if r.psMember and canArrange() then dragFrom = r.psMember end end,
+	pickup = function(r)
+		if r.psMember and canArrange() and not InCombatLockdown() and not SpellIsTargeting() then dragFrom = r.psMember end
+	end,
 	setup = function(over)
 		over:HookScript("OnDragStop", drop)
 		over:HookScript("PostClick", function(self, button)

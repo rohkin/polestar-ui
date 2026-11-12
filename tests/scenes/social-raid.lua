@@ -88,6 +88,16 @@ assert(stub.moved == nil and not f.psRaidBar.All:IsEnabled(), "member arranged t
 assert(f.psRaidBar.All.psReason == "Only the raid leader can set this.", "all assist reason")
 stub.notLeader = false
 PolestarUI.Show("social", "raid")
+-- No drag while a spell waits for its target.
+stub.targeting = true
+stub.RunScript(row("Kael"), "OnEnter")
+hollis = row("Hollis")
+hollis.IsMouseOver = function() return true end
+stub.RunScript(over, "OnDragStart")
+stub.RunScript(over, "OnDragStop")
+hollis.IsMouseOver = nil
+assert(stub.moved == nil, "dragged while targeting")
+stub.targeting = false
 -- Footer: Ready check, Convert to party (refused for a raid this size), Raid info.
 assert(fb.right[1].Label:GetText() == "Ready check" and fb.right[2].Label:GetText() == "Convert to party", "footer")
 fb.right[1]:Click()
