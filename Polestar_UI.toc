@@ -2,6 +2,7 @@
 ## Title: Polestar: UI
 ## Notes: A companion to Polestar: the game's own windows in Polestar's look.
 ## Version: 0.0.4
+## X-Curse-Project-ID: 1798489
 ## Category: Polestar
 ## Group: Polestar
 ## Dependencies: Polestar

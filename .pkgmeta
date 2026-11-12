@@ -1,0 +1,12 @@
+package-as: Polestar_UI
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+ignore:
+  - docs
+  - screenshots
+  - tests
+  - tools
+  - package.json
