@@ -25,8 +25,10 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   broadcast (the stock broadcast box: the current message to edit, 127
   letters, `C_BattleNet.SetCustomMessage` on a change) and opens the ignore
   list (the stock Battle.net bar menu's Ignore List).
-- **Band:** the page title; on Friends the subtitle is "5 of 8 friends
-  online", on the other pages one line saying what the page is. Options
+- **Band:** the page title and its status: "5 of 8 friends online", "1 of 2
+  online" (Recent allies; "Not loaded yet" before the data), "3 requests",
+  "3 ignored · 1 blocked", "12 of 40 players" or "Not in a raid", "2
+  lockouts" (Raid info). Options
   (the Nothing Lost Rule: Quick Join and Recruit a Friend, where the game
   has them, stay on the game's window) is the band's only button.
 - **Sidebar:** the shell's search ("Search for keywords"; names and
@@ -34,9 +36,13 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   the search row as in Crafting (accent while a filter is on). Its menu is
   the stock list's: Status (Online, Away, Busy, Offline, In Queue, Available
   For Queue), then the Interests and Roles tags this game type supports (no
-  Delves on Forever), and Clear filters; a pick keeps it open. Battle.net
-  friends filter through `C_BattleNet.SearchFriends`; WoW friends stay only
-  for the presence filters. Then Friends, Recent allies, Friend requests, Ignored, Raid as
+  Delves on Forever), and Clear filters; a pick keeps it open; the tooltip
+  counts the picks ("Filter (2 on)"). Presence and tags filter from the
+  friends' own data, as the stock search reads them (any checked status, then
+  any checked tag); WoW friends stay only for the presence filters. In Queue
+  and Available For Queue are on no friend's data: the restricted
+  `C_BattleNet.SearchFriends` answers them, called only from the pick's
+  click, and that answer holds until the next pick. Then Friends, Recent allies, Friend requests, Ignored, Raid as
   nav rows, each with its count.
 - **Friends:** the stock list's folding groups "Favorites 2/5" and "Friends 9/54" (online of
   shown), Battle.net favorites, then online Battle.net and WoW friends, then
@@ -111,15 +117,18 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   (promote, main tank, remove...), and the leader or an assistant drags a
   player onto another (`SwapRaidSubgroup`) or into a group with room
   (`SetRaidSubgroup`), redrawn at once; out of combat only (the button
-  hides in combat). Footer: "Raid info" (the stock side window, on while
+  hides in combat) and never while a spell is targeting. All assist, greyed
+  for anyone but the leader, says so in its tooltip. Footer: "Raid info" (the stock side window, on while
   saved: `GetSavedInstanceInfo`, world bosses, "Resets in 3 days" or
   "Expired", Extend / Unextend / Reactivate where
-  `C_RaidLocks.IsRaidLockExtendFeatureSupported`; "Groups" goes back),
+  `C_RaidLocks.IsRaidLockExtendFeatureSupported`, greyed with its reason
+  where the lock cannot be extended; "Groups" goes back),
   then "Ready check" (`DoReadyCheck`, leader or assistant; the stock raid
   manager's) and "Convert to party" (`AllowedToDoPartyConversion(false)`).
 - **Taint:** never `C_RecentAllies.TryRequestRecentAlliesData` (forbidden
   to addons: ADDON_ACTION_FORBIDDEN in game). The calls the API docs mark
-  `HasRestrictions` (`C_FriendList.AddFriend`, `C_BattleNet.SetAFK`/`SetDND`/
+  `HasRestrictions` (`C_FriendList.AddFriend`, `C_BattleNet.SearchFriends`
+  (the queue filters), `C_BattleNet.SetAFK`/`SetDND`/
   `SetAppearOffline`/`SetBlocked`/`SetCustomMessage`/
   `SendTitleFriendInviteByName`, `C_PartyInfo.ConvertToRaid`/
   `ConvertToParty`/`SetEveryoneIsAssistant`, `DoReadyCheck`,
@@ -138,6 +147,8 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   from addon code, `C_FriendList`, `C_BattleNet`, `C_RecentAllies`, title
   icons); scenes `social` (keys through override bindings, refused in
   combat; order, client icons, row slots), `social-battlenet`,
-  `social-filter` (filter menu, groups, pips, invite, presence),
-  `social-add` (add friend paths, broadcast), `social-requests`, `social-ignored`, `social-allies`, `social-raid`, `social-secret` (names secret in combat
-  keep the last read).
+  `social-filter` (filter menu, groups, pips, invite, presence; the
+  restricted search only from a queue pick's click),
+  `social-add` (add friend paths, broadcast), `social-requests`, `social-ignored`, `social-allies` (each with its band
+  status), `social-raid` (no drag in combat or while targeting, All assist's
+  reason), `social-secret` (names secret in combat keep the last read).
