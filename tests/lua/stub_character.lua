@@ -216,3 +216,14 @@ Enum.Damageclass = { Arcane = 6, Fire = 2, Frost = 4, Nature = 3, Shadow = 5 }
 DAMAGE_SCHOOL3, DAMAGE_SCHOOL4, DAMAGE_SCHOOL5, DAMAGE_SCHOOL6, DAMAGE_SCHOOL7 = "Fire", "Nature", "Frost", "Shadow", "Arcane"
 STAT_CATEGORY_RESISTANCE = "Resistance"
 function UnitResistance(unit, class) local v = class == 2 and 15 or 0; return v, v, v, 0 end
+
+-- Titles: three known of four, the second worn; SetCurrentTitle records stub.title.
+PLAYER_TITLE_NONE = "None"
+local TITLES = { { "Private %s", true }, { "Scout %s", true }, { "Grunt %s", false }, { "%s the Explorer", true } }
+local currentTitle = 2
+function GetNumTitles() return #TITLES end
+function IsTitleKnown(i) return TITLES[i] and TITLES[i][2] or false end
+function GetTitleName(i) return TITLES[i][1]:gsub("%%s", ""), true end
+function GetCurrentTitle() return currentTitle end
+function SetCurrentTitle(i) currentTitle, stub.title = i, i end
+function strtrim(s) return (s:gsub("^%s+", ""):gsub("%s+$", "")) end
