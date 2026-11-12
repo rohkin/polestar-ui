@@ -138,7 +138,7 @@ local tab = "buy"
 local sel, searched = {}, nil -- the browse: the category path ({ top, sub, subsub } indexes); whether a search ran
 local view -- an item's listings: { key, info, n (commodity count) }
 local quote -- a commodity purchase waiting on its quote: { id, n, unit, total, name }
-local sell = { n = 1, price = 0, duration = 2 } -- loc, key, commodity, touched
+local sell = { n = 1, price = 0, bid = 0, buyoutOnly = true } -- loc, key, commodity, touched, multi
 local pendingPost, bidAmount
 local rows = {}
 local M = {}
@@ -853,22 +853,35 @@ end
 ---------------------------------------------------------------------------
 -- Sell: the item from the cursor, how many, the price, the duration.
 
+local SILVER = 100
+
+-- The stock default (AuctionHouseSellFrameMixin:GetDefaultPrice): the
+-- vendor price times the client's multiplier, up to the next silver.
 local function defaultPrice(id)
 	if not AH.ShouldAutoPopulatePrice() then return 0 end
-	local vendor = select(11, C_Item.GetItemInfo(id)) or 0
+	local vendor = select(11, C_Item.GetItemInfo(id))
 	local k = Constants and Constants.AuctionConstants and Constants.AuctionConstants.DEFAULT_AUCTION_PRICE_MULTIPLIER or 1.5
-	-- Silver steps, as the stock default (GetDefaultPrice).
-	return math.max(100, math.ceil(vendor * k / 100) * 100)
+	local p = vendor and vendor * k or SILVER
+	p = p + (SILVER - p % SILVER)
+	return math.max(math.floor(p), SILVER)
 end
+
+-- The duration the stock dropdown keeps (the auctionHouseDurationDropdown CVar).
+local function duration() return tonumber(GetCVar("auctionHouseDurationDropdown")) or 2 end
 
 local function setItem(loc)
 	if loc and not (loc:IsValid() and AH.IsSellItemValid(loc, true)) then return end
+	if sell.multi then return end -- the stock disabled overlay while a multisell runs
 	sell.loc, sell.n, sell.touched, pendingPost = loc, 1, false, nil
+	sell.bid, sell.buyoutOnly = 0, true
 	if loc then
 		sell.key = AH.GetItemKeyFromItem(loc)
 		sell.commodity = AH.GetItemCommodityStatus(loc) == Enum.ItemCommodityStatus.Commodity
 		sell.price = defaultPrice(C_Item.GetItemID(loc))
+		-- A commodity starts at the stack's count, an item at one.
+		if sell.commodity then sell.n = math.max(1, math.min(C_Item.GetStackCount(loc) or 1, AH.GetAvailablePostCount(loc))) end
 		f.psSell.Price.Set(sell.price)
+		f.psSell.Bid.Set(0)
 		AH.SendSellSearchQuery(sell.key, sorts(sell.commodity and "commodity:sell" or "item:sell"), true)
 	end
 	paint()
@@ -893,15 +906,42 @@ local function listed(id)
 	end
 end
 
+-- The bid and buyout an item goes up with: none for a zero (GetPrice).
+local function prices()
+	local bid = not sell.commodity and not sell.buyoutOnly and sell.bid > 0 and sell.bid or nil
+	return bid, sell.price > 0 and sell.price or nil
+end
+
+local function deposit()
+	if not sell.loc then return 0 end
+	return sell.commodity and AH.CalculateCommodityDeposit(sell.key.itemID, duration(), sell.n)
+		or AH.CalculateItemDeposit(sell.loc, duration(), sell.n) or 0
+end
+
+-- CanPostItem: why the post cannot go yet (nil: it can).
+local function cannotPost()
+	if not sell.loc or not sell.loc:IsValid() then return AUCTION_HOUSE_SELL_FRAME_ERROR_ITEM or "Choose an item to sell." end
+	if sell.multi then return "" end
+	if GetMoney() < deposit() then return AUCTION_HOUSE_SELL_FRAME_ERROR_DEPOSIT or "Not enough money for the deposit." end
+	if sell.n < 1 then return AUCTION_HOUSE_SELL_FRAME_ERROR_QUANTITY or "Choose how many to sell." end
+	if not AH.IsThrottledMessageSystemReady() then return ERR_GENERIC_THROTTLE or "The auction house is busy. Try again in a moment." end
+	local bid, buy = prices()
+	if not bid and not buy then return AUCTION_HOUSE_SELL_FRAME_ERROR_PRICE or "Set a price." end
+	if bid and buy and buy <= bid then return AUCTION_HOUSE_SELL_FRAME_ERROR_BUYOUT or "The buyout must be more than the starting price." end
+end
+
 -- Post's click: the restricted PostCommodity/PostItem, straight from it. A
 -- post the client wants confirmed waits for AUCTION_HOUSE_POST_WARNING.
 local function post()
 	local s = sell
-	if not s.loc or s.price <= 0 then return end
-	local args = s.commodity and { s.loc, s.duration, s.n, s.price } or { s.loc, s.duration, s.n, nil, s.price }
+	if cannotPost() then return end
+	PlaySound(SOUNDKIT.LOOT_WINDOW_COIN_SOUND)
+	local bid, buy = prices()
+	local args = s.commodity and { s.loc, duration(), s.n, s.price } or { s.loc, duration(), s.n, bid, buy }
 	args.commodity = s.commodity
 	local fn = s.commodity and AH.PostCommodity or AH.PostItem
-	if fn(unpack(args, 1, 5)) then pendingPost = args else setItem(nil) end
+	-- Several items post one by one (the multisell events); one clears now.
+	if fn(unpack(args, 1, 5)) then pendingPost = args elseif s.commodity or s.n == 1 then setItem(nil) end
 end
 
 local function confirmPost()
@@ -912,7 +952,7 @@ local function confirmPost()
 			pendingPost = nil
 			local fn = p.commodity and AH.ConfirmPostCommodity or AH.ConfirmPostItem
 			fn(unpack(p, 1, 5))
-			setItem(nil)
+			if p.commodity or p[3] == 1 then setItem(nil) end
 		end,
 		onCancel = function() pendingPost = nil end })
 end
@@ -920,16 +960,22 @@ end
 local function durationMenu(self)
 	local items = {}
 	for i, label in ipairs(DURATIONS) do
-		items[i] = { text = label, checked = sell.duration == i, onClick = function() sell.duration = i; paint() end }
+		items[i] = { text = label, checked = duration() == i, onClick = function()
+			SetCVar("auctionHouseDurationDropdown", i)
+			paint()
+		end }
 	end
 	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 140 })
 end
 
+-- The form, two columns: how many, the duration and the deposit on the
+-- left; the price (and an item's starting price), and the total on the right.
+local SELL_ROW, SELL_COL = 66, 300
 local function buildSell()
 	local s = CreateFrame("Frame", nil, f.Body)
 	s:SetPoint("TOPLEFT", f.Body, "TOPLEFT", 0, 0)
 	s:SetSize(f.BodyWidth + 2 * W.SHELL.pad, 1)
-	local x = W.SHELL.pad
+	local x, x2 = W.SHELL.pad, W.SHELL.pad + SELL_COL
 	s.Well = ns.ItemWell(s, 56, "Button")
 	s.Well:SetPoint("TOPLEFT", s, "TOPLEFT", x, -24)
 	W.Hover(s.Well)
@@ -941,29 +987,64 @@ local function buildSell()
 	s.Line = W.Text(s, "small", "textDim")
 	s.Line:SetPoint("TOPLEFT", s.Well, "RIGHT", 12, -4)
 	local y = 24 + 56 + 24
-	caption(s, "Quantity", x, y)
+	s.QuantityCaption = caption(s, AUCTION_HOUSE_QUANTITY_LABEL or "Quantity", x, y)
 	s.Stepper = ns.Stepper(s, { get = function() return sell.n end, set = function(n) sell.n = n; paint() end,
 		max = function() return sell.loc and AH.GetAvailablePostCount(sell.loc) or 1 end })
 	s.Stepper:SetPoint("TOPLEFT", s, "TOPLEFT", x, -(y + 18))
-	y = y + 18 + 28 + 20
-	s.PriceCaption = caption(s, "", x, y)
+	s.PriceCaption = caption(s, "", x2, y)
 	s.Price = ns.MoneyInput(s, function(c)
 		sell.price, sell.touched = c, true
 		paint()
 	end)
-	s.Price:SetPoint("TOPLEFT", s, "TOPLEFT", x, -(y + 18))
-	y = y + 18 + 28 + 20
-	caption(s, "Duration", x, y)
+	y = y + SELL_ROW
+	caption(s, AUCTION_HOUSE_DURATION_LABEL or "Duration", x, y)
 	s.Duration = W.Button(s, DURATIONS[2], durationMenu, { width = 120 })
 	s.Duration:SetPoint("TOPLEFT", s, "TOPLEFT", x, -(y + 18))
-	y = y + 18 + 28 + 20
-	caption(s, "Deposit", x, y)
+	-- An item's starting price, while Buyout only is off (the stock secondary price).
+	s.BidCaption = caption(s, AUCTION_HOUSE_STARTING_PRICE_LABEL or "Starting price", x2, y)
+	s.Bid = ns.MoneyInput(s, function(c)
+		sell.bid = c
+		paint()
+	end)
+	s.psRows = { y - SELL_ROW, y }
+	y = y + SELL_ROW
+	caption(s, AUCTION_HOUSE_DEPOSIT_LABEL or "Deposit", x, y)
 	s.Deposit = ns.Money(s)
 	s.Deposit:SetPoint("TOPLEFT", s, "TOPLEFT", x, -(y + 18 + 7))
-	caption(s, "Total", x + 200, y)
+	caption(s, AUCTION_HOUSE_TOTAL_PRICE_LABEL or "Total", x2, y)
 	s.Total = ns.Money(s)
-	s.Total:SetPoint("TOPLEFT", s, "TOPLEFT", x + 200, -(y + 18 + 7))
-	s.psHeight = y + 18 + 28 + 24
+	s.Total:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -(y + 18 + 7))
+	y = y + SELL_ROW
+	-- The stock Buyout only checkbox: on, the price is a buyout; off, a
+	-- starting price and an optional buyout.
+	local bo = CreateFrame("Button", nil, s)
+	bo:SetSize(160, 18)
+	local function toggle()
+		sell.buyoutOnly = not sell.buyoutOnly
+		sell.bid = 0
+		s.Bid.Set(0)
+		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+		paint()
+	end
+	bo.Box = W.Checkbox(bo, toggle)
+	bo.Box:SetPoint("LEFT", bo, "LEFT", 0, 0)
+	bo.Label = W.Text(bo, "label", "textDim")
+	bo.Label:SetPoint("LEFT", bo.Box, "RIGHT", 8, 0)
+	bo.Label:SetText(AUCTION_HOUSE_BUYOUT_MODE_CHECK_BOX or "Buyout only")
+	bo:SetScript("OnClick", toggle)
+	bo:SetScript("OnEnter", function(self)
+		W.Tooltip(self, "ANCHOR_RIGHT", AUCTION_HOUSE_BUYOUT_MODE_CHECK_BOX or "Buyout only",
+			{ AUCTION_HOUSE_BUYOUT_MODE_TOOLTIP or "Uncheck to set a starting price for bids as well." })
+	end)
+	bo:SetScript("OnLeave", W.HideTooltip)
+	bo:SetPoint("TOPLEFT", s, "TOPLEFT", x, -y)
+	s.BuyoutOnly = bo
+	-- Why Post cannot go yet (the stock Post button's tooltip), or the multisell's progress.
+	s.Reason = W.Text(s, "small", "danger")
+	s.Reason:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -(y + 2))
+	s.Reason:SetPoint("RIGHT", s, "RIGHT", -W.SHELL.pad, 0)
+	s.Reason:SetJustifyH("LEFT")
+	s.psHeight = y + 24 + 16
 	return s
 end
 
@@ -972,22 +1053,61 @@ local function paintSell()
 	local info = loc and AH.GetItemKeyInfo(sell.key) or {}
 	ns.PaintItem(s.Well, loc and { icon = info.iconFileID, quality = info.quality })
 	s.Name:SetText(loc and info.itemName or "No item")
-	s.Line:SetText(not loc and "Drop an item from your bags here." or sell.commodity and "Sold by the unit; buyers take any amount."
+	s.Line:SetText(not loc and "Drop an item from your bags here, or right-click it in your bags." or sell.commodity and "Sold by the unit; buyers take any amount."
 		or "Each one is posted as its own auction.")
-	s.PriceCaption:SetText(sell.commodity and "Unit price" or "Buyout (each)")
+	local item = loc and not sell.commodity
+	s.PriceCaption:SetText(sell.commodity and (AUCTION_HOUSE_UNIT_PRICE_LABEL or "Unit price")
+		or (item and not sell.buyoutOnly) and (AUCTION_HOUSE_BUYOUT_OPTIONAL_LABEL or "Buyout (optional)") or (AUCTION_HOUSE_BUYOUT_LABEL or "Buyout"))
+	local bid, buy = prices()
+	-- A buyout at or under the starting price is red (the stock PriceError).
+	W.Color(s.PriceCaption, bid and buy and buy <= bid and "danger" or "textDim")
+	-- Quantity only when more than one could go (as the stock QuantityInput).
+	local many = loc and AH.GetAvailablePostCount(loc) > 1
+	s.QuantityCaption:SetShown(many)
+	s.Stepper:SetShown(many)
 	s.Stepper.Paint()
-	W.SetButtonText(s.Duration, DURATIONS[sell.duration])
-	local deposit = 0
-	if loc then
-		deposit = sell.commodity and AH.CalculateCommodityDeposit(sell.key.itemID, sell.duration, sell.n)
-			or AH.CalculateItemDeposit(loc, sell.duration, sell.n) or 0
+	s.BuyoutOnly:SetShown(item and true or false)
+	s.BuyoutOnly.Box:SetChecked(sell.buyoutOnly)
+	-- The starting price over the buyout, as the stock layout (layoutIndex 25, 30).
+	local two = item and not sell.buyoutOnly
+	s.BidCaption:SetShown(two)
+	s.Bid:SetShown(two)
+	local x2, y0, y1 = W.SHELL.pad + SELL_COL, s.psRows[1], s.psRows[2]
+	for _, t in ipairs({ { s.BidCaption, s.Bid, y0 }, { s.PriceCaption, s.Price, two and y1 or y0 } }) do
+		t[1]:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -t[3])
+		t[2]:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -(t[3] + 18))
 	end
-	ns.SetMoney(s.Deposit, deposit, deposit > GetMoney() and "danger" or nil)
-	ns.SetMoney(s.Total, loc and sell.price * sell.n or 0)
+	W.SetButtonText(s.Duration, DURATIONS[duration()])
+	local d = deposit()
+	ns.SetMoney(s.Deposit, d, d > GetMoney() and "danger" or nil)
+	ns.SetMoney(s.Total, loc and sell.n * (buy or bid or 0) or 0)
+	local why = cannotPost()
+	s.Reason:SetText(sell.multi and (AUCTION_CREATING or "Creating auction %d of %d"):format(sell.multi[1], sell.multi[2]) or loc and why or "")
+	W.Color(s.Reason, sell.multi and "textDim" or "danger")
 	W.ShellTitle(f, "Sell", "Drop an item on the well, set its price, and post it.")
-	W.ShellFooter(f, { loc and { label = "Clear", onClick = function() setItem(nil) end } or nil },
-		{ loc and sell.price > 0 and { label = "Post", onClick = post, opts = { primary = true } } or nil })
+	W.ShellFooter(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
+		{ loc and { label = "Post", onClick = post, opts = { primary = true } } or nil })
+	local p = f.footerButtons.right[1]
+	if loc and p then ns.SetEnabled(p, not why) end
 	return 0, s.psHeight, nil
+end
+
+-- Several of an item post one by one (AUCTION_MULTISELL_*): their progress
+-- shows under the form, which takes no other item until they are done.
+local function multisell(e, done, total)
+	if e == "AUCTION_MULTISELL_START" then
+		sell.multi = { 0, done }
+	elseif e == "AUCTION_MULTISELL_UPDATE" then
+		sell.multi = { done, total }
+		if done == total then
+			sell.multi = nil
+			setItem(nil)
+		end
+	else
+		sell.multi = nil
+		setItem(nil)
+	end
+	if f and f:IsShown() then paint() end
 end
 
 ---------------------------------------------------------------------------
@@ -1097,6 +1217,11 @@ local function build()
 	f:HookScript("OnHide", function()
 		if asked and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == asked then PolestarModal:Hide() end
 		if quote then AH.CancelCommoditiesPurchase() end
+		-- A multisell still running stops (the stock item sell frame's OnHide).
+		if sell.multi then
+			AH.CancelSell()
+			sell.multi = nil
+		end
 		quote, pendingPost, view, searched, sel, sell.loc = nil, nil, nil, false, {}, nil
 		f.Search:SetText("")
 		PlaySound(SOUNDKIT.AUCTION_WINDOW_CLOSE)
@@ -1199,7 +1324,8 @@ function M.Enable()
 	local function shown() return f and f:IsShown() end
 	local function changed() if shown() then paint() end end
 	for _, e in ipairs({ "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "ITEM_KEY_ITEM_INFO_RECEIVED",
-		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED", "BID_ADDED" }) do
+		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED", "BID_ADDED",
+		"AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "AUCTION_HOUSE_THROTTLED_MESSAGE_SENT" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	Polestar.RegisterEvent("COMMODITY_SEARCH_RESULTS_UPDATED", function(_, id) listed(id); changed() end)
@@ -1226,6 +1352,12 @@ function M.Enable()
 	end)
 	Polestar.RegisterEvent("AUCTION_CANCELED", function() if shown() then AH.QueryOwnedAuctions(sorts("owned:auctions")) end end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_POST_WARNING", confirmPost)
+	Polestar.RegisterEvent("AUCTION_HOUSE_POST_ERROR", function()
+		if shown() then ask({ title = "Not posted", text = AUCTION_POSTING_ERROR_TEXT or "The auction could not be posted.", action = "OK" }) end
+	end)
+	for _, e in ipairs({ "AUCTION_MULTISELL_START", "AUCTION_MULTISELL_UPDATE", "AUCTION_MULTISELL_FAILURE" }) do
+		Polestar.RegisterEvent(e, multisell)
+	end
 	-- What the stock frame said while open.
 	Polestar.RegisterEvent("AUCTION_HOUSE_AUCTION_CREATED", function() system(ERR_AUCTION_STARTED) end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_SHOW_COMMODITY_WON_NOTIFICATION", function(_, name, n)

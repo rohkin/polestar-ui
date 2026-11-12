@@ -220,6 +220,11 @@ function C_Item.GetItemInfo(id, ...)
 	if it then return it[1], "item:" .. id, it[3], 1, 1, "", "", 1, "", it[2], it[5] end
 	if itemInfo then return itemInfo(id, ...) end
 end
+stub.stackCount = { [2589] = 20 }
+function C_Item.GetStackCount(loc) return stub.stackCount[loc.itemID] or 1 end
+stub.throttled, stub.sellCancelled, stub.multisellSteps = false, 0, nil
+function AH.IsThrottledMessageSystemReady() return not stub.throttled end
+function AH.CancelSell() stub.sellCancelled = stub.sellCancelled + 1 end
 function AH.IsSellItemValid(loc) return stub.ahItems[loc.itemID] ~= nil end
 function AH.GetItemKeyFromItem(loc) return key(loc.itemID) end
 function AH.GetItemCommodityStatus(loc) return stub.ahItems[loc.itemID][4] and 2 or 1 end
@@ -233,7 +238,12 @@ function AH.PostCommodity(loc, duration, n, unit)
 end
 function AH.PostItem(loc, duration, n, bid, buyout)
 	restricted("PostItem")
-	stub.posted = { "item", loc.itemID, duration, n, buyout }
+	stub.posted = { "item", loc.itemID, duration, n, buyout, bid }
+	-- Several post one by one; stub.multisellSteps (how many land now) leaves it running.
+	if n > 1 and not stub.postNeedsConfirm then
+		stub.fire("AUCTION_MULTISELL_START", n)
+		for i = 1, stub.multisellSteps or n do stub.fire("AUCTION_MULTISELL_UPDATE", i, n) end
+	end
 	return stub.postNeedsConfirm
 end
 function AH.ConfirmPostCommodity(loc, duration, n, unit)
