@@ -57,6 +57,15 @@ function ns.TooltipHint(text)
 	GameTooltip:AddLine(text, r, g, b, true)
 end
 
+-- A shell made with `sidebar = 0` has no sidebar: the main column hangs off the
+-- window itself, never off the 0-wide sidebar (docs/CLIENT.md, rule 12).
+function ns.Plain(f)
+	f.Sidebar:Hide()
+	f.Main:ClearAllPoints()
+	f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+end
+
 -- A texture for a game icon (item, currency, spell), cropped of the border
 -- the client bakes into its icons, as Polestar's own icons are.
 function ns.GameIcon(parent, layer)

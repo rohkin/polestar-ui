@@ -405,13 +405,8 @@ end
 ---------------------------------------------------------------------------
 
 local function build()
-	-- Plain: no sidebar; the main column hangs off the window itself, never
-	-- off the 0-wide sidebar (docs/CLIENT.md, rule 12).
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, sidebar = 0 })
-	f.Sidebar:Hide()
-	f.Main:ClearAllPoints()
-	f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
-	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "mail")
 	f.psInbox = CreateFrame("Frame", nil, f.Body)
