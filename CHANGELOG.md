@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Social: friends, Battle.net friends, ignored players and the raid in Polestar's look, from the social keys. Click whispers, double-click invites, right-click opens the game's menu; add a friend by name or BattleTag. Quick Join and Recruit a Friend stay in the game's window (the chat's friends button).
+- Bank: the banker's Character and Warband tabs in Polestar's look, with search, Deposit all, money in and out, buying a tab, and right-click to your bags. Tab settings stay in the game's bank.
 
 ## 0.0.5
 
