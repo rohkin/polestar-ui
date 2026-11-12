@@ -301,8 +301,6 @@ end
 function M.Enable()
 	-- The NPC is the only door: ours takes its interaction, and the stock
 	-- window is never opened (docs/DESIGN.md, "NPC windows: how they open").
-	-- shortcut: the preview loads the interaction manager only in NPC scenes; drop this guard once Core's ns.Interaction checks it.
-	if not RegisterPlayerInteraction then return end
 	ns.Interaction("merchant", { Enum.PlayerInteractionType.Merchant }, { frame = NAME, close = CloseMerchant, bags = true })
 	local function changed() if f and f:IsShown() then paint() end end
 	for _, e in ipairs({ "MERCHANT_UPDATE", "MERCHANT_FILTER_ITEM_UPDATE", "PLAYER_MONEY", "BAG_UPDATE_DELAYED", "UPDATE_INVENTORY_DURABILITY", "GET_ITEM_INFO_RECEIVED" }) do

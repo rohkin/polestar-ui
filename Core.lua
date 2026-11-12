@@ -508,6 +508,8 @@ end
 -- after, as the stock window did. Off waits for /reload: routed back from our
 -- code, the stock window would open tainted. Call it from the module's Enable.
 function ns.Interaction(key, types, o)
+	-- The preview loads the interaction manager only in NPC scenes.
+	if not RegisterPlayerInteraction then return end
 	ns.modules[key].reloadOff = true
 	for _, e in ipairs(o.internal or {}) do GameEvent.UnregisterInternalEvent(e) end
 	local hooked, ended

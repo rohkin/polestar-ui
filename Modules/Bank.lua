@@ -212,8 +212,6 @@ function M.Show()
 end
 
 function M.Enable()
-	-- shortcut: the preview loads the interaction manager only in NPC scenes; drop this guard once Core's ns.Interaction checks it.
-	if not RegisterPlayerInteraction then return end
 	local T = Enum.PlayerInteractionType
 	ns.Interaction("bank", { T.Banker, T.CharacterBanker, T.AccountBanker }, { frame = NAME, close = function() C_Bank.CloseBankFrame() end, bags = true })
 	for _, e in ipairs({ "BANK_TABS_CHANGED", "BANK_TAB_SETTINGS_UPDATED", "BAG_UPDATE", "ITEM_LOCK_CHANGED", "INVENTORY_SEARCH_UPDATE", "PLAYER_MONEY" }) do

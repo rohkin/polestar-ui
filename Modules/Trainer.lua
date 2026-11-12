@@ -249,8 +249,6 @@ function M.Show()
 end
 
 function M.Enable()
-	-- shortcut: the preview loads the interaction manager only in NPC scenes; drop this guard once Core's ns.Interaction checks it.
-	if not RegisterPlayerInteraction then return end
 	ns.Interaction("trainer", { Enum.PlayerInteractionType.Trainer }, { frame = NAME, close = function() CloseTrainer() end, internal = { "TRAINER_SHOW" } })
 	for _, e in ipairs({ "TRAINER_UPDATE", "PLAYER_MONEY", "UNIT_PET_TRAINING_POINTS" }) do
 		Polestar.RegisterEvent(e, function() if f and f:IsShown() then paint() end end)

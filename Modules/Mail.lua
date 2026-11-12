@@ -455,9 +455,7 @@ end
 function M.Enable()
 	-- The mailbox is the only door: ours takes its interaction, and the stock
 	-- window is never opened (docs/DESIGN.md, "NPC windows: how they open").
-	if RegisterPlayerInteraction then
-		ns.Interaction("mail", { Enum.PlayerInteractionType.MailInfo }, { frame = NAME, close = CloseMail, bags = true })
-	end
+	ns.Interaction("mail", { Enum.PlayerInteractionType.MailInfo }, { frame = NAME, close = CloseMail, bags = true })
 	local function shown() return f and f:IsShown() end
 	Polestar.RegisterEvent("MAIL_INBOX_UPDATE", function()
 		if taking and not C_Mail.IsCommandPending() then takeNext() end
