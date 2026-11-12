@@ -25,38 +25,43 @@ end
 local function purse()
 	if not petTrainer() then return GetMoney() end
 	local total, used = C_PetInfo.GetPetTrainingPoints()
-	return total - used
+	return math.max(total - used, 0)
 end
 
--- What the service needs, as the stock row lists it, and whether all of it is met.
+-- What the service needs, as the stock row lists it (ClassTrainerFrame_InitServiceButton):
+-- "Requires Level 26, Tailoring (75), Defensive Stance", each unmet part in
+-- danger; and whether all of it is met.
 local function needs(i)
 	local parts, met = {}, true
 	local function add(text, ok)
-		parts[#parts + 1] = text
+		parts[#parts + 1] = ok and text or ("|c%s%s|r"):format(Theme.Hex("danger"), text)
 		met = met and ok
 	end
 	local _, _, _, reqLevel = GetTrainerServiceInfo(i)
-	if reqLevel and reqLevel > 1 then add("level " .. reqLevel, UnitLevel(petTrainer() and "pet" or "player") >= reqLevel) end
+	if reqLevel and reqLevel > 1 then add((TRAINER_REQ_LEVEL or "Level %d"):format(reqLevel), UnitLevel(petTrainer() and "pet" or "player") >= reqLevel) end
 	local skill, rank, has = GetTrainerServiceSkillReq(i)
-	if skill then add(("%s (%d)"):format(skill, rank), has) end
+	if skill then add((TRAINER_REQ_SKILL_RANK or "%s (%d)"):format(skill, rank), has) end
 	for a = 1, GetTrainerServiceNumAbilityReq(i) do
 		local ability, ok = GetTrainerServiceAbilityReq(i, a)
-		if ability then add(ability, ok) end
+		if ability then add((TRAINER_REQ_ABILITY or "%s"):format(ability), ok) end
 	end
-	return #parts > 0 and "Requires " .. table.concat(parts, ", ") or "", met
+	if #parts == 0 then return "", true end
+	return (REQUIRES_LABEL or "Requires") .. " " .. table.concat(parts, PLAYER_LIST_DELIMITER or ", "), met
 end
 
--- Whether Train can buy service i now: available, affordable, and for a
--- profession a free slot (as the stock Train button).
-local function canTrain(i)
+-- Why Train cannot buy service i now, or nil when it can: available,
+-- affordable, and for a profession a free slot (as the stock Train button).
+local NO_SLOT = "slot"
+local function blocked(i)
 	local _, kind = GetTrainerServiceInfo(i)
 	local cost, isProfession = GetTrainerServiceCost(i)
-	if kind ~= "available" or (cost or 0) > purse() then return false end
-	return not (isProfession and select(2, GetProfessions()))
+	if kind ~= "available" then return kind end
+	if (cost or 0) > purse() then return "cost" end
+	if isProfession and select(2, GetProfessions()) then return NO_SLOT end
 end
 
 local function train()
-	if not (sel and canTrain(sel)) then return end
+	if not sel or blocked(sel) then return end
 	local i = sel
 	if not (IsTradeskillTrainer() and select(2, GetTrainerServiceCost(i))) then return BuyTrainerService(i) end
 	-- The stock CONFIRM_PROFESSION, as Polestar's dialog (StaticPopup is never ours).
@@ -71,10 +76,22 @@ local function classTrainer()
 	return not IsTradeskillTrainer() and not petTrainer() and E and E.IsClassTrainer and E.IsClassTrainer(Polestar.Compat.GetNpcID("npc"))
 end
 
+-- Categories as the stock list's (TrainerUI_UseCategories: never at a pet
+-- trainer), when the player has them on (the filter menu's Categorize).
+local function categorized()
+	return not petTrainer() and C_Trainer.GetCategorizeTrainerUI()
+end
+
 local function enter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	GameTooltip:SetTrainerService(r.psIndex)
 	GameTooltip:Show()
+end
+
+local function select_(i)
+	sel = i
+	-- The client's selection too, as ClassTrainer_SetSelection (its description events follow it).
+	SelectTrainerService(i or (GetNumTrainerServices() + 1))
 end
 
 local function newRow(i)
@@ -90,6 +107,9 @@ local function newRow(i)
 	well:SetPoint("LEFT", r, "LEFT", 6, 0)
 	r.Money = ns.Money(r)
 	r.Money:SetPoint("RIGHT", r, "RIGHT", -8, 0)
+	-- A pet trainer's cost: training points, at the money's place (the stock alternateCost).
+	r.Points = W.Text(r, "number", "text")
+	r.Points:SetPoint("RIGHT", r, "RIGHT", -8, 0)
 	r.Name = W.Text(r, "label", "text")
 	r.Name:SetPoint("BOTTOMLEFT", well, "RIGHT", 12, 1)
 	r.Sub = W.Text(r, "small", "textDim")
@@ -100,7 +120,7 @@ local function newRow(i)
 		t:SetWordWrap(false)
 	end
 	r:SetScript("OnClick", function(self)
-		sel = self.psIndex
+		select_(self.psIndex)
 		paint()
 	end)
 	r:SetScript("OnEnter", enter)
@@ -116,16 +136,17 @@ local function paintRow(r, i)
 	r.Icon:SetTexture(icon)
 	r.Icon:SetDesaturated(kind == "unavailable")
 	r.Name:SetText((name or UNKNOWN or "Unknown") .. ((subText or "") ~= "" and " (" .. subText .. ")" or ""))
-	W.Color(r.Name, used and "textMuted" or "text")
-	local req, met = needs(i)
+	-- Unavailable greyed, as the stock name; a known one says so under it.
+	W.Color(r.Name, kind == "unavailable" and "textMuted" or "text")
+	r.Sub:SetText(used and (ITEM_SPELL_KNOWN or "Already known") or needs(i))
+	W.Color(r.Sub, used and "textMuted" or "textDim")
 	local cost = GetTrainerServiceCost(i) or 0
-	if petTrainer() and cost > 0 and not used then
-		req = (req ~= "" and req .. " · " or "") .. cost .. " training points"
-	end
-	r.Sub:SetText(used and "Known" or req)
-	W.Color(r.Sub, used and "textMuted" or (met and "textDim" or "danger"))
-	r.Money:SetShown(not used and not petTrainer() and cost > 0)
+	local pet = petTrainer()
+	r.Money:SetShown(not used and not pet and cost > 0)
 	ns.SetMoney(r.Money, cost, cost > purse() and "danger" or nil)
+	r.Points:SetShown(pet and cost > 0)
+	r.Points:SetText((TRAINING_POINTS_ABBREV or "%s TP"):format(tostring(cost)))
+	W.Color(r.Points, cost > purse() and "danger" or "text")
 	r.Sel:SetShown(i == sel)
 end
 
@@ -136,6 +157,15 @@ local function filterMenu(anchor)
 		items[#items + 1] = { text = k[2], checked = GetTrainerServiceTypeFilter(k[1]), onClick = function()
 			SetTrainerServiceTypeFilter(k[1], not GetTrainerServiceTypeFilter(k[1]))
 			-- The list comes back on TRAINER_UPDATE; redraw now too (docs/CLIENT.md, rule 6).
+			paint()
+			filterMenu(anchor)
+		end }
+	end
+	-- The stock menu's Categorize (C_Trainer.SetCategorizeTrainerUI), where it has one.
+	if not petTrainer() then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = CATEGORIZE or "Categorize", checked = C_Trainer.GetCategorizeTrainerUI(), onClick = function()
+			C_Trainer.SetCategorizeTrainerUI(not C_Trainer.GetCategorizeTrainerUI())
 			paint()
 			filterMenu(anchor)
 		end }
@@ -156,6 +186,35 @@ local function build()
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psEmpty:SetText("Nothing to show. Check the filter.")
 	f.psRows = rows
+	-- What the player has to spend, at the footer's left as the stock frame's
+	-- bottom: the money, or a pet's training points (with the stock tooltip).
+	W.ShellFooter(f, {}, { { label = "Train", onClick = train, opts = { primary = true } } })
+	f.psMoney = ns.Money(f.Footer)
+	f.psMoney:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
+	f.psPoints = CreateFrame("Frame", nil, f.Footer)
+	f.psPoints:SetSize(200, 20)
+	f.psPoints:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
+	f.psPoints:EnableMouse(true)
+	f.psPoints.Text = W.Text(f.psPoints, "label", "text")
+	f.psPoints.Text:SetPoint("LEFT", f.psPoints, "LEFT", 0, 0)
+	f.psPoints:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(TRAINING_POINTS_TUTORIAL or "", 1, 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	f.psPoints:SetScript("OnLeave", W.HideTooltip)
+	-- Train off for want of a profession slot says why (ClassTrainerFrame_SetTrainButtonEnabled).
+	local b = f.footerButtons.right[1]
+	b:SetMotionScriptsWhileDisabled(true)
+	b:HookScript("OnEnter", function(self)
+		if not (sel and blocked(sel) == NO_SLOT) then return end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(TRAINER_CANNOT_EXCEED_MAX_PROFESSIONS or "You cannot learn any more professions.", 1, 0.82, 0, 1, true)
+		GameTooltip:Show()
+	end)
+	b:HookScript("OnLeave", W.HideTooltip)
+	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
+	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -165,25 +224,32 @@ function paint()
 	subject.name:SetText(UnitName(pet and "pet" or "npc") or "")
 	subject.line:SetText(classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or "Trainer")
 
-	-- The services by category (Camelot's skill lines), counting what can be learnt.
+	-- The services (headers skipped), by category (Camelot's skill lines) when
+	-- categorized, counting what can be learnt. A profession's next rank (the
+	-- stock skill step button, pinned over the list) heads every view.
+	local byCat = categorized()
+	local step = GetTrainerServiceStepIndex and GetTrainerServiceStepIndex()
 	local list, cats, order, open = {}, {}, {}, 0
 	for i = 1, GetNumTrainerServices() do
 		local _, kind, _, _, _, category = GetTrainerServiceInfo(i)
 		if kind ~= "header" then
-			category = (category or "") ~= "" and category or nil
+			category = byCat and (category or "") ~= "" and category or nil
 			local n = kind == "available" and 1 or 0
 			open = open + n
 			if category then
 				if not cats[category] then order[#order + 1] = category end
 				cats[category] = (cats[category] or 0) + n
 			end
-			if cat == ALL or cat == category then list[#list + 1] = i end
+			if i == step then table.insert(list, 1, i)
+			elseif cat == ALL or cat == category then list[#list + 1] = i end
 		end
 	end
 	if cat ~= ALL and not cats[cat] then
 		cat = ALL
 		return paint()
 	end
+	-- Categories by name, as the stock list sorts them.
+	table.sort(order)
 	local nav = { { key = ALL, label = "All", icon = "compact", count = open } }
 	for _, c in ipairs(order) do nav[#nav + 1] = { key = c, label = c, count = cats[c] } end
 	W.ShellNav(f, nav, cat, function(k)
@@ -195,13 +261,21 @@ function paint()
 	local listed
 	for _, i in ipairs(list) do listed = listed or i == sel end
 	if not listed then
-		sel = nil
+		local first
 		for _, i in ipairs(list) do
-			if not sel and select(2, GetTrainerServiceInfo(i)) == "available" then sel = i end
+			if not first and select(2, GetTrainerServiceInfo(i)) == "available" then first = i end
 		end
+		select_(first)
 	end
 
-	W.ShellTitle(f, cat == ALL and "Trainer" or cat, open > 0 and ("%d to learn"):format(open) or "Nothing to learn now.")
+	-- The subtitle: what can be learnt, and a profession's rank (the stock status bar).
+	local status = open > 0 and ("%d to learn"):format(open) or "Nothing to learn now."
+	local rank, maxRank, mod = GetTrainerTradeskillRankValues()
+	if rank and rank > 0 then
+		status = status .. " · " .. ((mod or 0) > 0 and (TRADESKILL_RANK_WITH_MODIFIER or "Skill %d (+%d)/%d"):format(rank, mod, maxRank)
+			or (TRADESKILL_RANK or "Skill %d/%d"):format(rank, maxRank))
+	end
+	W.ShellTitle(f, cat == ALL and "Trainer" or cat, status)
 	W.ShellTabs(f, nil)
 	for n, i in ipairs(list) do
 		local r = rows[n] or newRow(n)
@@ -215,8 +289,11 @@ function paint()
 	f.psEmpty:SetShown(#list == 0)
 	W.SetIconState(f.psFilter, not (GetTrainerServiceTypeFilter("available") and GetTrainerServiceTypeFilter("unavailable") and GetTrainerServiceTypeFilter("used")))
 
-	W.ShellFooter(f, {}, { { label = "Train", onClick = train, opts = { primary = true } } })
-	ns.SetEnabled(f.footerButtons.right[1], sel and canTrain(sel) or false)
+	ns.SetEnabled(f.footerButtons.right[1], sel and not blocked(sel) or false)
+	f.psMoney:SetShown(not pet)
+	ns.SetMoney(f.psMoney, GetMoney())
+	f.psPoints:SetShown(pet and true or false)
+	f.psPoints.Text:SetText((TRAINING_POINTS or "Training Points: %d"):format(purse()))
 	W.ShellBody(f, 24 + math.max(#list, 1) * ROW_H + 24)
 end
 
@@ -229,7 +306,7 @@ end
 
 function M.Enable()
 	ns.Interaction("trainer", { Enum.PlayerInteractionType.Trainer }, { frame = NAME, close = function() CloseTrainer() end, internal = { "TRAINER_SHOW" } })
-	for _, e in ipairs({ "TRAINER_UPDATE", "PLAYER_MONEY", "UNIT_PET_TRAINING_POINTS" }) do
+	for _, e in ipairs({ "TRAINER_UPDATE", "TRAINER_DESCRIPTION_UPDATE", "TRAINER_SERVICE_INFO_NAME_UPDATE", "PLAYER_MONEY", "UNIT_PET_TRAINING_POINTS" }) do
 		Polestar.RegisterEvent(e, function() if f and f:IsShown() then paint() end end)
 	end
 end

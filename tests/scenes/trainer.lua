@@ -1,7 +1,7 @@
 --@ title: Trainer
 --@ roots: PolestarUITrainer
 --@ stubs: stub_npc.lua, stub_trainer.lua
--- The trainer opens ours, never the stock window: Forever's TRAINER_SHOW route is stopped and the interaction taken; closing ours ends the trainer once, the game ending it closes ours without ending it again. The sidebar lists the categories with what can be learnt; the first learnable service is selected; Train buys it (BuyTrainerService), not one the player cannot afford or has not unlocked; at a profession trainer Train asks first.
+-- The trainer opens ours (the service-type header skipped, needs as the stock row with each unmet part in danger, the player's money in the footer), never the stock window: Forever's TRAINER_SHOW route is stopped and the interaction taken; closing ours ends the trainer once, the game ending it closes ours without ending it again. The sidebar lists the categories with what can be learnt; the first learnable service is selected; Train buys it (BuyTrainerService), not one the player cannot afford or has not unlocked; at a profession trainer Train asks first.
 local T = Enum.PlayerInteractionType
 assert(PolestarUI.modules.trainer.reloadOff, "switching off does not wait for /reload")
 assert(stub.unrouted.TRAINER_SHOW, "TRAINER_SHOW still routed")
@@ -21,12 +21,20 @@ assert(not f:IsShown() and stub.npcClosed.CloseTrainer == 1, "the game's end did
 stub.interact(T.Trainer)
 local labels = {}
 for _, b in ipairs(f.navButtons) do if b:IsShown() then labels[#labels + 1] = b.Label:GetText() .. "=" .. b.Count:GetText() end end
-assert(table.concat(labels, ",") == "All=4,Arms=2,Protection=1,Fury=1", "nav: " .. table.concat(labels, ","))
+assert(table.concat(labels, ",") == "All=4,Arms=2,Fury=1,Protection=1", "nav: " .. table.concat(labels, ","))
 assert(f.Title:GetText() == "Trainer", "title")
 local rows = f.psRows
 assert(rows[2].Sel:IsShown() and not rows[1].Sel:IsShown(), "the first learnable service not selected")
-assert(rows[1].Sub:GetText() == "Known" and not rows[1].Money:IsShown(), "a known spell")
-assert(rows[6].Sub:GetText() == "Requires level 28, Defensive Stance", "needs: " .. tostring(rows[6].Sub:GetText()))
+assert(rows[1].Sub:GetText() == "Already known" and not rows[1].Money:IsShown(), "a known spell")
+local needs = rows[6].Sub:GetText()
+assert(needs:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") == "Requires Level 28, Defensive Stance" and select(2, needs:gsub("|c", "")) == 2, "needs: " .. tostring(needs))
+assert(select(2, rows[3].Sub:GetText():gsub("|c", "")) == 0, "a met level in danger")
+-- The service-type header is no row; the client's selection follows ours.
+local n = 0
+for _, r in ipairs(rows) do if r:IsShown() then n = n + 1 end end
+assert(n == 8, "rows: " .. n)
+assert(stub.selected == 2, "SelectTrainerService not called for the selection")
+assert(f.psMoney:IsShown() and not f.psPoints:IsShown(), "the player's money")
 
 local train = f.footerButtons.right[1]
 train:Click()

@@ -13,6 +13,8 @@ stub.trainer = {
 	{ "Shield Wall", "unavailable", 132362, 28, "", "Protection", 25000, nil, nil, { "Defensive Stance", false } },
 	{ "Cleave", "available", 132338, 20, "Rank 2", "Fury", 9000 },
 	{ "Intercept", "unavailable", 132307, 30, "Rank 1", "Fury", 30000 },
+	-- A service-type header, as old trainers list: never a row.
+	{ "Warrior Skills", "header", nil, 0, "", "", 0 },
 }
 stub.tradeskill = false
 stub.trainerType = 0
@@ -22,7 +24,7 @@ stub.bought = {}
 -- The list honours the type filter, as the client's does.
 local function shown()
 	local out = {}
-	for _, s in ipairs(stub.trainer) do if stub.typeFilter[s[2]] then out[#out + 1] = s end end
+	for _, s in ipairs(stub.trainer) do if s[2] == "header" or stub.typeFilter[s[2]] then out[#out + 1] = s end end
 	return out
 end
 function GetNumTrainerServices() return #shown() end
@@ -44,13 +46,33 @@ PROFESSION_CONFIRMATION1 = "Do you really want to learn %s as your first profess
 PROFESSION_CONFIRMATION2 = "Do you really want to learn %s as your second profession?"
 function GetProfessions() return stub.professions[1], stub.professions[2] end
 Enum.TrainerType = { Normal = 0, Pet = 1 }
-C_Trainer = { GetTrainerType = function() return stub.trainerType end }
+-- The stock list's Categorize setting (account-wide, on by default).
+stub.categorize = true
+C_Trainer = { GetTrainerType = function() return stub.trainerType end,
+	GetCategorizeTrainerUI = function() return stub.categorize end, SetCategorizeTrainerUI = function(on) stub.categorize = on end }
+-- The client's selection (SelectTrainerService), a profession's next rank
+-- (stub.step: its index) and rank values (stub.rank = { rank, max, modifier }).
+function SelectTrainerService(i) stub.selected = i end
+function GetTrainerServiceStepIndex() return stub.step end
+function GetTrainerTradeskillRankValues() if stub.rank then return unpack(stub.rank) end return 0, 0, 0 end
+-- A pet trainer: costs in the pet's training points (stub.points = { total, used }), its level.
+stub.points = { 0, 0 }
+C_PetInfo = C_PetInfo or {}
+function C_PetInfo.GetPetTrainingPoints() return stub.points[1], stub.points[2] end
+local unitLevel = UnitLevel
+function UnitLevel(unit) if unit == "pet" then return stub.petLevel or 20 end return unitLevel(unit) end
+stub.Methods.SetMotionScriptsWhileDisabled = stub.Methods.SetMotionScriptsWhileDisabled or function(self, on) self.motionWhileDisabled = on end
+REQUIRES_LABEL, TRAINER_REQ_LEVEL, ITEM_SPELL_KNOWN = "Requires", "Level %d", "Already known"
+TRAINING_POINTS, TRAINING_POINTS_ABBREV, TRAINING_POINTS_TUTORIAL = "Training Points: %d", "%s TP", "Your pet spends training points to learn new abilities."
+TRADESKILL_RANK, TRADESKILL_RANK_WITH_MODIFIER = "Skill %d/%d", "Skill %d (+%d)/%d"
+TRAINER_CANNOT_EXCEED_MAX_PROFESSIONS, CATEGORIZE = "You can only learn two professions.", "Categorize"
 GameTooltip.SetTrainerService = GameTooltip.SetTrainerService or function(self, i) self:SetText(shown()[i][1]) end
 
 -- The trainer: Thurman, npc 914, a warrior trainer.
 local unitName = UnitName
 function UnitName(unit, ...)
 	if unit == "npc" then return "Thurman Schneider" end
+	if unit == "pet" and stub.trainerType == 1 then return "Grimclaw" end
 	return unitName(unit, ...)
 end
 function UnitGUID(unit) if unit == "npc" then return "Creature-0-4372-0-17-914-0000123456" end end

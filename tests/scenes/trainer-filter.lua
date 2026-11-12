@@ -1,11 +1,11 @@
 --@ title: Trainer: filtered
 --@ roots: PolestarUITrainer, PolestarMenu
 --@ stubs: stub_npc.lua, stub_trainer.lua
--- A category in the sidebar shows only its services. The stock filter on the sliders button: Used and Unavailable off leave what can be learnt (the client's list, redrawn at once); the menu opens again after each pick; the button is lit while a filter hides some.
+-- The categories by name, as the stock list sorts them; one in the sidebar shows only its services. The stock filter on the sliders button: Used and Unavailable off leave what can be learnt (the client's list, redrawn at once); the menu opens again after each pick; the button is lit while a filter hides some. Categorize (the stock menu's) off lists no categories.
 stub.interact(Enum.PlayerInteractionType.Trainer)
 local f = PolestarUITrainer
 local function shown() local n = 0; for _, r in ipairs(f.psRows) do if r:IsShown() then n = n + 1 end end; return n end
-f.navButtons[3]:Click()
+f.navButtons[4]:Click()
 assert(f.Title:GetText() == "Protection" and shown() == 3, "category not shown")
 f.navButtons[1]:Click()
 assert(shown() == 8, "All not back")
@@ -18,3 +18,9 @@ item("Unavailable"):Click()
 assert(not stub.typeFilter.used and not stub.typeFilter.unavailable and stub.typeFilter.available, "filter not set")
 assert(shown() == 4, "filtered rows: " .. shown())
 assert(item("Available").Check:IsShown() and not item("Used").Check:IsShown(), "checks wrong")
+
+-- Categorize off: no categories in the sidebar, the rows all under All.
+item("Categorize"):Click()
+assert(not stub.categorize and not f.navButtons[2]:IsShown() and shown() == 4, "categories still shown")
+item("Categorize"):Click()
+assert(stub.categorize and f.navButtons[2]:IsShown(), "categories not back")
