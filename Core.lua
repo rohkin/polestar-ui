@@ -772,8 +772,11 @@ end
 -- are stopped. Ours is `o.frame` (its global name); closed by the player it
 -- ends the interaction (`o.close`, the stock close call), closed by the game
 -- it does not end it again. `o.bags` opens the bags with it and closes them
--- after, as the stock window did. Off waits for /reload: routed back from our
--- code, the stock window would open tainted. Call it from the module's Enable.
+-- after, as the stock window did. `o.events = { show, hide }`: game events
+-- that open and close it too (a route stopped in `o.internal`), for a client
+-- that sends only those; when both routes fire it opens and closes once.
+-- Off waits for /reload: routed back from our code, the stock window would
+-- open tainted. Call it from the module's Enable.
 function ns.Interaction(key, types, o)
 	-- The preview loads the interaction manager only in NPC scenes.
 	if not RegisterPlayerInteraction then return end
@@ -804,6 +807,11 @@ function ns.Interaction(key, types, o)
 		end,
 	}
 	for _, t in ipairs(types) do RegisterPlayerInteraction(t, info) end
+	local function shown() return _G[o.frame] and _G[o.frame]:IsShown() end
+	if o.events then
+		Polestar.RegisterEvent(o.events[1], function() if not shown() then info.showFunc() end end)
+		Polestar.RegisterEvent(o.events[2], function() if shown() then info.hideFunc() end end)
+	end
 end
 
 -- Docking, the default (PolestarUIDB.free turns it off): our windows lay out
