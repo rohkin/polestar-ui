@@ -234,8 +234,7 @@ function paint()
 	for n, on in ipairs({ sel and canTrain(sel) or false, open > 0 }) do
 		local b = f.footerButtons.right[n]
 		if b and b:IsShown() then
-			b:SetEnabled(on)
-			b:SetAlpha(on and 1 or 0.45)
+			ns.SetEnabled(b, on)
 		end
 	end
 	W.ShellBody(f, 24 + math.max(#list, 1) * ROW_H + 24)

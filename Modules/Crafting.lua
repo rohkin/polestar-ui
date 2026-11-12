@@ -472,13 +472,8 @@ local function paintFooter(info)
 		{ label = info and info.alternateVerb or "Craft", onClick = function() craft(qty) end, opts = { primary = true } },
 		{ label = "Craft all", onClick = function() craft(most) end },
 	})
-	-- Disabled as Polestar disables: faded to 45%.
-	local function enable(b, on)
-		b:SetEnabled(on and true or false)
-		b:SetAlpha(on and 1 or 0.45)
-	end
 	f.psStep.Paint()
-	for _, b in ipairs(f.footerButtons.right) do enable(b, can) end
+	for _, b in ipairs(f.footerButtons.right) do ns.SetEnabled(b, can) end
 end
 
 -- The first section holding the recipe, `key`'s if it is one of them.

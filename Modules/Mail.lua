@@ -157,8 +157,7 @@ local function paintLetter()
 		letter.MoneyLabel:SetPoint("TOPLEFT", letter, "TOPLEFT", 24, -y)
 		ns.SetMoney(letter.Money, price > 0 and price or money, price > 0 and "danger" or nil)
 	end
-	letter.Take:SetEnabled(money > 0 or #list > 0)
-	letter.Take:SetAlpha(letter.Take:IsEnabled() and 1 or 0.45)
+	ns.SetEnabled(letter.Take, money > 0 or #list > 0)
 	local deletes = InboxItemCanDelete(open)
 	W.SetButtonText(letter.Discard, deletes and "Delete" or "Return")
 	letter.Discard.psDanger = deletes

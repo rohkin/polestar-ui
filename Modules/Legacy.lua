@@ -1089,8 +1089,7 @@ function refresh()
 	-- Disabled as Polestar disables (faded to 45%), so the layout never moves.
 	for i, d in ipairs(foot) do
 		local b = f.footerButtons.right[i]
-		b:SetEnabled(d.on and true or false)
-		b:SetAlpha(d.on and 1 or 0.45)
+		ns.SetEnabled(b, d.on)
 	end
 	W.ShellBody(f, h)
 end

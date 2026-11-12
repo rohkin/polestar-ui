@@ -250,6 +250,12 @@ function ns.SetMoney(m, copper, color)
 	m:SetWidth(x)
 end
 
+-- Enables or disables a button as Polestar disables: faded to 45%.
+function ns.SetEnabled(b, on)
+	b:SetEnabled(on and true or false)
+	b:SetAlpha(on and 1 or 0.45)
+end
+
 -- A one-line text box in the Polestar look, `w` wide; Enter and Escape leave it.
 function ns.TextField(parent, w, letters)
 	local Theme, W = Polestar.Theme, Polestar.Widgets
@@ -343,17 +349,12 @@ function ns.Stepper(parent, o)
 	s.More:SetPoint("LEFT", s.Box, "RIGHT", 4, 0)
 	s.Max = W.Button(s, "Max", function() set(math.huge) end, { ghost = true })
 	s.Max:SetPoint("LEFT", s.More, "RIGHT", 8, 0)
-	-- Disabled as Polestar disables: faded to 45%.
-	local function enable(b, on)
-		b:SetEnabled(on)
-		b:SetAlpha(on and 1 or 0.45)
-	end
 	function s.Paint()
 		local n, most = o.get(), o.max()
 		if not s.Box:HasFocus() then s.Box:SetText(n) end
-		enable(s.Less, n > 1)
-		enable(s.More, n < most)
-		enable(s.Max, n < most)
+		ns.SetEnabled(s.Less, n > 1)
+		ns.SetEnabled(s.More, n < most)
+		ns.SetEnabled(s.Max, n < most)
 	end
 	return s
 end

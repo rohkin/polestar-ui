@@ -526,8 +526,7 @@ local function refresh()
 	-- lays out from the edge.
 	W.ShellFooter(f, {}, { { label = "Apply", onClick = apply, opts = { primary = true } }, { label = "Undo", onClick = undo } })
 	for _, b in ipairs(f.footerButtons.right) do
-		b:SetEnabled(staged and true or false)
-		b:SetAlpha(staged and 1 or 0.45)
+		ns.SetEnabled(b, staged)
 	end
 	paintArt() -- the footer sets the content's height
 	W.ShellBody(f, height)
