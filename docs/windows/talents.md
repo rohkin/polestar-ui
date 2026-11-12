@@ -83,15 +83,23 @@ applied. Not protected, but refused in combat and while
   client blocks the pickup from addon code (CLIENT.md, rule 4). Such a
   talent on no action bar says so in its tooltip, as stock (the light blue
   `TALENT_BUTTON_TOOLTIP_NOT_ON_ACTION_BAR`; read out of combat).
-- **Footer:** "Reset" (danger, every staged and spent point back, confirmed by
-  `W.Modal`) on the left; "Undo" (default, drops what is staged:
+- **Footer:** "Reset" (danger) on the left, as the stock ResetButton's "all
+  talents": confirmed by `W.Modal`, it stages every point of the spec back
+  out (`C_Traits.ResetTreeByCurrency` for each of the tree's currencies);
+  Apply keeps it, Undo drops it. "Undo" (default, drops what is staged:
   `RollbackConfig`) and "Apply" (primary, `C_ClassTalents.CommitConfig`, the
-  stock apply sound) on the right, always there so the layout never moves,
-  disabled as Polestar disables (faded to 45%) unless something is staged
-  (`ConfigHasStagedChanges`) and no commit is running. Apply first asks
-  `CanChangeTalents` (its error on the game's error line when refused); the commit is a cast, ended by
-  `TRAIT_CONFIG_UPDATED` or `CONFIG_COMMIT_FAILED`, or after the stock
-  frame's 6 seconds.
+  stock apply sound) on the right. All three always there so the layout never
+  moves, disabled as Polestar disables (faded to 45%) with the reason in
+  their tooltip: "Not your active spec", "Applying your talents…", "Nothing
+  to apply", "Nothing to undo", "No points spent", or Apply's
+  `CanChangeTalents` error, as the stock Apply. The commit is a cast, ended
+  by `TRAIT_CONFIG_UPDATED` or `CONFIG_COMMIT_FAILED`, or after the stock
+  frame's 6 seconds. On the spec that is not active, "Activate" takes
+  Apply's place, as the stock ActivateButton
+  (`C_SpecializationInfo.SetActiveSpecGroup`, not protected): a cast, the
+  subtitle "Switching to this spec…" until `ACTIVE_TALENT_GROUP_CHANGED`
+  (then that spec shows, now the active one) or 10 seconds; disabled in
+  combat ("Not in combat").
 - **Options:** on the band, a disabled line saying the micro button's
   shift-click opens the game's talents (its search and inspect, until ours has
   them: the Nothing Lost Rule).
