@@ -135,3 +135,14 @@ DIFFICULT_DIFFICULTY_COLOR = { r = 1, g = 0.5, b = 0.25 }
 FAIR_DIFFICULTY_COLOR = { r = 1, g = 1, b = 0 }
 EASY_DIFFICULTY_COLOR = { r = 0.25, g = 0.75, b = 0.25 }
 TRIVIAL_DIFFICULTY_COLOR = { r = 0.5, g = 0.5, b = 0.5 }
+-- The profession's link (the stock link button's): stub.linked when put in
+-- chat, stub.posted when posted in a channel. Not in a guild; in a party.
+function T.CanTradeSkillListLink() return true end
+function T.GetTradeSkillListLink() return "|Htrade:197|h[Tailoring]|h" end
+IsInGuild = IsInGuild or function() return false end
+IsInRaid = IsInRaid or function() return false end
+GetNumSubgroupMembers = GetNumSubgroupMembers or function() return 1 end
+GetChannelList = GetChannelList or function() return 1, "General", false end
+ChatFrameUtil = ChatFrameUtil or {}
+ChatFrameUtil.InsertLink = ChatFrameUtil.InsertLink or function(link) stub.linked = link end
+function ChatFrameUtil.OpenChat(text) stub.posted = text end

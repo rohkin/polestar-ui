@@ -589,6 +589,41 @@ local function filterMenu(anchor)
 	W.ShowMenu(anchor, items, { minWidth = 180 })
 end
 
+-- The band's Options: the stock link button's menu. "Link profession" puts
+-- the profession's link in the chat line (or the macro being written), as
+-- its click; then the channels it posts the link in, as its menu does.
+local function optionsItems()
+	local T = C_TradeSkillUI
+	local can = T.CanTradeSkillListLink() and not viewing()
+	local items = { { text = "Link profession", disabled = not can, onClick = function()
+		local link = T.GetTradeSkillListLink()
+		if MacroFrameText and MacroFrameText:IsShown() and MacroFrameText:HasFocus() then
+			MacroFrameText:Insert(link)
+		else
+			insertLink(link)
+		end
+	end } }
+	local channels = {
+		{ SLASH_GUILD1 or "/g", GUILD or "Guild", IsInGuild() },
+		{ SLASH_PARTY1 or "/p", PARTY or "Party", GetNumSubgroupMembers() > 0 },
+		{ SLASH_RAID1 or "/raid", RAID or "Raid", IsInRaid() },
+	}
+	local list = { GetChannelList() }
+	for i = 1, #list, 3 do
+		local name = ChatFrameUtil.ResolveChannelName and ChatFrameUtil.ResolveChannelName(list[i + 1]) or list[i + 1]
+		channels[#channels + 1] = { "/" .. list[i], name, not list[i + 2] }
+	end
+	items[#items + 1] = { separator = true }
+	items[#items + 1] = { text = TRADESKILL_POST or "Post in", disabled = true }
+	for _, c in ipairs(channels) do
+		items[#items + 1] = { text = c[2], disabled = not (can and c[3]), onClick = function()
+			local link = T.GetTradeSkillListLink()
+			if link then ChatFrameUtil.OpenChat(("%s %s"):format(c[1], link), DEFAULT_CHAT_FRAME) end
+		end }
+	end
+	return items
+end
+
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
 		query = (text or ""):lower()
@@ -596,6 +631,7 @@ local function build()
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "crafting")
+	f.psOptions = ns.OptionsButton(f, optionsItems)
 	-- The subject block names the profession, in place of Polestar's lockup:
 	-- its name with the rank at the right end of its skill bar.
 	local SB, X = f.psSidebar or W.SHELL.sidebar, 24 + 36 + 12
