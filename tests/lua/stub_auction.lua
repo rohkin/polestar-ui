@@ -73,7 +73,7 @@ stub.commodity = { [2589] = { { 120, 200, 0 }, { 125, 100, 0 }, { 140, 50, 20 } 
 -- Item listings: { auctionID, buyout, minBid, timeLeft band, own }.
 stub.itemList = { [6975] = { { 901, 1800000, 1500000, 3 }, { 902, nil, 1200000, 1 }, { 903, 2000000, 1900000, 2, true } } }
 -- The player's auctions: { auctionID, itemID, quantity, buyout, status, timeLeft band }.
-stub.owned = { { 701, 2592, 20, 9000, 0, 2 }, { 702, 6975, 1, 2500000, 0, 3 }, { 703, 2589, 5, 600, 1 } }
+stub.owned = { { 701, 2592, 20, 9000, 0, 2 }, { 702, 6975, 1, 2500000, 0, 3, "" }, { 703, 2589, 5, 600, 1 } }
 stub.cancelCost = { [701] = 0, [702] = 12500, [903] = 0, [503] = 0 }
 -- The quote's unit price (nil: the listings' own; false: none to be had).
 stub.quoteUnit = nil
@@ -285,7 +285,7 @@ function AH.QueryOwnedAuctions() stub.fire("OWNED_AUCTIONS_UPDATED") end
 function AH.GetNumOwnedAuctions() return #stub.owned end
 function AH.GetOwnedAuctionInfo(i)
 	local o = stub.owned[i]
-	if o then return { auctionID = o[1], itemKey = key(o[2]), quantity = o[3], buyoutAmount = o[4], status = o[5], timeLeft = o[6] } end
+	if o then return { auctionID = o[1], itemKey = key(o[2]), quantity = o[3], buyoutAmount = o[4], status = o[5], timeLeft = o[6], bidder = o[7], bidAmount = o[7] and 2000000 or nil } end
 end
 -- The items among the player's auctions and bids (the stock summary list).
 function AH.GetNumOwnedAuctionTypes()
@@ -325,6 +325,42 @@ function AH.GetNumBids() return #stub.ahBids end
 function AH.GetBidInfo(i)
 	local b = stub.ahBids[i]
 	if b then return { auctionID = b[1], itemKey = key(b[2]), bidAmount = b[3], buyoutAmount = b[4], minBid = b[5], timeLeft = b[6], bidder = b[7] } end
+end
+
+-- Links: an item key's sample link, the chat line, dress-up; a bidder's name.
+function AH.GetItemKeySampleLink(k) return "|cffffffff|Hitem:" .. k.itemID .. "::::::::|h[" .. stub.ahItems[k.itemID][1] .. "]|h|r" end
+stub.bidderNames = {}
+function AH.RequestOwnedAuctionBidderInfo(id) return stub.bidderNames[id] end
+ChatFrameUtil = ChatFrameUtil or {}
+stub.chatWindow = nil
+function ChatFrameUtil.GetActiveWindow() return stub.chatWindow end
+function ChatFrameUtil.InsertLink(link)
+	if stub.chatWindow then stub.linked = link; return true end
+	return false
+end
+function DressUpLink(link) stub.dressed = link end
+GetCurrentKeyBoardFocus = GetCurrentKeyBoardFocus or function() return nil end
+local itemInfoByLink = C_Item.GetItemInfo
+function C_Item.GetItemInfo(id, ...)
+	local n = type(id) == "string" and tonumber(id:match("item:(%d+)"))
+	if n then return itemInfoByLink(n) end
+	return itemInfoByLink(id, ...)
+end
+-- Pages: stub.morePages more browse pages wait (RequestMoreBrowseResults adds a copy of the list).
+stub.morePages, stub.moreAsked = 0, 0
+function AH.HasFullBrowseResults() return stub.morePages == 0 end
+function AH.RequestMoreBrowseResults()
+	stub.moreAsked = stub.moreAsked + 1
+	stub.morePages = stub.morePages - 1
+	stub.fire("AUCTION_HOUSE_BROWSE_RESULTS_ADDED")
+end
+function AH.HasFullItemSearchResults() return true end
+function AH.HasFullCommoditySearchResults() return true end
+local SetHyperlink = GameTooltip.SetHyperlink
+function GameTooltip.SetHyperlink(self, link, ...)
+	stub.tipLink = link
+	if SetHyperlink then return SetHyperlink(self, link, ...) end
+	self:SetText(link)
 end
 
 local unitName = UnitName

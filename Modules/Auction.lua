@@ -142,7 +142,7 @@ local sell = { n = 1, price = 0, bid = 0, buyoutOnly = true } -- loc, key, commo
 local pendingPost, bidAmount
 local rows = {}
 local M = {}
-local paint
+local paint, moreResults
 
 local coins = ns.Coins
 
@@ -330,8 +330,9 @@ end
 
 local function browseCtx() return searched == "fav" and "browse:fav" or "browse" .. (sel[1] or "") end
 
+local browseFailed
 local function browse()
-	tab, view, searched = "buy", nil, true
+	tab, view, searched, browseFailed = "buy", nil, true, nil
 	local c = picked()
 	paint()
 	local o = options()
@@ -341,7 +342,7 @@ end
 
 -- The favorites list (QueryAll(AllFavorites)): the stock star search.
 local function favorites()
-	tab, view, searched, sel = "buy", nil, "fav", {}
+	tab, view, searched, sel, browseFailed = "buy", nil, "fav", {}, nil
 	paint()
 	AH.SearchForFavorites(sorts(browseCtx()))
 end
@@ -528,13 +529,71 @@ end
 -- name (a line under it) in the fill column, then the page's columns, each
 -- a text or a money line, laid out from the right.
 
+-- A row's item link: its own, else the item key's sample (AuctionHouseUtil).
+local function rowLink(r)
+	local d, k = r.psData, r.psKey
+	return d and d.itemLink or (k and AH.GetItemKeySampleLink(k))
+end
+
+local BAND_TIPS = { [0] = AUCTION_HOUSE_TOOLTIP_TIME_LEFT_SHORT or "Short (under 30 minutes)",
+	AUCTION_HOUSE_TOOLTIP_TIME_LEFT_MEDIUM or "Medium (30 minutes to 2 hours)", AUCTION_HOUSE_TOOLTIP_TIME_LEFT_LONG or "Long (2 to 12 hours)",
+	AUCTION_HOUSE_TOOLTIP_TIME_LEFT_VERY_LONG or "Very long (over 12 hours)" }
+
+-- The stock row tooltip (AuctionHouseUtil.SetAuctionHouseTooltip): the item,
+-- then for a listing its sellers, time left and the player's bid; for one of
+-- the player's own, its high bidder or buyer (RequestOwnedAuctionBidderInfo).
 local function enter(r)
 	local k = r.psKey
 	if not k then return end
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
-	GameTooltip:SetItemKey(k.itemID, k.itemLevel, k.itemSuffix)
+	local link = rowLink(r)
+	if link then GameTooltip:SetHyperlink(link, nil, nil, true)
+	else GameTooltip:SetItemKey(k.itemID, k.itemLevel, k.itemSuffix, AH.GetItemKeyRequiredLevel(k)) end
+	local d = r.psData
+	if d and d.owners then
+		GameTooltip:AddLine(" ")
+		local o = d.owners
+		local names = {}
+		for i, n in ipairs(o) do names[i] = n == "player" and (AUCTION_HOUSE_SELLER_YOU or "You") or n end
+		if #o == 1 then
+			GameTooltip:AddLine((AUCTION_HOUSE_TOOLTIP_SELLER_FORMAT or "Seller: %s"):format(names[1]), nil, nil, nil, true)
+		elseif #o > 1 then
+			local list = table.concat(names, PLAYER_LIST_DELIMITER or ", ")
+			if (d.totalNumberOfOwners or #o) > #o then
+				GameTooltip:AddLine((AUCTION_HOUSE_TOOLTIP_OVERFLOW_SELLERS_FORMAT or "Sellers: %s and %d more"):format(list, d.totalNumberOfOwners - #o), nil, nil, nil, true)
+			else
+				GameTooltip:AddLine((AUCTION_HOUSE_TOOLTIP_MULTIPLE_SELLERS_FORMAT or "Sellers: %s"):format(list), nil, nil, nil, true)
+			end
+		end
+		if d.timeLeft then GameTooltip:AddLine((AUCTION_HOUSE_TOOLTIP_DURATION_FORMAT or "Time left: %s"):format(BAND_TIPS[d.timeLeft] or "")) end
+	end
+	local status = d and d.bidder ~= nil and d.auctionID and bidStatus(d)
+	if status == "mine" or status == "outbid" then GameTooltip:AddLine(BID_TEXT[status]) end
+	-- One of the player's own with a bid: the bidder, asked for when not known yet.
+	if d and d.status ~= nil and d.bidder then
+		if d.bidder == "" then d.bidder = AH.RequestOwnedAuctionBidderInfo(d.auctionID) or "" end
+		if d.bidder ~= "" then
+			local sold = d.status == Enum.AuctionStatus.Sold
+			GameTooltip:AddLine(((sold and AUCTION_HOUSE_BUYER_FORMAT or AUCTION_HOUSE_HIGH_BIDDER_FORMAT) or (sold and "Buyer: %s" or "High bidder: %s")):format(d.bidder))
+		end
+	end
 	if r.psHint then ns.TooltipHint(r.psHint) end
 	GameTooltip:Show()
+end
+
+-- A modified click on a row: the stock rows' dress-up and chat link
+-- (GenerateRowSelectedCallbackWithInspect). -> whether it was one.
+local function modifiedRow(r)
+	local link = rowLink(r)
+	if not link then return false end
+	if IsModifiedClick("DRESSUP") then
+		DressUpLink(link)
+		return true
+	elseif IsModifiedClick("CHATLINK") then
+		ChatFrameUtil.InsertLink(link)
+		return true
+	end
+	return false
 end
 
 local MAX_COLS = 5
@@ -573,7 +632,10 @@ local function row(k)
 		r.Cells[i] = c
 	end
 	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-	r:SetScript("OnClick", function(self, button) if self.psClick then self.psClick(self, button) end end)
+	r:SetScript("OnClick", function(self, button)
+		if IsModifiedClick() and modifiedRow(self) then return end
+		if self.psClick then self.psClick(self, button) end
+	end)
 	r:SetScript("OnEnter", enter)
 	r:SetScript("OnLeave", W.HideTooltip)
 	rows[k] = r
@@ -760,6 +822,7 @@ local function paintBrowse()
 				open(b.itemKey)
 			end, hint = "Click to see its listings; right-click to set it as a favorite." }, cols)
 	end
+	if browseFailed then return 0, y, ERR_AUCTION_DATABASE_ERROR or "The auction house could not search. Try again." end
 	return #list, y, searched and "Nothing found." or (AUCTION_HOUSE_BROWSE_FAVORITES_TIP or "Tip: right-click an item to set it as a favorite.")
 end
 
@@ -1311,6 +1374,7 @@ local function build()
 	f.psMoney = money
 	-- Enter searches: each query counts against the client's throttle, so not per keystroke.
 	f.Search:HookScript("OnEnterPressed", browse)
+	f.Scroll:HookScript("OnVerticalScroll", function() moreResults() end)
 	-- The search options at the end of the search row, lit while one is set.
 	local top = W.SHELL.header - 30
 	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
@@ -1420,6 +1484,26 @@ local function paintNav()
 	end
 end
 
+-- Long lists come in pages: within 30 rows of the end, the next is asked
+-- for (the stock lists' refresh callbacks, RequestMore*Results), once per page.
+local askedMore
+function moreResults()
+	local l = f.psList
+	if not l or l.n == 0 or tab ~= "buy" then return end
+	local last = (f.Scroll:GetVerticalScroll() + f.psViewH - l.top) / ROW_H
+	if l.n - last >= 30 then return end
+	local mark = (view and view.key.itemID or "browse") .. ":" .. l.n
+	if askedMore == mark then return end
+	askedMore = mark
+	if not view then
+		if searched and not AH.HasFullBrowseResults() then AH.RequestMoreBrowseResults() end
+	elseif view.info.isCommodity then
+		if not AH.HasFullCommoditySearchResults(view.info.itemID) then AH.RequestMoreCommoditySearchResults(view.info.itemID) end
+	elseif not AH.HasFullItemSearchResults(view.key) then
+		AH.RequestMoreItemSearchResults(view.key)
+	end
+end
+
 function paint()
 	W.ShellTabs(f, TABS, tab, function(k)
 		tab, own = k, nil
@@ -1446,8 +1530,11 @@ function paint()
 	f.psEmpty:ClearAllPoints()
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -top)
 	f.psEmpty:SetText(empty or "")
+	W.Color(f.psEmpty, browseFailed and tab == "buy" and not view and "danger" or "textDim")
 	f.psEmpty:SetShown(n == 0 and empty ~= nil)
 	W.ShellBody(f, top + math.max(1, n) * ROW_H + 24)
+	f.psList = { n = n, top = top }
+	moreResults()
 end
 
 function M.Show()
@@ -1525,7 +1612,8 @@ function M.Enable()
 	bagDoor(shown)
 	for _, e in ipairs({ "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "ITEM_KEY_ITEM_INFO_RECEIVED",
 		"OWNED_AUCTIONS_UPDATED", "PLAYER_MONEY", "AUCTION_HOUSE_FAVORITES_UPDATED", "BID_ADDED",
-		"AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "AUCTION_HOUSE_THROTTLED_MESSAGE_SENT" }) do
+		"AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "AUCTION_HOUSE_THROTTLED_MESSAGE_SENT",
+		"ITEM_SEARCH_RESULTS_ADDED", "COMMODITY_SEARCH_RESULTS_ADDED", "EXTRA_BROWSE_INFO_RECEIVED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	Polestar.RegisterEvent("COMMODITY_SEARCH_RESULTS_UPDATED", function(_, id) listed(id); changed() end)
@@ -1540,6 +1628,30 @@ function M.Enable()
 		research()
 	end)
 	Polestar.RegisterEvent("AUCTION_HOUSE_PURCHASE_COMPLETED", research)
+	Polestar.RegisterEvent("AUCTION_HOUSE_BROWSE_FAILURE", function()
+		browseFailed = true
+		changed()
+	end)
+	-- A bidder's name come in: the tooltip showing it, again.
+	Polestar.RegisterEvent("OWNED_AUCTION_BIDDER_INFO_RECEIVED", function(_, id, name)
+		for _, r in ipairs(rows) do
+			if r:IsShown() and r.psData and r.psData.auctionID == id then
+				r.psData.bidder = name
+				if GameTooltip:GetOwner() == r then enter(r) end
+			end
+		end
+	end)
+	-- A link shift-clicked with no chat line open searches for its item, as
+	-- the stock window takes it (ChatFrameUtil.InsertLink, SetSearchText).
+	if ChatFrameUtil and ChatFrameUtil.InsertLink then hooksecurefunc(ChatFrameUtil, "InsertLink", function(text)
+		if not shown() or tab ~= "buy" or type(text) ~= "string" or ChatFrameUtil.GetActiveWindow() then return end
+		local focus = GetCurrentKeyBoardFocus()
+		if focus and focus ~= f.Search then return end
+		local item
+		if text:find("battlepet:", 1, true) then item = text:match("%[(.+)%]")
+		elseif text:find("item:", 1, true) then item = C_Item.GetItemInfo(text) end
+		if item then f.Search:SetText(item) end
+	end) end
 	Polestar.RegisterEvent("BIDS_UPDATED", function()
 		bidsUpdated()
 		changed()
