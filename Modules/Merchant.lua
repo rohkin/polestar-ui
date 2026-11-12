@@ -200,9 +200,8 @@ local function newRow(k)
 	r.Well = ns.ItemWell(r, 36)
 	r.Well:SetPoint("LEFT", r, "LEFT", 8, 0)
 	r.Name = W.Text(r, "label", "text")
-	r.Name:SetPoint("BOTTOMLEFT", r.Well, "RIGHT", 10, 2)
-	r.Name:SetPoint("RIGHT", r, "RIGHT", -8, 0)
 	r.Name:SetJustifyH("LEFT")
+	r.Name:SetWordWrap(false)
 	r.Money = ns.Money(r)
 	r.Money:SetPoint("TOPLEFT", r.Well, "RIGHT", 10, -3)
 	-- A quest starts from it: the game's quest bang on the icon.
@@ -294,6 +293,10 @@ local function fill(r, k)
 			prev = b
 		end
 	end
+	-- The name over its price; alone (a free ware), centred on the well.
+	r.Name:ClearAllPoints()
+	if prev then r.Name:SetPoint("BOTTOMLEFT", r.Well, "RIGHT", 10, 2) else r.Name:SetPoint("LEFT", r.Well, "RIGHT", 10, 0) end
+	r.Name:SetPoint("RIGHT", r, "RIGHT", -8, 0)
 	r.Quest:SetShown(it and it.isQuestStartItem or false)
 	local stack = {}
 	if it and (count or 1) > 1 then stack[1] = "\195\151" .. count end
