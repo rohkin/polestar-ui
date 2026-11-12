@@ -607,7 +607,6 @@ local function row(k)
 	r.Well = ns.ItemWell(r, 36)
 	r.Well:SetPoint("LEFT", r, "LEFT", 6, 0)
 	r.Name = W.Text(r, "label", "text")
-	r.Name:SetPoint("BOTTOMLEFT", r.Well, "RIGHT", 10, 2)
 	r.Name:SetJustifyH("LEFT")
 	r.Name:SetWordWrap(false)
 	r.Line = W.Text(r, "small", "textDim")
@@ -722,6 +721,9 @@ local function fill(k, top, o, cols)
 	else W.Color(r.Name, "text") end
 	r.Line:SetText(o.line or "")
 	local right, nameEnd = edges(cols)
+	-- One line (nothing under the name) sits in the row's middle.
+	r.Name:ClearAllPoints()
+	if (o.line or "") == "" then r.Name:SetPoint("LEFT", r.Well, "RIGHT", 10, 0) else r.Name:SetPoint("BOTTOMLEFT", r.Well, "RIGHT", 10, 2) end
 	r.Name:SetPoint("RIGHT", r, "LEFT", nameEnd, 0)
 	r.Line:SetPoint("RIGHT", r, "LEFT", nameEnd, 0)
 	for i, c in ipairs(r.Cells) do
