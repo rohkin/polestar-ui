@@ -39,21 +39,48 @@ local function categories()
 	return list
 end
 
+local FLYOUT = Enum.SpellBookItemType.Flyout
+local open = {} -- the flyouts opened, by flyout ID
+
+-- A flyout's spells the player knows, as entries of the book (each is a
+-- loose spell of the book too): GetFlyoutSlotInfo, as the stock flyout.
+local function flyoutSpells(id)
+	local out = {}
+	local _, _, n = GetFlyoutInfo(id)
+	for i = 1, n or 0 do
+		local spellID, _, known = GetFlyoutSlotInfo(id, i)
+		local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(spellID)
+		local info = known and slot and C_SpellBook.GetSpellBookItemInfo(slot, bank)
+		if info then out[#out + 1] = { slot = slot, bank = bank, info = info, member = true } end
+	end
+	return out
+end
+
 -- A category's spells as the stock book shows them: its passives and lower
 -- ranks per the stock settings (the same CVars), which a search ignores, as
--- the stock book's does; flyouts as their loose spells.
+-- the stock book's does. Flyouts per its "Use flyouts" (spellBookHideFlyouts):
+-- on, a flyout is one entry and its loose spells are left out, an opened one
+-- listing its spells after it; off, its loose spells instead. A search looks
+-- at the loose spells.
 local function spells(cat, out, match)
 	local hidePassive = not match and GetCVarBool("spellBookHidePassives")
 	local allRanks = match or GetCVarBool("ShowAllSpellRanks")
+	local flyouts = not match and not GetCVarBool("spellBookHideFlyouts")
+	local loose = C_SpellBook.IsSpellBookItemLooseFlyoutMember
 	for slot = cat.offset + 1, cat.offset + cat.n do
 		local info = C_SpellBook.GetSpellBookItemInfo(slot, cat.bank)
 		local t = info and info.itemType
 		local name = info and clean(info.name)
-		if name and t ~= Enum.SpellBookItemType.None and t ~= Enum.SpellBookItemType.Flyout
+		if name and t ~= Enum.SpellBookItemType.None
+			and (flyouts or t ~= FLYOUT)
+			and not (flyouts and loose and loose(slot, cat.bank))
 			and not (hidePassive and info.isPassive)
 			and (allRanks or not (C_SpellBook.IsSpellBookItemLowRank and C_SpellBook.IsSpellBookItemLowRank(slot, cat.bank)))
 			and (not match or name:lower():find(match, 1, true)) then
 			out[#out + 1] = { slot = slot, bank = cat.bank, info = info }
+			if t == FLYOUT and open[info.actionID] then
+				for _, s in ipairs(flyoutSpells(info.actionID)) do out[#out + 1] = s end
+			end
 		end
 	end
 	return out
@@ -68,6 +95,10 @@ local function detail(s)
 		return lvl and lvl > 0 and ("Learn at level %d"):format(lvl) or "Not learned yet"
 	end
 	if info.isPassive then return "Passive" end
+	if info.itemType == FLYOUT then
+		local _, _, n = GetFlyoutInfo(info.actionID)
+		return n == 1 and "1 spell" or ("%d spells"):format(n or 0)
+	end
 	local parts = {}
 	local allowed, on = autocast(s)
 	if allowed then parts[1] = on and "Autocast on" or "Autocast off" end
@@ -99,7 +130,10 @@ end
 local function rowEnter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
 	GameTooltip:SetSpellBookItem(r.psSpell.slot, r.psSpell.bank)
-	if r.psSpell.info.itemType ~= Enum.SpellBookItemType.FutureSpell then
+	if r.psSpell.info.itemType == FLYOUT then
+		ns.TooltipHint((open[r.psSpell.info.actionID] and "Click to hide its spells. " or "Click to show its spells. ")
+			.. "Drag it to an action bar. Shift-click to link it in chat.")
+	elseif r.psSpell.info.itemType ~= Enum.SpellBookItemType.FutureSpell then
 		local hint = castable(r.psSpell) and "Click to cast it. " or ""
 		if autocast(r.psSpell) then hint = hint .. "Right-click to turn its autocast on or off. " end
 		ns.TooltipHint(hint .. "Drag it to an action bar. Shift-click to link it in chat.")
@@ -107,9 +141,16 @@ local function rowEnter(r)
 	GameTooltip:Show()
 end
 
--- Shift-click links it (into the macro text when that is open), as the stock book.
+-- Shift-click links it (into the macro text when that is open), as the stock
+-- book. A click on a flyout shows its spells after it, or hides them.
 local function rowClick(r)
 	local s = r.psSpell
+	if s and s.info.itemType == FLYOUT and not IsModifiedClick() then
+		open[s.info.actionID] = not open[s.info.actionID] or nil
+		M.Show()
+		if GameTooltip:GetOwner() == r or GameTooltip:GetOwner() == PolestarUISpellbookCast then rowEnter(r) end
+		return
+	end
 	if not (s and IsModifiedClick("CHATLINK")) then return end
 	if MacroFrameText and MacroFrameText:HasFocus() then
 		ChatFrameUtil.InsertLink(s.info.name)
@@ -233,8 +274,10 @@ local function paintList(list)
 		rows[i] = r
 		local c, k = i <= half and 0 or 1, i <= half and i or i - half
 		r:ClearAllPoints()
-		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + c * (col + COL_GAP), -(24 + (k - 1) * ROW_H))
-		r:SetWidth(col)
+		-- A flyout's spells sit indented under it.
+		local indent = s.member and 24 or 0
+		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + c * (col + COL_GAP) + indent, -(24 + (k - 1) * ROW_H))
+		r:SetWidth(col - indent)
 		paintRow(r, s)
 		r:Show()
 	end
@@ -252,7 +295,8 @@ end
 -- The stock book's settings (its CVars), as its settings menu: no ranks for
 -- Rogue and Warrior.
 local function settings()
-	local list = { { "spellBookHidePassives", SPELLBOOK_FILTER_PASSIVES or "Hide passives" } }
+	local list = { { "spellBookHidePassives", SPELLBOOK_FILTER_PASSIVES or "Hide passives" },
+		{ "spellBookHideFlyouts", SPELLBOOK_USE_FLYOUTS or "Use flyouts", true } }
 	local _, cls = UnitClass("player")
 	if cls ~= "ROGUE" and cls ~= "WARRIOR" then list[#list + 1] = { "ShowAllSpellRanks", SHOW_ALL_SPELL_RANKS or "Show all ranks" } end
 	return list
@@ -268,7 +312,8 @@ local function filterItems()
 	for _, s in ipairs(settings()) do
 		local cvar = s[1]
 		any = any or (GetCVar(cvar) or "0") ~= default(cvar)
-		items[#items + 1] = { text = s[2], checked = GetCVarBool(cvar), disabled = query ~= "", onClick = function()
+		-- "Use flyouts" is checked while the CVar (hide them) is off.
+		items[#items + 1] = { text = s[2], checked = GetCVarBool(cvar) ~= (s[3] or false), disabled = query ~= "", onClick = function()
 			SetCVar(cvar, GetCVarBool(cvar) and "0" or "1")
 			M.Show()
 			W.ShowMenu(f.psFilter, (filterItems()), { minWidth = 200 })
@@ -345,7 +390,10 @@ local function refresh()
 		for _, c in ipairs(cats) do if c.key == section then cur = c end end
 		W.ShellNav(f, cats, section, function(k) section = k; M.Show() end)
 		if cur then spells(cur, list) end
-		W.ShellTitle(f, cur and cur.label or "", #list == 1 and "1 spell." or #list .. " spells.")
+		-- An opened flyout's spells are not counted again.
+		local n = 0
+		for _, s in ipairs(list) do if not s.member then n = n + 1 end end
+		W.ShellTitle(f, cur and cur.label or "", n == 1 and "1 spell." or n .. " spells.")
 	end
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})

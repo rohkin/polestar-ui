@@ -7,7 +7,7 @@ function GetClassAtlas(className) return ("classicon-%s"):format(className) end
 Enum.SpellBookSpellBank = { Player = 0, Pet = 1 }
 Enum.SpellBookItemType = { None = 0, Spell = 1, FutureSpell = 2, PetAction = 3, Flyout = 4 }
 
--- { name, rank, cost, cast ms, passive, type, low rank }
+-- { name, rank, cost, cast ms, passive, type, low rank, -, loose flyout member }
 local BOOK = {
 	{ "Attack", "", 0, 0 },
 	{ "Shoot", "", 0, 1500 },
@@ -24,8 +24,12 @@ local BOOK = {
 	{ "Flamestrike", "Rank 2", 260, 3000 },
 	{ "Improved Fireball", "Rank 3", 0, 0, true },
 	{ "Pyroblast", "Rank 1", 125, 6000 },
+	-- A flyout (its two portals, each a loose spell of the book too).
+	{ "Portals", "", 0, 0, false, 4 },
+	{ "Portal: Stormwind", "", 850, 10000, false, 1, false, nil, true },
+	{ "Portal: Ironforge", "", 850, 10000, false, 1, false, nil, true },
 }
-local LINES = { { "General", 0, 3 }, { "Arcane", 3, 6 }, { "Fire", 9, 6 } }
+local LINES = { { "General", 0, 3 }, { "Arcane", 3, 6 }, { "Fire", 9, 9 } }
 C_SpellBook = {}
 function C_SpellBook.GetNumSpellBookSkillLines() return #LINES end
 function C_SpellBook.GetSpellBookSkillLineInfo(i)
@@ -50,12 +54,17 @@ end
 function C_SpellBook.GetSpellBookItemInfo(slot, bank)
 	local s = (bank == 1 and PET_BOOK or BOOK)[slot]
 	if not s then return end
-	return { actionID = 100 + slot, spellID = 100 + slot, itemType = s[6] or 1, name = s[1], subName = s[2], iconID = 1,
+	local flyout = s[6] == 4
+	return { actionID = flyout and 1 or 100 + slot, spellID = not flyout and 100 + slot or nil, itemType = s[6] or 1, name = s[1], subName = s[2], iconID = 1,
 		isPassive = s[5] or false, isOffSpec = false }
 end
 function C_SpellBook.IsSpellBookItemLowRank(slot) return BOOK[slot] and BOOK[slot][7] or false end
+function C_SpellBook.IsSpellBookItemLooseFlyoutMember(slot, bank) return bank == 0 and BOOK[slot] and BOOK[slot][9] or false end
+-- Flyout 1, the portals: the book's slots 17 and 18.
+function GetFlyoutInfo(id) if id == 1 then return "Portals", "Open a portal for your group.", 2, true end end
+function GetFlyoutSlotInfo(id, i) local slot = 16 + i; return 100 + slot, 100 + slot, true, BOOK[slot][1], 0 end
 function C_SpellBook.GetSpellBookItemLevelLearned(slot) return 26 end
-function C_SpellBook.FindSpellBookSlotForSpell(id) return id - 100 end
+function C_SpellBook.FindSpellBookSlotForSpell(id) return id - 100, 0 end
 function C_SpellBook.GetSpellBookItemLink(slot) return "|Hspell:" .. (100 + slot) .. "|h[" .. BOOK[slot][1] .. "]|h" end
 -- The client blocks a spell pickup from addon code in combat (ADDON_ACTION_BLOCKED).
 function C_SpellBook.PickupSpellBookItem(slot, bank)

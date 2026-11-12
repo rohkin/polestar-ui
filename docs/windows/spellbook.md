@@ -14,10 +14,11 @@ Talents window's.
 - **Filter:** a 30px square on the search field's well, the `sliders` glyph,
   as Crafting's; in the accent while a setting is off its default. Its menu
   is the stock book's settings menu, on the same CVars: "Hide passives"
-  (`spellBookHidePassives`) and "Show all ranks" (`ShowAllSpellRanks`; not
-  for a Rogue or Warrior, as stock), then "Clear filters" (back to the
-  defaults) while one is off. A search ignores them, as the stock book's
-  does, so they are disabled while one runs. The menu opens again after each
+  (`spellBookHidePassives`), "Use flyouts" (`spellBookHideFlyouts` off) and
+  "Show all ranks" (`ShowAllSpellRanks`; not for a Rogue or Warrior, as
+  stock), then "Clear filters" (back to the defaults) while one is off. A
+  search ignores them, as the stock book's does, so they are disabled while
+  one runs. The menu opens again after each
   pick.
 - **Main column:** title the category, subtitle the count ("12 spells.").
   What a click does is in each row's tooltip. An Options menu at the band's
@@ -30,8 +31,15 @@ Talents window's.
   Small textDim: rank, cost, cast time ("Rank 3 · 195 Mana · Instant"),
   "Passive", or for a spell not learned yet "Learn at level 26" with the name
   in textMuted and the icon desaturated. With no second line the name sits on
-  the well's middle. Lower ranks and flyouts follow the stock settings
-  (flyouts as their loose spells).
+  the well's middle. Lower ranks and flyouts follow the stock settings.
+- **Flyouts** (portals, for example): with "Use flyouts", as the stock book,
+  a flyout is one entry ("2 spells" under its name) and its loose spells are
+  left out; a click lists its known spells (`GetFlyoutSlotInfo`, found in
+  the book) right after it, indented 24px, each a spell row of its own (cast,
+  drag, link); a second click hides them. The flyout itself drags to a bar
+  and links. Without "Use flyouts", its loose spells instead. A search looks
+  at the loose spells. The count in the subtitle leaves an opened flyout's
+  spells out.
 - **Click** casts (out of combat: a secure button over the hovered row, as the
   gear slots'); **drag** puts it on a bar; **shift-click** links it. In combat
   the rows still link, but do not drag: the client blocks a spell pickup from
