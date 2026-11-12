@@ -99,8 +99,32 @@ local function upgradeSlots()
 	return up
 end
 
+-- The item's sockets, small along the slot's bottom edge: each gem's icon,
+-- an empty socket's art when none is set.
+local EMPTY_SOCKET, GEM = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Prismatic", 12
+local function socketCount(link)
+	return link and C_Item.GetItemNumSockets and C_Item.GetItemNumSockets(link) or 0
+end
+local function paintGems(s)
+	local link = GetInventoryItemLink("player", s:GetID())
+	local n = socketCount(link)
+	for i = 1, n do
+		local g = s.psGems[i]
+		if not g then
+			g = ns.ItemWell(s, GEM)
+			g:SetPoint("BOTTOMLEFT", s, "BOTTOMLEFT", 2 + (i - 1) * (GEM + 1), 2)
+			s.psGems[i] = g
+		end
+		local gem = C_Item.GetItemGemID(link, i)
+		g.Icon:SetTexture(gem and C_Item.GetItemIconByID(gem) or EMPTY_SOCKET)
+		g:Show()
+	end
+	for i = n + 1, #s.psGems do s.psGems[i]:Hide() end
+end
+
 local function paintSlot(s, up)
 	local id = s:GetID()
+	paintGems(s)
 	s.psUp:SetShown(up and up[id] or false)
 	local icon = GetInventoryItemTexture("player", id)
 	s.Icon:SetTexture(icon or s.psEmpty)
@@ -144,7 +168,8 @@ local function slotEnter(s)
 			ns.TooltipHint(fight and "Applying it here waits for the fight to end." or "Click to apply it to this item.")
 		else
 			local use = canUse(s:GetID()) and (fight and "Using it waits for the fight to end. " or "Right-click to use it. ") or ""
-			ns.TooltipHint(use .. "Drag to take it off. Shift-click to link it in chat.")
+			local gems = socketCount(GetInventoryItemLink("player", s:GetID())) > 0 and " Shift-right-click to socket gems." or ""
+			ns.TooltipHint(use .. "Drag to take it off. Shift-click to link it in chat." .. gems)
 		end
 	else
 		GameTooltip:SetText(s.psLabel)
@@ -159,6 +184,8 @@ end
 -- (below) does that, and in combat it cannot.
 local function slotClick(s, button)
 	local link = GetInventoryItemLink("player", s:GetID())
+	-- Shift-right-click (EXPANDITEM): the game's socketing window.
+	if link and IsModifiedClick("EXPANDITEM") then return SocketInventoryItem(s:GetID()) end
 	if link and IsModifiedClick() and HandleModifiedItemClick(link) then return end
 	if button ~= "LeftButton" or SpellIsTargeting() then return end
 	PickupInventoryItem(s:GetID())
@@ -194,6 +221,8 @@ overSlot = ns.Overlay("PolestarUICharacterSlot", {
 		over:SetAttribute("*target-slot*", id)
 		-- An empty slot gets no action: the game's "item" action expects an item.
 		over:SetAttribute("type2", GetInventoryItemID("player", id) and "item" or nil)
+		-- Shift-right-click sockets the item (slotClick), not uses it.
+		over:SetAttribute("shift-type2", ATTRIBUTE_NOOP or "")
 		over:SetAttribute("item", tostring(id))
 	end,
 })
@@ -210,6 +239,7 @@ local function newSlot(parent, name, layer, side, size)
 	s.psUp = W.Tex(s, "OVERLAY", "qol-upgrade", "success")
 	s.psUp:SetSize(18, 18)
 	s.psUp:SetPoint("TOPLEFT", s, "TOPLEFT", 0, 0)
+	s.psGems = {}
 	-- Pressed, the icon nudges 1px, as an icon button's glyph.
 	s:SetScript("OnMouseDown", function(self)
 		self.Icon:SetPoint("TOPLEFT", 2, -2)

@@ -261,3 +261,13 @@ C_EquipmentSet = {
 	GetIgnoredSlots = function(id) return { [4] = true } end,
 }
 function GameTooltip.SetEquipmentSet(self, id) self.lines = { SETS[id] and SETS[id][1] or "" } end
+
+-- Sockets: the helm has two, one holding a gem; SocketInventoryItem records
+-- stub.socketed. Modified clicks: stub.modified[action] (EXPANDITEM, CHATLINK...).
+stub.modified = {}
+function IsModifiedClick(what) return stub.modified[what or "any"] or false end
+function HandleModifiedItemClick(link) return false end
+function C_Item.GetItemNumSockets(link) return link:match("item:1:") and 2 or 0 end
+function C_Item.GetItemGemID(link, i) if i == 1 then return 23094 end end
+function C_Item.GetItemIconByID(id) return 134085 end
+function SocketInventoryItem(id) stub.socketed = id end
