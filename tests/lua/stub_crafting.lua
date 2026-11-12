@@ -80,7 +80,8 @@ function T.GetCategoryInfo(id) return { categoryID = id, name = CATEGORIES[id][1
 function T.GetRecipeInfo(id)
 	local r = byID[id]
 	return { recipeID = id, name = r[2], categoryID = r[3], relativeDifficulty = r[4], icon = 134400,
-		learned = r[7] ~= false, craftable = true, disabled = false, isDummyRecipe = false, favorite = stub.favorites[id] or false }
+		learned = r[7] ~= false, craftable = true, disabled = false, isDummyRecipe = false, favorite = stub.favorites[id] or false,
+		canSkillUp = r[4] < 3, numSkillUps = r[4] == 0 and 2 or 1 }
 end
 -- Favorites (Linen Bag one already), kept by the client.
 stub.favorites = { [3755] = true }

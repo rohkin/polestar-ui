@@ -11,6 +11,9 @@ local n, moon = 0
 for _, r in ipairs({ f.NavScroll.Child:GetChildren() }) do if r:IsShown() and r.psRecipe then n = n + 1
 moon = r end end
 assert(n == 1 and moon.psRecipe.name == "Mooncloth", "search: " .. n)
+stub.RunScript(moon, "OnEnter")
+local tip = table.concat(GameTooltip.lines, "/")
+assert(tip:find("High chance of a skill%-up %(%+2%)") and tip:find("Right%-click to set it as a favorite"), "row tooltip: " .. tip)
 moon:Click()
 s:SetText("")
 stub.RunScript(s, "OnTextChanged")

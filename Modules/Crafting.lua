@@ -139,10 +139,27 @@ local function insertLink(link)
 end
 
 -- What a recipe makes, as the game's tooltip shows it.
-local function productTip(owner, id)
+-- A recipe row adds what the stock row shows beside its name: the chance of a
+-- skill-up (its difficulty, the points an optimal one gives) or the game's
+-- reason it is disabled; and what its clicks do.
+local SKILL_UP = { [0] = "High", [1] = "Medium", [2] = "Low" }
+local function productTip(owner, id, info)
 	GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
 	if GameTooltip.SetRecipeResultItem then GameTooltip:SetRecipeResultItem(id) else GameTooltip:SetSpellByID(id) end
-	ns.TooltipHint("Shift-click to link it in chat.")
+	if not info then
+		ns.TooltipHint("Shift-click to link it in chat.")
+	else
+		local chance = SKILL_UP[info.relativeDifficulty]
+		if info.disabled and info.disabledReason then
+			GameTooltip:AddLine(info.disabledReason, 0.5, 0.5, 0.5, true)
+		elseif info.canSkillUp and chance and not viewing() then
+			local c = _G[DIFFICULTY[info.relativeDifficulty]]
+			local n = info.numSkillUps or 1
+			GameTooltip:AddLine(("%s chance of a skill-up%s"):format(chance, n > 1 and (" (+%d)"):format(n) or ""), c and c.r, c and c.g, c and c.b)
+		end
+		ns.TooltipHint(viewing() and "Shift-click to link it in chat."
+			or "Shift-click to link it in chat, or to track it while the chat line is closed. Right-click to set it as a favorite.")
+	end
 	GameTooltip:Show()
 end
 
@@ -242,7 +259,7 @@ local function recipeRow(i)
 		sel, selKey = id, self.psKey
 		refresh()
 	end)
-	r:SetScript("OnEnter", function(self) productTip(self, self.psRecipe.recipeID) end)
+	r:SetScript("OnEnter", function(self) productTip(self, self.psRecipe.recipeID, self.psRecipe) end)
 	r:SetScript("OnLeave", W.HideTooltip)
 	rows[i] = r
 	return r

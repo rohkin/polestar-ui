@@ -37,7 +37,11 @@ it from tainted code.
   A category is a heading row with its count; a click folds it. Under it, one
   recipe row per recipe, its name in the client's difficulty colour
   (`DIFFICULT_`, `FAIR_`, `EASY_`, `TRIVIAL_DIFFICULTY_COLOR`, lifted to read).
-  A search shows every match, unfolded.
+  A search shows every match, unfolded. A recipe row's tooltip is the
+  product's, then what the stock row shows beside the name: the game's
+  reason a disabled recipe is disabled, or the chance of a skill-up by its
+  difficulty ("High chance of a skill-up (+2)", in the difficulty colour),
+  then what its clicks do.
 - **Filter:** it acts on the list, so it sits in the sidebar at the end of
   the search row: a 30px square on the search field's well, the `sliders`
   glyph, in the accent while a filter hides recipes (on the band it read as
