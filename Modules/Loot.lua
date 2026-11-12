@@ -15,8 +15,6 @@ local Theme = Polestar.Theme
 local NAME = "PolestarUILoot"
 local WIDTH, ROW_H, ICON, TOP, PAD = 240, 40, 32, 52, 12
 
-local QUEST_BANG = TEXTURE_ITEM_QUEST_BANG or "Interface\\ContainerFrame\\UI-Icon-QuestBang"
-local QUEST_BORDER = TEXTURE_ITEM_QUEST_BORDER or "Interface\\ContainerFrame\\UI-Icon-QuestBorder"
 local secret = issecretvalue or function() return false end
 
 local f
@@ -146,7 +144,8 @@ local function paint()
 			quality = not isCoin and ns.Clean(quality) or nil
 			ns.PaintItem(r.Well, { icon = icon, quality = quality, count = ns.Num(count), unusable = ns.Clean(locked) })
 			questID = ns.Clean(questID)
-			local mark = questID and not ns.Clean(isActive) and QUEST_BANG or (questID or ns.Clean(isQuestItem)) and QUEST_BORDER or nil
+			-- The stock row's own art (TEXTURE_ITEM_QUEST_BANG / _BORDER).
+			local mark = questID and not ns.Clean(isActive) and TEXTURE_ITEM_QUEST_BANG or (questID or ns.Clean(isQuestItem)) and TEXTURE_ITEM_QUEST_BORDER or nil
 			r.Quest:SetTexture(mark)
 			r.Quest:SetShown(mark ~= nil)
 			local tag = quality and _G["ITEM_QUALITY" .. quality .. "_DESC"]
