@@ -19,5 +19,6 @@ Modules\Professions.lua
 Modules\Crafting.lua
 Modules\Legacy.lua
 Modules\WorldMap.xml
+Modules\Social.lua
 Modules\Tooltips.lua
 Modules\Chat.lua

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Social: friends, Battle.net friends, ignored players and the raid in Polestar's look, from the social keys. Click whispers, double-click invites, right-click opens the game's menu; add a friend by name or BattleTag. Quick Join and Recruit a Friend stay in the game's window (the chat's friends button).
+
 ## 0.0.5
 
 - Chat: each chat window is one Polestar window, its tabs as the header and the input line as the footer. The side buttons, scroll bar, resize grip, minimised windows, the dock's overflow list, the chat's right-click menus and chat bubbles (outside instances) take Polestar's look too.
