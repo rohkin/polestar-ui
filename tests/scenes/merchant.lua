@@ -18,7 +18,8 @@ assert(not f():IsShown() and stub.npcClosed.CloseMerchant == 1, "the game's end 
 
 stub.interact(T.Merchant)
 local w = f()
-assert(tostring(w.Title:GetText()) == "Harlan Bagley", "the band names the vendor")
+assert(tostring(w.psSubject.name:GetText()) == "Harlan Bagley" and w.psSubject.icon:GetTexture() == 132355, "the subject block names the vendor")
+assert(tostring(w.Title:GetText()) == "Merchant" and tostring(w.Subtitle:GetText()) == "9 items for sale", "the band's title and status")
 local rows = {}
 for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and not r.psBuyback then rows[r.psIndex] = r end end
 assert(#rows == 9, "a row per ware")
@@ -35,6 +36,12 @@ local token
 for _, c in ipairs({ w.TabRow:GetChildren() }) do if c.psID then token = c end end
 assert(token and token:IsShown() and tostring(token.Text:GetText()) == "1500", "the Honor held")
 assert(tostring(rows[5].Money.psParts[1].text:GetText()) == "180", "the price")
+-- The sidebar search keeps the wares whose names match.
+w.Search:SetText("bread"); stub.RunScript(w.Search, "OnTextChanged", true)
+local shown = 0
+for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and not r.psBuyback and r:IsShown() then shown = shown + 1 end end
+assert(shown == 1 and tostring(w.Subtitle:GetText()) == "1 of 9 items for sale", "the search: " .. tostring(w.Subtitle:GetText()))
+w.Search:SetText(""); stub.RunScript(w.Search, "OnTextChanged", true)
 
 -- Buying.
 rows[1]:Click("LeftButton")
@@ -126,9 +133,13 @@ assert(not w.Footer:IsShown(), "no repairs or junk here, yet a footer")
 stub.repairCost, stub.junk = 23456, 3
 stub.fire("MERCHANT_UPDATE")
 
--- The filter: the game's menu, its choice applied at once.
+-- The filter: the game's menu at the end of the search row, lit while on
+-- (the visit starts on the class), its choice applied at once, Clear filters.
+assert(w.psFilter:GetParent() == w.Sidebar and w.psFilter.psActive and w.psFilter.psTip == "Filter (1 on)", "the filter not lit for the class")
 w.psFilter:Click()
-assert(stub.menu.tag == "MENU_MERCHANT_FRAME" and #stub.menu.items == 3, "the filter menu")
-stub.menu.items[3].set(stub.menu.items[3].value)
-assert(stub.filter == LE_LOOT_FILTER_ALL and stub.menu.items[3].get(LE_LOOT_FILTER_ALL), "the filter not set")
+assert(stub.menu.tag == "MENU_MERCHANT_FRAME" and #stub.menu.items == 4 and stub.menu.items[4].text == "Clear filters", "the filter menu")
+stub.menu.items[1].set(stub.menu.items[1].value)
+assert(stub.filter == LE_LOOT_FILTER_CLASS and stub.menu.items[1].get(LE_LOOT_FILTER_CLASS), "the filter not set")
+stub.menu.items[4].set()
+assert(stub.filter == LE_LOOT_FILTER_ALL and not w.psFilter.psActive and w.psFilter.psTip == "Filter", "Clear filters")
 assert(tostring(w.psMoney.psParts[1].text:GetText()) == "123", "the player's money")

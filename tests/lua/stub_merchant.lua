@@ -64,6 +64,7 @@ function BuyMerchantItem(i, n) stub.bought[#stub.bought + 1] = { i, n } end
 function PickupMerchantItem(i)
 	if i == 0 and stub.cursorItem then stub.sold, stub.cursorItem = stub.sold + 1, false end
 end
+function SetPortraitTexture(tex, unit) tex:SetTexture(132355) end
 function CursorHasItem() return stub.cursorItem end
 -- A held item from bag 0, slot 3; refundable when stub.refund is set (what it gives back).
 C_Cursor = C_Cursor or {}
@@ -143,6 +144,7 @@ MenuUtil = { CreateContextMenu = function(owner, gen)
 		SetTag = function(_, tag) m.tag = tag end,
 		CreateRadio = function(_, text, get, set, v) m.items[#m.items + 1] = { text = text, get = get, set = set, value = v } end,
 		CreateDivider = function() end,
+		CreateButton = function(_, text, fn) m.items[#m.items + 1] = { text = text, set = fn } end,
 	})
 	stub.menu = m
 end }

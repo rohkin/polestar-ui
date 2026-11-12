@@ -12,8 +12,9 @@ local ROW_H, GAP = 52, 16
 local HIGH = MERCHANT_HIGH_PRICE_COST or 1500000
 local MAX_COSTS = MAX_ITEM_COST or 3
 
-local f, money
+local f, money, subject
 local tab = "buy"
+local query = "" -- the sidebar search, lowercased
 local rows = {}
 local M = {}
 local paint
@@ -187,7 +188,7 @@ local function enter(r)
 		if IsModifiedClick("DRESSUP") then ShowInspectCursor() else SetCursor(CanAffordMerchantItem(r.psIndex) == false and "BUY_ERROR_CURSOR" or "BUY_CURSOR") end
 		GameTooltip:SetMerchantItem(r.psIndex)
 		if GameTooltip_ShowCompareItem then GameTooltip_ShowCompareItem(GameTooltip) end
-		ns.TooltipHint("Click to buy. Right-click buys a stack, Shift-click asks how many.")
+		ns.TooltipHint("Click to buy. Right-click buys a stack, Shift-click asks how many. Drop an item from your bags here to sell it.")
 	end
 	GameTooltip:Show()
 end
@@ -195,7 +196,6 @@ end
 local function newRow(k)
 	local r = CreateFrame("Button", nil, f.Body)
 	r:SetSize((f.BodyWidth - GAP) / 2, ROW_H)
-	r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + ((k - 1) % 2) * (r:GetWidth() + GAP), -(24 + math.floor((k - 1) / 2) * ROW_H))
 	W.Hover(r)
 	r.Well = ns.ItemWell(r, 36)
 	r.Well:SetPoint("LEFT", r, "LEFT", 8, 0)
@@ -320,21 +320,37 @@ local function filterMenu(self)
 		root:CreateDivider()
 		radio(ITEM_BIND_ON_EQUIP, LE_LOOT_FILTER_BOE)
 		radio(ALL, LE_LOOT_FILTER_ALL)
+		root:CreateDivider()
+		root:CreateButton("Clear filters", function()
+			SetMerchantFilter(LE_LOOT_FILTER_ALL)
+			paint()
+		end)
 	end)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 600, sidebar = 0 })
-	ns.Plain(f)
+	-- The main column keeps the 640 of the stock-sized page; the sidebar
+	-- names the vendor and holds the search and the filter.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640 + W.SHELL.sidebar, height = 600, searchPlaceholder = "Search the wares",
+		onSearch = function(text)
+			query = (text or ""):lower()
+			if f:IsShown() then paint() end
+		end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "merchant")
-	if GetMerchantFilter then
-		f.psFilter = W.IconButton(f.Header, "sliders", 28, "Filter", filterMenu, 14)
-		f.psFilter:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
-	end
-	money = ns.Money(f.TabRow)
-	money:SetPoint("RIGHT", f.TabRow, "RIGHT", -W.SHELL.pad, 0)
+	-- The vendor (the stock portrait and title), the player's money under the name.
+	subject = ns.SubjectBlock(f)
+	subject.line:Hide()
+	f.psSubject = subject
+	money = ns.Money(f.Sidebar)
+	money:SetPoint("TOPLEFT", subject.name, "BOTTOMLEFT", 0, -6)
 	f.psMoney = money
+	-- The filter ends the search row, lit while one is on.
+	if GetMerchantFilter then
+		f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", filterMenu, 14)
+		f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -(W.SHELL.header - 30))
+		Polestar.Theme.Skin(f.psFilter, "editbox")
+	end
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f:HookScript("OnReceiveDrag", sell)
@@ -342,6 +358,7 @@ local function build()
 	-- As the stock show and hide: the sounds, the filter reset, its dialogs gone.
 	f:HookScript("OnShow", function()
 		if ResetSetMerchantFilter then ResetSetMerchantFilter() end
+		f.Search:SetText("")
 		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
 	end)
 	f:HookScript("OnHide", function()
@@ -352,12 +369,12 @@ local function build()
 	Polestar.CloseOnEscape(NAME)
 end
 
--- The vendor's currencies and how many the player holds, left of the money
--- (MerchantFrame_UpdateCurrencies), each with its tooltip.
+-- The vendor's currencies and how many the player holds, at the tab row's
+-- right (MerchantFrame_UpdateCurrencies), each with its tooltip.
 local tokens = {}
 local function currencies()
 	local list = C_MerchantFrame.GetMerchantCurrencies() or {}
-	local prev = money
+	local prev
 	for i = 1, math.max(#list, #tokens) do
 		local id, t = list[i], tokens[i]
 		if id and not t then
@@ -384,7 +401,7 @@ local function currencies()
 			t.Icon:SetTexture(info.iconFileID)
 			t:SetWidth(math.ceil(t.Text:GetStringWidth()) + 3 + 14)
 			t:ClearAllPoints()
-			t:SetPoint("RIGHT", prev, "LEFT", -16, 0)
+			if prev then t:SetPoint("RIGHT", prev, "LEFT", -16, 0) else t:SetPoint("RIGHT", f.TabRow, "RIGHT", -W.SHELL.pad, 0) end
 			prev = t
 		end
 	end
@@ -467,11 +484,28 @@ function paint()
 		paint()
 	end)
 	local buyback = tab == "buyback"
-	W.ShellTitle(f, ns.Clean(UnitName("npc")) or "Merchant",
-		buyback and "Click an item to buy it back." or "Click an item to buy it. Right-click an item in your bags to sell it.")
-	local n = buyback and GetNumBuybackItems() or GetMerchantNumItems()
-	for k = 1, n do fill(rows[k] or newRow(k), k) end
+	SetPortraitTexture(subject.icon, "npc")
+	subject.name:SetText(ns.Clean(UnitName("npc")) or MERCHANT or "Merchant")
+	-- What the search keeps, two to a line.
+	local all = buyback and GetNumBuybackItems() or GetMerchantNumItems()
+	local list = {}
+	for k = 1, all do
+		local name
+		if buyback then name = GetBuybackItemInfo(k) else name = (C_MerchantFrame.GetItemInfo(k) or {}).name end
+		if query == "" or (name or ""):lower():find(query, 1, true) then list[#list + 1] = k end
+	end
+	local n = #list
+	for slot, k in ipairs(list) do
+		local r = rows[slot] or newRow(slot)
+		r:ClearAllPoints()
+		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + ((slot - 1) % 2) * (r:GetWidth() + GAP), -(24 + math.floor((slot - 1) / 2) * ROW_H))
+		fill(r, k)
+	end
 	for k = n + 1, #rows do rows[k]:Hide() end
+	local count = query ~= "" and ("%d of %d"):format(n, all) or tostring(all)
+	W.ShellTitle(f, buyback and (MERCHANT_BUYBACK or "Buyback") or (MERCHANT or "Merchant"),
+		all == 0 and (buyback and "Nothing sold here yet." or "Nothing for sale.")
+		or (buyback and "%s to buy back" or "%s for sale"):format(all == 1 and query == "" and "1 item" or count .. " items"))
 	-- On Buy, the last item sold, to buy back (the stock MerchantBuyBackItem).
 	local h = 24 + math.max(1, math.ceil(n / 2)) * ROW_H + 24
 	local last = not buyback and GetNumBuybackItems() or 0
@@ -490,12 +524,20 @@ function paint()
 		fill(f.psLast, last)
 		h = h + 18 + ROW_H + 24
 	end
-	f.psEmpty:SetText(buyback and "Nothing sold here yet." or "Nothing for sale.")
+	f.psEmpty:SetText(all > 0 and "Nothing matches the search." or buyback and "Nothing sold here yet." or "Nothing for sale.")
 	f.psEmpty:SetShown(n == 0)
 	ns.SetMoney(money, GetMoney())
 	currencies()
-	-- A game rule can take the filter away (MerchantFrame_Update).
-	if f.psFilter then f.psFilter:SetShown(not (C_GameRules and C_GameRules.IsGameRuleActive(Enum.GameRule.MerchantFilterDisabled))) end
+	-- A game rule can take the filter away (MerchantFrame_Update); the search
+	-- then runs to the sidebar's edge.
+	local filter = f.psFilter and not (C_GameRules and C_GameRules.IsGameRuleActive(Enum.GameRule.MerchantFilterDisabled))
+	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + (filter and 30 + 6 or 0)), -(W.SHELL.header - 30))
+	if f.psFilter then
+		f.psFilter:SetShown(filter and true or false)
+		local on = GetMerchantFilter() ~= LE_LOOT_FILTER_ALL
+		W.SetIconState(f.psFilter, on)
+		f.psFilter.psTip = on and "Filter (1 on)" or "Filter"
+	end
 	footer()
 	W.ShellBody(f, h)
 end
