@@ -335,6 +335,8 @@ local function paintCat(r, c, y, h, group)
 	r.Label:SetText(c.name or "")
 	r.Count:SetText(c.count > 0 and c.count or "")
 	r.Dot:SetShown(c.dot and true or false)
+	-- The label runs to the dot's slot when it shows, else to the count.
+	r.Label:SetPoint("RIGHT", c.dot and r.Dot or r.Count, "LEFT", -8, 0)
 	r.Sel:SetShown(on)
 	r.Bar:SetShown(on)
 	-- A category the search or the tab leaves empty is dimmed.
