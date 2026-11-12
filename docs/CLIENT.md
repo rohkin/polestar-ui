@@ -81,7 +81,8 @@ combat; the tab is first opened mid-fight and must show every stat).
 
 **Rule:** before any call the client protects in combat (frame mouse and
 passthrough setup on frames near secure ones, `SetAttribute`, showing or moving
-secure frames), check `InCombatLockdown()` and queue it for
+secure frames, `C_SpellBook.PickupSpellBookItem` for a spell dragged out of
+our book), check `InCombatLockdown()` and queue it for
 `PLAYER_REGEN_ENABLED`. The block is an event, not a Lua error.
 
 Some calls are not blocked but forbidden outright from addon code, in or out
@@ -96,7 +97,8 @@ clicks and drags back to the slot, and hide it on `PLAYER_REGEN_DISABLED`
 (`overSlot` in Character.lua). Give it a strata above the window's: in the same
 strata, a level higher, the game still handed the mouse to the slot under it.
 
-**Caught by:** nothing automatic for blocked calls; BugGrabber in game. The
+**Caught by:** BugGrabber in game; the `spellbook` scene (the stub blocks a
+spell pickup in combat, and a row dragged mid-fight picks up nothing). The
 `character-enchant` scene checks the secure button lands on the hovered slot, with use only on
 a filled one.
 

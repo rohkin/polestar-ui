@@ -56,7 +56,14 @@ function C_SpellBook.IsSpellBookItemLowRank(slot) return BOOK[slot] and BOOK[slo
 function C_SpellBook.GetSpellBookItemLevelLearned(slot) return 26 end
 function C_SpellBook.FindSpellBookSlotForSpell(id) return id - 100 end
 function C_SpellBook.GetSpellBookItemLink(slot) return "|Hspell:" .. (100 + slot) .. "|h[" .. BOOK[slot][1] .. "]|h" end
-function C_SpellBook.PickupSpellBookItem(slot, bank) stub.pickedSpell = slot end
+-- The client blocks a spell pickup from addon code in combat (ADDON_ACTION_BLOCKED).
+function C_SpellBook.PickupSpellBookItem(slot, bank)
+	if stub.inCombat then
+		stub.blocked = stub.blocked or {}
+		return table.insert(stub.blocked, "PickupSpellBookItem")
+	end
+	stub.pickedSpell = slot
+end
 C_Spell = C_Spell or {}
 function C_Spell.GetSpellPowerCost(id)
 	local s = BOOK[id - 100]

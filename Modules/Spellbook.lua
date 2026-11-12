@@ -116,15 +116,17 @@ local function rowClick(r)
 	end
 end
 
+-- The client blocks a spell pickup from addon code in combat (docs/CLIENT.md, rule 4).
 local function pickup(r)
 	local s = r.psSpell
+	if InCombatLockdown() then return end
 	if s and s.info.itemType ~= Enum.SpellBookItemType.FutureSpell then C_SpellBook.PickupSpellBookItem(s.slot, s.bank) end
 end
 
 -- Casting is protected. So out of combat one secure button takes the hovered
 -- row's place (ns.Overlay), its left click the game's "spell" action;
 -- everything else (drag, link) it hands back to the row. In combat the rows
--- still drag and link.
+-- still link; dragging waits for the fight to end.
 local overRow = ns.Overlay("PolestarUISpellbookCast", {
 	enter = rowEnter,
 	pickup = pickup,
