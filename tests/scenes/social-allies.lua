@@ -12,14 +12,15 @@ assert(stub.alliesRequested, "data not requested")
 assert(f.psEmpty:IsShown() and f.psEmpty:GetText() == "Loading recent allies...", "loading")
 stub.alliesReady = true
 stub.fire("RECENT_ALLIES_CACHE_UPDATE")
+local function plain(t) return (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
 local function row(name)
 	for _, r in ipairs({ f.psPanel:GetChildren() }) do
 		if r:IsShown() and r.Name and r.Name:GetText() == name then return r end
 	end
 end
 assert(f.Title:GetText() == "Recent allies" and not f.psEmpty:IsShown(), "page")
-assert(row("Vessa").Sub:GetText() == "Level 23 Rogue · The Deadmines · Grouped in The Deadmines", "online: " .. tostring(row("Vessa").Sub:GetText()))
-assert(row("Orrin").Sub:GetText() == "Level 21 Mage · Grouped in Westfall", "offline: " .. tostring(row("Orrin").Sub:GetText()))
+assert(plain(row("Vessa").Sub:GetText()) == "Lvl 23 Rogue · The Deadmines · Grouped in The Deadmines", "online: " .. tostring(row("Vessa").Sub:GetText()))
+assert(row("Orrin").Sub:GetText() == "Lvl 21 Mage · Grouped in Westfall", "offline: " .. tostring(row("Orrin").Sub:GetText()))
 stub.RunScript(row("Vessa"), "OnClick", "LeftButton")
 stub.RunScript(row("Vessa"), "OnDoubleClick", "LeftButton")
 stub.advance(0.5)

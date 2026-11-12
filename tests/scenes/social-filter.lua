@@ -4,7 +4,7 @@
 -- As the stock friends list: search "for keywords"; a Filter menu (Status, then the tags this
 -- game type has as Interests and Roles, no Delves) that filters through C_BattleNet.SearchFriends
 -- and keeps WoW friends only for presence filters; Favorites and Friends groups that fold; a
--- presence pip and an invite button on each friend; the player's presence and BattleTag in the band.
+-- presence pip and an invite button on each friend; the player's presence and BattleTag in the subject block.
 PolestarUI.Show("social", "friends")
 local f = PolestarUISocial
 local function row(name)
@@ -35,6 +35,7 @@ assert(not row("Rook").Pip:IsShown() and not row("Favorites 0/1").Pip:IsShown(),
 -- Invite: a friend in WoW only; the app and offline ones show it disabled.
 assert(row("Mira").Invite:IsShown() and row("Mira").Invite:IsEnabled(), "invite in WoW")
 assert(not row("Jon").Invite:IsEnabled() and not row("Eldric").Invite:IsEnabled(), "invite out of WoW")
+assert(row("Jon").Invite.psTip == "Not in this game: can't invite" and row("Eldric").Invite.psTip == "Offline: can't invite", "invite reason")
 row("Aelric").Invite:Click()
 assert(stub.invited == "Aelric", "invite button")
 row("Mira").Invite:Click()
@@ -54,14 +55,14 @@ assert(stub.searchInfo.isAFK and not stub.searchInfo.isOnline and #stub.searchIn
 assert(PolestarMenu:IsShown() and menuRow("Away").psItem.checked, "menu closed on a pick")
 assert(row("Mira") and row("Brannoc") and not row("Jon") and not row("Aelric") and not row("Sefa"), "away filter")
 assert(row("Friends 2/2") and not row("Favorites 0/1"), "group counts follow the filter")
-assert(f.psFilter.Label:GetText() == "Filter (1)", "filter count")
+assert(f.psFilter.psActive and f.psFilter.psTip == "Filter (1 on)", "filter count")
 -- A tag keeps Battle.net friends only.
 menuRow("Away"):Click()
 menuRow("Raiding"):Click()
 assert(stub.searchInfo.tags[1] == Enum.BattleNetFriendTag.Raiding, "tag search")
 assert(row("Sefa") and row("Mira") and not row("Jon") and not row("Brannoc"), "tag filter")
 PolestarUI.Show("social", "friends")
--- The player's presence in the band: the BattleTag with a dot; a pick sets it through C_BattleNet.
+-- The player's presence in the subject block: the BattleTag, a dot on the icon; a pick sets it through C_BattleNet.
 local st = f.psStatus
 assert(st.Label:GetText() == "Testchar#1000" and st:IsEnabled(), "BattleTag")
 st:Click()
@@ -81,7 +82,7 @@ PolestarModal.Box.Action:Click()
 -- Clear filters; the Filter button leaves with the friends page.
 f.psFilter:Click()
 menuRow("Clear filters"):Click()
-assert(row("Jon") and row("Aelric") and f.psFilter.Label:GetText() == "Filter", "clear")
+assert(row("Jon") and row("Aelric") and not f.psFilter.psActive, "clear")
 PolestarUI.Show("social", "ignored")
 assert(not f.psFilter:IsShown() and st:IsShown(), "filter off the friends page")
 PolestarUI.Show("social", "friends")

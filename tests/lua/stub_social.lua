@@ -56,9 +56,9 @@ Enum.BattleNetFriendTag = { Professions = 0, PvP = 1, Raiding = 2, Dungeons = 3,
 local TAG = Enum.BattleNetFriendTag
 local BN = {
 	{ name = "Sefa", tag = "Sefa#4410", online = false, last = 3 * 86400, favorite = true, tags = { TAG.Raiding } },
-	{ name = "Mira", tag = "Mira#1123", online = true, char = "Thessaly", level = 26, class = "DRUID", zone = "Darkshore",
+	{ name = "Mira", tag = "Mira#1123", online = true, client = "WoW", char = "Thessaly", level = 26, class = "DRUID", zone = "Darkshore",
 		afk = true, free = true, tags = { TAG.Raiding, TAG.HealerRole } },
-	{ name = "Jon", tag = "Jon#2871", online = true, rich = "In the Battle.net app", dnd = true, tags = { TAG.Roleplaying } },
+	{ name = "Jon", tag = "Jon#2871", online = true, client = "App", rich = "In the Battle.net app", dnd = true, tags = { TAG.Roleplaying } },
 }
 C_BattleNet = {}
 function BNGetNumFriends() return #BN, 2, 1, 0 end
@@ -94,9 +94,16 @@ function C_BattleNet.GetFriendAccountInfo(i)
 	local secret = InCombatLockdown() and stub.SECRET
 	return { bnetAccountID = 100 + i, accountName = secret or b.name, isFavorite = b.favorite or false, battleTag = b.tag, lastOnlineTime = b.last and time() - b.last,
 		isAFK = b.afk or false, isDND = b.dnd or false, friendTags = b.tags or {},
-		gameAccountInfo = { isOnline = b.online, characterName = b.char and (secret or b.char), characterLevel = b.level,
+		gameAccountInfo = { isOnline = b.online, clientProgram = b.client or "", wowProjectID = b.client == "WoW" and WOW_PROJECT_ID or nil, characterName = b.char and (secret or b.char), characterLevel = b.level,
 			className = b.class and CLASSES[b.class], areaName = b.zone, richPresence = b.rich,
 			playerGuid = b.class and "Player-" .. b.class .. "-9" } }
+end
+-- The client's title icons: the texture records the client it was set for.
+BNET_CLIENT_WOW, WOW_PROJECT_ID = "WoW", 1
+Enum.TitleIconVersion = { Small = 0, Medium = 1, Large = 2 }
+C_Texture = C_Texture or {}
+function C_Texture.SetTitleIconTexture(tex, client, version)
+	tex.psClient, tex.psVersion = client, version
 end
 function FriendsFrame_GetLastOnline(t) return ("%d days"):format(math.floor((time() - t) / 86400)) end
 

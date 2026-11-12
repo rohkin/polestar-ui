@@ -7,14 +7,15 @@
 -- and hides the requests while it runs.
 PolestarUI.Show("social", "friends")
 local f = PolestarUISocial
+local function plain(t) return (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
 local function row(name)
 	for _, r in ipairs({ f.psPanel:GetChildren() }) do
 		if r:IsShown() and r.Name and r.Name:GetText() == name then return r end
 	end
 end
-assert(row("Mira").Sub:GetText() == "Thessaly · Level 26 Druid · Darkshore", "in game: " .. tostring(row("Mira").Sub:GetText()))
+assert(plain(row("Mira").Sub:GetText()) == "Thessaly · Lvl 26 Druid · Darkshore", "in game: " .. tostring(row("Mira").Sub:GetText()))
 assert(row("Jon").Sub:GetText() == "In the Battle.net app", "in the app")
-assert(row("Sefa").Sub:GetText() == "Last online 3 days", "offline: " .. tostring(row("Sefa").Sub:GetText()))
+assert(row("Sefa").Sub:GetText() == "Last online 3 days ago", "offline: " .. tostring(row("Sefa").Sub:GetText()))
 stub.RunScript(row("Mira"), "OnClick", "LeftButton")
 stub.advance(0.5)
 assert(stub.told == "Mira", "whisper")
