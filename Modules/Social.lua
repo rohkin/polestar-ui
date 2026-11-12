@@ -698,16 +698,51 @@ local function fieldBody()
 	return body
 end
 
+local function uiError(text) UIErrorsFrame:AddExternalErrorMessage(text) end
+
+-- A name the stock dialog sends to Battle.net (AddFriendFrame_IsValidBattlenetName).
+local function bnName(text)
+	local _, tag, _, _, _, _, rid = BNGetInfo()
+	return (rid and text:find("@", 1, true)) or (tag and text:find("#", 1, true))
+end
+
+-- As the stock AddFriendFrame_Accept: a BattleTag or email to Battle.net, else
+-- a WoW friend request by name, else the old friends list.
+local function sendFriendRequest(name)
+	local L = Enum.BattleNetFriendLevel or {}
+	if C_BattleNet.GetFriendLevelFromInviteText and C_BattleNet.GetFriendLevelFromInviteText(name) == L.RealID
+		and not C_BattleNet.AreRealIDFriendsEnabled() then
+		return uiError("Real ID friend requests are turned off.")
+	end
+	if bnName(name) and BNConnected() then BNSendFriendInvite(name, "")
+	elseif C_BattleNet.AreTitleFriendsEnabled and C_BattleNet.AreTitleFriendsEnabled() then C_BattleNet.SendTitleFriendInviteByName(name)
+	elseif C_FriendList.IsLegacyFriendSystemEnabled() then C_FriendList.AddFriend(name)
+	else uiError("That system is currently disabled.") end
+end
+
+-- The stock Add Friend button (AddFriendFrame_Show): a friendly player
+-- targeted becomes a friend at once; else the dialog, which needs Battle.net
+-- or the old friends list.
 local function addFriend()
+	local target = GetUnitName("target", true)
+	local legacy = C_FriendList.IsLegacyFriendSystemEnabled()
+	if target and UnitIsHumanPlayer("target") and UnitCanCooperate("player", "target") and legacy and not C_FriendList.GetFriendInfo(target) then
+		C_FriendList.AddFriend(target)
+		return M.Show()
+	end
+	local _, tag, _, _, _, _, rid = BNGetInfo()
+	local bn = (tag or rid) and BNConnected()
+	if not bn and not legacy then return uiError("Battle.net is unavailable.") end
 	f.psAdd = f.psAdd or fieldBody()
 	local e = f.psAdd.Box
 	e:SetText("")
-	ns.ModalWith({ title = "Add friend", text = "A character's name, or a BattleTag (Name#1234) for Battle.net.", action = "Add",
+	local text = not bn and "A character's name. (Battle.net is unavailable: BattleTags can't be added now.)"
+		or rid and "A BattleTag (Name#1234), an email address, or a character's name."
+		or "A BattleTag (Name#1234) or a character's name."
+	ns.ModalWith({ title = "Add friend", text = text, action = "Send request",
 		onAccept = function()
 			local name = strtrim(e:GetText() or "")
-			if name == "" then return end
-			-- As the stock dialog decides (AddFriendTemplates.lua).
-			if name:find("#", 1, true) then BNSendFriendInvite(name, "") else C_FriendList.AddFriend(name) end
+			if name ~= "" then sendFriendRequest(name) end
 		end }, f.psAdd)
 	e:SetFocus()
 end
@@ -798,13 +833,33 @@ local function copyTag()
 	e:HighlightText()
 end
 
+-- The stock broadcast box (SocialUIBattleNetBroadcastFrameMixin): the status
+-- message your Battle.net friends see, 127 letters.
+local function setBroadcast()
+	f.psCast = f.psCast or fieldBody()
+	local e = f.psCast.Box
+	e:SetMaxLetters(127)
+	local now = clean(select(4, BNGetInfo())) or ""
+	e:SetText(now)
+	ns.ModalWith({ title = "Broadcast", text = "A message your Battle.net friends see.", action = "Update",
+		onAccept = function()
+			local text = e:GetText() or ""
+			if text ~= now then C_BattleNet.SetCustomMessage(text) end
+		end }, f.psCast)
+	e:SetFocus()
+	e:HighlightText()
+end
+
 local function presenceItems()
 	local now, items = presence(), {}
 	for _, o in ipairs({ { "online", "Online" }, { "away", "Away" }, { "busy", "Busy" }, { "hidden", "Appear offline" } }) do
 		items[#items + 1] = { text = o[2], checked = now == o[1], onClick = function() setPresence(o[1]) end }
 	end
 	items[#items + 1] = { separator = true }
+	items[#items + 1] = { text = "Set broadcast", onClick = setBroadcast }
 	items[#items + 1] = { text = "Copy BattleTag", onClick = copyTag }
+	-- The stock Battle.net bar's menu: Ignore List.
+	items[#items + 1] = { text = "Ignore list", onClick = function() M.Show("ignored") end }
 	return items
 end
 
@@ -928,6 +983,9 @@ local function refresh()
 		{ label = "Add friend", onClick = addFriend, opts = { primary = true } },
 		{ label = "Send message", onClick = function() ChatFrameUtil.OpenChat(SLASH_WHISPER1 .. " ") end },
 	})
+	if page ~= "raid" then
+		ns.SetEnabled(f.footerButtons.right[1], page == "ignored" or not C_SocialRestrictions.IsFriendsDisabled(), "Adding friends is disabled.")
+	end
 	for _, g in ipairs(groups) do g.Head:Hide(); g.Panel:Hide() end
 	local h
 	if page == "raid" then

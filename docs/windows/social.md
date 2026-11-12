@@ -17,7 +17,10 @@ Nothing Lost Rule, said in the Options menu).
   BattleTag in Small textDim ("Battle.net offline" when disconnected). The
   whole block is a button (the stock BattleNetBar): its menu sets Online,
   Away, Busy or Appear offline (`C_BattleNet.SetAFK`/`SetDND`/
-  `SetAppearOffline`) and copies the BattleTag (a modal with it selected).
+  `SetAppearOffline`) copies the BattleTag (a modal with it selected), sets the
+  broadcast (the stock broadcast box: the current message to edit, 127
+  letters, `C_BattleNet.SetCustomMessage` on a change) and opens the ignore
+  list (the stock Battle.net bar menu's Ignore List).
 - **Band:** the page title; on Friends the subtitle is "5 of 8 friends
   online", on the other pages one line saying what the page is. Options
   (the Nothing Lost Rule: Quick Join, Recruit a Friend and the raid's
@@ -50,8 +53,16 @@ Nothing Lost Rule, said in the Options menu).
   WoW friend's level, zone and note. Notes are set from the right-click
   menu (Set Note), as in the stock list. Click whispers, right-click opens the
   game's menu (`FriendsFrame_ShowDropdown`/`ShowBNDropdown`, where favorites
-  are set), double-click invites. Footer: "Add friend" (primary; `W.Modal`
-  with a name field, a BattleTag sends a Battle.net invite), "Send message".
+  are set), double-click invites. Footer: "Add friend" (primary), the stock
+  Add Friend button (`AddFriendFrame_Show`): a friendly player targeted who
+  is not yet a friend is added at once; else a `W.Modal` with one field and
+  "Send request", as `AddFriendFrame_Accept` decides: a BattleTag (or an
+  email, with Real ID) to Battle.net, else a WoW friend request by name
+  (`C_BattleNet.SendTitleFriendInviteByName`) where the game has them, else
+  the old list (`C_FriendList.AddFriend`); a Real ID request while those
+  are off is refused with the stock error. The stock dialog has no note
+  field (notes are set afterwards from the menu). Greyed with its reason
+  while `C_SocialRestrictions.IsFriendsDisabled()`. Then "Send message".
 - **Friend requests:** the stock Friend Requests tab: a folding "Received
   (3)" group of cards, each the requester, the kind (Battle.net, Real ID or
   WoW friend) and "Sent 2 days ago"; Accept, and Decline's menu as the
@@ -93,5 +104,5 @@ Nothing Lost Rule, said in the Options menu).
   icons); scenes `social` (keys through override bindings, refused in
   combat; order, client icons, row slots), `social-battlenet`,
   `social-filter` (filter menu, groups, pips, invite, presence),
-  `social-requests`, `social-ignored`, `social-allies`, `social-raid`, `social-secret` (names secret in combat
+  `social-add` (add friend paths, broadcast), `social-requests`, `social-ignored`, `social-allies`, `social-raid`, `social-secret` (names secret in combat
   keep the last read).

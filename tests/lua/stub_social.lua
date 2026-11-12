@@ -45,6 +45,12 @@ function C_FriendList.DelIgnore(name)
 	return false
 end
 function C_FriendList.AddFriend(name) stub.added = name end
+-- The old friends list is on; stub.titleFriends turns WoW friend requests on,
+-- stub.friendsDisabled switches adding friends off. stub.uiError: the error shown.
+function C_FriendList.IsLegacyFriendSystemEnabled() return true end
+function C_FriendList.GetFriendInfo(name) for _, w in ipairs(WOW) do if w[1] == name then return {} end end end
+C_SocialRestrictions = { IsFriendsDisabled = function() return stub.friendsDisabled or false end }
+function UIErrorsFrame.AddExternalErrorMessage(_, text) stub.uiError = text end
 function C_FriendList.AddIgnore(name) ignores[#ignores + 1] = name; stub.ignoredName = name end
 -- The target: stub.target = name of a friendly player, else none.
 function UnitCanCooperate() return stub.target ~= nil end
@@ -69,8 +75,14 @@ C_BattleNet = {}
 function BNGetNumFriends() return #BN, 2, 1, 0 end
 function BNConnected() return true end
 -- The player's presence: stub.bnAFK, stub.bnDND, stub.bnHidden; the Set calls change it.
-function BNGetInfo() return 1, "Testchar#1000", nil, "", stub.bnAFK or false, stub.bnDND or false, true, stub.bnHidden or false end
+function BNGetInfo() return 1, "Testchar#1000", nil, stub.broadcast or "", stub.bnAFK or false, stub.bnDND or false, true, stub.bnHidden or false end
 function C_BattleNet.SetAFK(on) stub.bnAFK = on end
+function C_BattleNet.AreTitleFriendsEnabled() return stub.titleFriends or false end
+function C_BattleNet.SendTitleFriendInviteByName(name) stub.titleInvite = name end
+function C_BattleNet.AreRealIDFriendsEnabled() return false end
+function C_BattleNet.GetFriendLevelFromInviteText(t) return t:find("@", 1, true) and 1 or 0 end
+-- The player's broadcast: stub.broadcast; SetCustomMessage changes it.
+function C_BattleNet.SetCustomMessage(t) stub.broadcast = t end
 function C_BattleNet.SetDND(on) stub.bnDND = on end
 function C_BattleNet.SetAppearOffline(on) stub.bnHidden = on end
 -- Forever's game type has no Delves tag.
