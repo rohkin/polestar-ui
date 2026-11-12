@@ -139,7 +139,21 @@ local FACTIONS = {
 	faction("Darnassus", 4, 1500, 0, 3000),
 	faction("Classic", 0, 0, 0, 0, { isHeader = true, isCollapsed = true }),
 }
-C_Reputation = { GetNumFactions = function() return #FACTIONS end, GetFactionDataByIndex = function(i) return FACTIONS[i] end }
+for i, d in ipairs(FACTIONS) do d.factionID, d.canToggleAtWar, d.canSetInactive, d.atWarWith = 60 + i, not d.isHeader, not d.isHeader, false end
+FACTIONS[2].description = "The capital of the humans of the Eastern Kingdoms."
+-- The faction chosen for the details, the inactive ones; the calls are recorded
+-- (stub.atWar, stub.inactive, stub.watched).
+local selectedFaction, inactive = 0, {}
+C_Reputation = { GetNumFactions = function() return #FACTIONS end, GetFactionDataByIndex = function(i) return FACTIONS[i] end,
+	GetSelectedFaction = function() return selectedFaction end,
+	SetSelectedFaction = function(i) selectedFaction = i end,
+	IsFactionActive = function(i) return not inactive[i] end,
+	SetFactionActive = function(i, on) inactive[i] = not on or nil; stub.inactive = i end,
+	ToggleFactionAtWar = function(i) FACTIONS[i].atWarWith = not FACTIONS[i].atWarWith; stub.atWar = i end,
+	SetWatchedFactionByIndex = function(i)
+		for k, d in ipairs(FACTIONS) do d.isWatched = k == i end
+		stub.watched = i
+	end }
 
 local CURRENCIES = {
 	{ name = "Player vs. Player", isHeader = true, isHeaderExpanded = true },

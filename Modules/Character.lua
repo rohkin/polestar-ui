@@ -783,7 +783,6 @@ function refresh()
 	f.psGear:SetShown(gear)
 	f.psOptions:SetShown(panes)
 	f.psStats:SetShown(panes and statsShown())
-	if f.psStats:IsShown() then paintDrawer() end
 	local h = 0
 	if gear then
 		paintGear()
@@ -800,6 +799,8 @@ function refresh()
 			end
 		end
 	end
+	-- After the page: a page chooses what its details show.
+	if f.psStats:IsShown() then paintDrawer() end
 	W.ShellBody(f, h)
 end
 

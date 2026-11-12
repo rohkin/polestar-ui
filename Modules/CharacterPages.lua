@@ -21,6 +21,22 @@ local function fold(fn)
 	if ns.RefreshCharacter then ns.RefreshCharacter() end
 end
 
+-- A row chosen for the drawer's details: the drawer opens to show them, as
+-- the stock right pane does (SetRightPaneCollapsed(false)).
+local function choose(fn)
+	fn()
+	if PolestarUIDB then PolestarUIDB.hideStats = nil end
+	if ns.RefreshCharacter then ns.RefreshCharacter() end
+end
+ns.CharacterChoose = choose
+
+-- The selection wash behind a row (hidden until chosen).
+local function selWash(r)
+	r.Sel = W.Painter(W.Tex(r, "BACKGROUND"), function(t) t:SetVertexColor(Theme.Wash("selected")) end)
+	r.Sel:SetAllPoints(r)
+	r.Sel:Hide()
+end
+
 ---------------------------------------------------------------------------
 -- A grouped list: a heading per group (its chevron in the gutter folds it),
 -- over a row panel. groups = { { name, collapsed, toggle = fn, rows = { data, ... } } };
@@ -121,6 +137,7 @@ local function newBarRow(r)
 	r.Mark:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
 	r.Mark:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
 	r.Mark:SetWidth(2)
+	selWash(r)
 end
 
 local function setBar(r, frac, red, green, blue)
@@ -138,8 +155,9 @@ local function count(n, one, many) return n == 1 and "1 " .. one or n .. " " .. 
 
 ---------------------------------------------------------------------------
 -- Reputation: groups are the top headers; a sub-header (isChild) is a row,
--- its factions indented under it. A click watches a faction (the XP bar's
--- reputation), or folds a sub-header.
+-- its factions indented under it. A click chooses a faction for the drawer's
+-- details (CharacterDetails.lua: at war, inactive, watched), or folds a
+-- sub-header; the watched one carries the accent bar.
 
 local function standingColor(reaction)
 	local c = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
@@ -157,11 +175,9 @@ local function repEnter(r)
 	if span > 0 then
 		GameTooltip:AddLine(("%s / %s"):format(BreakUpLargeNumbers(d.currentStanding - d.currentReactionThreshold), BreakUpLargeNumbers(span)), 1, 1, 1)
 	end
+	if d.isWatched then GameTooltip:AddLine("Shown on your experience bar.", 1, 1, 1) end
 	-- What a click does, for players new to it: a sub-header folds instead.
-	if not d.isHeader then
-		ns.TooltipHint(d.isWatched and "Shown on your experience bar. Click to stop."
-			or "Click to follow it on your experience bar.")
-	end
+	if not d.isHeader then ns.TooltipHint("Click for its details: at war, inactive, experience bar.") end
 	GameTooltip:Show()
 end
 
@@ -173,7 +189,7 @@ local function repClick(r)
 			if d.isCollapsed then C_Reputation.ExpandFactionHeader(d.index) else C_Reputation.CollapseFactionHeader(d.index) end
 		end)
 	else
-		C_Reputation.SetWatchedFactionByIndex(d.isWatched and 0 or d.index)
+		choose(function() C_Reputation.SetSelectedFaction(d.index) end)
 	end
 end
 
@@ -191,10 +207,12 @@ local repSpec = {
 		r.psData = d
 		r.Name:SetPoint("TOPLEFT", r, "TOPLEFT", d.indent and 34 or 16, -8)
 		r.Name:SetText(d.name)
-		W.Color(r.Name, d.isHeader and "textDim" or "text")
+		-- At war: the name in danger, as the stock row's red highlight.
+		W.Color(r.Name, d.isHeader and "textDim" or d.atWarWith and "danger" or "text")
 		r.Chevron:SetShown(d.isHeader)
 		r.Chevron:SetTexture(Theme.Media(d.isCollapsed and "chevron-right" or "chevron-down"))
 		r.Mark:SetShown(d.isWatched)
+		r.Sel:SetShown(not d.isHeader and d.index == C_Reputation.GetSelectedFaction())
 		local rep = not d.isHeader or d.isHeaderWithRep
 		r.Value:SetShown(rep)
 		r.Bar:SetShown(rep)
@@ -209,7 +227,20 @@ local repSpec = {
 	end,
 }
 
+-- The faction the details show: the client's choice, else the first that can
+-- be chosen (the stock SelectFirstFactionIfNoneSelected).
+local function selectFirstFaction()
+	local sel = C_Reputation.GetSelectedFaction()
+	local d = sel and sel > 0 and C_Reputation.GetFactionDataByIndex(sel)
+	if d and not (d.isHeader and not d.isChild) then return end
+	for i = 1, C_Reputation.GetNumFactions() do
+		d = C_Reputation.GetFactionDataByIndex(i)
+		if d and not d.isHeader then return C_Reputation.SetSelectedFaction(i) end
+	end
+end
+
 pages.ReputationFrame = pageOf(function(v)
+	selectFirstFaction()
 	local groups, cur, n, watched = {}, nil, 0, nil
 	for i = 1, C_Reputation.GetNumFactions() do
 		local d = C_Reputation.GetFactionDataByIndex(i)
