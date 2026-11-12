@@ -66,6 +66,11 @@ for name, t in pairs({ CloseMerchant = T.Merchant, CloseTrainer = T.Trainer, Clo
 		stub.endInteraction(t)
 	end
 end
+C_Bank = C_Bank or {}
+function C_Bank.CloseBankFrame()
+	stub.npcClosed.CloseBankFrame = (stub.npcClosed.CloseBankFrame or 0) + 1
+	stub.endInteraction(T.Banker)
+end
 
 -- The bags (ContainerFrame.lua): opened by a frame, closed only by the frame
 -- that opened them (FRAME_THAT_OPENED_BAGS).

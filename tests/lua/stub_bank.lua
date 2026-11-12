@@ -29,7 +29,7 @@ local function find(bag)
 	end
 end
 
-C_Bank = {}
+C_Bank = C_Bank or {}
 function C_Bank.AreAnyBankTypesViewable() return stub.bankViewable[CHAR] or stub.bankViewable[ACCT] or false end
 function C_Bank.CanViewBank(t) return stub.bankViewable[t] or false end
 function C_Bank.FetchPurchasedBankTabData(t)
@@ -54,11 +54,6 @@ function C_Bank.AutoDepositItemsIntoBank(t) stub.autoDeposited = t end
 function C_Bank.FetchDepositedMoney(t) return t == ACCT and stub.warbandMoney or 0 end
 function C_Bank.DepositMoney(t, n) stub.moneyMoved = { "deposit", t, n } end
 function C_Bank.WithdrawMoney(t, n) stub.moneyMoved = { "withdraw", t, n } end
--- The stock close call: counted, and it ends the interaction as the client does.
-function C_Bank.CloseBankFrame()
-	stub.npcClosed.CloseBankFrame = (stub.npcClosed.CloseBankFrame or 0) + 1
-	stub.endInteraction(Enum.PlayerInteractionType.Banker)
-end
 
 -- The bank tabs are containers; the backpack stays stub_npc's.
 local numSlots, itemInfo = C_Container.GetContainerNumSlots, C_Container.GetContainerItemInfo
