@@ -14,3 +14,11 @@ local names = {}
 for _, r in ipairs({ f.NavScroll.Child:GetChildren() }) do if r:IsShown() and r.psRecipe then names[r.psRecipe.name] = true end end
 assert(names["Bolt of Linen Cloth"] and names["Mooncloth"] and not names["Brown Linen Vest"] and not names["Linen Bag"], "not filtered")
 assert(item("Have materials").Check:IsShown() and not item("Chest").Check:IsShown(), "checks wrong")
+-- "Clear filters": back to the stock defaults, the menu's last item while a filter is on.
+item("Clear filters"):Click()
+names = {}
+for _, r in ipairs({ f.NavScroll.Child:GetChildren() }) do if r:IsShown() and r.psRecipe then names[r.psRecipe.name] = true end end
+assert(names["Brown Linen Vest"] and names["Linen Bag"] and not f.psFilter.psActive, "not cleared")
+stub.RunScript(f.psFilter, "OnClick")
+item("Have materials"):Click()
+item("Chest"):Click()

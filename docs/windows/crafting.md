@@ -44,7 +44,9 @@ it from tainted code.
   filtering the selected recipe). Its menu drops under it, over the list.
   Its menu is the game's own filter menu, flat (Polestar's menu has no
   submenus): "Has skill up" (not for a guild's recipes), "Have materials",
-  then after a hairline "Check all", "Uncheck all" and each item slot. The
+  then after a hairline "Check all", "Uncheck all" and each item slot, and
+  while a filter is on, "Clear filters" (the stock menu's reset: both off,
+  every slot shown). The
   client keeps them (`C_TradeSkillUI.SetOnlyShow*`, `SetInventorySlotFilter`)
   and they act on its filtered recipe list, as in the stock window; the menu
   opens again after each pick.

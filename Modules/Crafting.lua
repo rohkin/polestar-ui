@@ -648,6 +648,17 @@ local function filterMenu(anchor)
 				onClick = pick(function() T.SetInventorySlotFilter(i, T.IsInventorySlotFiltered(i)) end) }
 		end
 	end
+	-- Back to the stock defaults (its filter menu's reset): no skill-up or
+	-- materials filter, every slot shown.
+	if filtering() then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Clear filters", onClick = function()
+			T.SetOnlyShowSkillUpRecipes(false)
+			T.SetOnlyShowMakeableRecipes(false)
+			for i = 1, n do T.SetInventorySlotFilter(i, true) end
+			refresh()
+		end }
+	end
 	W.ShowMenu(anchor, items, { minWidth = 180 })
 end
 
