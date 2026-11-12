@@ -32,7 +32,7 @@ function GetInboxHeaderInfo(i)
 	if not l then return end
 	local first, link
 	for a = 1, 16 do if l[12][a] then first, link = l[12][a][4], "item:" .. l[12][a][2]; break end end
-	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, false, true, l[9], first, link
+	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, false, not l[9], l[9], first, link
 end
 function GetInboxText(i)
 	stub.inbox[i][8] = true
@@ -97,8 +97,8 @@ function GetSendMailPrice()
 end
 function SetSendMailMoney(c) stub.sendMoney = c; return true end
 function SetSendMailCOD(c) stub.sendCOD = c end
-function SendMail(to, subject, body)
-	stub.sent = { to = to, subject = subject, body = body, money = stub.sendMoney, cod = stub.sendCOD }
+function SendMail(to, subject, body, replyID)
+	stub.sent = { to = to, subject = subject, body = body, money = stub.sendMoney, cod = stub.sendCOD, replyID = replyID }
 	stub.sendItems = {}
 end
 stub.mailItem = item

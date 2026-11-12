@@ -12,6 +12,7 @@ local f, letter, send
 local M = {}
 local tab, open, taking = "inbox", nil, nil -- the page; the open letter; what the take loop empties (a letter, or "all")
 local cod, copper = false, 0 -- the Send page's money: COD or sent, and how much
+local replyTo -- the letter the Send page answers (Reply), as the stock sendMode "reply"
 local rows = {}
 local paint, codLine -- below
 
@@ -78,6 +79,20 @@ local function discard()
 		onAccept = function() DeleteInboxItem(i); M.Open(nil) end })
 end
 
+-- Reply: the Send page with the sender and "RE: subject" filled, the cursor
+-- in the message (OpenMailReplyMixin:Reply).
+local function reply()
+	local _, _, sender, subject = GetInboxHeaderInfo(open)
+	local prefix = (MAIL_REPLY_PREFIX or "RE:") .. " "
+	subject = subject or ""
+	if subject:sub(1, #prefix) ~= prefix then subject = prefix .. subject end
+	tab, replyTo = "send", open
+	send.To:SetText(sender)
+	send.Subject:SetText(subject)
+	paint()
+	send.Body:SetFocus()
+end
+
 local function buildLetter()
 	letter = ns.Flyout(f, NAME .. "Letter", LETTER_W)
 	letter:Hide()
@@ -101,6 +116,8 @@ local function buildLetter()
 	letter.Money:SetPoint("LEFT", letter.MoneyLabel, "RIGHT", 8, 0)
 	letter.Take = W.Button(letter, "Take", function() payFirst(open, function() startTaking(open) end) end, { primary = true })
 	letter.Take:SetPoint("BOTTOMRIGHT", letter, "BOTTOMRIGHT", -24, 16)
+	letter.Reply = W.Button(letter, "Reply", reply)
+	letter.Reply:SetPoint("RIGHT", letter.Take, "LEFT", -8, 0)
 	letter.Discard = W.Button(letter, "Delete", discard)
 	letter.Discard:SetPoint("BOTTOMLEFT", letter, "BOTTOMLEFT", 24, 16)
 	-- The dock makes room for it, and the window keeps it on screen.
@@ -110,7 +127,9 @@ end
 local function paintLetter()
 	letter:SetShown(open ~= nil and tab == "inbox")
 	if not letter:IsShown() then return end
-	local _, _, sender, subject, money, price = GetInboxHeaderInfo(open)
+	local _, _, sender, subject, money, price, _, _, _, _, _, canReply = GetInboxHeaderInfo(open)
+	-- No reply to the game's letters, to oneself, or without a sender.
+	ns.SetEnabled(letter.Reply, sender and canReply and sender ~= ns.Clean(UnitName("player")))
 	letter.Sender:SetText(sender or "Unknown")
 	letter.Subject:SetText(subject or "")
 	-- Reading the text marks the letter read, as the stock open does.
@@ -361,7 +380,7 @@ local function paintSend()
 		if copper > 0 then
 			if cod then SetSendMailCOD(copper) else SetSendMailMoney(copper) end
 		end
-		SendMail(send.To:GetText(), send.Subject:GetText(), send.Body:GetText())
+		SendMail(send.To:GetText(), send.Subject:GetText(), send.Body:GetText(), replyTo)
 	end, opts = { primary = true } } })
 	return 24 + 18 + 30 + 20 + 18 + BODY_H + 20 + 18 + 36 + 20 + 18 + 28 + 12
 end
@@ -454,7 +473,7 @@ end
 
 function paint()
 	W.ShellTabs(f, { { key = "inbox", label = "Inbox" }, { key = "send", label = "Send" } }, tab, function(k)
-		tab = k
+		tab, replyTo = k, nil
 		paint()
 	end)
 	f.psInbox:SetShown(tab == "inbox")
@@ -465,7 +484,7 @@ end
 
 function M.Show()
 	if not f then build() end
-	tab = "inbox"
+	tab, replyTo = "inbox", nil
 	paint()
 	f:Show()
 end
@@ -480,7 +499,12 @@ function M.Enable()
 		if shown() then paint() end
 	end)
 	Polestar.RegisterEvent("MAIL_SEND_INFO_UPDATE", function() if shown() then paint() end end)
-	Polestar.RegisterEvent("MAIL_SEND_SUCCESS", function() if send then resetSend() end end)
+	Polestar.RegisterEvent("MAIL_SEND_SUCCESS", function()
+		if not send then return end
+		-- A reply sent goes back to the inbox, as the stock window does.
+		if replyTo then tab, replyTo = "inbox", nil end
+		resetSend()
+	end)
 	Polestar.RegisterEvent("MAIL_FAILED", stopTaking)
 	Polestar.RegisterEvent("MAIL_OPEN_ALL_CANCELED", stopTaking)
 	-- The game closed a letter (taken whole, or gone): its flyout goes too.

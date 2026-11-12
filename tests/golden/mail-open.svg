@@ -111,6 +111,13 @@
 <rect x="1102" y="585" width="1" height="26" fill="rgb(230,186,102)" fill-opacity="1"/>
 <rect x="1032" y="585" width="70" height="1" fill="rgb(255,255,255)" fill-opacity="0.55"/>
 <g transform="translate(1052.8 602.32) scale(0.005859)" fill="rgb(10,13,20)" fill-opacity="1"><use href="#gInter-Mediumttf-411" x="0"/><use href="#gInter-Mediumttf-507" x="1337"/><use href="#gInter-Mediumttf-727" x="2500"/><use href="#gInter-Mediumttf-614" x="3645"/></g>
+<rect x="951" y="584" width="72" height="28" fill="rgb(35,42,63)" fill-opacity="1"/>
+<rect x="951" y="584" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="951" y="611" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="951" y="585" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="1022" y="585" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<g transform="translate(971.92 603.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-384" x="0"/><use href="#gInter-Mediumttf-614" x="1327"/><use href="#gInter-Mediumttf-843" x="2530"/><use href="#gInter-Mediumttf-736" x="3796"/><use href="#gInter-Mediumttf-998" x="4312"/></g>
+<g transform="translate(970.92 602.32) scale(0.005859)" fill="rgb(247,248,253)" fill-opacity="1"><use href="#gInter-Mediumttf-384" x="0"/><use href="#gInter-Mediumttf-614" x="1327"/><use href="#gInter-Mediumttf-843" x="2530"/><use href="#gInter-Mediumttf-736" x="3796"/><use href="#gInter-Mediumttf-998" x="4312"/></g>
 <rect x="811" y="584" width="72" height="28" fill="rgb(35,42,63)" fill-opacity="1"/>
 <rect x="811" y="584" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="811" y="611" width="72" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>

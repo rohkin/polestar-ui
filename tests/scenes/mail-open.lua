@@ -1,12 +1,27 @@
 --@ title: Mail: a letter with attachments and COD
 --@ roots: PolestarUIMail, PolestarUIMailLetter
 --@ stubs: stub_npc.lua, stub_mail.lua
--- A click opens the letter in a flyout right of the list (the dock counts it): its text, its attachments in an item grid, its COD in danger. Taking an item or all of a COD letter asks first, naming the price; cancelled, nothing is taken; paid, Take empties the letter one item per MAIL_INBOX_UPDATE. A letter a player sent is returned, not deleted; one that can go is deleted only after a danger dialog. The game closing a letter closes its flyout.
+-- A click opens the letter in a flyout right of the list (the dock counts it): its text, its attachments in an item grid, its COD in danger. Taking an item or all of a COD letter asks first, naming the price; cancelled, nothing is taken; paid, Take empties the letter one item per MAIL_INBOX_UPDATE. A letter a player sent is returned, not deleted; one that can go is deleted only after a danger dialog. Reply (not to a GM) opens Send with the sender and "RE: subject", sends as a reply, and goes back to the inbox once sent. The game closing a letter closes its flyout.
 local T = Enum.PlayerInteractionType
 stub.interact(T.MailInfo)
 local f, L = PolestarUIMail, PolestarUIMailLetter
 local rows = { f.psInbox:GetChildren() }
 assert(not L:IsShown(), "a letter open at the start")
+
+-- Reply to Thrall: Send with his name and "RE:", sent as a reply to his letter.
+rows[4]:Click()
+assert(not L.Reply:IsEnabled(), "a GM's letter can be answered")
+rows[2]:Click()
+assert(L.Reply:IsEnabled(), "Reply off")
+L.Reply:Click()
+local send = PolestarUIMail.tabButtons[2] and select(2, f.Body:GetChildren())
+assert(tostring(f.Title:GetText()) == "Send mail" and not L:IsShown(), "Reply did not open Send")
+assert(tostring(send.To:GetText()) == "Thrall" and tostring(send.Subject:GetText()) == "RE: Supplies for the front", "not filled")
+send.Body:SetText("On my way.")
+f.footerButtons.right[1]:Click()
+assert(stub.sent.replyID == 2 and stub.sent.to == "Thrall", "not sent as a reply")
+stub.fire("MAIL_SEND_SUCCESS")
+assert(tostring(f.Title:GetText()) == "Inbox", "not back on the inbox")
 
 -- Thrall's letter goes back to him; the next opens in its place.
 rows[2]:Click()
