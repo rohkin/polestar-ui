@@ -359,6 +359,211 @@ function ns.Stepper(parent, o)
 	return s
 end
 
+-- The reward drawing the Quest dialog and the quest log's details share: a
+-- column of pooled texts and reward tiles laid out top down from `c.y` in
+-- `parent` (docs/DESIGN.md, "Reagent Tile"). `o`: x (left inset), width,
+-- tip(tile) (the tooltip), click(tile); selected(type, index) (optional: the
+-- reward page's choices, which carry Polestar's marks and a selection).
+-- Per paint: c.Begin(y), draw with c.text/head/pair/tile/Rewards, c.End().
+function ns.QuestRewards(parent, o)
+	local W, Theme = Polestar.Widgets, Polestar.Theme
+	local TILE = 32
+	local c = { y = 0 }
+	local texts, used, tiles, nTile = {}, {}, {}, 0
+	function c.Begin(y) used, nTile, c.y = {}, 0, y end
+	function c.End()
+		for role, l in pairs(texts) do for i = (used[role] or 0) + 1, #l do l[i]:Hide() end end
+		for i = nTile + 1, #tiles do tiles[i]:Hide() end
+	end
+	function c.text(role, color, s, gap, indent)
+		used[role] = (used[role] or 0) + 1
+		texts[role] = texts[role] or {}
+		local t = texts[role][used[role]]
+		if not t then
+			t = W.Text(parent, role, "text")
+			t:SetWordWrap(true)
+			t:SetSpacing(2)
+			texts[role][used[role]] = t
+		end
+		W.Color(t, color)
+		t:ClearAllPoints()
+		t:SetPoint("TOPLEFT", parent, "TOPLEFT", o.x + (indent or 0), -(c.y + gap))
+		t:SetWidth(o.width - (indent or 0))
+		t:SetJustifyH("LEFT")
+		t:SetText(s or "")
+		t:Show()
+		c.y = c.y + gap + math.ceil(t:GetStringHeight())
+		return t
+	end
+	function c.head(s) if s then c.text("label", "textDim", s, 14) end end
+	-- A fact: its name, and its value at the right of the same line.
+	function c.pair(label, value, color)
+		local l = c.text("body", "textDim", label, 8)
+		local v = c.text("number", color or "text", value, 0)
+		v:ClearAllPoints()
+		v:SetPoint("TOPRIGHT", l, "TOPRIGHT", 0, 0)
+		v:SetJustifyH("RIGHT")
+		c.y = c.y - math.ceil(v:GetStringHeight())
+	end
+
+	local function newTile()
+		local t = CreateFrame("Button", nil, parent)
+		t:SetHeight(TILE)
+		W.Hover(t)
+		if o.selected then
+			t.Sel = W.Painter(W.Tex(t, "BACKGROUND"), function(s) s:SetVertexColor(Theme.Wash("selected")) end)
+			t.Sel:SetAllPoints(t)
+		end
+		t.Well = CreateFrame("Frame", nil, t)
+		t.Well:SetSize(TILE, TILE)
+		t.Well:SetPoint("LEFT", t, "LEFT", 0, 0)
+		Theme.Skin(t.Well, "inset")
+		t.Icon = ns.GameIcon(t.Well)
+		t.Icon:SetPoint("TOPLEFT", 1, -1)
+		t.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+		if o.selected then
+			-- The marks: arrow and coin in the icon's top corners, the best in a 2px accent frame.
+			t.Up = W.Tex(t.Well, "OVERLAY", "qol-upgrade", "success", 2)
+			t.Up:SetSize(16, 16)
+			t.Up:SetPoint("TOPLEFT", t.Well, "TOPLEFT", -2, 2)
+			t.Coin = W.Tex(t.Well, "OVERLAY", "qol-coin", "accent", 2)
+			t.Coin:SetSize(16, 16)
+			t.Coin:SetPoint("TOPRIGHT", t.Well, "TOPRIGHT", 2, 2)
+			t.Ring = {}
+			for i, p in ipairs({ { "TOPLEFT", "TOPRIGHT", -2, 2, 2, 2 }, { "BOTTOMLEFT", "BOTTOMRIGHT", -2, -2, 2, -2 },
+				{ "TOPLEFT", "BOTTOMLEFT", -2, 2, -2, -2 }, { "TOPRIGHT", "BOTTOMRIGHT", 2, 2, 2, -2 } }) do
+				local e = W.Tex(t.Well, "OVERLAY", nil, "accent", 1)
+				e:SetPoint(p[1], t.Well, p[1], p[3], p[4])
+				e:SetPoint(p[2], t.Well, p[2], p[5], p[6])
+				if i <= 2 then e:SetHeight(2) else e:SetWidth(2) end
+				t.Ring[i] = e
+			end
+		end
+		t.Count = W.Text(t, "number", "text")
+		t.Count:SetPoint("RIGHT", t, "RIGHT", -8, 0)
+		t.Name = W.Text(t, "label", "text")
+		t.Name:SetPoint("LEFT", t.Well, "RIGHT", 8, 0)
+		t.Name:SetPoint("RIGHT", t.Count, "LEFT", -8, 0)
+		t:SetScript("OnEnter", o.tip)
+		t:SetScript("OnLeave", W.HideTooltip)
+		t:SetScript("OnClick", o.click)
+		return t
+	end
+	-- `kind`: "item", "currency" or "spell" (nil: no tooltip); `type`: "choice",
+	-- "reward" or "required"; `mark` = { up, coin, best } (the Polestar marks).
+	function c.tile(kind, type, index, name, icon, count, q, usable, mark)
+		nTile = nTile + 1
+		local t = tiles[nTile] or newTile()
+		tiles[nTile] = t
+		t.psKind, t.psType, t.psIndex = kind, type, index
+		t.Icon:SetTexture(icon)
+		-- One the player cannot use, red as on the stock button.
+		if usable == false then t.Icon:SetVertexColor(0.9, 0, 0) else t.Icon:SetVertexColor(1, 1, 1) end
+		t.Name:SetText(name or RETRIEVING_ITEM_INFO or "")
+		t.Count:SetText(type == "required" and count or (count and count > 1 and count or ""))
+		-- The name in its quality colour, lifted; the border raw from uncommon up.
+		local col = q and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+		W.Uncolor(t.Name)
+		if col then t.Name:SetTextColor(Theme.Legible(col.r, col.g, col.b)) else W.Color(t.Name, "text") end
+		-- OVERLAY: above the icon, which at a scaled pixel grid can cover the top line.
+		local br, bg, bb, ba = 0, 0, 0, 1
+		if col and q >= 2 then br, bg, bb = col.r, col.g, col.b else br, bg, bb, ba = Theme.Wash("border") end
+		Theme.Border(t.Well, br, bg, bb, ba, "OVERLAY")
+		if o.selected then
+			mark = mark or {}
+			t.Up:SetShown(mark.up or false)
+			t.Coin:SetShown(mark.coin or false)
+			for _, e in ipairs(t.Ring) do e:SetShown(mark.best or false) end
+			t.Sel:SetShown(o.selected(type, index) or false)
+		end
+		t:ClearAllPoints()
+		t:SetPoint("TOPLEFT", parent, "TOPLEFT", o.x, -(c.y + 6))
+		t:SetWidth(o.width)
+		t:Show()
+		c.y = c.y + 6 + TILE
+	end
+
+	-- A spell reward's place and heading, by its kind (QuestInfo's
+	-- GetRewardSpellBucketType and its ordering).
+	local function spellKind(s)
+		local T = Enum.QuestCompleteSpellType
+		local k = (s.type and s.type ~= T.LegacyBehavior and s.type) or (s.isTradeskillSpell and T.Tradeskill)
+			or (s.isBoostSpell and T.Ability) or (s.garrFollowerID and T.Follower) or (s.isSpellLearned and T.Spell)
+			or (s.genericUnlock and T.Unlock) or T.Aura
+		local order = { T.Follower, T.Companion, T.Tradeskill, T.Ability, T.Aura, T.Spell, T.Unlock, T.QuestlineUnlock,
+			T.QuestlineReward, T.QuestlineUnlockPart, T.PossibleReward }
+		local heads = { REWARD_FOLLOWER, REWARD_COMPANION, REWARD_TRADESKILL_SPELL, REWARD_ABILITY, REWARD_AURA, REWARD_SPELL,
+			REWARD_UNLOCK, REWARD_QUESTLINE_UNLOCK, REWARD_QUESTLINE_REWARD, REWARD_QUESTLINE_UNLOCK_PART, REWARD_POSSIBLE_QUEST_REWARD }
+		for i, v in ipairs(order) do if v == k then return i, heads[i] end end
+		return #order + 1
+	end
+	-- What reward XP is worth of the player's level, as "35% of level 12"; nil
+	-- where the game shows no XP bar (max level, XP turned off).
+	local function levelShare(xp)
+		local max = UnitXPMax("player")
+		if not (max and max > 0 and GameRulesUtil.CanShowExperienceBar()) then return end
+		local pct = xp / max * 100
+		return ("%s of level %d"):format(pct < 1 and "<1%" or math.floor(pct) .. "%", UnitLevel("player"))
+	end
+
+	-- The rewards in QuestInfo_ShowRewards' order: choices, spells, a title,
+	-- then what comes with them (experience, money, skill, items, currencies,
+	-- honor). `d` = the counts and values the caller read (items, choices,
+	-- money, xp, honor, title, skillName, skillIcon, skillPoints) and
+	-- choice(i), reward(i) -> name, icon, count, quality, usable.
+	function c.Rewards(id, d)
+		local items, choices, money, xp, honor, title, skillPoints = d.items, d.choices, d.money, d.xp, d.honor, d.title, d.skillPoints
+		local currencies = C_QuestInfoSystem.GetQuestRewardCurrencies(id) or {}
+		local spells = {}
+		for i, spellID in ipairs(C_QuestInfoSystem.GetQuestRewardSpells(id) or {}) do
+			local s = spellID and spellID > 0 and C_QuestInfoSystem.GetQuestRewardSpellInfo(id, spellID)
+			-- Only one the player can still learn, as the stock list.
+			if s and s.texture and not C_SpellBook.IsSpellInSpellBook(spellID, Enum.SpellBookSpellBank.Player, true)
+				and (not s.isBoostSpell or IsCharacterNewlyBoosted())
+				and (not s.garrFollowerID or not C_Garrison.IsFollowerCollected(s.garrFollowerID)) then
+				local order, h = spellKind(s)
+				s.spellID, s.head, s.order = spellID, h, order * 1000 + i
+				spells[#spells + 1] = s
+			end
+		end
+		if items + choices + #currencies + #spells == 0 and money == 0 and xp == 0 and honor == 0 and not title and not skillPoints then return end
+		c.text("heading", "text", "Rewards", 24)
+		if choices > 0 then
+			c.head(choices == 1 and REWARD_ITEMS_ONLY or REWARD_CHOICES)
+			for i = 1, choices do d.choice(i) end
+		end
+		table.sort(spells, function(a, b) return a.order < b.order end)
+		local lastHead
+		for _, s in ipairs(spells) do
+			if s.head ~= lastHead and not s.hideSpellLearnText then c.head(s.head) end
+			lastHead = s.head
+			c.tile("spell", nil, s.spellID, s.name, s.texture)
+		end
+		if title then
+			c.head(REWARD_TITLE)
+			c.text("body", "text", title, 6)
+		end
+		if items + #currencies > 0 or money > 0 or xp > 0 or honor > 0 or skillPoints then
+			c.head((choices > 0 or #spells > 0 or title) and REWARD_ITEMS or REWARD_ITEMS_ONLY)
+			if xp > 0 then
+				c.pair("Experience", BreakUpLargeNumbers(xp) .. " XP")
+				-- The share under the amount, softer, at the right like the value.
+				local share = levelShare(xp)
+				if share then c.text("small", "textMuted", share, 2):SetJustifyH("RIGHT") end
+			end
+			if money > 0 then c.pair("Money", GetMoneyString(money)) end
+			if skillPoints then c.tile(nil, nil, nil, d.skillName, d.skillIcon, skillPoints) end
+			for i = 1, items do
+				local name, icon, n, q, usable = d.reward(i)
+				c.tile("item", "reward", i, name, icon, n, q, usable)
+			end
+			for i, cur in ipairs(currencies) do c.tile("currency", "reward", i, cur.name, cur.texture, cur.totalRewardAmount, cur.quality) end
+			if honor > 0 then c.pair(HONOR or "Honor", BreakUpLargeNumbers(honor)) end
+		end
+	end
+	return c
+end
+
 -- Polestar's dialog (W.Modal, `spec` as there) with a body of ours under its
 -- text: a stepper, a money input, a field. The body hides with the dialog, or
 -- when the next dialog takes its place.
