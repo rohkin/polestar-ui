@@ -219,6 +219,29 @@ local function undo()
 	M.Show()
 end
 
+-- Reset stages every point of the spec back out, as the stock ResetButton's
+-- "all talents" (C_Traits.ResetTreeByCurrency for each of the tree's
+-- currencies), confirmed first; Apply keeps it, Undo drops it.
+local function reset()
+	W.Modal({
+		title = "Reset your talents?",
+		text = "Every point in this spec comes back to spend. Nothing changes until you apply it; Undo drops it.",
+		action = "Reset",
+		danger = true,
+		onAccept = function()
+			local config = configOf(group)
+			local tree = treeOf(config)
+			for _, c in ipairs(C_Traits.GetTreeCurrencyInfo(config, tree, false) or {}) do
+				if not C_Traits.ResetTreeByCurrency(config, tree, c.traitCurrencyID) then
+					UIErrorsFrame:AddExternalErrorMessage(GENERIC_TRAIT_FRAME_INTERNAL_ERROR or "Talents cannot be changed now.")
+				end
+			end
+			PlaySound(SOUNDKIT.UI_CLASS_TALENT_NODE_REFUND)
+			M.Show()
+		end,
+	})
+end
+
 -- Activate makes the spec shown the active one, as the stock ActivateButton
 -- (C_SpecializationInfo.SetActiveSpecGroup): a cast, ended by
 -- ACTIVE_TALENT_GROUP_CHANGED, or after 10 seconds at most (interrupted).
@@ -563,12 +586,16 @@ local function refresh()
 	-- Polestar disables (faded to 45%) while nothing is staged. On the spec
 	-- that is not active, Activate takes Apply's place, as the stock frame's
 	-- ActivateButton. The right side lays out from the edge.
+	local why = not active and "Not your active spec" or committing and "Applying your talents…" or nil
 	local first = active and { label = "Apply", onClick = apply, opts = { primary = true } }
 		or { label = TALENT_SPEC_ACTIVATE or "Activate", onClick = activate, opts = { primary = true } }
-	W.ShellFooter(f, {}, { first, { label = "Undo", onClick = undo } })
+	W.ShellFooter(f, { { label = "Reset", onClick = reset } }, { first, { label = "Undo", onClick = undo } })
+	local reset_ = f.footerButtons.left[1]
+	reset_.psDanger = true
+	W.RepaintButton(reset_)
+	reason(reset_, why or activating and "Switching to this spec…" or (spentIn(config) == 0 and "No points spent") or nil)
 	-- A disabled one says why in its tooltip; Apply also waits on the
 	-- client's CanChangeTalents, as the stock Apply does.
-	local why = not active and "Not your active spec" or committing and "Applying your talents…" or nil
 	local can, canAdd, err = C_ClassTalents.CanChangeTalents()
 	local apply_, undo_ = f.footerButtons.right[1], f.footerButtons.right[2]
 	if active then

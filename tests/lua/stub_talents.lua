@@ -148,6 +148,12 @@ function C_Traits.RefundRank(config, id)
 	if c.staged[id] == 0 then c.staged[id] = nil end
 	return true
 end
+-- Reset: every point of the tree's currency staged back out.
+function C_Traits.ResetTreeByCurrency(config, tree, currency)
+	if currency ~= 1 then return false end
+	CONFIGS[config].staged = {}
+	return true
+end
 function C_Traits.ConfigHasStagedChanges(config)
 	local c = CONFIGS[config]
 	for id in pairs(data.nodes) do if (c.staged[id] or 0) ~= (c.ranks[id] or 0) then return true end end
