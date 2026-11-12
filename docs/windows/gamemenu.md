@@ -1,4 +1,8 @@
-#### Game menu (`GameMenuFrame`) — Risk: high
+#### Game menu (`GameMenuFrame`) — Risk: high — dropped
+Dropped: not built. Escape runs the game's own handlers first, other addons
+add buttons to it, and Logout and Quit are protected. A restyle may come later
+with the HUD.
+
 Not replaced. Escape runs `ToggleGameMenu`, which walks the game's Escape
 handlers in `securecallfunction` (closing windows, stopping a cast, clearing
 the target) before it shows the menu: taking the key would take all of that.

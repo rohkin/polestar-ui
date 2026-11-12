@@ -1,4 +1,4 @@
-#### Auction House (`AuctionHouseFrame`) — Risk: medium
+#### Auction House (`AuctionHouseFrame`) — Risk: medium — to be built last
 Forever loads the mainline auction house (`C_AuctionHouse`, commodities and
 items), demand-loaded. Opened by the interaction manager (Auctioneer) and by
 `GameEvent` (`AUCTION_HOUSE_SHOW`/`CLOSED`): both are taken
