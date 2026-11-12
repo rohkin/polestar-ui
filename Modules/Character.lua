@@ -39,14 +39,7 @@ local RIGHT = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot",
 local WEAPONS = { { "MainHandSlot", "right" }, { "SecondaryHandSlot", "below" }, { "RangedSlot", "left" } }
 local slots = {}
 
-local function qualityRGB(q)
-	if C_Item and C_Item.GetItemQualityColor then
-		local ok, r, g, b = pcall(C_Item.GetItemQualityColor, q)
-		if ok and type(r) == "number" then return r, g, b end
-	end
-	local t = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
-	if t then return t.r, t.g, t.b end
-end
+local qualityRGB = ns.QualityRGB
 
 -- The worn item's permanent enchant, as its tooltip line reads, without the
 -- "Enchanted: " the game puts before it.

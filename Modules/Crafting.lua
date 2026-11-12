@@ -122,10 +122,7 @@ local function productTip(owner, id)
 	GameTooltip:Show()
 end
 
-local function quality(q)
-	local c = q and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
-	if c then return c.r, c.g, c.b end
-end
+local quality = ns.QualityRGB
 
 -- An item's name in its quality colour, lifted to read; the border raw,
 -- from uncommon up (docs/DESIGN.md, "Slot Tile").

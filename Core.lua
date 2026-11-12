@@ -103,6 +103,17 @@ function ns.ItemWell(parent, size)
 	return well, icon
 end
 
+-- An item quality's colour as r, g, b (nil when the client has none).
+function ns.QualityRGB(q)
+	if q == nil then return end
+	if C_Item and C_Item.GetItemQualityColor then
+		local ok, r, g, b = pcall(C_Item.GetItemQualityColor, q)
+		if ok and type(r) == "number" then return r, g, b end
+	end
+	local t = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+	if t then return t.r, t.g, t.b end
+end
+
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the
