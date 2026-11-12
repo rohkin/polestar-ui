@@ -59,8 +59,8 @@ it from tainted code.
   opens again after each pick.
 - **Main column:** title the profession, subtitle the selected recipe's
   category ("<name>'s recipe: you cannot craft it." for another player's).
-  One view, so no tab row (Orders later). An Options menu at the band's bottom
-  right, the stock link button's: "Link profession" puts the profession's
+  One view, so no tab row (Orders later). In the "..." menu, first, the
+  stock link button's items: "Link profession" puts the profession's
   link (`GetTradeSkillListLink`) in the chat line, or the macro being
   written; then, under "Post in", Guild, Party, Raid and each chat channel
   post it there, each disabled where the player is not. All disabled for
@@ -82,8 +82,8 @@ it from tainted code.
 - **Tool and gear slots:** as the stock page (`ConfigureInventorySlots`):
   the slots the client lists for the profession (`GetProfessionSlots`,
   enabled by `C_PaperDollInfo.IsInventorySlotEnabled`; a slot name the client
-  lacks is skipped) as 28px item wells on the band's bottom row, left of
-  Options: right to left the tool, then 12px on its gear, 4px apart. None
+  lacks is skipped) as 28px item wells on the band's bottom row, ending
+  at the body's right edge: right to left the tool, then 12px on its gear, 4px apart. None
   show without slot data, or for another player's or the guild's recipes. A
   click picks the worn item up or puts one down, a modified click links it,
   the tooltip is the item's (the slot's name when empty); right-click uses it

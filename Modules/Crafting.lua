@@ -642,7 +642,7 @@ end
 -- The profession's tool and gear slots, as the stock page's
 -- (ConfigureInventorySlots): each slot the client lists for the profession
 -- (GetProfessionSlots) and has enabled, worn items in Polestar's wells on the
--- band, left of Options. A slot name the client lacks is skipped.
+-- band's right end. A slot name the client lacks is skipped.
 local GEAR_SLOTS = { "Prof0ToolSlot", "Prof0Gear0Slot", "Prof0Gear1Slot", "Prof1ToolSlot", "Prof1Gear0Slot", "Prof1Gear1Slot",
 	"CookingToolSlot", "CookingGear0Slot", "FishingToolSlot", "FishingGear0Slot", "FishingGear1Slot" }
 local GEAR = 28
@@ -699,7 +699,7 @@ local function gearSlot(name, id)
 	return s
 end
 
--- Right to left from Options, as the stock row: the tool, then its gear,
+-- Right to left from the body's right edge, as the stock row: the tool, then its gear,
 -- 12px between a profession's tool and its gear.
 local function paintGear(p)
 	for _, s in pairs(f.psGear or {}) do s:Hide() end
@@ -707,7 +707,7 @@ local function paintGear(p)
 	if viewing() or not (p.profession and T.GetProfessionSlots) then return end
 	local wanted = {}
 	for _, id in ipairs(T.GetProfessionSlots(p.profession) or {}) do wanted[id] = true end
-	local x, prev = -(20 + 96 + 12), nil
+	local x, prev = -W.SHELL.pad, nil
 	for _, name in ipairs(GEAR_SLOTS) do
 		local ok, id = pcall(C_PaperDollInfo.GetInventorySlotInfo, name)
 		if ok and id and wanted[id] and C_PaperDollInfo.IsInventorySlotEnabled(name) then
@@ -821,7 +821,7 @@ local function filterMenu(anchor)
 	W.ShowMenu(anchor, items, { minWidth = 180 })
 end
 
--- The band's Options: the stock link button's menu. "Link profession" puts
+-- The window menu's options: the stock link button's menu. "Link profession" puts
 -- the profession's link in the chat line (or the macro being written), as
 -- its click; then the channels it posts the link in, as its menu does.
 local function optionsItems()
@@ -863,8 +863,7 @@ local function build()
 		if f and f:IsShown() then refresh() end
 	end })
 	ns.Dock(f)
-	ns.WindowMenu(f, "crafting")
-	f.psOptions = ns.OptionsButton(f, optionsItems)
+	ns.WindowMenu(f, "crafting", optionsItems)
 	-- The subject block names the profession, in place of Polestar's lockup:
 	-- its name with the rank at the right end of its skill bar.
 	local SB, X = f.psSidebar or W.SHELL.sidebar, 24 + 36 + 12

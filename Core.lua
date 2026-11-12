@@ -96,27 +96,6 @@ function ns.Flyout(f, name, width)
 	return d
 end
 
--- The band's Options button, a menu of `items` (or a function(button) returning
--- them) that a second click closes. Returns the button.
-function ns.OptionsButton(f, items)
-	local W = Polestar.Widgets
-	local opt = CreateFrame("Button", nil, f.Header)
-	opt:SetSize(96, 24)
-	opt:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -20, 12)
-	W.Hover(opt)
-	opt.Label = W.Text(opt, "small", "text")
-	opt.Label:SetPoint("LEFT", opt, "LEFT", 10, 0)
-	opt.Label:SetText("Options")
-	opt.Arrow = W.Tex(opt, "ARTWORK", "chevron-down", "textDim")
-	opt.Arrow:SetSize(12, 12)
-	opt.Arrow:SetPoint("RIGHT", opt, "RIGHT", -10, 0)
-	opt:SetScript("OnClick", function(self)
-		if W.MenuShown(self) then return W.HideMenu() end
-		W.ShowMenu(self, type(items) == "function" and items(self) or items, { minWidth = 200 })
-	end)
-	return opt
-end
-
 -- A texture for a game icon (item, currency, spell), cropped of the border
 -- the client bakes into its icons, as Polestar's own icons are.
 function ns.GameIcon(parent, layer)
@@ -1119,17 +1098,21 @@ end
 
 -- The window's menu ("..."), Polestar's own (W.ShowMenu, as on the guide
 -- window), left of the close button; the Menu scale slider moves left of it.
-function ns.WindowMenu(f, key)
+-- `options`: the window's own items (or a function(button) returning them),
+-- first, a divider, then "Use game window".
+function ns.WindowMenu(f, key, options)
 	local W = Polestar.Widgets
 	local m = ns.modules[key]
 	m.psFrame = f
 	local b = W.IconButton(f.Header, "menu", 28, "Menu", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
-		W.ShowMenu(self, {
-			{ text = "Use game window", icon = "window", onClick = function() ns.Switch(key, false) end,
-				tip = (m.reloadOff and "After /reload, the game's own window opens in its place." or "The game's own window opens in its place.")
-					.. " Type /pui " .. key .. " on to come back." },
-		})
+		local items = {}
+		for _, it in ipairs(type(options) == "function" and options(self) or options or {}) do items[#items + 1] = it end
+		if #items > 0 then items[#items + 1] = { separator = true } end
+		items[#items + 1] = { text = "Use game window", icon = "window", onClick = function() ns.Switch(key, false) end,
+			tip = (m.reloadOff and "After /reload, the game's own window opens in its place." or "The game's own window opens in its place.")
+				.. " Type /pui " .. key .. " on to come back." }
+		W.ShowMenu(self, items, #items > 1 and { minWidth = 200 } or nil)
 	end, 14)
 	local t = f.HeaderTools
 	local function place()

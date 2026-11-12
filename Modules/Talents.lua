@@ -500,12 +500,10 @@ local function build()
 		if f:IsShown() then M.Show() end
 	end })
 	ns.Dock(f)
-	ns.WindowMenu(f, "talents")
+	ns.WindowMenu(f, "talents", optionsItems)
 	-- The subject block names the window, in place of Polestar's lockup.
 	local b = ns.SubjectBlock(f)
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The way to the stock frame (its search, inspect), on the band.
-	f.psOptions = ns.OptionsButton(f, optionsItems)
 	-- The stock search options, on a filter at the end of the search row (as
 	-- the Spellbook's), lit while one is on.
 	local top = W.SHELL.header - 30

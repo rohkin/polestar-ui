@@ -136,8 +136,9 @@ Polestar's: the band 0–112, the tab band 112–152, the hairline at 152, the 2
   profession) at the band's line, then the window's sections as `W.ShellNav`
   rows. The Polestar emblem stays in the rail of a hub only.
 - **Header.** The band holds the page title in Hero, a short status subtitle
-  in Note textDim, and the band's Options button (`ns.OptionsButton`) for the
-  window's settings. The subtitle is a fact about the page now ("2 items need
+  in Note textDim; nothing else. The window's settings live in its "..."
+  menu (`ns.WindowMenu(f, key, options)`), first, then a divider and "Use
+  game window". The subtitle is a fact about the page now ("2 items need
   repair", "Watching Stormwind", "3 currencies", "4 of 9 friends online"),
   never an instruction. Hints go in tooltips: anything that can be clicked or
   dragged in a way a newer player would not guess ends its tooltip with a

@@ -420,12 +420,10 @@ local function build()
 		if f:IsShown() then M.Show() end
 	end })
 	ns.Dock(f)
-	ns.WindowMenu(f, "spellbook")
+	ns.WindowMenu(f, "spellbook", optionsItems)
 	-- The subject block names the window, in place of Polestar's lockup.
 	local b = ns.SubjectBlock(f)
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The ways to the stock book's own view, on the band.
-	f.psOptions = ns.OptionsButton(f, optionsItems)
 	-- The stock book's settings act on the list: a filter at the end of the
 	-- search row, as Crafting's, its glyph in the accent while one is off its default.
 	local top = W.SHELL.header - 30

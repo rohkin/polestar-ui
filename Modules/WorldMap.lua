@@ -248,7 +248,7 @@ local function build()
 	f.psSize = { f:GetWidth(), f:GetHeight() }
 	f.psFullButton = W.IconButton(f.Header, "window", 28, "Full screen", function() setFull(not f.psFull) end, 14)
 	f.psFullButton:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -12, 12)
-	-- The quest log's button, as the Spellbook's Options: a label and its arrow.
+	-- The quest log's button: a label and its arrow.
 	local qb = CreateFrame("Button", nil, f.Header)
 	qb:SetSize(88, 24)
 	qb:SetPoint("RIGHT", f.psFullButton, "LEFT", -8, 0)

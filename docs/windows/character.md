@@ -21,11 +21,11 @@ details).
 - **Band:** the section's name as title; a status subtitle (Character: "2
   items need repair" or "Gear in good repair"; Reputation: "Watching
   Stormwind" or the faction count; Currency, Skills, Statistics: their
-  counts; Honor: the season); Options on every section with a drawer: "Show
+  counts; Honor: the season); in the "..." menu on every section with a drawer: "Show
   stats" (Character) or "Show details", checked while the drawer shows.
 - **The drawer** (the stock right pane): 280px wide, its own window skin,
   docked flush to the window's right edge and as tall (the shell stays 960
-  wide; open, the two read as one 1240px window, as in the armory). Options
+  wide; open, the two read as one 1240px window, as in the armory). That item
   puts it away and back, for every character (`PolestarUIDB.hideStats`), on
   every section at once, as the stock pane's collapse. Its top band (72px)
   holds the Character page's pane tabs (Stats, Gear sets, Titles, Pet with a

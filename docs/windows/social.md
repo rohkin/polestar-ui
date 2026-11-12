@@ -14,7 +14,7 @@ social micro button). The chat's friends button (`QuickJoinToastButton`),
 Battle.net toasts, `/friends` and the gamepad radial call
 `ToggleFriendsFrame` and stay the game's: they are the way to the stock
 window (its Quick Join and Recruit a Friend where the game has them: the
-Nothing Lost Rule, said in the Options menu). `M.stock()` answers
+Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
 `SocialUIFrame` or `FriendsFrame`, whichever is shown.
 - **Shell:** 760×600 with sidebar (240). Subject block: the class icon with
   the player's Battle.net presence as a dot, the player's name, and the
@@ -28,9 +28,9 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
 - **Band:** the page title and its status: "5 of 8 friends online", "1 of 2
   online" (Recent allies; "Not loaded yet" before the data), "3 requests",
   "3 ignored · 1 blocked", "12 of 40 players" or "Not in a raid", "2
-  lockouts" (Raid info). Options
+  lockouts" (Raid info). The "..." menu's options
   (the Nothing Lost Rule: Quick Join and Recruit a Friend, where the game
-  has them, stay on the game's window) is the band's only button.
+  has them, stay on the game's window) come before "Use game window".
 - **Sidebar:** the shell's search ("Search for keywords"; names and
   Battle.net character names) and, on Friends, a Filter icon button ending
   the search row as in Crafting (accent while a filter is on). Its menu is
@@ -140,7 +140,7 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   `C_ReportSystem.SendReport` behind the report frame) run only from a
   click of the player's, out of combat where they touch the group;
   unproven in game: a BugGrabber entry for one moves it to the stock
-  window (Options) and to the deferred list. `SetRaidSubgroup` /
+  window ("..." menu) and to the deferred list. `SetRaidSubgroup` /
   `SwapRaidSubgroup` are not in the API docs (old globals); called out of
   combat only.
 - **Deferred:** Copy BattleTag stays a selected field (`CopyToClipboard`

@@ -30,7 +30,7 @@ Modules and state
 - `ns.Module(key, m)`: registers `{Enable, Show, stock, reloadOff, Apply, noun}`; key is its `/pui` name.
 - `ns.Enabled(key)`: module on (saved choice, else on unless gamepad UI). `ns.Show(key, ...)`: calls `m.Show`.
 - `ns.Switch(key, on)`: window Polestar's or the game's, live (not in combat); `reloadOff` modules wait for /reload.
-- `ns.WindowMenu(f, key)`: the "..." menu ("Use game window") left of Close; sets `m.psFrame`.
+- `ns.WindowMenu(f, key, options?)`: the "..." menu left of Close: `options` (menu items, or `function(button)` returning them) first, a divider, then "Use game window"; sets `m.psFrame`, `f.psMenu`. A window has no other Options button.
 Docking
 - `ns.Dock(f)`: lays the window out as the stock panel manager does (the default); `ns.Docked()`, `ns.SetDocked(on)`, `ns.Relayout()`.
 - `ns.DockFlyout(f, fly, overlap)`: a flyout outside a docked window's right edge counts in its width.
@@ -41,7 +41,6 @@ Doors and secure parts
 - `ns.Overlay(name, o)`: one secure button over a hovered target; `o = {enter, pickup, attrs, stale?, setup?}`; returns `place(t)`.
 Shell pieces
 - `ns.Plain(f, left?)`: a shell made with `sidebar = 0` loses its sidebar and Polestar's emblem; `f.Main` hangs off the window, `left` past its edge (a rail's width).
-- `ns.OptionsButton(f, items)`: the band's Options button; `items` = menu items, or `function(button)` returning them.
 - `ns.Footer(f, left, right)`: `W.ShellFooter` with every reused footer button back on at full alpha; use it, never `W.ShellFooter`, then grey your own with `ns.SetEnabled`.
 - `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets

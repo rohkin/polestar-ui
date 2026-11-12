@@ -82,3 +82,12 @@ assert(stub.added == "Fenwick" and not PolestarModal:IsShown(), "add friend")
 PolestarUI.Show("social", "friends")
 assert(not FriendsFrame:IsShown(), "stock window")
 assert(f.footerButtons.right[2]:IsEnabled(), "a button greyed on the raid page stays greyed")
+-- The window's options are in its menu ("..."), first, before "Use game window".
+local win = PolestarUISocial
+win.psMenu:Click()
+assert(PolestarMenu.rows[1].psItem.text == "Game's window: the friends button by the chat, or /friends" and PolestarMenu.rows[1].psItem.disabled, "options not in the menu")
+local last
+for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then last = r end end
+assert(last.psItem.text == "Use game window" and PolestarMenu.seps[1]:IsShown(), "Use game window not after a divider")
+win.psMenu:Click()
+assert(not PolestarMenu:IsShown(), "menu left open")

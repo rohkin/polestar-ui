@@ -1,7 +1,7 @@
 --@ title: Crafting: tool and gear slots
 --@ roots: PolestarUICrafting
 --@ stubs: stub_spellbook.lua, stub_professions.lua, stub_crafting.lua
--- Where the client lists slots for the profession (GetProfessionSlots), its tool and gear slots on the band left of Options, as the stock page: right to left the tool, then its gear; a click picks the worn item up; the secure button over a slot uses it on right-click. Without slot data, none show.
+-- Where the client lists slots for the profession (GetProfessionSlots), its tool and gear slots at the band's right end, as the stock page: right to left the tool, then its gear; a click picks the worn item up; the secure button over a slot uses it on right-click. Without slot data, none show.
 stub.openTradeSkill()
 local f = PolestarUICrafting
 assert(not f.psGear or not next(f.psGear), "slots without slot data")

@@ -26,3 +26,12 @@ for _, c in ipairs({ PolestarUISpellbook.Body:GetChildren() }) do if c.psSpell a
 assert(table.concat(names, ","):find("Fire Blast") and #names == 4, "no assisted spell: " .. table.concat(names, ","))
 AssistedCombatManager = nil
 PolestarUI.Show("spellbook", "line3")
+-- The window's options are in its menu ("..."), first, before "Use game window".
+local win = PolestarUISpellbook
+win.psMenu:Click()
+assert(PolestarMenu.rows[1].psItem.text == "Game's spellbook: shift-click its micro button" and PolestarMenu.rows[1].psItem.disabled, "options not in the menu")
+local last
+for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then last = r end end
+assert(last.psItem.text == "Use game window" and PolestarMenu.seps[1]:IsShown(), "Use game window not after a divider")
+win.psMenu:Click()
+assert(not PolestarMenu:IsShown(), "menu left open")

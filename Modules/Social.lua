@@ -1060,7 +1060,7 @@ local function build()
 			if f:IsShown() then M.Show() end
 		end })
 	ns.Dock(f)
-	ns.WindowMenu(f, "social")
+	ns.WindowMenu(f, "social", optionsItems)
 	local b = ns.SubjectBlock(f)
 	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
 	-- The player's Battle.net status (the stock BattleNetBar) is the subject
@@ -1091,7 +1091,6 @@ local function build()
 	end)
 	st:SetScript("OnLeave", W.HideTooltip)
 	f.psStatus = st
-	f.psOptions = ns.OptionsButton(f, optionsItems)
 	-- The filter acts on the list: it ends the search row as in Crafting, its
 	-- glyph in the accent while a filter is on.
 	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", function(self)

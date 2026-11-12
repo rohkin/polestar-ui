@@ -808,7 +808,15 @@ end
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
 	ns.Dock(f)
-	ns.WindowMenu(f, "character")
+	-- The window menu's options: the drawer put away and back, for every
+	-- character, on the sections that have it.
+	ns.WindowMenu(f, "character", function()
+		if #panesOf(section) == 0 then return {} end
+		return { { text = section == "PaperDollFrame" and "Show stats" or "Show details", checked = statsShown(), onClick = function()
+			PolestarUIDB.hideStats = statsShown() or nil
+			refresh()
+		end } }
+	end)
 	-- The subject block names the window, in place of Polestar's lockup:
 	-- the class icon, the name, the level and class, and the guild under them.
 	f.Search:Hide()
@@ -831,13 +839,6 @@ local function build()
 		v.psPaint, v.psH = page.paint, 0
 		f.psPages[key] = v
 	end
-	-- The band's Options: the drawer put away and back, for every character.
-	f.psOptions = ns.OptionsButton(f, function()
-		return { { text = section == "PaperDollFrame" and "Show stats" or "Show details", checked = statsShown(), onClick = function()
-			PolestarUIDB.hideStats = statsShown() or nil
-			refresh()
-		end } }
-	end)
 	Polestar.CloseOnEscape(NAME)
 end
 
@@ -899,7 +900,6 @@ function refresh()
 	ns.Footer(f, {}, {})
 	local panes = #panesOf(section) > 0
 	f.psGear:SetShown(gear)
-	f.psOptions:SetShown(panes)
 	f.psStats:SetShown(panes and statsShown())
 	local h = 0
 	if gear then

@@ -21,7 +21,9 @@ stub.pressKey("N")
 local f = PolestarUITalents
 assert(f:IsShown(), "on: the key opens ours")
 f.psMenu:Click()
-local row = PolestarMenu.rows[1]
+-- The window's options first, a divider, then "Use game window".
+assert(PolestarMenu.rows[1].psItem.text == "Game's talents: shift-click their micro button" and PolestarMenu.seps[1]:IsShown(), "options not first in the menu")
+local row = PolestarMenu.rows[2]
 assert(PolestarMenu:IsShown() and row:IsShown() and row.psItem.text == "Use game window" and row.psItem.tip:find("/pui talents on", 1, true), "menu entry")
 assert(select(2, f.psMenu:GetPoint(1)) == f.Close and select(2, f.HeaderTools:GetPoint(1)) == f.psMenu, "menu button between the scale and the close button")
 row:Click()

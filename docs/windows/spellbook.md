@@ -24,8 +24,7 @@ Talents window's.
   one runs. The menu opens again after each
   pick.
 - **Main column:** title the category, subtitle the count ("12 spells.").
-  What a click does is in each row's tooltip. An Options menu at the band's
-  bottom right: a disabled line saying the micro button's shift-click opens
+  What a click does is in each row's tooltip. In the "..." menu, first: a disabled line saying the micro button's shift-click opens
   the game's spellbook (for what other addons add to it, as What's
   Training?'s tab) and, when that addon is loaded, "What's Training?" (its
   own window).

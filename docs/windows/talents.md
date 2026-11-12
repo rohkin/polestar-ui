@@ -100,7 +100,7 @@ applied. Not protected, but refused in combat and while
   subtitle "Switching to this spec…" until `ACTIVE_TALENT_GROUP_CHANGED`
   (then that spec shows, now the active one) or 10 seconds; disabled in
   combat ("Not in combat").
-- **Options:** on the band, a disabled line saying the micro button's
+- **Options:** first in the "..." menu, a disabled line saying the micro button's
   shift-click opens the game's talents (its search and inspect, until ours has
   them: the Nothing Lost Rule).
 
