@@ -228,9 +228,23 @@ function M.Refresh()
 		for _, fl in ipairs(floors) do items[#items + 1] = { key = fl.mapID, label = fl.name, icon = "layers" } end
 	end
 	W.ShellNav(f, items, id, function(k) canvas:SetMapID(k) end)
+	-- How to move around the map lives in the rows' tooltips; the title line is a fact.
+	for _, b in ipairs(f.navButtons) do
+		if not b.psMapTip then
+			b.psMapTip = true
+			b:HookScript("OnEnter", function(self)
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:SetText(self.Label:GetText() or "", 1, 1, 1)
+				ns.TooltipHint("Click to show this map. On the map, click a zone to open it, right-click to go back out, and scroll to zoom.")
+				GameTooltip:Show()
+			end)
+			b:HookScript("OnLeave", W.HideTooltip)
+		end
+	end
 	f.psLine:SetText(GetZoneText() or "")
-	W.ShellTitle(f, info.name, #zones > 0 and "Click a zone to open it; right-click the map to go back out. Scroll to zoom."
-		or "Right-click the map to go back out. Scroll to zoom.")
+	-- The status line: the map this one lies in.
+	local parent = info.parentMapID and info.parentMapID > 0 and C_Map.GetMapInfo(info.parentMapID)
+	W.ShellTitle(f, info.name, parent and parent.name or nil)
 end
 
 function M.Show()

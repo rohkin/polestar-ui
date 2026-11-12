@@ -18,7 +18,9 @@ zoom and click-to-open are the game's.
   Between the zones and the floors, the dungeons and caves in it that the
   stock nav bar's dropdown lists (`IsMapValidForNavBarDropdown`; a map of
   floors once, by its first), with `icon-dungeon`.
-- **Header:** the shown map's name; the subtitle says how to move around it.
+- **Header:** the shown map's name; the subtitle, a status line, names the
+  map it lies in. How to move around the map (click a zone, right-click out,
+  scroll to zoom) is the sidebar rows' tooltip hint.
   A full-screen toggle at the band's bottom right, as the stock maximise
   (remembered; out of the dock while full).
 - **Zoom:** the canvas takes its zoom steps from the map art; where the art

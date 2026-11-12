@@ -13,6 +13,10 @@ local function row(n) for _, b in ipairs(f.navButtons) do if b:IsShown() and b.L
 assert(row("Azeroth") and row("Where you are"), "parents")
 row("Eastern Kingdoms"):Click()
 assert(c.mapID == 13 and f.Title:GetText() == "Eastern Kingdoms", "nav")
+assert(f.Subtitle:GetText() == "Azeroth", "status line: the parent map")
+stub.RunScript(row("Westfall"), "OnEnter")
+assert(GameTooltip:IsShown() and GameTooltip.lines[1] == "Westfall" and tostring(GameTooltip.lines[#GameTooltip.lines]):find("right-click to go back out", 1, true), "the hint in the row tooltip")
+stub.RunScript(row("Westfall"), "OnLeave")
 assert(row("Duskwood") and row("Westfall") and row("Elwynn Forest") and not row("Kalimdor"), "zones")
 stub.caveListed = true
 row("Elwynn Forest"):Click()
