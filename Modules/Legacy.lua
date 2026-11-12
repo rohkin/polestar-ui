@@ -573,10 +573,19 @@ local function filterMenu(anchor)
 			filterMenu(anchor)
 		end
 	end
-	W.ShowMenu(anchor, {
+	local items = {
 		{ text = ACHIEVEMENTFRAME_FILTER_COMPLETED or "Completed", checked = chal.showDone, onClick = pick("showDone") },
 		{ text = ACHIEVEMENTFRAME_FILTER_INCOMPLETE or "Incomplete", checked = chal.showTodo, onClick = pick("showTodo") },
-	}, { minWidth = 160 })
+	}
+	-- As the stock filter's reset: both shown again.
+	if not (chal.showDone and chal.showTodo) then
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Clear filters", onClick = function()
+			chal.showDone, chal.showTodo, chal.open = true, true, nil
+			refresh()
+		end }
+	end
+	W.ShowMenu(anchor, items, { minWidth = 160 })
 end
 
 ---------------------------------------------------------------------------
@@ -1078,7 +1087,9 @@ function refresh()
 		W.ShellTitle(f, chal.cat and GetCategoryInfo(chal.cat) or "Challenges", earned(pts))
 		W.ShellTabs(f, nil)
 		-- The glyph in the accent while a filter hides challenges.
-		W.SetIconState(f.psFilter, not (chal.showDone and chal.showTodo))
+		local on = (chal.showDone and 0 or 1) + (chal.showTodo and 0 or 1)
+		W.SetIconState(f.psFilter, on > 0)
+		f.psFilter.psTip = on > 0 and ("Filter (%d on)"):format(on) or "Filter"
 		h = paintChallenges(f.psPages.challenges, chal.cat and challenges(chal.cat, found) or {})
 	else
 		W.ShellTabs(f, nil)

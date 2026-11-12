@@ -30,8 +30,9 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   answered by `ACHIEVEMENT_SEARCH_UPDATED`); a category with no match dims.
   No tabs: the stock filter (Completed, Incomplete, both shown at first; one
   earned by another character is incomplete) is a menu on a filter button at
-  the end of the search row, as the crafting window's, its glyph in the accent
-  while a filter hides challenges. A row per challenge: game icon, name, description,
+  the end of the search row, as Social's, its glyph in the accent and its
+  tooltip "Filter (n on)" while a filter hides challenges, with "Clear
+  filters" (both shown again, as the stock reset) in the menu then. A row per challenge: game icon, name, description,
   its legacy points (`GetTraitCurrencyForAchievement`) and the date earned. A
   click unfolds its objectives in two columns (a counted one as a skill bar);
   shift-click links it in chat, or tracks it with no chat box open.
