@@ -566,23 +566,6 @@ local function whyNot(info)
 	if info.count <= 0 then return PROFESSIONS_INSUFFICIENT_REAGENTS or "Missing reagents" end
 end
 
--- A button enabled only without a reason; disabled, it says why in its
--- tooltip (the client sends a disabled button its mouse-overs only when asked).
-local function reason(b, why)
-	ns.SetEnabled(b, why == nil)
-	b.psReason = why
-	if b.psReasonHooked then return end
-	b.psReasonHooked = true
-	b:SetMotionScriptsWhileDisabled(true)
-	b:HookScript("OnEnter", function(self)
-		if not self.psReason then return end
-		GameTooltip:SetOwner(self, "ANCHOR_TOP")
-		GameTooltip:SetText(self.psReason, 1, 1, 1, 1, true)
-		GameTooltip:Show()
-	end)
-	b:HookScript("OnLeave", function(self) if GameTooltip:GetOwner() == self then GameTooltip:Hide() end end)
-end
-
 -- The footer: the quantity stepper on the left, Craft all and Craft on the
 -- right, each enabled only when the game would take it.
 -- The guild's recipes: "View crafters" asks the client who in the guild
@@ -628,7 +611,8 @@ local function paintFooter(info)
 	f.psStep:SetShown(not C_TradeSkillUI.IsTradeSkillGuild())
 	if C_TradeSkillUI.IsTradeSkillGuild() then
 		W.ShellFooter(f, {}, { { label = GUILD_TRADE_SKILL_VIEW_CRAFTERS or "View crafters", onClick = viewCrafters, opts = { primary = true } } })
-		reason(f.footerButtons.right[1], not (info and info.learned) and "No recipe chosen" or nil)
+		local noRecipe = not (info and info.learned) and "No recipe chosen" or nil
+		ns.SetEnabled(f.footerButtons.right[1], not noRecipe, noRecipe)
 		return
 	end
 	local why = whyNot(info)
@@ -652,7 +636,7 @@ local function paintFooter(info)
 		{ label = "Craft all", onClick = function() craft(most) end },
 	})
 	f.psStep.Paint()
-	for _, b in ipairs(f.footerButtons.right) do reason(b, why) end
+	for _, b in ipairs(f.footerButtons.right) do ns.SetEnabled(b, not why, why) end
 end
 
 -- The profession's tool and gear slots, as the stock page's

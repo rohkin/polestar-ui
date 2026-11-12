@@ -270,10 +270,23 @@ function ns.SetMoney(m, copper, color)
 	m:SetWidth(x)
 end
 
--- Enables or disables a button as Polestar disables: faded to 45%.
-function ns.SetEnabled(b, on)
+-- Enables or disables a button as Polestar disables: faded to 45%. `why`,
+-- when given, is the reason a disabled one shows in its tooltip (the client
+-- sends a disabled button its mouse-overs only when asked).
+function ns.SetEnabled(b, on, why)
 	b:SetEnabled(on and true or false)
 	b:SetAlpha(on and 1 or 0.45)
+	b.psReason = not on and why or nil
+	if not why or b.psReasonHooked then return end
+	b.psReasonHooked = true
+	b:SetMotionScriptsWhileDisabled(true)
+	b:HookScript("OnEnter", function(self)
+		if not self.psReason then return end
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(self.psReason, 1, 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	b:HookScript("OnLeave", function(self) if GameTooltip:GetOwner() == self then GameTooltip:Hide() end end)
 end
 
 -- A one-line text box in the Polestar look, `w` wide; Enter and Escape leave it.
