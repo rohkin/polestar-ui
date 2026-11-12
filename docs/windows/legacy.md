@@ -35,7 +35,9 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   the end of the search row, as Social's, its glyph in the accent and its
   tooltip "Filter (n on)" while a filter hides challenges, with "Clear
   filters" (both shown again, as the stock reset) in the menu then. A row per challenge: game icon, name, description,
-  its legacy points (`GetTraitCurrencyForAchievement`) and the date earned. A
+  its legacy points (`GetTraitCurrencyForAchievement`) and the date earned,
+  or "Tracking" in the accent while an unfinished one is tracked (the stock
+  card's Track box), redrawn at once as it is tracked. A
   click unfolds its objectives in two columns (a counted one as a skill bar);
   shift-click links it in chat, or tracks it with no chat box open.
 - **Legacy Tree:** three `C_Traits` trees (Professions, Adventure,

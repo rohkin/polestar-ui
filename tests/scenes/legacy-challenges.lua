@@ -30,6 +30,8 @@ assert(stub.linked == "[Experienced Warrior]" and not stub.tracked[902], "link")
 stub.chatOpen = false
 shown()[2]:Click()
 assert(stub.tracked[902], "track")
+local tr; for _, r in ipairs(shown()) do if r.psData.id == 902 then tr = r end end
+assert(tr.Date:GetText() == (TRACKING or "Tracking"), "a tracked challenge says so")
 stub.modified = {}
 local function item(t) for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and r.Text and r.Text:GetText() == t then return r end end end
 assert(not f.TabRow:IsShown(), "the filters still on a tab row")

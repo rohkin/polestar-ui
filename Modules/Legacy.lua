@@ -389,10 +389,11 @@ local function track(id)
 	local T = Enum.ContentTrackingType.Achievement
 	if C_ContentTracking.IsTracking(T, id) then
 		C_ContentTracking.StopTracking(T, id, Enum.ContentTrackingStopType.Manual)
-		return
+		return redraw()
 	end
 	local err = C_ContentTracking.StartTracking(T, id)
 	if err and ContentTrackingUtil then ContentTrackingUtil.DisplayTrackingError(err) end
+	redraw() -- at once, not on CONTENT_TRACKING_UPDATE (docs/CLIENT.md, rule 6)
 end
 
 local function challengeClick(r)
@@ -523,7 +524,11 @@ local function paintChallengeRow(r, d, y, first)
 	W.Color(r.Name, d.done and "text" or "textDim")
 	r.Points:SetText(d.points > 0 and ("+%d"):format(d.points) or "")
 	W.Color(r.Points, d.done and "accent" or "textMuted")
-	r.Date:SetText(d.date or "")
+	-- An unfinished one being tracked says so where the date goes, as the
+	-- stock card's checked Track box.
+	local tracked = not d.done and C_ContentTracking.IsTracking(Enum.ContentTrackingType.Achievement, d.id)
+	r.Date:SetText(tracked and (TRACKING or "Tracking") or d.date or "")
+	W.Color(r.Date, tracked and "accent" or "textMuted")
 	local h = math.max(ROW_H + 4, 12 + 20 + 6 + r.Desc:GetStringHeight() + 12)
 	if chal.open == d.id then
 		h = h + paintCrits(r, d.id, h, f.BodyWidth - 64 - 16) + 8
