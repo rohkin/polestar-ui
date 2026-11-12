@@ -22,21 +22,44 @@ local function autocast(s)
 	return clean(allowed) or false, clean(on) or false
 end
 
--- The categories: every shown skill line (General, the class's), then the pet's.
+-- The categories: every shown skill line (General, the class's), then the
+-- pet's, each with the stock tab's icon: the skill line's, the class's for
+-- General, the pet's (`game`; the glyph stands in without one).
 local function categories()
 	local list = {}
 	for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
 		local info = C_SpellBook.GetSpellBookSkillLineInfo(i)
 		if info and not info.shouldHide then
+			local class = i == 1 and C_SpellBook.GetClassSkillLineInfo and C_SpellBook.GetClassSkillLineInfo()
 			list[#list + 1] = { key = "line" .. i, label = info.name, icon = i == 1 and "compact" or "bolt",
+				game = class and class.iconID or info.iconID,
 				offset = info.itemIndexOffset, n = info.numSpellBookItems, bank = bank("Player") }
 		end
 	end
 	local pet = C_SpellBook.HasPetSpells()
 	if pet and pet > 0 and (not PetHasSpellbook or PetHasSpellbook()) then
-		list[#list + 1] = { key = "pet", label = PET or "Pet", icon = "star", offset = 0, n = pet, bank = bank("Pet") }
+		list[#list + 1] = { key = "pet", label = PET or "Pet", icon = "star", game = GetPetIcon and GetPetIcon() or nil,
+			offset = 0, n = pet, bank = bank("Pet") }
 	end
 	return list
+end
+
+-- The nav rows wear the game's icons, not glyphs (the Two Families Rule, as
+-- the professions rail): untinted, the client's border cropped.
+local function gameIcons(cats)
+	for i, c in ipairs(cats) do
+		local b = f.navButtons[i]
+		if b and c.game then
+			W.Uncolor(b.Icon)
+			b.Icon:SetVertexColor(1, 1, 1, 1)
+			b.Icon:SetTexture(c.game)
+			b.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+			b.Icon:SetSize(20, 20)
+		elseif b then
+			b.Icon:SetTexCoord(0, 1, 0, 1)
+			b.Icon:SetSize(16, 16)
+		end
+	end
 end
 
 local FLYOUT = Enum.SpellBookItemType.Flyout
@@ -395,6 +418,7 @@ local function refresh()
 		for _, s in ipairs(list) do if not s.member then n = n + 1 end end
 		W.ShellTitle(f, cur and cur.label or "", n == 1 and "1 spell." or n .. " spells.")
 	end
+	gameIcons(cats)
 	W.ShellTabs(f, nil)
 	W.ShellFooter(f, {}, {})
 	W.ShellBody(f, paintList(list))

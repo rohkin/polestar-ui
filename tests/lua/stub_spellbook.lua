@@ -34,8 +34,11 @@ C_SpellBook = {}
 function C_SpellBook.GetNumSpellBookSkillLines() return #LINES end
 function C_SpellBook.GetSpellBookSkillLineInfo(i)
 	local l = LINES[i]
-	return l and { name = l[1], iconID = 1, itemIndexOffset = l[2], numSpellBookItems = l[3], shouldHide = false }
+	return l and { name = l[1], iconID = 135900 + i, itemIndexOffset = l[2], numSpellBookItems = l[3], shouldHide = false }
 end
+-- The stock tabs' icons: the class's skill line for General, the pet's.
+function C_SpellBook.GetClassSkillLineInfo() return { name = "Mage", iconID = 626001 } end
+function GetPetIcon() return 132270 end
 -- stub.pet: a pet with a spellbook; Growl autocasts, Claw may, Attack is a command.
 local PET_BOOK = { { "Growl", "Rank 2", 0, 0, false, 1, false, true }, { "Claw", "Rank 1", 0, 0, false, 1, false, false },
 	{ "Attack", "", 0, 0, false, 3 } }

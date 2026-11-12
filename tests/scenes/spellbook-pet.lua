@@ -12,3 +12,7 @@ assert(o:GetAttribute("type2") == "macro" and o:GetAttribute("macrotext") == "/p
 assert(o:GetAttribute("type1") == "spell" and o:GetAttribute("spell") == "Growl", "no cast")
 stub.RunScript(byName["Attack"], "OnEnter")
 assert(o:GetAttribute("type1") == nil and o:GetAttribute("type2") == nil, "command casts")
+-- The nav rows wear the stock tabs' icons: the class's for General, each skill line's, the pet's.
+local icons = {}
+for _, b in ipairs(PolestarUISpellbook.navButtons) do if b:IsShown() then icons[#icons + 1] = tostring(b.Icon:GetTexture()) end end
+assert(table.concat(icons, ",") == "626001,135902,135903,132270", "nav icons: " .. table.concat(icons, ","))

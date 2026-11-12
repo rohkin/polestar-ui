@@ -10,7 +10,10 @@ Talents window's.
 - **Sidebar:** the shell's search ("Search spells", every category at once,
   titled "Search" with the count) and, at the end of its row, the filter;
   then the stock categories as nav rows: each shown skill line (General, the
-  class's), then Pet when the pet has a spellbook.
+  class's), then Pet when the pet has a spellbook. Each wears the stock tab's
+  icon, not a glyph (the Two Families Rule, as the professions rail): 20px,
+  untinted, its border cropped; the class's skill line icon for General
+  (`GetClassSkillLineInfo`), the skill line's own, the pet's (`GetPetIcon`).
 - **Filter:** a 30px square on the search field's well, the `sliders` glyph,
   as Crafting's; in the accent while a setting is off its default. Its menu
   is the stock book's settings menu, on the same CVars: "Hide passives"
