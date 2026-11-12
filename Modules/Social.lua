@@ -616,7 +616,7 @@ local function refresh()
 	local _, bnOnline = BNGetNumFriends()
 	local online = C_FriendList.GetNumOnlineFriends() + bnOnline
 	f.psName:SetText(keep("player", UnitName("player")) or "")
-	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
+	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.Color(f.psDot, statusColor())
 	local st, n = f.psStatus, 0
 	for _ in pairs(filters) do n = n + 1 end

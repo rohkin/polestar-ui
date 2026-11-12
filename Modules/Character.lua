@@ -596,7 +596,7 @@ function refresh()
 	f.psName:SetText(playerText(UnitName) or "")
 	f.psLine:SetText(("Level %d %s"):format(level, UnitClass("player")))
 	f.psGuild:SetText(playerText(GetGuildInfo) or "")
-	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
+	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
 	local gear = section == "PaperDollFrame"
 	if gear then

@@ -3,6 +3,7 @@
 function UnitLevel(unit) return 24 end
 function UnitRace(unit) return "Human", "Human" end
 function UnitClass(unit) return "Warrior", "WARRIOR", 1 end
+function GetClassAtlas(class) return "classicon-" .. class end
 function UnitPVPName(unit) return InCombatLockdown() and stub.SECRET or "Testchar" end
 function GetGuildInfo(unit) return InCombatLockdown() and stub.SECRET or "The Night Watch", "Member", 3 end
 function ToggleCharacter(tab, onlyShow) end
