@@ -29,50 +29,104 @@ function ns.QuestLog(win, canvas, width)
 		query = (text or ""):lower()
 		p.Paint()
 	end)
-	p.Search:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side + 30 + 6, -HEAD)
-	p.Search:SetPoint("TOPRIGHT", p, "TOPRIGHT", -W.SHELL.side, -HEAD)
-	-- Left of the search, as Forever's map filter button sits left of the stock
-	-- log's: the stock map's filter menu (WorldMapTrackingOptionsButtonMixin:
-	-- SetupMenu, the filters Forever builds), then the log's own as the stock
-	-- menu adds it when the two are one. The same CVars and tracking filter, so
-	-- a change shows in both maps; under the stock tag, so other addons'
-	-- entries (Menu.ModifyMenu) join ours. Each change redraws at once (rule 6).
+	p.Search:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side, -HEAD)
+	p.Search:SetPoint("TOPRIGHT", p, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -HEAD)
+	-- The stock map's filter menu (WorldMapTrackingOptionsButtonMixin:SetupMenu,
+	-- the filters Forever's table holds), then the log's own as the stock menu
+	-- adds it when the two are one. The same CVars and tracking filter, so a
+	-- change shows in both maps; under the stock tag, so other addons' entries
+	-- (Menu.ModifyMenu) join ours. Each change redraws at once (rule 6). The
+	-- log's button and the map's open the same menu (p.FilterMenu).
 	local TRIVIAL = Enum.MinimapTrackingFilter and Enum.MinimapTrackingFilter.TrivialQuests
+	local function cvar(text, name, tip)
+		return { text = text, tip = tip, get = function() return GetCVarBool(name) end,
+			set = function(on) SetCVar(name, on and "1" or "0") end,
+			default = function() return GetCVarDefault(name) == "1" end }
+	end
+	local WQ = cvar(SHOW_WORLD_QUESTS_ON_MAP_TEXT, "questPOIWQ", WORLD_QUESTS_FILTER_DESCRIPTION)
+	local WQ_KINDS = { cvar(SHOW_PRIMARY_PROFESSION_ON_MAP_TEXT, "primaryProfessionsFilter"), cvar(SHOW_SECONDARY_PROFESSION_ON_MAP_TEXT, "secondaryProfessionsFilter") }
 	local FILTERS = {
-		{ SHOW_QUEST_OBJECTIVES_ON_MAP_TEXT, "questPOI" },
-		{ SHOW_QUEST_LEVELS, "showQuestLevel" },
-		{ MAP_QUEST_DIFFICULTY_TEXT, "showQuestDifficultyColor" },
+		cvar(SHOW_QUEST_OBJECTIVES_ON_MAP_TEXT, "questPOI", QUEST_OBJECTIVES_FILTER_DESCRIPTION),
+		cvar(SHOW_QUEST_LEVELS, "showQuestLevel", QUEST_LEVEL_FILTER_DESCRIPTION),
+		cvar(MAP_QUEST_DIFFICULTY_TEXT, "showQuestDifficultyColor", QUEST_DIFFICULTY_FILTER_DESCRIPTION),
 		-- Straight to the tracking filter: the Settings proxy the stock menu
 		-- writes through only reads it back, and stays untouched by our code.
-		{ MINIMAP_TRACKING_TRIVIAL_QUESTS, get = function() return not C_Minimap.IsFilteredOut(TRIVIAL) end, set = function(on)
-			local i = MinimapUtil.GetFilterIndexForFilterID(TRIVIAL)
-			if i then C_Minimap.SetTracking(i, on) end
-		end },
-		{ CONTENT_TRACKING_MAP_TOGGLE, "contentTrackingFilter" },
+		{ text = MINIMAP_TRACKING_TRIVIAL_QUESTS, tip = TRIVIAL_QUESTS_FILTER_DESCRIPTION,
+			get = function() return not C_Minimap.IsFilteredOut(TRIVIAL) end,
+			set = function(on)
+				local i = MinimapUtil.GetFilterIndexForFilterID(TRIVIAL)
+				if i then C_Minimap.SetTracking(i, on) end
+			end,
+			default = function() return C_Minimap.GetDefaultTrackingValue(TRIVIAL) and true or false end },
+		cvar(CONTENT_TRACKING_MAP_TOGGLE, "contentTrackingFilter", TRACKED_ITEMS_FILTER_DESCRIPTION),
 	}
-	local function checkbox(root, text, cvar, get, set)
-		get = get or function() return GetCVarBool(cvar) end
-		set = set or function(on) SetCVar(cvar, on and "1" or "0") end
-		root:CreateCheckbox(text, get, function()
-			set(not get())
-			canvas:RefreshAllDataProviders()
-			p.Paint()
-		end)
+	local LOG_OBJECTIVES = cvar(QUEST_LOG_SHOW_OBJECTIVES, "showQuestObjectivesInLog")
+	local ALL = { WQ, WQ_KINDS[1], WQ_KINDS[2], LOG_OBJECTIVES }
+	for _, x in ipairs(FILTERS) do ALL[#ALL + 1] = x end
+	-- How many filters are off their default (the stock filter counter's count).
+	function p.FiltersOn()
+		local n = 0
+		for _, x in ipairs(ALL) do if x.get() ~= x.default() then n = n + 1 end end
+		return n
 	end
-	p.Filter = W.IconButton(p, "sliders", 30, "Filters", function(self)
-		MenuUtil.CreateContextMenu(self, function(_, root)
+	local function changed()
+		canvas:RefreshAllDataProviders()
+		p.Paint()
+		if p.OnFilters then p.OnFilters() end
+	end
+	local function checkbox(root, x)
+		local box = root:CreateCheckbox(x.text, x.get, function()
+			x.set(not x.get())
+			changed()
+		end)
+		if x.tip then
+			box:SetOnEnter(function(button)
+				GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+				GameTooltip_SetTitle(GameTooltip, x.text)
+				GameTooltip_AddNormalLine(GameTooltip, x.tip)
+				GameTooltip:Show()
+			end)
+			box:SetOnLeave(GameTooltip_Hide)
+		end
+		return box
+	end
+	function p.FilterMenu(owner)
+		MenuUtil.CreateContextMenu(owner, function(_, root)
 			root:SetTag("MENU_WORLD_MAP_TRACKING")
 			root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_MAP)
-			for _, f in ipairs(FILTERS) do checkbox(root, f[1], f[2], f.get, f.set) end
+			local mapID = canvas:GetMapID()
+			if mapID and MapUtil.MapShouldShowWorldQuestFilters and MapUtil.MapShouldShowWorldQuestFilters(mapID) then
+				local sub = checkbox(root, WQ)
+				sub:CreateTitle(WORLD_MAP_FILTER_LABEL_WORLD_QUESTS_SUBMENU_TYPE)
+				local prof1, prof2, _, fish, cook, firstAid = GetProfessions()
+				if prof1 or prof2 then checkbox(sub, WQ_KINDS[1]) end
+				if fish or cook or firstAid then checkbox(sub, WQ_KINDS[2]) end
+			end
+			for _, x in ipairs(FILTERS) do checkbox(root, x) end
 			root:QueueSpacer()
 			root:QueueDivider()
 			root:QueueSpacer()
 			root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG)
-			checkbox(root, QUEST_LOG_SHOW_OBJECTIVES, "showQuestObjectivesInLog")
+			checkbox(root, LOG_OBJECTIVES)
+			-- As the stock filter's reset: every filter back to its default.
+			if p.FiltersOn() > 0 then
+				root:CreateDivider()
+				root:CreateButton("Clear filters", function()
+					for _, x in ipairs(ALL) do if x.get() ~= x.default() then x.set(x.default()) end end
+					changed()
+				end)
+			end
 		end)
-	end, 14)
-	p.Filter:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side, -HEAD)
+	end
+	-- At the end of the search row, as Social's: lit while a filter is off its default.
+	p.Filter = W.IconButton(p, "sliders", 30, "Filter", function(self) p.FilterMenu(self) end, 14)
+	p.Filter:SetPoint("TOPRIGHT", p, "TOPRIGHT", -W.SHELL.side, -HEAD)
 	Theme.Skin(p.Filter, "editbox")
+	function p.PaintFilter(b)
+		local n = p.FiltersOn()
+		W.SetIconState(b, n > 0)
+		b.psTip = n > 0 and ("Filter (%d on)"):format(n) or "Filter"
+	end
 	local line = W.Divider(p)
 	line:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -TOP)
 	line:SetPoint("TOPRIGHT", p, "TOPRIGHT", 0, -TOP)
@@ -287,6 +341,7 @@ function ns.QuestLog(win, canvas, width)
 		end
 		for i = hi + 1, #heads do heads[i]:Hide() end
 		for i = ri + 1, #rows do rows[i]:Hide() end
+		p.PaintFilter(p.Filter)
 		local _, quests = C_QuestLog.GetNumQuestLogEntries()
 		local max = C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()
 		p.Count:SetText(max and ("%d/%d"):format(quests or total, max) or (quests or total))

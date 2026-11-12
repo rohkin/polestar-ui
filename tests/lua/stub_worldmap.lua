@@ -193,15 +193,37 @@ MinimapUtil = { GetFilterIndexForFilterID = function(id) return id == 1024 and 9
 SHOW_QUEST_OBJECTIVES_ON_MAP_TEXT, SHOW_QUEST_LEVELS, MAP_QUEST_DIFFICULTY_TEXT = "Quest Objectives", "Show Quest Levels", "Quest Difficulty Color"
 MINIMAP_TRACKING_TRIVIAL_QUESTS, CONTENT_TRACKING_MAP_TOGGLE = "Low-Level Quests", "Tracked Items"
 WORLD_MAP_FILTER_TITLE_SHOW_MAP, WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG, QUEST_LOG_SHOW_OBJECTIVES = "Show on Map:", "Show in Quest Log:", "Quest Objectives"
--- A context menu: its tag and entries, as the generator describes them.
+-- A context menu: its tag and entries, as the generator describes them; a
+-- checkbox keeps its tooltip (SetOnEnter), a button its click and state.
+local function describe(m, list)
+	local function item(t)
+		t.SetOnEnter = function(self, fn) self.onEnter = fn end
+		t.SetOnLeave = function() end
+		t.SetEnabled = function(self, on) self.disabled = not on end
+		t.items = {}
+		t.CreateTitle = function(self, text) self.items[#self.items + 1] = { title = text } end
+		t.CreateCheckbox = function(self, text, get, set) return self:add({ text = text, get = get, set = set }) end
+		t.CreateButton = function(self, text, fn) return self:add({ text = text, click = fn, button = true }) end
+		t.CreateDivider = function(self) self.items[#self.items + 1] = { divider = true } end
+		t.add = function(self, x) self.items[#self.items + 1] = item(x); return self.items[#self.items] end
+		return t
+	end
+	return item(m)
+end
 MenuUtil = { CreateContextMenu = function(owner, gen)
-	local m = { owner = owner, items = {} }
-	local root = {
-		SetTag = function(_, tag) m.tag = tag end,
-		CreateTitle = function(_, text) m.items[#m.items + 1] = { title = text } end,
-		CreateCheckbox = function(_, text, get, set) m.items[#m.items + 1] = { text = text, get = get, set = set } end,
-		QueueSpacer = function() end, QueueDivider = function() end,
-	}
-	gen(owner, root)
+	local m = describe({ owner = owner })
+	m.SetTag = function(_, tag) m.tag = tag end
+	m.QueueSpacer, m.QueueDivider = function() end, function() end
+	gen(owner, m)
 	stub.menu = m
 end }
+-- The CVars' and tracking filter's defaults: as the preview draws.
+function GetCVarDefault(k) return ({ questPOI = "1", showQuestLevel = "1", showQuestDifficultyColor = "1", contentTrackingFilter = "1", showQuestObjectivesInLog = "1", questPOIWQ = "1", primaryProfessionsFilter = "1", secondaryProfessionsFilter = "1" })[k] or "0" end
+for _, k in ipairs({ "questPOIWQ", "primaryProfessionsFilter", "secondaryProfessionsFilter" }) do stub.cvars[k] = "1" end
+function C_Minimap.GetDefaultTrackingValue() return false end
+GameTooltip_SetTitle = GameTooltip_SetTitle or function(tip, text) tip:SetText(text) end
+GameTooltip_AddNormalLine = GameTooltip_AddNormalLine or function(tip, text) tip:AddLine(text) end
+GameTooltip_Hide = GameTooltip_Hide or function() GameTooltip:Hide() end
+QUEST_OBJECTIVES_FILTER_DESCRIPTION, QUEST_LEVEL_FILTER_DESCRIPTION = "Show quest objectives on the map.", "Show the level of each quest."
+QUEST_DIFFICULTY_FILTER_DESCRIPTION, TRIVIAL_QUESTS_FILTER_DESCRIPTION = "Colour quests by difficulty.", "Show quests far below your level."
+TRACKED_ITEMS_FILTER_DESCRIPTION = "Show tracked items on the map."

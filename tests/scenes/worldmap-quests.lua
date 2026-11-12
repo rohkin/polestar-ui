@@ -52,15 +52,22 @@ stub.RunScript(q.Search, "OnTextChanged")
 assert(#rows() == 0 and q.Empty:IsShown() and q.Empty:GetText() == "No quests match.", "no match")
 q.Search:SetText("")
 stub.RunScript(q.Search, "OnTextChanged")
+assert(select(1, q.Filter:GetPoint(1)) == "TOPRIGHT" and q.Filter.psTip == "Filter" and not q.Filter.psActive, "filter at the search row's end, unlit at its defaults")
 q.Filter:Click()
 local m = stub.menu
 local it = m.items
 assert(m.tag == "MENU_WORLD_MAP_TRACKING" and #it == 8 and it[1].title and it[7].title, "filter menu: the stock tag, map filters, then the log ones")
+assert(it[3].onEnter and not it[8].onEnter, "the stock filter tooltips")
 assert(it[3].text == SHOW_QUEST_LEVELS and it[3].get() and it[4].get() and not it[5].get() and it[8].get(), "filters read the stock CVars")
 local n = c.refreshed or 0
 it[3].set()
 assert(stub.cvars.showQuestLevel == "0" and row("A Threat Within").Name:GetText() == "A Threat Within" and c.refreshed == n + 1, "levels off, redrawn at once")
-it[3].set()
+assert(q.Filter.psActive and q.Filter.psTip == "Filter (1 on)", "lit off its default")
+q.Filter:Click()
+local clear = stub.menu.items[#stub.menu.items]
+assert(clear.button and clear.text == "Clear filters", "clear filters entry")
+clear.click()
+assert(stub.cvars.showQuestLevel == "1" and not q.Filter.psActive and q.Filter.psTip == "Filter", "cleared back to the defaults")
 assert(row("A Threat Within").Name:GetText() == "[1] A Threat Within", "levels on")
 local function hue() return table.concat({ row("The Defias Brotherhood").Name:GetTextColor() }, ",") end
 local red = hue()

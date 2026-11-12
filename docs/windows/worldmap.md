@@ -40,14 +40,18 @@ zoom and click-to-open are the game's.
   focus, selects it and opens its details; shift-click tracks it (the stock
   toggle); with a chat box open, a click links it. A search under the head
   (the sidebar's search box) matches a quest's title or what is left of it;
-  searching, every match shows with its header open. Left of it, a filter
-  button (`sliders`, editbox ground) opens the stock map's filter menu as
-  Forever builds it (the game's Menu, its `MENU_WORLD_MAP_TRACKING` tag, so
-  other addons' entries join it): quest objectives on the map (`questPOI`),
-  quest levels (`showQuestLevel`), difficulty colour
-  (`showQuestDifficultyColor`), low-level quests (the trivial quests
-  tracking filter) and tracked items (`contentTrackingFilter`), then the
-  log's objectives (`showQuestObjectivesInLog`). The row's level, colour and
+  searching, every match shows with its header open. At its right end, as
+  Social's, a filter button (`sliders`, editbox ground; its glyph in the
+  accent and its tooltip "Filter (n on)" while a filter is off its default)
+  opens the stock map's filter menu as Forever builds it (the game's Menu,
+  its `MENU_WORLD_MAP_TRACKING` tag, so other addons' entries join it, each
+  filter with the stock tooltip): the world quest submenu where the map has
+  world quests, quest objectives on the map (`questPOI`), quest levels
+  (`showQuestLevel`), difficulty colour (`showQuestDifficultyColor`),
+  low-level quests (the trivial quests tracking filter) and tracked items
+  (`contentTrackingFilter`), then the log's objectives
+  (`showQuestObjectivesInLog`), and "Clear filters" (every one back to its
+  default, as the stock reset) while any is off. The row's level, colour and
   "what is left" line follow them; each change redraws the map and the list
   at once, and a change from the stock menus on `CVAR_UPDATE`.
 - **Quest details:** in the flyout's place, as the stock details page
