@@ -726,13 +726,7 @@ local function nodeClick(b, button)
 end
 
 local function newNode(parent)
-	local b = CreateFrame("Button", nil, parent)
-	b:SetSize(NODE, NODE)
-	Theme.Skin(b, "inset")
-	Theme.Border(b, Theme.Wash("border"))
-	b.Icon = ns.GameIcon(b)
-	b.Icon:SetPoint("TOPLEFT", 1, -1)
-	b.Icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	local b = ns.ItemWell(parent, NODE, "Button")
 	W.Hover(b)
 	-- Its ranks as the stock button shows them ("0/5"), on a solid chip over
 	-- the bottom-right corner, its hairline in the node's state colour.
@@ -789,14 +783,9 @@ local function buildTreePage(body, width)
 	v:SetPoint("TOPLEFT", body, "TOPLEFT", W.SHELL.pad, 0)
 	v:SetWidth(width)
 	-- The tree's heading: its art in a well, its name, the points in it.
-	v.Well = CreateFrame("Frame", nil, v)
-	v.Well:SetSize(48, 48)
+	v.Well, v.Art = ns.ItemWell(v, 48)
 	v.Well:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -16)
-	Theme.Skin(v.Well, "inset")
-	Theme.Border(v.Well, Theme.Wash("border"))
-	v.Art = v.Well:CreateTexture(nil, "ARTWORK")
-	v.Art:SetPoint("TOPLEFT", 1, -1)
-	v.Art:SetPoint("BOTTOMRIGHT", -1, 1)
+	v.Art:SetTexCoord(0, 1, 0, 1) -- an atlas: its own crop
 	v.Name = W.Text(v, "heading", "text")
 	v.Name:SetPoint("BOTTOMLEFT", v.Well, "RIGHT", 12, 2)
 	v.Spent = W.Text(v, "small", "textDim")
@@ -1028,12 +1017,15 @@ local function paintRail()
 	for i, d in ipairs(SECTIONS) do
 		local b = f.railButtons[i]
 		b.psTip, b.psTipLines = d.tip or d.label, { d.about }
-		-- A game icon, not a glyph: the rail's tint taken off, its border cropped.
-		W.Uncolor(b.Icon)
-		b.Icon:SetVertexColor(1, 1, 1, 1)
-		b.Icon:SetTexture(d.icon)
-		b.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		-- A game icon, not a glyph (ns.GameIcon) over the rail's own, which
+		-- stays, unseen, as the label's anchor.
 		b.Icon:SetSize(24, 24)
+		b.Icon:SetAlpha(0)
+		if not b.psGameIcon then
+			b.psGameIcon = ns.GameIcon(b)
+			b.psGameIcon:SetAllPoints(b.Icon)
+		end
+		b.psGameIcon:SetTexture(d.icon)
 	end
 end
 
