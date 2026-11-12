@@ -589,10 +589,7 @@ local NODE, PITCH, TREE_HEAD = 40, 64, 72
 local tree = { idx = 1, query = "", committing = false }
 local treeNodes, treeLines, treeRows = {}, {}, {}
 
-local function num(v)
-	if v == nil or (issecretvalue and issecretvalue(v)) then return 0 end
-	return v
-end
+local num = ns.Num
 
 local function configOf(t) return C_Traits.GetConfigIDByTreeID(t.id) end
 

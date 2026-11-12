@@ -15,11 +15,7 @@ local committing = false -- Apply runs as a cast: no changes until it ends
 local M = {}
 local nodes, lines = {}, {}
 
--- Numbers the client may hand over secret in combat (docs/CLIENT.md, rule 3).
-local function num(v)
-	if v == nil or (issecretvalue and issecretvalue(v)) then return 0 end
-	return v
-end
+local num = ns.Num
 
 local function activeGroup() return C_SpecializationInfo.GetActiveSpecGroup() or 1 end
 local function numGroups() return GetNumSpecGroups and GetNumSpecGroups() or 1 end
