@@ -22,7 +22,10 @@ events and is unaffected.
   icons (`overrideIconID` first), the Quest and Play Movie prefixes, and the
   option's spell tooltip. Click: `SelectAvailableQuest`, `SelectActiveQuest`,
   `C_GossipInfo.SelectOptionByIndex`. Keys 1-9 pick (ours; the stock frame has
-  none).
+  none): each row shows its number at the right, and its tooltip (the
+  option's spell, else its text) ends with the hint "Click or press 2 to
+  choose it."; the band has no subtitle. A long option wraps and its row
+  grows.
 - **No Goodbye button:** the stock one only closes; ✕ and Escape do
   (DESIGN.md: never a footer Close).
 - **Left out (client):** the stock `OnShow` hides the spirit healer's `XP_LOSS`
@@ -31,4 +34,4 @@ events and is unaffected.
   and the NPC's background art (texture kits) are the stock parchment's.
 - **Taint:** none protected; a gossip that opens another window (vendor,
   trainer) flows into that window's interaction.
-- **Tests:** `stub_gossip.lua` (`CustomGossipFrameManager` with the stock dispatch, `C_GossipInfo` with friendship); scenes `gossip` (the base handler is ours, the NPE guide kit still goes to its handler, `GOSSIP_CLOSED` closes ours, prefixes, portrait), `gossip-quests` (the stock order), `gossip-friend` (the friendship bar).
+- **Tests:** `stub_gossip.lua` (`CustomGossipFrameManager` with the stock dispatch, `C_GossipInfo` with friendship); scenes `gossip` (the base handler is ours, the key hint in the row tooltip, the NPE guide kit still goes to its handler, `GOSSIP_CLOSED` closes ours, prefixes, portrait), `gossip-quests` (the stock order), `gossip-friend` (the friendship bar).
