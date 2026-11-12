@@ -109,6 +109,8 @@ function C_Container.GetContainerItemLink(bag, slot)
 	return it and ("|Hitem:%d|h[Item]|h"):format(it.itemID)
 end
 function C_Container.PickupContainerItem(bag, slot) stub.picked = { bag, slot } end
+-- A spell (an enchant, a stone) waiting for its item: stub.targeting.
+function SpellIsTargeting() return stub.targeting or false end
 function C_Container.SplitContainerItem(bag, slot, n) stub.split = { bag, slot, n } end
 
 -- The cursor: an item held (stub.held = { guid, refundable }), or nothing.

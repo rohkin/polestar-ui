@@ -39,7 +39,10 @@ end
 -- Picks up from or places on a slot; a refundable item going into the Warband
 -- bank asks first, and goes only if still held (BankPanelItemButtonMixin:HandleItemPickup,
 -- ACCOUNT_BANK_DEPOSIT_NO_REFUND_CONFIRM).
+-- While a spell waits for its item, picking up is applying it, forbidden to
+-- us: the overlay's secure click does that ("target-bag", below).
 local function pickup(w)
+	if SpellIsTargeting() then return end
 	local held = C_Cursor.GetCursorItem()
 	if held and w.psType == ACCT and C_Bank.CanUseBank(ACCT) and C_Item.CanBeRefunded(held) then
 		local guid = C_Item.GetItemGUID(held)
@@ -76,20 +79,25 @@ local function click(w, button)
 	end
 end
 
--- Right-click is the protected UseContainerItem: a secure button of ours over
--- the hovered slot, out of combat (docs/CLIENT.md, rule 4), handing its other
--- clicks and drops back to the slot.
+-- Right-click is the protected UseContainerItem, and a click while a spell
+-- waits for its item applies it: a secure button of ours over the hovered
+-- slot, out of combat (docs/CLIENT.md, rule 4), handing its other clicks and
+-- drops back to the slot.
 local overlay = ns.Overlay("PolestarUIBankSlot", {
 	enter = enter,
 	pickup = pickup,
 	setup = function(over)
-		over:HookScript("PostClick", function(self, button) click(self.psTarget, button) end)
+		-- The spell applied, targeting is over by PostClick: no pickup after it.
+		over:HookScript("PreClick", function(self) self.psTargeting = SpellIsTargeting() end)
+		over:HookScript("PostClick", function(self, button) if not self.psTargeting then click(self.psTarget, button) end end)
 		over:HookScript("OnReceiveDrag", function(self) pickup(self.psTarget) end)
 	end,
 	attrs = function(over, w)
 		-- An empty slot gets no action: the game's "item" action expects an item.
 		over:SetAttribute("type2", C_Container.GetContainerItemInfo(w.psBag, w.psSlot) and "item" or nil)
 		over:SetAttribute("item", w.psBag .. " " .. w.psSlot)
+		over:SetAttribute("*target-bag*", w.psBag)
+		over:SetAttribute("*target-slot*", w.psSlot)
 	end,
 })
 
@@ -151,7 +159,7 @@ local function wireBag(b)
 	b:RegisterForDrag("LeftButton")
 	-- A bag goes in or comes out as any item: picked up and placed. A slot
 	-- not bought yet buys the next (the stock Purchase button beside them).
-	local function take(self) C_Container.PickupContainerItem(bagSlots(self.psType), self.psNum) end
+	local function take(self) if not SpellIsTargeting() then C_Container.PickupContainerItem(bagSlots(self.psType), self.psNum) end end
 	b:SetScript("OnClick", function(self)
 		if self.psBought then take(self) else buy(self.psType) end
 	end)

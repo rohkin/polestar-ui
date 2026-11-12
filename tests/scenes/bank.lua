@@ -45,6 +45,10 @@ assert(GameTooltip.lines[1] == "Bag slot not bought yet" and GameTooltip.lines[2
 assert(tostring(f.psStripLabel:GetText()) == "Bag slots (the next costs 25g 0s 0c)", "the next slot's cost")
 bags[1]:Click()
 assert(stub.picked[1] == -2 and stub.picked[2] == 2, "the bag not picked up")
+stub.picked, stub.targeting = nil, true
+bags[1]:Click()
+assert(not stub.picked, "a bag picked up while a spell waits for its item")
+stub.targeting = false
 
 -- The search is the client's: what does not match dims.
 f.Search:SetText("cloth")
@@ -63,6 +67,16 @@ stub.RunScript(wells[4], "OnEnter")
 assert(a:GetAttribute("type2") == nil and a:GetAttribute("item") == "6 4", "empty slot")
 stub.RunScript(a, "PostClick", "LeftButton")
 assert(stub.picked[1] == 6 and stub.picked[2] == 4, "left-click did not pick up")
+-- While a spell waits for its item, the overlay's secure click applies it to
+-- the slot; nothing is picked up, by the click or after it.
+assert(a:GetAttribute("*target-bag*") == 6 and a:GetAttribute("*target-slot*") == 4, "no secure target")
+stub.picked, stub.targeting = nil, true
+stub.RunScript(wells[4], "OnClick", "LeftButton")
+stub.RunScript(a, "PreClick", "LeftButton")
+stub.targeting = false
+stub.RunScript(a, "PostClick", "LeftButton")
+assert(not stub.picked, "picked up while applying a spell")
+stub.picked = { 6, 4 }
 stub.inCombat = true
 stub.fire("PLAYER_REGEN_DISABLED")
 assert(not a:IsShown(), "overlay in combat")
