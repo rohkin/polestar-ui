@@ -22,8 +22,12 @@ menus and chat bubbles.
   colour is kept for when it is switched off.
 - **Tabs:** the guide window's tabs on that header: no box, the label in
   Polestar's face (`small`'s) at the game's size (the game sizes a tab to its
-  text once), `textMuted`, the selected one `text` on the selected wash over
-  a 2px accent bar; the hover wash. A tab the game colours (a whisper's)
+  text once), `textMuted`, the selected one `text` over a 2px accent bar
+  (no wash, as the guide window's tab); the hover wash on a hovered tab
+  only, so hover never reads as selected. Which tab is selected is the
+  dock's answer (undocked, or `FCFDock_GetSelectedWindow`), never the
+  stock Active art, which shows on the combat log's tab until the dock
+  first colours it. A tab the game colours (a whisper's)
   keeps its label colour. The new-message glow and the tab's fading stay the
   game's, the glow in the accent.
 - **Edit box:** the window's footer, 24px under its ground, in Polestar's

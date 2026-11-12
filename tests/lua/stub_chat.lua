@@ -169,6 +169,7 @@ end
 local tabs = {}
 local function makeTab(id, text)
 	local t = CreateFrame("Button", "ChatFrame" .. id .. "Tab", UIParent)
+	t:SetID(id)
 	t:SetSize(20 + 7 * #text, 32)
 	t:SetFrameStrata("MEDIUM")
 	local prev = tabs[#tabs]
@@ -271,6 +272,7 @@ local function makeChat(id, name)
 	f:SetSize(430, 120)
 	f:SetFrameStrata("LOW")
 	f:SetID(id)
+	f.isDocked = true
 	bordered(f, -2, 3, 15, -6)
 	local b = CreateFrame("Frame", f:GetName() .. "ButtonFrame", f)
 	b:SetWidth(29)
@@ -320,6 +322,9 @@ end
 
 makeChat(1, "General")
 FCFTab_UpdateColors(ChatFrame1Tab, true)
+-- The dock (FloatingChatFrame.lua): every window docked, General selected.
+GENERAL_CHAT_DOCK = { selected = ChatFrame1 }
+function FCFDock_GetSelectedWindow(dock) return dock.selected end
 makeChat(2, "Combat Log"):Hide()
 stub.makeChat = makeChat
 

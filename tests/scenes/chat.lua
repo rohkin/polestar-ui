@@ -19,7 +19,13 @@ stub.advance(0.1)
 assert(fill(ChatFrame1):GetAlpha() == 0.6, "the ground ignores the window alpha") FCF_OpenTemporaryWindow("WHISPER", "Jaina", ChatFrame1)
 FCF_StartAlertFlash(ChatFrame11) assert(styled(11), "the whisper window is not restyled")
 assert(ChatFrame11Tab.glow:IsShown(), "no alert") stub.loadCombatLog()
-assert(CombatLogQuickButtonFrame_CustomTexture:GetAlpha() == 0 and ours(CombatLogQuickButtonFrame_Custom) == 1, "the combat log strip") PolestarUI.Switch("chat", false) assert(ChatFrame1TopLeftTexture:IsShown() and ChatFrame1Background:GetTexture():find("ChatFrameBackground") and ChatFrame1Tab.Left:GetAlpha() == 1 and ChatFrame1EditBoxMid:GetAlpha() == 1 and ours(ChatFrame1) == 0 and ours(ChatFrame1Tab) == 0 and ours(ChatFrame1EditBox) == 0 and ours(ChatFrame11) == 0 and CombatLogQuickButtonFrame_CustomTexture:GetAlpha() == 1, "not the stock look when off") assert(ChatFrameMenuButton:GetNormalTexture():GetAlpha() == 1 and ChatFrame1.ScrollBar.Track.Thumb.Middle:GetAlpha() == 1 and ChatFrame1.ScrollToBottomButton:GetHighlightTexture():GetAlpha() == 1, "the side buttons not stock when off") PolestarUI.Switch("chat", true)
+assert(CombatLogQuickButtonFrame_CustomTexture:GetAlpha() == 0 and ours(CombatLogQuickButtonFrame_Custom) == 1, "the combat log strip") PolestarUI.Switch("chat", false) assert(ChatFrame1TopLeftTexture:IsShown() and ChatFrame1Background:GetTexture():find("ChatFrameBackground") and ChatFrame1Tab.Left:GetAlpha() == 1 and ChatFrame1EditBoxMid:GetAlpha() == 1 and ours(ChatFrame1) == 0 and ours(ChatFrame1Tab) == 0 and ours(ChatFrame1EditBox) == 0 and ours(ChatFrame11) == 0 and CombatLogQuickButtonFrame_CustomTexture:GetAlpha() == 1, "not the stock look when off") assert(ChatFrameMenuButton:GetNormalTexture():GetAlpha() == 1 and ChatFrame1.ScrollBar.Track.Thumb.Middle:GetAlpha() == 1 and ChatFrame1.ScrollToBottomButton:GetHighlightTexture():GetAlpha() == 1, "the side buttons not stock when off") -- At login the dock has not yet coloured the combat log's tab: its stock
+-- Active art still shows. Ours follows the dock's selection, not that art.
+ChatFrame2Tab.ActiveMiddle:Show()
+PolestarUI.Switch("chat", true)
+assert(ours(ChatFrame1Tab, "ARTWORK") == 1 and ours(ChatFrame2Tab, "ARTWORK") == 0, "the combat log tab marked selected beside General")
+local function shownIn(t, layer) local n = 0 for _, r in ipairs({ t:GetRegions() }) do if r:IsShown() and r:GetAlpha() > 0 and r:GetDrawLayer() == layer then n = n + 1 end end return n end
+assert(shownIn(ChatFrame1Tab, "BACKGROUND") == shownIn(ChatFrame2Tab, "BACKGROUND"), "the selected tab's ground is the hovered one's")
 assert(styled(1) and styled(11), "not restyled when on again") stub.activateChat(ChatFrame1EditBox)
 ChatFrame1EditBox.header:SetText("Say:")
 stub.advance(0.1) local e = select(2, ChatFrame1EditBox:GetRegions())

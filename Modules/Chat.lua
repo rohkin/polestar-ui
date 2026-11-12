@@ -120,13 +120,13 @@ local function panel(f)
 end
 
 -- A tab as the guide window's: no box, the label muted, the selected one in
--- the text colour on the selected wash over the accent bar; the hover wash.
+-- the text colour over the accent bar; the hover wash (on no tab's ground
+-- but a hovered one's, so hover never reads as selected).
 -- A tab the game colours (a whisper's) keeps its label colour. The
 -- new-message glow stays the game's, in the accent. FCFTab_UpdateColors
 -- writes the label and glow colours; its hook paints ours over them.
 local function paintTab(t, l, selected)
 	local on = ns.Enabled("chat")
-	l.sel:SetShown(on and selected)
 	l.bar:SetShown(on and selected)
 	local c = t.selectedColorTable
 	if on then
@@ -140,29 +140,39 @@ local function paintTab(t, l, selected)
 	end
 end
 
+-- Whether a tab is the selected one, as the dock decides it (FCFDock_UpdateTabs:
+-- undocked, or the dock's selected window). Not from its Active art, which
+-- shows until the dock first colours the tab (the combat log's, at login).
+local function selectedTab(t)
+	local f = _G["ChatFrame" .. t:GetID()]
+	if f and GENERAL_CHAT_DOCK and FCFDock_GetSelectedWindow then
+		return not f.isDocked or FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK) == f
+	end
+	return t.ActiveMiddle:IsShown()
+end
+
 -- The label in Polestar's face at the game's size: the game sizes a tab to
 -- its text once, so a larger size would cut the name short.
 local function tab(t)
 	local l = look(t, function()
-		local l = { sel = tex(t, "BACKGROUND", -8), bar = tex(t, "ARTWORK"), hover = tex(t, "HIGHLIGHT"), font = { t.Text:GetFont() } }
-		l.sel:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, 0)
-		l.sel:SetPoint("TOPRIGHT", t, "TOPRIGHT", 0, HEADER - 32)
-		l.bar:SetPoint("BOTTOMLEFT", l.sel, "BOTTOMLEFT", 0, 0)
-		l.bar:SetPoint("BOTTOMRIGHT", l.sel, "BOTTOMRIGHT", 0, 0)
+		local l = { bar = tex(t, "ARTWORK"), hover = tex(t, "HIGHLIGHT"), font = { t.Text:GetFont() } }
+		-- The tab's visible band: its bottom HEADER px.
+		l.hover:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, 0)
+		l.hover:SetPoint("TOPRIGHT", t, "TOPRIGHT", 0, HEADER - 32)
+		l.bar:SetPoint("BOTTOMLEFT", l.hover, "BOTTOMLEFT", 0, 0)
+		l.bar:SetPoint("BOTTOMRIGHT", l.hover, "BOTTOMRIGHT", 0, 0)
 		l.bar:SetHeight(2)
-		l.hover:SetAllPoints(l.sel)
 		return l
 	end)
 	if not l then return end
 	local on = ns.Enabled("chat")
 	for _, k in ipairs(TAB) do t[k]:SetAlpha(on and 0 or 1) end
-	l.sel:SetVertexColor(Theme.Wash("hover"))
 	l.bar:SetVertexColor(Theme.Accent())
 	l.hover:SetVertexColor(Theme.Wash("hover"))
 	l.hover:SetShown(on)
 	local f = l.font
 	Theme.SetFace(t.Text, on and (Theme.FontSpec("small")) or f[1], f[2], f[3] or "")
-	paintTab(t, l, t.ActiveMiddle:IsShown())
+	paintTab(t, l, selectedTab(t))
 end
 
 -- The edit box as the window's footer, in Polestar's input: the window's
