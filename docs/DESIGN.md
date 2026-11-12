@@ -184,7 +184,7 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 | Legacy (`LegacySystemFrame`, Blizzard_LegacySystem) | high | built | [windows/legacy.md](windows/legacy.md) |
 | World Map and Quest Log (`WorldMapFrame`, `QuestMapFrame`) | medium | built | [windows/worldmap.md](windows/worldmap.md) |
 | Social (`FriendsFrame`) | medium | built | [windows/social.md](windows/social.md) |
-| Merchant (`MerchantFrame`) | medium | planned | [windows/merchant.md](windows/merchant.md) |
+| Merchant (`MerchantFrame`) | medium | built | [windows/merchant.md](windows/merchant.md) |
 | Bank (`BankFrame`) | medium | built | [windows/bank.md](windows/bank.md) |
 | Mail (`MailFrame`, `OpenMailFrame`) | low | built | [windows/mail.md](windows/mail.md) |
 | Auction House (`AuctionHouseFrame`) | medium | planned, built last | [windows/auction.md](windows/auction.md) |

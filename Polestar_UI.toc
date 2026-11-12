@@ -22,6 +22,7 @@ Modules\WorldMap.xml
 Modules\Bank.lua
 Modules\Mail.lua
 Modules\Gossip.lua
+Modules\Merchant.lua
 Modules\Trainer.lua
 Modules\Social.lua
 Modules\Tooltips.lua
