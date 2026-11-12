@@ -14,7 +14,7 @@ local function row(name)
 	end
 end
 assert(row("Mira") and row("Sefa"), "secret names not kept")
-assert(plain(row("Mira").Sub:GetText()) == "Thessaly · Lvl 26 Druid · Darkshore", "secret character not kept")
+assert(plain(row("Mira").Sub:GetText()) == "Thessaly · Lvl 26 Druid" and row("Mira").Where:GetText() == "Darkshore", "secret character not kept")
 assert(PolestarUISocial.psName:GetText() == "Testchar", "player name not kept")
 stub.RunScript(row("Mira"), "OnClick", "LeftButton")
 stub.advance(0.5)

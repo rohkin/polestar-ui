@@ -46,13 +46,17 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   nav rows, each with its count.
 - **Friends:** the stock list's folding groups "Favorites 2/5" and "Friends 9/54" (online of
   shown), Battle.net favorites, then online Battle.net and WoW friends, then
-  offline ones. Each row: the presence pip in its top-left corner (success,
+  offline ones. Rows as Polestar's Characters page (`Alts/View.lua`) lays
+  its characters: each a card of its own (`W.Fill` "panel", `W.Hover`) 44
+  tall with a 4 gap, text inset 14, group headings plain on the ground with
+  their chevron. Each row: the presence pip before the name (success,
   warning, danger, textMuted), the name in Body (a WoW friend in class
   colour, legible; offline in textMuted), a favorite's star after it (the
-  stock atlases `friends-icon-favorites`, `-dis` offline). The second line,
-  Small textDim: "Thessaly · Lvl 26 Druid · Darkshore" with the class in
-  class colour, the friend's rich presence out of WoW, "Last online 3 days
-  ago" offline; one line sits centred. Fixed slots at the right: the
+  stock atlases `friends-icon-favorites`, `-dis` offline). Under it, Small
+  textDim: "Thessaly · Lvl 26 Druid" with the class in class colour; one
+  line sits centred. A second column from the middle, Small: where they
+  are ("Darkshore"), the rich presence out of WoW, "Last online 3 days
+  ago" offline (textMuted). Fixed slots at the right: the
   friend's client icon as the stock card sets it
   (`C_Texture.SetTitleIconTexture`, `Enum.TitleIconVersion.Small`; faded
   for another WoW project, none offline), then the invite "+", faint when
@@ -80,8 +84,9 @@ Nothing Lost Rule, said in the Options menu). `M.stock()` answers
   Friend report) and, for a Battle.net request, Block invites behind a
   confirm (`C_BattleNet.SetBlocked`, then decline). A Real ID request shows
   the stock tab's one-time notice (CVar `pendingInviteInfoShown`).
-- **Recent allies:** `C_RecentAllies` in the client's order: level, class,
-  where they are and how you met. `TryRequestRecentAlliesData` is restricted
+- **Recent allies:** `C_RecentAllies` in the client's order, in the
+  Friends rows: level and class under the name, where they are and how you
+  met in the second column. `TryRequestRecentAlliesData` is restricted
   (addon code may not call it): until the data is ready the page says to
   load it in the game's window (/friends, its Recent Allies tab), and
   `RECENT_ALLIES_DATA_READY` fills it. As the stock tab: the folding groups

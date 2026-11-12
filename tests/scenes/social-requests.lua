@@ -18,7 +18,8 @@ local function row(name)
 end
 assert(f.Title:GetText() == "Friend requests" and row("Received (3)") and row("Rook") and row("Wren"), "requests page")
 assert(not row("Mira"), "friends on the requests page")
-assert(row("Rook").Sub:GetText() == "Battle.net friend · Sent 2 days ago", "card: " .. tostring(row("Rook").Sub:GetText()))
+-- The Accept and Decline buttons take the second column's room: one line at the left.
+assert(row("Rook").Sub:GetText() == "Battle.net friend · Sent 2 days ago" and not row("Rook").Where:IsShown(), "card: " .. tostring(row("Rook").Sub:GetText()))
 assert(row("Wren").Sub:GetText() == "WoW friend", "title card: " .. tostring(row("Wren").Sub:GetText()))
 assert(row("Rook").Accept:IsShown() and row("Rook").Decline:IsShown() and not row("Rook").Invite:IsShown(), "request buttons")
 -- The tooltip: when, what kind.

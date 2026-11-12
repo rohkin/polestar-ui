@@ -12,9 +12,9 @@ local function row(name)
 		if r:IsShown() and r.Name and r.Name:GetText() == name then return r end
 	end
 end
-assert(plain(row("Mira").Sub:GetText()) == "Thessaly · Lvl 26 Druid · Darkshore", "in game: " .. tostring(row("Mira").Sub:GetText()))
-assert(row("Jon").Sub:GetText() == "In the Battle.net app", "in the app")
-assert(row("Sefa").Sub:GetText() == "Last online 3 days ago", "offline: " .. tostring(row("Sefa").Sub:GetText()))
+assert(plain(row("Mira").Sub:GetText()) == "Thessaly · Lvl 26 Druid" and row("Mira").Where:GetText() == "Darkshore", "in game: " .. tostring(row("Mira").Sub:GetText()))
+assert(row("Jon").Where:GetText() == "In the Battle.net app", "in the app")
+assert(row("Sefa").Where:GetText() == "Last online 3 days ago", "offline: " .. tostring(row("Sefa").Where:GetText()))
 -- The stock card's tooltip: character, level and class, race, zone, faction, the note, the
 -- tags and the broadcast; offline, when last online; a WoW friend's note too.
 local function tip(name)

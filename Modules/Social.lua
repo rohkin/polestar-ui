@@ -8,6 +8,9 @@ local Theme = Polestar.Theme
 
 local NAME = "PolestarUISocial"
 local ROW_H, HEAD_H, RAID_H, COL_GAP = 44, 32, 28, 24
+-- Rows as Polestar's Characters page lays them (Alts/View.lua): each its own
+-- panel card with a gap, text inset 14, a second column of facts.
+local ROW_GAP, INSET = 4, 14
 
 local f, page, query = nil, "friends", ""
 local collapsed = {}
@@ -38,18 +41,15 @@ local function lastOnline(t)
 	return t and t > 0 and FriendsFrame_GetLastOnline and ("Last online %s ago"):format(FriendsFrame_GetLastOnline(t)) or "Offline"
 end
 
--- "Lvl 24 Paladin · Zone", the class in its colour (legible) as the stock
--- card writes it; `file` nil leaves the class plain (offline).
-local function detail(level, class, zone, file)
-	local parts = {}
+-- "Lvl 24 Paladin", the class in its colour (legible) as the stock card
+-- writes it; `file` nil leaves the class plain (offline).
+local function detail(level, class, file)
 	local c = file and class and RAID_CLASS_COLORS[file]
 	if c then
 		local r, g, b = Theme.Legible(c.r, c.g, c.b)
 		class = ("|cff%02x%02x%02x%s|r"):format(r * 255 + 0.5, g * 255 + 0.5, b * 255 + 0.5, class)
 	end
-	if level and level > 0 then parts[1] = ("Lvl %d %s"):format(level, class or "") end
-	if zone and zone ~= "" then parts[#parts + 1] = zone end
-	return table.concat(parts, " · ")
+	return level and level > 0 and ("Lvl %d %s"):format(level, class or "") or ""
 end
 
 -- Presence as the stock social UI reads it (SocialUIUtil.GetPresenceType*).
@@ -195,7 +195,8 @@ local function friends()
 			list[#list + 1] = { name = info.name, online = info.connected, class = classFile(info.guid),
 				rank = info.connected and 2 or 4, order = i, canInvite = info.connected,
 				status = not info.connected and "offline" or info.dnd and "busy" or info.afk and "away" or "online",
-				sub = info.connected and detail(info.level, info.className, info.area, classFile(info.guid)) or "Offline",
+				sub = info.connected and detail(info.level, info.className, classFile(info.guid)) or nil,
+				where = info.connected and info.area or "Offline",
 				whisper = function() ChatFrameUtil.SendTell(info.name) end,
 				invite = function() C_PartyInfo.InviteUnit(info.name) end,
 				menu = function() FriendsFrame_ShowDropdown(info.name, info.connected, nil, nil, nil, 1, nil, nil, nil, nil, info.guid) end,
@@ -216,19 +217,21 @@ local function friends()
 			local name = keep("bn" .. id, a.accountName) or a.battleTag or ""
 			local char = keep("bnc" .. id, g.characterName)
 			keep("bnn" .. id, a.note); keep("bnm" .. id, a.customMessage) -- read out of combat for the tooltip
-			local sub
+			-- Who they play at the left, where they are (or were last) in the column.
+			local sub, where
 			if not g.isOnline then
-				sub = lastOnline(a.lastOnlineTime)
+				where = lastOnline(a.lastOnlineTime)
 			elseif char then
-				sub = char .. " · " .. detail(g.characterLevel, g.className, keep("bnz" .. id, g.areaName), classFile(g.playerGuid))
+				local lvl = detail(g.characterLevel, g.className, classFile(g.playerGuid))
+				sub, where = lvl ~= "" and char .. " · " .. lvl or char, keep("bnz" .. id, g.areaName)
 			else
-				sub = keep("bnr" .. id, g.richPresence) or "Online"
+				where = keep("bnr" .. id, g.richPresence) or "Online"
 			end
 			local status = not g.isOnline and "offline" or (a.isAFK or g.isGameAFK) and "away" or (a.isDND or g.isGameBusy) and "busy" or "online"
 			-- Favorites are set from the right-click menu, as in the stock list.
 			-- The client's own icon (Battle.net app, WoW...), faded for another WoW project, as the stock card.
 			local client = g.isOnline and g.clientProgram ~= "" and g.clientProgram or nil
-			if friendShown(g.isOnline, a.isAFK or g.isGameAFK, a.isDND or g.isGameBusy, a.friendTags, id) then list[#list + 1] = { name = name, char = char, online = g.isOnline, sub = sub,
+			if friendShown(g.isOnline, a.isAFK or g.isGameAFK, a.isDND or g.isGameBusy, a.friendTags, id) then list[#list + 1] = { name = name, char = char, online = g.isOnline, sub = sub, where = where,
 				client = client, subIcon = g.subIcon, faded = client == BNET_CLIENT_WOW and g.wowProjectID ~= WOW_PROJECT_ID,
 				bnet = true, favorite = a.isFavorite, rank = a.isFavorite and 0 or g.isOnline and 1 or 3, order = 1000 + i,
 				status = status, canInvite = g.isOnline and char ~= nil,
@@ -316,12 +319,13 @@ local function allies()
 		local c, st, it = a.characterData, a.stateData, a.interactionData or {}
 		local cls = C_CreatureInfo.GetClassInfo(c.classID)
 		local recent = it.interactions and it.interactions[1]
-		local parts = { detail(c.level, cls and cls.className, st.isOnline and st.currentLocation, st.isOnline and cls and cls.classFile) }
-		if recent and recent.description and recent.description ~= "" then parts[#parts + 1] = recent.description end
-		if st.friendRequestSentThisSession then parts[#parts + 1] = "Friend request sent" end
+		-- Where they are, else how you met (the tooltip has both).
+		local where = st.isOnline and st.currentLocation or recent and recent.description or ""
+		local sub = detail(c.level, cls and cls.className, st.isOnline and cls and cls.classFile)
+		if st.friendRequestSentThisSession then sub = sub .. " · Friend request sent" end
 		local full, pinned = c.fullName, st.pinExpirationDate ~= nil
 		list[#list + 1] = { name = c.name or full, title = full, online = st.isOnline, class = cls and cls.classFile,
-			sub = table.concat(parts, " · "), guid = c.guid, pinned = pinned, pinUntil = st.pinExpirationDate,
+			sub = sub, where = where, guid = c.guid, pinned = pinned, pinUntil = st.pinExpirationDate,
 			legacy = pinned and st.isConvertedLegacyFriend, canInvite = st.isOnline,
 			status = not st.isOnline and "offline" or st.isAFK and "away" or st.isDND and "busy" or "online",
 			whisper = function() ChatFrameUtil.SendTell(full) end,
@@ -413,7 +417,9 @@ local ALLY_HEADS = {
 local REQUEST_HEADS = { { key = "recv", label = function(_, n) return ("Received (%d)"):format(n) end } }
 
 ---------------------------------------------------------------------------
--- Friend rows: name over a detail line, in one row panel.
+-- Friend rows: a card each, Polestar's Characters page style: presence pip,
+-- name and who they play at the left, where they are in a second column,
+-- the client icon and actions in fixed slots at the right.
 
 -- A click whispers only once no second click made it a double-click (invite).
 local DOUBLE_CLICK = 0.3
@@ -455,30 +461,26 @@ end
 local function newRow(panel, i)
 	local r = CreateFrame("Button", nil, panel)
 	r:SetHeight(ROW_H)
-	r:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -(i - 1) * ROW_H)
+	r:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
 	r:SetPoint("RIGHT", panel, "RIGHT", 0, 0)
-	if i > 1 then
-		local d = W.Divider(r)
-		d:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
-		d:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
-	end
+	r.Ground = W.Fill(r, "panel")
 	W.Hover(r)
-	-- A group heading's fold chevron; a friend's presence pip in the corner, as the stock card.
+	-- A group heading's fold chevron; a friend's presence pip before the name.
 	r.Chevron = W.Tex(r, "ARTWORK", "chevron-down", "textDim")
 	r.Chevron:SetSize(12, 12)
-	r.Chevron:SetPoint("LEFT", r, "LEFT", 16, 0)
+	r.Chevron:SetPoint("LEFT", r, "LEFT", 2, 0)
 	r.Pip = W.Tex(r, "OVERLAY", "circle", "success")
 	r.Pip:SetSize(8, 8)
-	r.Pip:SetPoint("TOPLEFT", r, "TOPLEFT", 5, -5)
 	r.Name = W.Text(r, "body", "text")
+	r.Pip:SetPoint("RIGHT", r.Name, "LEFT", -8, 0)
 	r.Sub = W.Text(r, "small", "textDim")
-	r.Sub:SetPoint("TOPLEFT", r, "LEFT", 16, -3)
-	for _, t in ipairs({ r.Name, r.Sub }) do t:SetJustifyH("LEFT") end
+	r.Where = W.Text(r, "small", "textDim")
+	for _, t in ipairs({ r.Name, r.Sub, r.Where }) do t:SetJustifyH("LEFT"); t:SetWordWrap(false) end
 	-- Fixed slots at the right, so they line up down the list: the friend's
 	-- client icon (the game's own), then the invite button. A favorite's star
 	-- follows the name (the stock card's atlases).
 	r.Invite = W.IconButton(r, "plus", 24, "Invite to group", function(self) self:GetParent().psEntry.invite() end)
-	r.Invite:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+	r.Invite:SetPoint("RIGHT", r, "RIGHT", -8, 0)
 	if r.Invite.SetMotionScriptsWhileDisabled then r.Invite:SetMotionScriptsWhileDisabled(true) end
 	r.Client = r:CreateTexture(nil, "ARTWORK")
 	r.Client:SetSize(20, 20)
@@ -564,13 +566,17 @@ end
 
 local function paintRows(list)
 	local p, y = f.psPanel, 0
+	-- The second column starts past the middle, as the Characters page's facts.
+	local col = math.floor(f.BodyWidth * 0.5)
 	for i, e in ipairs(list) do
 		local r = rows[i] or newRow(p, i)
 		rows[i] = r
 		r.psEntry = e
 		r:SetHeight(e.head and HEAD_H or ROW_H)
+		if i > 1 and not e.head then y = y + ROW_GAP end
 		r:SetPoint("TOPLEFT", p, "TOPLEFT", 0, -y)
 		y = y + r:GetHeight()
+		r.Ground:SetShown(not e.head)
 		r.Name:SetText(e.name)
 		if e.head then W.Uncolor(r.Name); W.Color(r.Name, "textDim") else paintName(r.Name, e.class, not e.online) end
 		r.Chevron:SetShown(e.head ~= nil)
@@ -587,11 +593,23 @@ local function paintRows(list)
 		r.Sub:SetText(sub)
 		W.Color(r.Sub, e.online and "textDim" or "textMuted")
 		r.Sub:SetShown(sub ~= "")
-		local right = e.request and 200 or e.act and 124 or e.status and 80 or 64
+		local right = e.request and 196 or e.act and 120 or e.status and 72 or 48
+		local where = e.where or ""
+		r.Where:SetText(where)
+		W.Color(r.Where, e.online and "text" or "textMuted")
+		r.Where:SetShown(where ~= "")
+		r.Where:ClearAllPoints()
+		r.Where:SetPoint("LEFT", r, "LEFT", col, 0)
+		r.Where:SetPoint("RIGHT", r, "RIGHT", -right, 0)
+		-- The name column ends where the second one starts, when there is one.
+		local nameRight = where ~= "" and -(f.BodyWidth - col + 12) or -right
+		local x = e.head and 20 or e.status and INSET + 16 or INSET
 		r.Name:ClearAllPoints()
-		r.Name:SetPoint(sub ~= "" and "BOTTOMLEFT" or "LEFT", r, "LEFT", e.head and 36 or 16, sub ~= "" and 1 or 0)
-		r.Name:SetPoint("RIGHT", r, "RIGHT", -right, 0)
-		r.Sub:SetPoint("RIGHT", r, "RIGHT", -right, 0)
+		r.Name:SetPoint(sub ~= "" and "BOTTOMLEFT" or "LEFT", r, "LEFT", x, sub ~= "" and 1 or 0)
+		r.Name:SetPoint("RIGHT", r, "RIGHT", nameRight, 0)
+		r.Sub:ClearAllPoints()
+		r.Sub:SetPoint("TOPLEFT", r, "LEFT", x, -3)
+		r.Sub:SetPoint("RIGHT", r, "RIGHT", nameRight, 0)
 		local client = e.client and C_Texture and C_Texture.SetTitleIconTexture and Enum.TitleIconVersion
 		if client then
 			C_Texture.SetTitleIconTexture(r.Client, e.client, Enum.TitleIconVersion.Small, e.subIcon)
@@ -1082,7 +1100,7 @@ local function build()
 	end, 14)
 	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -(W.SHELL.header - 30))
 	Theme.Skin(f.psFilter, "editbox")
-	f.psPanel = W.RowPanel(f.Body)
+	f.psPanel = CreateFrame("Frame", nil, f.Body)
 	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")

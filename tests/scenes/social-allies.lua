@@ -21,8 +21,8 @@ local function row(name)
 	end
 end
 assert(f.Title:GetText() == "Recent allies" and not f.psEmpty:IsShown() and row("Vessa") and row("Orrin"), "rows after data ready")
-assert(plain(row("Vessa").Sub:GetText()) == "Lvl 23 Rogue · The Deadmines · Grouped in The Deadmines", "online: " .. tostring(row("Vessa").Sub:GetText()))
-assert(row("Orrin").Sub:GetText() == "Lvl 21 Mage · Grouped in Westfall", "offline: " .. tostring(row("Orrin").Sub:GetText()))
+assert(plain(row("Vessa").Sub:GetText()) == "Lvl 23 Rogue" and row("Vessa").Where:GetText() == "The Deadmines", "online: " .. tostring(row("Vessa").Where:GetText()))
+assert(row("Orrin").Sub:GetText() == "Lvl 21 Mage" and row("Orrin").Where:GetText() == "Grouped in Westfall", "offline: " .. tostring(row("Orrin").Where:GetText()))
 stub.RunScript(row("Vessa"), "OnClick", "LeftButton")
 stub.RunScript(row("Vessa"), "OnDoubleClick", "LeftButton")
 stub.advance(0.5)

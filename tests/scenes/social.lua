@@ -51,11 +51,16 @@ assert(not row("Sefa").Client:IsShown() and not row("Aelric").Client:IsShown(), 
 -- The client icon and invite sit in fixed slots: the same x on every row.
 local function x(t) local _, rel, _, ox = t:GetPoint(1); return rel, ox end
 assert(select(2, x(row("Mira").Client)) == select(2, x(row("Jon").Client)) and row("Mira").Client:GetPoint(1) == "RIGHT", "client slot")
--- A single line sits centred, two lines either side of the centre.
-assert(row("Jon").Name:GetPoint(1) == "BOTTOMLEFT" and row("Jon").Sub:GetPoint(1) == "TOPLEFT", "two-line row")
-assert(plain(row("Aelric").Sub:GetText()) == "Lvl 24 Paladin · Elwynn Forest", "detail: " .. tostring(row("Aelric").Sub:GetText()))
+-- Each row a card of its own (Polestar's Characters page): a single line
+-- sits centred, two lines either side of the centre; where they are in a
+-- second column, the same x on every row.
+assert(row("Aelric").Ground:IsShown() and not row("Friends 5/7").Ground:IsShown(), "cards, plain headings")
+assert(row("Aelric").Name:GetPoint(1) == "BOTTOMLEFT" and row("Aelric").Sub:GetPoint(1) == "TOPLEFT", "two-line row")
+assert(row("Jon").Name:GetPoint(1) == "LEFT" and not row("Jon").Sub:IsShown() and row("Jon").Where:GetText() == "In the Battle.net app", "one-line row")
+assert(plain(row("Aelric").Sub:GetText()) == "Lvl 24 Paladin" and row("Aelric").Where:GetText() == "Elwynn Forest", "detail: " .. tostring(row("Aelric").Sub:GetText()))
 assert(row("Aelric").Sub:GetText():find("|c", 1, true), "class in colour")
-assert(row("Eldric").Sub:GetText() == "Offline", "offline")
+assert(row("Eldric").Where:GetText() == "Offline" and not row("Eldric").Sub:IsShown(), "offline")
+assert(select(2, x(row("Aelric").Where)) == select(2, x(row("Sefa").Where)), "where column")
 -- A click whispers once no second click follows; a double-click only invites.
 stub.RunScript(row("Brannoc"), "OnClick", "LeftButton")
 assert(stub.told == nil, "whispered before a double-click could follow")
