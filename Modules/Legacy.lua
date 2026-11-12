@@ -671,6 +671,15 @@ local function nodeTip(b)
 		GameTooltip_AddBlankLineToTooltip(tip)
 		GameTooltip_AddErrorLine(tip, GENERIC_TRAIT_FRAME_EDGE_REQUIREMENTS_BUTTON_TOOLTIP)
 	end
+	-- Why a greyed talent takes no point now: maxed, or no points to pay for it.
+	local rank, max = num(n.currentRank), num(n.maxRanks)
+	if rank >= max then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		GameTooltip_AddHighlightLine(tip, "Fully learnt.")
+	elseif n.meetsEdgeRequirements and not canTake(b.psConfig, n) then
+		GameTooltip_AddBlankLineToTooltip(tip)
+		GameTooltip_AddErrorLine(tip, n.canPurchaseRank and "Not enough legacy points to learn a rank." or "You can't learn this yet.")
+	end
 	local hint = {}
 	if not tree.committing then
 		if canTake(b.psConfig, n) then hint[#hint + 1] = "Click to learn a rank." end
@@ -1096,9 +1105,12 @@ function refresh()
 			-- Apply, then Undo while something is staged, else Reset (the stock pair).
 			local any = false
 			for _, b in ipairs(treeNodes) do if b:IsShown() and num(b.psInfo.ranksPurchased) > 0 then any = true end end
-			foot = { { label = "Apply", onClick = treeApply, opts = { primary = true }, on = staged },
+			local busy = tree.committing and "Applying your changes…" or nil
+			foot = { { label = "Apply", onClick = treeApply, opts = { primary = true }, on = staged,
+					why = busy or "Nothing to apply: learn or take back a rank first." },
 				staged and { label = "Undo", onClick = treeUndo, on = true }
-				or { label = "Reset", onClick = treeReset, opts = { confirm = true }, on = any and not tree.committing } }
+				or { label = "Reset", onClick = treeReset, opts = { confirm = true }, on = any and not tree.committing,
+					why = busy or "No points are spent in this tree." } }
 		end
 	end
 	W.ShellFooter(f, {}, foot)
@@ -1106,6 +1118,8 @@ function refresh()
 	for i, d in ipairs(foot) do
 		local b = f.footerButtons.right[i]
 		ns.SetEnabled(b, d.on)
+		-- A disabled one says why in its tooltip.
+		b.psTip = not d.on and d.why or nil
 	end
 	W.ShellBody(f, h)
 end
