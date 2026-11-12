@@ -51,6 +51,14 @@ stub.RunScript(boxes[1], "OnTextChanged", true)
 PolestarModal.Box.Action:Click()
 assert(stub.moneyMoved[1] == "deposit" and stub.moneyMoved[2] == 2 and stub.moneyMoved[3] == 120000, "deposit")
 
+-- Nothing held: Withdraw money is off and says why.
+stub.warbandMoney = 0
+stub.fire("ACCOUNT_MONEY")
+assert(not fb[3]:IsEnabled() and fb[3].psReason == "Your Warband bank holds no money.", "Withdraw money on with nothing held")
+stub.warbandMoney = 5000000
+stub.fire("ACCOUNT_MONEY")
+assert(fb[3]:IsEnabled() and not fb[3].psReason, "Withdraw money stayed off")
+
 -- Locked by another character: it says so; nothing to click.
 stub.locked[2] = Enum.BankLockedReason.NoAccountInventoryLock
 stub.fire("BANK_TABS_CHANGED", 2)

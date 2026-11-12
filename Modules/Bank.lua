@@ -408,18 +408,22 @@ function paint()
 		if #data > 0 then left[#left + 1] = { label = "Clean up", onClick = function() cleanUp(t) end } end
 		if C_Bank.DoesBankTypeSupportMoneyTransfer(t) then
 			left[#left + 1] = { label = "Deposit money", onClick = function() moneyDialog({ title = "Deposit money", text = "Into your Warband bank.", action = "Deposit" }, C_Bank.DepositMoney, t) end }
-			gates[#left] = C_Bank.CanDepositMoney(t)
+			gates[#left] = { C_Bank.CanDepositMoney(t), GetMoney() == 0 and "You have no money to deposit." or "The Warband bank cannot take money now." }
 			left[#left + 1] = { label = "Withdraw money", onClick = function()
 				moneyDialog({ title = "Withdraw money", text = "Your Warband bank holds " .. GetMoneyString(C_Bank.FetchDepositedMoney(t), true) .. ".", action = "Withdraw" }, C_Bank.WithdrawMoney, t)
 			end }
-			gates[#left] = C_Bank.CanWithdrawMoney(t)
+			gates[#left] = { C_Bank.CanWithdrawMoney(t), C_Bank.FetchDepositedMoney(t) == 0 and "Your Warband bank holds no money." or "The Warband bank cannot pay out now." }
 		end
 		if #data > 0 and C_Bank.DoesBankTypeSupportAutoDeposit(t) then
 			right[#right + 1] = { label = "Deposit all", onClick = function() deposit(t) end, opts = { primary = true } }
 		end
 	end
 	W.ShellFooter(f, left, right)
-	for i, b in ipairs(f.footerButtons.left) do ns.SetEnabled(b, gates[i] ~= false) end
+	-- Off says why in its tooltip.
+	for i, b in ipairs(f.footerButtons.left) do
+		local g = gates[i]
+		ns.SetEnabled(b, not g or g[1], g and g[2])
+	end
 	W.ShellBody(f, math.max(y + grid:GetHeight(), f.psNote:IsShown() and 24 + f.psNote:GetStringHeight() or 0) + 24)
 	-- The hovered slot's item may have moved: its secure action follows.
 	local over = PolestarUIBankSlot
