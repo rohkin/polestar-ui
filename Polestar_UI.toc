@@ -20,6 +20,7 @@ Modules\Crafting.lua
 Modules\Legacy.lua
 Modules\WorldMap.xml
 Modules\Bank.lua
+Modules\Mail.lua
 Modules\Social.lua
 Modules\Tooltips.lua
 Modules\Chat.lua

@@ -186,7 +186,7 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 | Social (`FriendsFrame`) | medium | built | [windows/social.md](windows/social.md) |
 | Merchant (`MerchantFrame`) | medium | planned | [windows/merchant.md](windows/merchant.md) |
 | Bank (`BankFrame`) | medium | built | [windows/bank.md](windows/bank.md) |
-| Mail (`MailFrame`, `OpenMailFrame`) | low | planned | [windows/mail.md](windows/mail.md) |
+| Mail (`MailFrame`, `OpenMailFrame`) | low | built | [windows/mail.md](windows/mail.md) |
 | Auction House (`AuctionHouseFrame`) | medium | planned, built last | [windows/auction.md](windows/auction.md) |
 | Trainer (`ClassTrainerFrame`) | medium | planned | [windows/trainer.md](windows/trainer.md) |
 | Gossip (`GossipFrame`) | medium | planned | [windows/gossip.md](windows/gossip.md) |
