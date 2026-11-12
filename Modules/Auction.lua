@@ -817,7 +817,8 @@ local function paintToken()
 	local why = (token.disabled or token.noneUntil) and line or price and GetMoney() < price and (ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") or nil
 	ns.Footer(f, {}, { price and { label = BUYOUT or "Buy", onClick = buyToken, opts = { primary = true } } or nil })
 	if price then ns.SetEnabled(f.footerButtons.right[1], not why, why) end
-	return 0, 24, TUTORIAL_TOKEN_ABOUT_TOKENS or ""
+	-- Under the price, what a token is for (TUTORIAL_TOKEN_ABOUT_TOKENS is only the stock help's title).
+	return 0, 24, "Bought with gold, a WoW Token can be redeemed for game time."
 end
 
 -- TOKEN_BUY_RESULT, as the stock token results take it.

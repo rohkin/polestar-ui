@@ -1,7 +1,7 @@
 --@ title: Auction House: WoW Token
 --@ roots: PolestarUIAuction
 --@ stubs: stub_npc.lua, stub_auction.lua
--- The stock WoW Token category, listed only where the client shows it (C_WowTokenUI.ShouldDisplayInAuctionHouse): the market price asked for as it opens, and Buy (C_WowTokenPublic.BuyToken from its click) while the player can pay it; the game's token dialog confirms. None for sale says so and holds Buy for a minute. A token put up for sale is the game's window's: ours says so and keeps it off the well. Shown last: the token page.
+-- The stock WoW Token category, listed only where the client shows it (C_WowTokenUI.ShouldDisplayInAuctionHouse): the market price asked for as it opens, and Buy (C_WowTokenPublic.BuyToken from its click) while the player can pay it; the game's token dialog confirms. None for sale says so and holds Buy for a minute. A token put up for sale is the game's window's: ours says so and keeps it off the well. Shown last: the token page, its body saying what a token is for.
 local T = Enum.PlayerInteractionType
 stub.interact(T.Auctioneer)
 local f = PolestarUIAuction
@@ -42,3 +42,4 @@ PolestarModal.Box.Action:Click()
 ClearCursor()
 f.tabButtons[1]:Click()
 nav("WoW Token"):Click()
+assert(f.psEmpty:IsShown() and tostring(f.psEmpty:GetText()):find("game time", 1, true), "the token page's body empty")

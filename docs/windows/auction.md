@@ -53,6 +53,7 @@ ours is on.
     the least is refused. The footer: Back, Refresh, Set/Remove favorite.
   - WoW Token: the market price and Buy (`C_WowTokenPublic.BuyToken`), which
     the game's token dialog confirms; none for sale holds Buy a minute.
+    The body says what a token is for (redeemed for game time).
 - **Sell:** drop an item on the well, or right-click it in the bags (the
   well's tooltip: the item, or how to put one there). Two
   columns: quantity (only when more than one could go; a commodity starts at
