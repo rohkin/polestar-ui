@@ -246,6 +246,8 @@ C_EquipmentSet = {
 	UseEquipmentSet = function(id) stub.equippedSet = id; return true end,
 	PickupEquipmentSet = function(id) stub.pickedSet = id end,
 	CreateEquipmentSet = function(name, icon)
+		stub.createdIgnoring = {}
+		for k in pairs(stub.ignoredForSave) do stub.createdIgnoring[k] = true end
 		SETS[9] = { name, icon, false, 0 }
 		setOrder[#setOrder + 1] = 9
 	end,

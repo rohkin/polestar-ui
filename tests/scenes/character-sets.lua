@@ -27,5 +27,5 @@ local field
 for _, c in ipairs({ ed:GetChildren() }) do if c.Field then field = c.Field end end
 field:SetText("Raid")
 PolestarModal.Box.Action:Click()
-assert(stub.ignoredForSave[4] and stub.ignoredForSave[19], "shirt and tabard saved")
+assert(stub.createdIgnoring[4] and stub.createdIgnoring[19], "shirt and tabard saved")
 assert(sf.rows[3]:IsShown() and sf.rows[3].Name:GetText() == "Raid" and sf.rows[3].Mark:IsShown(), "new set not listed")
