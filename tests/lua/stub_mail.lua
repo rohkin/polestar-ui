@@ -144,19 +144,41 @@ C_ChatInfo = C_ChatInfo or {}
 function C_ChatInfo.PerformEmote(e) stub.emote = e end
 function C_ChatInfo.CancelEmote() stub.emote = nil end
 
--- Friends and guild, for the To list.
-C_FriendList = C_FriendList or {}
-local FRIENDS = { "Arthas", "Jaina" }
-function C_FriendList.GetNumFriends() return #FRIENDS end
-function C_FriendList.GetFriendInfoByIndex(i) return { name = FRIENDS[i] } end
-local GUILD = { "Arator-Silvermoon", "Anduin", "Jaina" }
+-- The guild roster, asked for as the mailbox opens (To's completion reads it).
 function IsInGuild() return true end
--- Empty until the roster is asked for, as at login.
-function GetNumGuildMembers() return stub.rosterAsked and #GUILD or 0 end
-function GetGuildRosterInfo(i) return GUILD[i] end
+function GetNumGuildMembers() return stub.rosterAsked and 3 or 0 end
 C_GuildInfo = C_GuildInfo or {}
 function C_GuildInfo.GuildRoster() stub.rosterAsked = true end
 function Ambiguate(name) return (name:gsub("%-.*", "")) end
+
+-- The game's name completion: names starting with what is typed up to the
+-- cursor, in the client's order (your own characters, then friends, then the
+-- guild: Enum.AutoCompletePriority 5, 4, 3), at most n. The flags asked for
+-- are kept (stub.completeFlags).
+AUTOCOMPLETE_LIST = AUTOCOMPLETE_LIST or { MAIL = { include = 0xffffffff, exclude = 0x20 } }
+local KNOWN = {
+	{ name = "Anduin", priority = 3 }, { name = "Arthas", priority = 4 }, { name = "Arathel", priority = 5 },
+	{ name = "Arator-Silvermoon", priority = 3 }, { name = "Jaina", priority = 4 }, { name = "Aelwyn", priority = 5 },
+	{ name = "Alleria", priority = 4 },
+}
+C_AutoComplete = C_AutoComplete or {}
+function C_AutoComplete.GetAutoCompleteResults(text, n, cursor, _, include, exclude)
+	stub.completeFlags = { include, exclude }
+	local typed, out = text:sub(1, cursor):lower(), {}
+	for p = 6, 0, -1 do
+		for _, e in ipairs(KNOWN) do
+			if e.priority == p and #out < n and e.name:lower():sub(1, #typed) == typed then out[#out + 1] = e end
+		end
+	end
+	return out
+end
+function strlenutf8(s) return #s end
+-- The edit box's cursor: where it was put, else the end (new text puts it there).
+local M = stub.Methods
+function M.SetCursorPosition(self, at) self.cursorAt, self.cursorText = at, self.text end
+function M.GetUTF8CursorPosition(self)
+	return self.cursorText == self.text and self.cursorAt or #(self.text or "")
+end
 
 -- Shift is the auto-loot toggle (MAILAUTOLOOTTOGGLE).
 function IsModifiedClick(what) return IsShiftKeyDown() and (what == nil or what == "MAILAUTOLOOTTOGGLE") end

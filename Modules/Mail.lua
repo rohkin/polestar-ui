@@ -454,39 +454,136 @@ local function caption(parent, text, x, y)
 	return t
 end
 
--- Friends and guild members, for the To field: ours, not the stock
--- autocomplete (an addon edit box has none).
-local function names()
-	local list, seen = {}, {}
-	local function add(n) if n and not seen[n] then seen[n] = true; list[#list + 1] = n end end
-	for i = 1, C_FriendList.GetNumFriends() do
-		local info = C_FriendList.GetFriendInfoByIndex(i)
-		add(info and info.name)
-	end
-	if IsInGuild() then
-		for i = 1, GetNumGuildMembers() do
-			local n = GetGuildRosterInfo(i)
-			add(n and Ambiguate(n, "mail"))
-		end
-	end
-	return list
+-- To: the game's name completion, as the stock SendMailNameEditBox
+-- (AutoCompleteEditBoxTemplate, AUTOCOMPLETE_LIST.MAIL): the client's names
+-- in the client's order (your own characters, then friends, guild...), the
+-- rest of the first one filled in and highlighted as you type, a list under
+-- the field that Tab and the arrows walk and Enter takes. The list is ours:
+-- the stock AutoCompleteBox is chat's too, and our writes on it would taint
+-- chat (docs/CLIENT.md rule 15).
+local NAMES = 5 -- AUTOCOMPLETE_MAX_BUTTONS
+local TAGS = { "Recent", "Group", "Guild", "Friend" } -- by Enum.AutoCompletePriority; none for your characters
+local complete -- the list under To
+
+local function lookup(text, n, cursor)
+	local mail = AUTOCOMPLETE_LIST and AUTOCOMPLETE_LIST.MAIL
+	if not (mail and C_AutoComplete and C_AutoComplete.GetAutoCompleteResults) then return {} end
+	return C_AutoComplete.GetAutoCompleteResults(text, n, cursor, true, mail.include, mail.exclude) or {}
 end
 
-local function suggest(box)
-	local typed, items = box:GetText():lower(), {}
-	if typed ~= "" then
-		for _, n in ipairs(names()) do
-			local low = n:lower()
-			if #items < 8 and low ~= typed and low:sub(1, #typed) == typed then
-				items[#items + 1] = { text = n, onClick = function() box:SetText(n); send.Subject:SetFocus() end }
-			end
-		end
+local function selectName(i)
+	complete.psSel = i
+	for k, r in ipairs(complete.rows) do r.Sel:SetShown(k == i) end
+end
+
+-- Tab, Shift-Tab and the arrows: the next or previous name, round
+-- (AutoComplete_IncrementSelection); false when no list shows.
+local function stepName(up)
+	if not complete:IsShown() then return false end
+	local n, i = complete.psCount, complete.psSel
+	selectName(up and (i <= 1 and n or i - 1) or i % n + 1)
+	return true
+end
+
+local function pickName(i)
+	local box, name = send.To, Ambiguate(complete.rows[i].psName, "none")
+	complete:Hide()
+	box:SetText(name)
+	box:SetCursorPosition(#name)
+	box:SetFocus()
+end
+
+-- The list for what is typed up to the cursor (AutoComplete_Update): one more
+-- asked than shown, so a full list ends in "...".
+local function listNames(text, cursor)
+	if text == "" or cursor > #text then return complete:Hide() end
+	local list = lookup(text, NAMES + 1, cursor)
+	-- An exact match alone is no suggestion.
+	if #list == 1 and list[1].name == text then list[1] = nil end
+	local shown = math.min(#list, NAMES)
+	for i = 1, shown do
+		local r = complete.rows[i]
+		local more = i == NAMES and #list > NAMES
+		r.psName = list[i].name
+		r.Name:SetText(more and "..." or Ambiguate(list[i].name, "mail"))
+		r.Tag:SetText(not more and TAGS[list[i].priority] or "")
+		r:SetEnabled(not more)
+		r:Show()
 	end
-	if #items > 0 then
-		W.ShowMenu(box, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = box:GetWidth() })
-	elseif W.MenuShown(box) then
-		W.HideMenu()
+	for i = shown + 1, NAMES do complete.rows[i]:Hide() end
+	if shown == 0 then return complete:Hide() end
+	complete.psCount = #list > NAMES and NAMES - 1 or shown
+	complete:SetHeight(shown * 24 + 30)
+	complete:Show()
+	selectName(1)
+end
+
+local function buildComplete(box)
+	complete = CreateFrame("Frame", NAME .. "To", send)
+	complete:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -4)
+	complete:SetWidth(box:GetWidth())
+	complete:SetFrameLevel(box:GetFrameLevel() + 20)
+	complete:EnableMouse(true)
+	Theme.Skin(complete, "panel")
+	complete.rows = {}
+	for i = 1, NAMES do
+		local r = CreateFrame("Button", nil, complete)
+		r:SetSize(box:GetWidth() - 2, 24)
+		r:SetPoint("TOPLEFT", complete, "TOPLEFT", 1, -(4 + (i - 1) * 24))
+		W.Hover(r)
+		r.Sel = r:CreateTexture(nil, "BACKGROUND")
+		r.Sel:SetTexture("Interface\\Buttons\\WHITE8X8")
+		r.Sel:SetAllPoints(r)
+		W.Painter(r.Sel, function(t) t:SetVertexColor(Theme.Wash("selected")) end)
+		r.Name = W.Text(r, "label", "text")
+		r.Name:SetPoint("LEFT", r, "LEFT", 10, 0)
+		r.Tag = W.Text(r, "small", "textDim")
+		r.Tag:SetPoint("RIGHT", r, "RIGHT", -10, 0)
+		r:SetScript("OnClick", function() pickName(i) end)
+		complete.rows[i] = r
 	end
+	local hint = W.Text(complete, "small", "textMuted")
+	hint:SetPoint("BOTTOMLEFT", complete, "BOTTOMLEFT", 10, 7)
+	hint:SetText("Tab or arrows, then Enter.")
+	complete:Hide()
+
+	local erasing -- Backspace held: no list, no completion (AutoCompleteEditBox_OnKeyDown)
+	box:SetScript("OnKeyDown", function(_, key) if key == "BACKSPACE" then erasing = true end end)
+	box:SetScript("OnKeyUp", function(_, key) if key == "BACKSPACE" then erasing = false end end)
+	box:HookScript("OnTextChanged", function(self, user)
+		if user and not erasing then listNames(self:GetText(), self:GetUTF8CursorPosition())
+		elseif user or self:GetText() == "" then complete:Hide() end
+	end)
+	-- Typing at the end fills in the rest of the first name, highlighted, so
+	-- the next letter types over it (AutoCompleteEditBox_AddHighlightedText).
+	box:SetScript("OnChar", function(self)
+		local text = self:GetText()
+		local cursor = self:GetUTF8CursorPosition()
+		if cursor ~= strlenutf8(text) then return end
+		local first = lookup(text, 1, cursor)[1]
+		if not (first and first.name) then return end
+		-- SetText reports no typing, so the list is drawn first.
+		listNames(text, cursor)
+		local name = Ambiguate(first.name, "mail")
+		self:SetText(name)
+		self:HighlightText(#text, #name)
+		self:SetCursorPosition(#text)
+	end)
+	box:SetScript("OnArrowPressed", function(_, key) if key == "UP" or key == "DOWN" then stepName(key == "UP") end end)
+	box:SetScript("OnTabPressed", function() if not stepName(IsShiftKeyDown()) then send.Subject:SetFocus() end end)
+	box:SetScript("OnEnterPressed", function()
+		if complete:IsShown() then return pickName(complete.psSel) end
+		send.Subject:SetFocus()
+	end)
+	box:SetScript("OnEscapePressed", function(self)
+		if complete:IsShown() then return complete:Hide() end
+		self:ClearFocus()
+	end)
+	-- A click on the list takes the box's focus first: the list stays for it.
+	box:HookScript("OnEditFocusLost", function(self)
+		self:HighlightText(0, 0)
+		if not complete:IsMouseOver() then complete:Hide() end
+	end)
 end
 
 -- The message: a multi-line box scrolled in its well, following the cursor.
@@ -583,10 +680,7 @@ local function buildSend()
 	caption(send, "Subject", x + 236, y)
 	send.To = ns.TextField(send, 220, 77)
 	send.To:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
-	send.To:HookScript("OnTextChanged", function(self, user)
-		if user then suggest(self) end
-		canSend()
-	end)
+	send.To:HookScript("OnTextChanged", canSend)
 	send.Subject = ns.TextField(send, w - 236, 64)
 	send.Subject:SetPoint("TOPLEFT", send, "TOPLEFT", x + 236, -(y + 18))
 	send.Subject:HookScript("OnTextChanged", canSend)
@@ -594,8 +688,9 @@ local function buildSend()
 	caption(send, "Message", x, y)
 	send.Body = messageBox(send, w)
 	send.Body.Well:SetPoint("TOPLEFT", send, "TOPLEFT", x, -(y + 18))
-	-- Tab walks To, Subject, Message; Enter in Subject goes on to the message.
-	send.To:SetScript("OnTabPressed", function() send.Subject:SetFocus() end)
+	-- Tab walks To, Subject, Message (To's Tab walks its list first); Enter
+	-- in To or Subject goes on.
+	buildComplete(send.To)
 	send.Subject:SetScript("OnTabPressed", function() send.Body:SetFocus() end)
 	send.Subject:SetScript("OnEnterPressed", function() send.Body:SetFocus() end)
 	send.Body:SetScript("OnTabPressed", function() send.To:SetFocus() end)
@@ -690,7 +785,7 @@ local function build()
 	buildSend()
 	buildLetter()
 	-- As the stock show and hide: the inbox fetched, the guild roster asked
-	-- for (the To list reads it). Not the read emote: PerformEmote has
+	-- for (To's completion reads it). Not the read emote: PerformEmote has
 	-- restrictions, and ours opens from the interaction, not a click.
 	f:HookScript("OnShow", function()
 		M.RefreshInbox()

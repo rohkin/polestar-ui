@@ -32,8 +32,15 @@ Opened by the interaction manager (MailInfo), taken as above
   `DELETE_MONEY`); closing a letter whose copy was taken and that holds
   nothing more deletes it (not a pending sale's), as the stock `OnHide`.
   Outbid and cancelled auction letters are plain letters with money or items.
-- **Send:** To (our own list from friends and guild), Subject, Body (Tab walks
-  them, Enter in Subject goes on), 12 attachment wells
+- **Send:** To, Subject, Body (Tab walks them, Enter in To or Subject goes
+  on). To completes names as the stock `SendMailNameEditBox`: the game's
+  `C_AutoComplete.GetAutoCompleteResults` with `AUTOCOMPLETE_LIST.MAIL`, in
+  its order (your characters, then friends, then guild); typing at the end
+  fills in the rest of the first name, highlighted; a list of five under the
+  field (the fifth "..." when more match; a tag says Friend, Guild, Group or
+  Recent) that Tab, Shift-Tab and the arrows walk, Enter or a click takes,
+  Escape closes; Backspace lists nothing. The list is ours: the stock
+  `AutoCompleteBox` is chat's too (CLIENT.md rule 15). Then 12 attachment wells
   (`ClickSendMailItemButton`, never while a spell waits for its item; how to
   attach in the well's tooltip; an item dropped on the page takes the first free
   well; `SetSendMailShowing` while the page shows, so the bags' right-click
@@ -55,7 +62,7 @@ Opened by the interaction manager (MailInfo), taken as above
   perform it. The stationery art and the gamepad options menu have no counterpart.
 - **Taint:** no protected calls.
 - **Tests:** `stub_mail.lua` (inbox headers, attachments, COD, invoices,
-  waiting mail, the send lock; its attach fires `MAIL_SEND_INFO_UPDATE` as
-  the client does); scenes `mail` (inbox, no emote, Open all, waiting mail,
+  waiting mail, the send lock, name completion in the client's order; its
+  attach fires `MAIL_SEND_INFO_UPDATE` as the client does); scenes `mail` (inbox, no emote, Open all, waiting mail,
   shift-click), `mail-open` (a letter with its copy, attachments and COD,
   Reply, Delete and Return), `mail-invoice`, `mail-send`.
