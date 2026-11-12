@@ -9,7 +9,9 @@ local function item(name, id, icon, count, quality, canUse) return { name, id, i
 
 -- letter = { package, stationery, sender, subject, money, cod, days, read, gm, canDelete, body, items }
 stub.inbox = {
-	{ 133784, 134939, "Auction House", "Auction successful: Linen Cloth", 48750, 0, 29.6, false, false, true, "", {} },
+	{ 133784, 134939, "Auction House", "Auction successful: Linen Cloth", 48750, 0, 29.6, false, false, true, "", {},
+		-- GetInboxInvoiceInfo: type, item, player, bid, buyout, deposit, cut, delay, etaHour, etaMin, count, commerce
+		invoice = { "seller", "Linen Cloth", "Arthas", 50000, 50000, 1250, 2500, 0, nil, nil, 1, false } },
 	{ 133784, 134939, "Thrall", "Supplies for the front", 0, 0, 2.4, false, false, false, "Take these to Ashenvale.",
 		{ [1] = item("Silk Cloth", 4306, 132905, 20, 1), [3] = item("Mageweave Cloth", 4338, 132892, 8, 1) } },
 	{ 132940, 134939, "Garrosh", "The axe, as agreed", 0, 250000, 0.4, false, false, false,
@@ -32,7 +34,7 @@ function GetInboxHeaderInfo(i)
 	if not l then return end
 	local first, link
 	for a = 1, 16 do if l[12][a] then first, link = l[12][a][4], "item:" .. l[12][a][2]; break end end
-	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, l.textCreated or false, not l[9], l[9], first, link
+	return l[1], l[2], l[3], l[4], l[5], l[6], l[7], itemCount(l), l[8], false, l.textCreated or false, not (l[9] or l.invoice), l[9], first, link
 end
 function GetInboxText(i)
 	stub.inbox[i][8] = true

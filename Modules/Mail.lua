@@ -119,6 +119,72 @@ local function reply()
 	send.Body:SetFocus()
 end
 
+-- The invoice under an auction's letter (the stock OpenMailInvoiceFrame), or a
+-- crafting order's (ConsortiumMailFrame): label and amount lines.
+local invoiceLines = {}
+local function invoiceLine(k, y, label, copper, color)
+	local l = invoiceLines[k]
+	if not l then
+		l = { label = W.Text(letter, "small", "textDim"), money = ns.Money(letter) }
+		l.label:SetWidth(LETTER_W - 48)
+		l.label:SetWordWrap(true)
+		l.label:SetJustifyH("LEFT")
+		invoiceLines[k] = l
+	end
+	l.label:SetText(label)
+	l.label:ClearAllPoints()
+	l.label:SetPoint("TOPLEFT", letter, "TOPLEFT", 24, -y)
+	l.label:Show()
+	l.money:SetShown(copper ~= nil)
+	if copper then
+		ns.SetMoney(l.money, copper, color)
+		l.money:ClearAllPoints()
+		l.money:SetPoint("RIGHT", letter, "TOPRIGHT", -24, -(y + 7))
+	end
+	return y + math.max(16, math.ceil(l.label:GetStringHeight())) + 6
+end
+
+-- The invoice's lines from y; returns the y under them.
+local function paintInvoice(y, isInvoice, isConsortium)
+	local k = 0
+	local function line(...) k = k + 1; y = invoiceLine(k, y, ...) end
+	local kind, item, who, bid, _, deposit, cut, _, etaHour, etaMin, count, commerce = nil
+	if isInvoice then kind, item, who, bid, _, deposit, cut, _, etaHour, etaMin, count, commerce = GetInboxInvoiceInfo(open) end
+	if kind then
+		who = who or (kind == "buyer" and "Multiple sellers" or "Multiple buyers")
+		if count and count > 1 then item = ("%s (%d)"):format(item, count) end
+		if kind == "buyer" then
+			line("Item purchased: " .. item)
+			if not commerce then line("Sold by: " .. who) end
+			line("Amount paid:", bid)
+		else
+			line("Item sold: " .. item)
+			if not commerce then line("Purchased by: " .. who) end
+			if kind == "seller" then
+				line(count and count > 1 and ("Sale price (each of %d):"):format(count) or "Sale price:", count and count > 1 and bid / count or bid)
+				line("Deposit:", deposit)
+				line("Auction house cut:", cut, "danger")
+				line("Amount received:", bid + deposit - cut)
+			else
+				line("Pending funds:", bid + deposit - cut)
+				line("Not yet sent.")
+				if etaHour then line(("The money arrives at %02d:%02d."):format(etaHour, etaMin or 0)) end
+			end
+		end
+	elseif isConsortium and C_Mail.GetCraftingOrderMailInfo then
+		local info = C_Mail.GetCraftingOrderMailInfo(open)
+		if info then
+			if info.recipeName then line("Crafting order: " .. info.recipeName) end
+			if info.crafterName then line("Crafter: " .. info.crafterName) end
+			if info.customerName then line("Customer: " .. info.customerName) end
+			if (info.crafterNote or "") ~= "" then line(info.crafterNote) end
+			if (info.commissionPaid or 0) > 0 then line("Commission:", info.commissionPaid) end
+		end
+	end
+	for j = k + 1, #invoiceLines do invoiceLines[j].label:Hide(); invoiceLines[j].money:Hide() end
+	return k > 0 and y + 14 or y
+end
+
 local function buildLetter()
 	letter = ns.Flyout(f, NAME .. "Letter", LETTER_W)
 	letter:Hide()
@@ -159,12 +225,13 @@ local function paintLetter()
 	letter.Sender:SetText(sender or "Unknown")
 	letter.Subject:SetText(subject or "")
 	-- Reading the text marks the letter read, as the stock open does.
-	local body, _, _, takeable = GetInboxText(open)
+	local body, _, _, takeable, isInvoice, isConsortium = GetInboxText(open)
 	letter.Text:SetText(body or "")
 	local y = 24 + 24 + 6 + 16 + 20
 	letter.Text:ClearAllPoints()
 	letter.Text:SetPoint("TOPLEFT", letter, "TOPLEFT", 24, -y)
-	y = y + math.ceil(letter.Text:GetStringHeight()) + 20
+	if (body or "") ~= "" then y = y + math.ceil(letter.Text:GetStringHeight()) + 20 end
+	y = paintInvoice(y, isInvoice, isConsortium)
 	-- As the stock letter: a copy of the letter to take, its money, its items.
 	local list = {}
 	if takeable and not textCreated then list[1] = "letter" end
