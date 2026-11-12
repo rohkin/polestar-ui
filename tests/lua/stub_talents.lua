@@ -6,6 +6,7 @@
 --   stub.specGroup   the active spec group (1)
 function UnitLevel(unit) return 24 end
 function UnitClass(unit) return "Mage", "MAGE", 8 end
+function GetClassAtlas(className) return ("classicon-%s"):format(className) end
 
 local data
 do

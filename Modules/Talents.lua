@@ -473,7 +473,7 @@ local function refresh()
 	local _, cls = UnitClass("player")
 	f.psName:SetText((UnitClass("player")))
 	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
-	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. cls)
+	f.psClass:SetAtlas(GetClassAtlas(strlower(cls)))
 	-- The stock tabs as nav rows: the active spec with the dot, the other its points spent.
 	-- Secondary stays listed before dual spec is learnt: locked, receding
 	-- (count 0), its tooltip saying how to learn it, as the stock tab.

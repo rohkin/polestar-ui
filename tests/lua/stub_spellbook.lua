@@ -2,6 +2,7 @@
 -- mage: General, Arcane and Fire, a few ranks, a passive, a future spell.
 function UnitLevel(unit) return 24 end
 function UnitClass(unit) return "Mage", "MAGE", 8 end
+function GetClassAtlas(className) return ("classicon-%s"):format(className) end
 
 Enum.SpellBookSpellBank = { Player = 0, Pet = 1 }
 Enum.SpellBookItemType = { None = 0, Spell = 1, FutureSpell = 2, PetAction = 3, Flyout = 4 }

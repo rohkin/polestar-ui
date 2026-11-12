@@ -17,3 +17,4 @@ stub.inCombat = false
 assert(not stub.blocked, "spell pickup blocked in combat")
 stub.RunScript(row, "OnDragStart")
 assert(stub.pickedSpell, "no spell pickup out of combat")
+assert(PolestarUISpellbook.psClass:GetAtlas() == "classicon-mage", "class icon not the class atlas")

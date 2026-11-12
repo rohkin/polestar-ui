@@ -22,3 +22,4 @@ assert(o:GetFrameStrata() == "HIGH" and o:GetFrameLevel() > 40, "overlay under t
 assert(select(2, o:GetPoint(1)) ~= TalentMicroButton and o:GetLeft() == TalentMicroButton:GetLeft() and o:GetWidth() == TalentMicroButton:GetWidth(), "overlay anchored to the micro button, or not over it")
 stub.RunScript(o, "PostClick", "LeftButton")
 assert(PolestarUITalents:IsShown() and not PlayerSpellsFrame:IsShown(), "micro")
+assert(PolestarUITalents.psClass:GetAtlas() == "classicon-mage", "class icon not the class atlas")

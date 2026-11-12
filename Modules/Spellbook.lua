@@ -333,7 +333,7 @@ local function refresh()
 	if not found then section = cats[1] and cats[1].key end
 	f.psName:SetText(UnitClass("player"))
 	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
-	f.psClass:SetTexture("Interface\\Icons\\ClassIcon_" .. select(2, UnitClass("player")))
+	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.SetIconState(f.psFilter, select(2, filterItems()))
 	local list = {}
 	if query ~= "" then
