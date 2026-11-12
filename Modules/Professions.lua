@@ -214,7 +214,7 @@ local function newCard()
 	local well
 	well, c.Icon = ns.ItemWell(c, ICON)
 	well:SetPoint("TOPLEFT", c, "TOPLEFT", PAD, -PAD)
-	c.Unlearn = W.IconButton(c, "cross", 24, "Unlearn", function() unlearn(c) end, 12)
+	c.Unlearn = W.IconButton(c, "cross", 24, UNLEARN_SKILL_TOOLTIP or "Unlearn", function() unlearn(c) end, 12)
 	c.Unlearn:SetPoint("TOPRIGHT", c, "TOPRIGHT", -10, -10)
 	c.Name = W.Text(c, "title", "text")
 	c.Name:SetPoint("TOPLEFT", well, "TOPRIGHT", 12, 0)
