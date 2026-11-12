@@ -169,6 +169,11 @@ that opened it. A door we miss is a bug.
 window did works: if a feature is not built yet, the window links to the stock
 frame for it ("Open the game's view") rather than leave it out silently.
 
+**The Stock First Rule.** A replacement implements everything the stock window
+has before any improvement; a missing stock feature is a bug. Only what the
+client forbids addon code is left to the stock window, and the window's doc
+says why.
+
 ## Element Catalogue
 
 Ordered by build increment. Each entry: what it becomes, its layout, and its
