@@ -66,11 +66,17 @@ function T.GetFilterableInventorySlotName(i) return SLOTS[i] end
 function T.IsInventorySlotFiltered(i) return hidden[i] or false end
 function T.SetInventorySlotFilter(i, shown) hidden[i] = not shown end
 function T.AreAnyInventorySlotsFiltered() return next(hidden) ~= nil and (hidden[1] or hidden[2] or hidden[3]) or false end
+-- The item level filter (the stock search box's "~20", "10-20"): each recipe's product level.
+local LEVEL = { [2963] = 5, [18560] = 55, [2385] = 10, [3845] = 18, [3914] = 12, [3755] = 15 }
+only.lo, only.hi = 0, 0
+function T.SetRecipeItemLevelFilter(lo, hi) only.lo, only.hi = lo, hi end
 function T.GetFilteredRecipeIDs()
 	local ids = {}
 	for _, r in ipairs(RECIPES) do
 		local slot = SLOT_OF[r[1]]
-		if (not r[8] or stub.enchanting) and not (only.skill and r[4] == 3) and not (only.make and T.GetCraftableCount(r[1]) == 0) and not (slot and hidden[slot]) then
+		local lvl = LEVEL[r[1]] or 1
+		if (not r[8] or stub.enchanting) and not (only.skill and r[4] == 3)
+			and (only.lo == 0 or (lvl >= only.lo and lvl <= only.hi)) and not (only.make and T.GetCraftableCount(r[1]) == 0) and not (slot and hidden[slot]) then
 			ids[#ids + 1] = r[1]
 		end
 	end

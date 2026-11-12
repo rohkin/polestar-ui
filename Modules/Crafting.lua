@@ -75,9 +75,36 @@ end
 -- The learnt recipes by category in the client's order, "Can make now" and
 -- "Recent" first; while searching, only the categories with a match.
 -- -> sections, recipe info by ID.
+-- A search for item levels, as the stock search box takes it: "~20" (18 to
+-- 22) or "10-20" (or one level). -> min, max, or nil for a name.
+local function levels(text)
+	local near = text:match("^~(%d+)$")
+	if near then return math.max(1, near - 2), near + 2 end
+	local lo, hi = text:match("^(%d+)%s*%-*%s*(%d*)$")
+	if not lo then return end
+	lo = math.max(1, math.min(10000, tonumber(lo)))
+	return lo, math.max(lo, math.min(10000, tonumber(hi) or lo))
+end
+
+-- The client's item level filter (it acts on GetFilteredRecipeIDs), set for
+-- a level search and cleared after one, as the stock search box does.
+local levelFiltered = false
+local function levelFilter(text)
+	local set = C_TradeSkillUI.SetRecipeItemLevelFilter
+	if not set then return false end
+	local lo, hi = levels(text)
+	if lo then
+		set(lo, hi)
+	elseif levelFiltered then
+		set(0, 0)
+	end
+	levelFiltered = lo ~= nil
+	return levelFiltered
+end
+
 local function sections()
 	local byID, cats, list = {}, {}, {}
-	local match = query ~= "" and query
+	local match = query ~= "" and not levelFiltered and query
 	for _, id in ipairs(C_TradeSkillUI.GetFilteredRecipeIDs() or {}) do
 		local info = C_TradeSkillUI.GetRecipeInfo(id)
 		if info and info.learned and not info.isDummyRecipe and (not match or info.name:lower():find(match, 1, true)) then
@@ -95,7 +122,7 @@ local function sections()
 		end
 	end
 	table.sort(list, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.n < b.n end)
-	if match then return list, byID end
+	if query ~= "" then return list, byID end
 	local make, last = { key = "make", label = "Can make now", recipes = {} }, { key = "recent", label = "Recent", recipes = {} }
 	for _, c in ipairs(list) do
 		for _, r in ipairs(c.recipes) do
@@ -717,6 +744,7 @@ end
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
 		query = (text or ""):lower()
+		levelFilter(query)
 		if f and f:IsShown() then refresh() end
 	end })
 	ns.Dock(f)
@@ -847,6 +875,7 @@ local function build()
 		PlaySound(SOUNDKIT.UI_PROFESSIONS_WINDOW_CLOSE)
 		if not closing then C_TradeSkillUI.CloseTradeSkill() end
 		closing, wanted = nil, nil
+		if levelFiltered then levelFilter("") end
 	end)
 	Polestar.CloseOnEscape(NAME)
 end
