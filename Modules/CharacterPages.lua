@@ -516,11 +516,28 @@ end)
 -- PVPRankFrame reads it): the rank and its title, the points to the next.
 
 local PVP_RANK_FACTION = 2800
+ns.PVP_RANK_FACTION = PVP_RANK_FACTION
 
 local function rankTitle(rank)
 	if not rank or rank <= 0 then return PVP_RANK_0_NAME or "Unranked" end
 	local alliance = UnitFactionGroup("player") == "Alliance" and 1 or 0
 	return GetText("PVP_RANK_" .. (Enum.PvPRanks.Rank_1 + rank - 1) .. "_" .. alliance, UnitSex("player"))
+end
+ns.PvPRankTitle = rankTitle
+
+-- "Season ends in 12 days" (SEASON_ENDS_IN_TIME), the two largest units as
+-- the stock countdown; nil when the client knows no end.
+local function seasonEnds()
+	local left = C_SeasonInfo and C_SeasonInfo.GetTimeUntilCurrentPVPSeasonEnd and C_SeasonInfo.GetTimeUntilCurrentPVPSeasonEnd() or 0
+	if left <= 0 then return end
+	local d, h, m = math.floor(left / 86400), math.floor(left / 3600) % 24, math.floor(left / 60) % 60
+	local parts = {}
+	local function add(n, one, many) if n > 0 and #parts < 2 then parts[#parts + 1] = n .. " " .. (n == 1 and one or many) end end
+	add(d, "day", "days")
+	add(h, "hour", "hours")
+	if d == 0 then add(m, "minute", "minutes") end
+	if d == 0 and h == 0 and m == 0 then parts[1] = math.floor(left) .. " seconds" end
+	return (SEASON_ENDS_IN_TIME or "Season ends in %s"):format(table.concat(parts, " "))
 end
 
 pages.PVPRankFrame = {
@@ -530,8 +547,16 @@ pages.PVPRankFrame = {
 		v:SetWidth(width)
 		v.Rank = W.Text(v, "display", "text")
 		v.Rank:SetPoint("TOPLEFT", v, "TOPLEFT", 0, 0)
+		-- The season's countdown, kept to the second while shown.
 		v.Season = W.Text(v, "small", "textDim")
 		v.Season:SetPoint("TOPLEFT", v.Rank, "BOTTOMLEFT", 0, -6)
+		local wait = 0
+		v:SetScript("OnUpdate", function(self, dt)
+			wait = wait - dt
+			if wait > 0 then return end
+			wait = 1
+			self.Season:SetText(seasonEnds() or "")
+		end)
 		v.Points = W.Text(v, "number", "textDim")
 		v.Points:SetPoint("TOPRIGHT", v, "TOPRIGHT", 0, -50)
 		v.Bar = W.ProgressLine(v, 3)
@@ -554,10 +579,12 @@ pages.PVPRankFrame = {
 		local rank = info.renownLevel or 0
 		v.Rank:SetText(rank > 0 and ("%s · %s"):format(rankTitle(rank), (PVP_RANK_NUMBER or "Rank %d"):format(rank)) or rankTitle(rank))
 		local season = GetCurrentArenaSeason and GetCurrentArenaSeason() or 0
-		v.Season:SetText(season > 0 and (EXPANSION_SEASON_NAME or "%sSeason %d"):format("", season) or "")
-		v.psSub = v.Season:GetText() ~= "" and v.Season:GetText() or nil
+		v.psSub = season > 0 and (EXPANSION_SEASON_NAME or "%sSeason %d"):format("", season) or nil
+		v.Season:SetText(seasonEnds() or "")
 		local earned, need = info.renownReputationEarned or 0, info.renownLevelThreshold or 0
-		v.Points:SetText(need > 0 and ("%s / %s"):format(BreakUpLargeNumbers(earned), BreakUpLargeNumbers(need)) or "")
+		local points = PVP_RANK_CURRENT_PROGRESS and PVP_RANK_CURRENT_PROGRESS:format(earned, need)
+			or ("%s / %s"):format(BreakUpLargeNumbers(earned), BreakUpLargeNumbers(need))
+		v.Points:SetText(need > 0 and points or "")
 		W.SetProgress(v.Bar, need > 0 and math.min(1, earned / need) or 1, v:GetWidth())
 		v:SetHeight(72)
 		return 96

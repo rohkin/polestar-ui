@@ -208,9 +208,23 @@ Enum.PvPRanks = { Rank_1 = 5 }
 PVP_RANK_9_1, PVP_RANK_NUMBER = "Sergeant", "Rank %d"
 EXPANSION_SEASON_NAME = "%sSeason %d"
 function GetCurrentArenaSeason() return 1 end
+-- Rank 5 of 14 this season; this week's cap is rank 7 (last week's 6); rank
+-- 6 gives a tabard. Each rank takes 2,000 points.
 C_MajorFactions = { GetMajorFactionProgressionInfo = function(id)
-	return { renownLevel = 5, renownReputationEarned = 1240, renownLevelThreshold = 2000 }
-end }
+	return { renownLevel = 5, renownReputationEarned = 1240, renownLevelThreshold = 2000, maxLevel = 14,
+		currentWeekProgressiveMaxLevel = 7, previousWeekProgressiveMaxLevel = 6 }
+end,
+	GetTotalReputationForRenownLevel = function(id, level) return level * 2000 end,
+	GetRenownRewardsForLevel = function(id, level)
+		if level == 6 then return { { icon = 134400, description = "Sergeant's Tabard" }, { icon = 134400, description = "Access to rank 6 rewards" } } end
+		return {}
+	end }
+C_SeasonInfo = { GetTimeUntilCurrentPVPSeasonEnd = function() return 12 * 86400 + 5 * 3600 end }
+PVP_RANK_SEASON_RANKUP_DESCRIPTION = "Reach %d rank points this season to earn rank %d."
+PVP_RANK_SEASON_PROGRESS = "Season progress: %d / %d rank points"
+PVP_RANK_WEEKLY_CAP_INCREASE = "This week's cap rose by %d rank points."
+PVP_RANK_NEXT_REWARD = "Rank %d rewards"
+PVP_RANK_REWARDS_VENDOR_ALLIANCE = "Buy them from the Alliance quartermasters in Stormwind."
 
 -- Statistics: two top categories (one with a sub-category) and one left
 -- folded; a money value, a count and a zero ("--").

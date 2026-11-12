@@ -185,3 +185,50 @@ ns.CharacterPanes.currency = { page = "TokenFrame", label = CURRENCY or "Currenc
 		end
 		sf.Finish()
 	end }
+
+---------------------------------------------------------------------------
+-- Honor: the stock PvP rank details (PVPRankDetailFrameMixin): what the
+-- season's top rank takes, the season's progress against this week's cap,
+-- how much the cap rose this week, and the next rank's rewards.
+
+ns.CharacterPanes.honor = { page = "PVPRankFrame", label = PVP or "Honor", order = 1,
+	build = function(holder) return detailView(holder, 0) end,
+	paint = function(sf)
+		sf.Begin()
+		local F = ns.PVP_RANK_FACTION
+		local info = C_MajorFactions and C_MajorFactions.GetMajorFactionProgressionInfo(F)
+		if not info then
+			sf.psTitle = PVP or "Honor"
+			return sf.Finish(PVP_RANK_DETAIL_UNAVAILABLE or "No PvP rank this season.")
+		end
+		local c, total = sf.c, function(level) return C_MajorFactions.GetTotalReputationForRenownLevel(F, level or 0) or 0 end
+		local rank, top = info.renownLevel or 0, info.maxLevel or 0
+		local cap = total(info.currentWeekProgressiveMaxLevel)
+		local rise = cap - total(info.previousWeekProgressiveMaxLevel)
+		local mine = total(rank) + (info.renownReputationEarned or 0)
+		sf.psTitle = ns.PvPRankTitle(rank)
+		if rank > 0 then c.text("label", "textDim", (PVP_RANK_NUMBER or "Rank %d"):format(rank), 0) end
+		if PVP_RANK_SEASON_RANKUP_DESCRIPTION then
+			c.text("body", "textDim", PVP_RANK_SEASON_RANKUP_DESCRIPTION:format(total(top), top), 10)
+		end
+		if mine > 0 and cap == 0 then
+			c.text("body", "text", (PVP_RANK_SEASON_PROGRESS_NO_MAX or "Season progress: %d"):format(mine), 14)
+		elseif mine > 0 then
+			c.text("body", "text", (PVP_RANK_SEASON_PROGRESS or "Season progress: %d / %d"):format(mine, cap), 14)
+		end
+		if rise > 0 then c.text("body", "textDim", (PVP_RANK_WEEKLY_CAP_INCREASE or "This week's cap rose by %d."):format(rise), 6) end
+		-- The next rank with rewards, and what it gives.
+		for level = rank + 1, top do
+			local rewards = C_MajorFactions.GetRenownRewardsForLevel(F, level)
+			if rewards and #rewards > 0 then
+				c.head((PVP_RANK_NEXT_REWARD or "Rank %d rewards"):format(level))
+				for _, r in ipairs(rewards) do
+					if r.description then c.tile(nil, nil, nil, r.description, r.icon) end
+				end
+				local horde = UnitFactionGroup("player") == "Horde"
+				c.text("small", "textDim", horde and PVP_RANK_REWARDS_VENDOR_HORDE or PVP_RANK_REWARDS_VENDOR_ALLIANCE or "", 10)
+				break
+			end
+		end
+		sf.Finish()
+	end }
