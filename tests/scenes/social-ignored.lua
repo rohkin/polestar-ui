@@ -30,3 +30,4 @@ assert(stub.ignoredName == "Trollface" and row("Trollface"), "ignore by name")
 stub.target = "Grimble"
 f.footerButtons.right[1]:Click()
 assert(stub.ignoredName == "Grimble" and not PolestarModal:IsShown() and row("Grimble") and row("Ignored players (3)"), "ignore the target")
+assert(f.Subtitle:GetText() == "3 ignored", "status: " .. tostring(f.Subtitle:GetText()))

@@ -47,3 +47,4 @@ assert(stub.blocked == 7 and stub.declined == 7 and not row("Rook"), "block decl
 row("Wren").Accept:Click()
 assert(stub.accepted == 8 and not row("Wren") and row("Received (1)") and row("Tamsin Ashby"), "accept")
 Polestar.Widgets.ShowMenu = show
+assert(f.Subtitle:GetText() == "1 request", "status: " .. tostring(f.Subtitle:GetText()))

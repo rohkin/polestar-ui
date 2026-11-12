@@ -1100,13 +1100,29 @@ local function statusColor()
 	return BNConnected() and PRESENCE_COLOR[presence()] or "textMuted"
 end
 
+-- Each page's title, its band status (a fact about the page now, from its
+-- list), and the line an empty list shows.
+local function online(list)
+	local n = 0
+	for _, e in ipairs(list) do if e.online then n = n + 1 end end
+	return n
+end
+local function count(n, one) return ("%d %s"):format(n, n == 1 and one or one .. "s") end
 local PAGES = {
-	friends = { "Friends", nil, "No friends yet. Add one below." }, -- subtitle: friends online
-	allies = { "Recent allies", "Players you grouped or played with lately.", "No recent allies yet." },
-	requests = { "Friend requests", "Players who asked to be your friend.", "No friend requests." },
-	ignored = { "Ignored", "You see nothing these players say.", "You ignore no one." },
-	raid = { "Raid", "Your raid by group.", nil },
-	raidinfo = { "Raid info", "Your saved instances and when they reset.", "You are saved to no instance." },
+	friends = { "Friends", function(l) return ("%d of %d friends online"):format(online(l), #l) end, "No friends yet. Add one below." },
+	allies = { "Recent allies", function(l)
+		return C_RecentAllies.IsRecentAllyDataReady() and ("%d of %d online"):format(online(l), #l) or "Not loaded yet"
+	end, "No recent allies yet." },
+	requests = { "Friend requests", function(l) return count(#l, "request") end, "No friend requests." },
+	ignored = { "Ignored", function(l)
+		local blocked = 0
+		for _, e in ipairs(l) do if e.unblock then blocked = blocked + 1 end end
+		return ("%d ignored"):format(#l - blocked) .. (blocked > 0 and (" · %d blocked"):format(blocked) or "")
+	end, "You ignore no one." },
+	raid = { "Raid", function()
+		return not IsInRaid() and "Not in a raid" or ("%d of %d players"):format(GetNumGroupMembers(), MAX_RAID_MEMBERS or 40)
+	end, nil },
+	raidinfo = { "Raid info", function(l) return count(#l, "lockout") end, "You are saved to no instance." },
 }
 
 -- The stock Friend Requests tab's one-time notice: a Real ID friend sees
@@ -1126,8 +1142,6 @@ local function refresh()
 	if page == "allies" and not alliesOn() then page = "friends" end
 	if page ~= "raid" then raidInfo = false end
 	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {}, requests = requests() }
-	local _, bnOnline = BNGetNumFriends()
-	local online = C_FriendList.GetNumOnlineFriends() + bnOnline
 	f.psName:SetText(keep("player", UnitName("player")) or "")
 	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.Color(f.psDot, statusColor())
@@ -1149,7 +1163,7 @@ local function refresh()
 	nav[#nav + 1] = { key = "raid", label = "Raid", icon = "bolt", count = IsInRaid() and GetNumGroupMembers() or 0 }
 	W.ShellNav(f, nav, page, function(k) page = k; M.Show() end)
 	local p = PAGES[page == "raid" and raidInfo and "raidinfo" or page]
-	W.ShellTitle(f, p[1], p[2] or ("%d of %d friends online"):format(online, nFriends))
+	W.ShellTitle(f, p[1], p[2](page == "raid" and raidInfo and raidLocks() or lists[page] or {}))
 	W.ShellTabs(f, nil)
 	local lead = UnitIsGroupLeader("player")
 	W.ShellFooter(f, page == "raid" and {

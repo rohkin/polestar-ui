@@ -63,3 +63,4 @@ pick("Clear filters")
 Polestar.Widgets.HideMenu()
 assert(row("Vessa") and row("Orrin") and not f.psFilter.psActive, "cleared")
 Polestar.Widgets.ShowMenu = show
+assert(f.Subtitle:GetText() == "1 of 2 online", "status: " .. tostring(f.Subtitle:GetText()))
