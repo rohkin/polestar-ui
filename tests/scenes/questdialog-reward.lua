@@ -57,3 +57,16 @@ stub.quest.money = 0
 f.footerButtons.right[1]:Click()
 local n, i = calls("GetQuestReward")
 assert(n == 1 and i == 2, "not the chosen reward")
+
+-- Polestar hidden: no marks; back through POLESTAR_HIDDEN.
+local hidden = true
+Polestar.Hidden = function() return hidden end
+Polestar.Fire("POLESTAR_HIDDEN", true)
+for _, n in ipairs({ "Militia Dagger", "Militia Buckler", "Kobold Ear Charm" }) do
+	up, coin, best = marks(n)
+	assert(not (up or coin or best), "a mark while Polestar is hidden: " .. n)
+end
+hidden = false
+Polestar.Fire("POLESTAR_HIDDEN", false)
+up, coin, best = marks("Militia Dagger")
+assert(up and best, "the marks did not come back")
