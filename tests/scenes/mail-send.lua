@@ -33,7 +33,12 @@ assert(tostring(send.To:GetText()) == "Jaina" and not PolestarMenu:IsShown(), "t
 assert(not sendBtn:IsEnabled() and sendBtn.psReason == "Enter a subject.", "Send on with no subject")
 
 -- Attachments: the cursor's item goes in, a right-click takes it out; the postage follows.
+-- Never while a spell waits for its item.
 local wells = send.Wells
+stub.cursor, stub.targeting = stub.mailItem("Runecloth", 14047, 132903, 20, 1), true
+wells[1]:Click()
+assert(not stub.sendItems[1], "attached while a spell waits for its item")
+stub.targeting = false
 stub.cursor = stub.mailItem("Runecloth", 14047, 132903, 20, 1)
 wells[1]:Click()
 stub.cursor = stub.mailItem("Arcanite Bar", 12360, 133220, 1, 2)

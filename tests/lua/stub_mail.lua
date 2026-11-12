@@ -136,6 +136,8 @@ function GameLimitedMode_IsActive() return stub.trial or false end
 
 -- The read emote: recorded, so a scene can check ours never performs it
 -- (PerformEmote has restrictions).
+-- A spell (an enchant, a stone) waiting for its item: stub.targeting.
+function SpellIsTargeting() return stub.targeting or false end
 C_ChatInfo = C_ChatInfo or {}
 function C_ChatInfo.PerformEmote(e) stub.emote = e end
 function C_ChatInfo.CancelEmote() stub.emote = nil end
