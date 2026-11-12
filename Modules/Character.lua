@@ -520,7 +520,7 @@ function paintStats()
 	W.SetScrollContent(d.Scroll, y, f:GetHeight() - STATS_TOP - 4)
 end
 
-local refresh, statsShown -- below
+local refresh, statsShown, repairLine -- below
 
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
@@ -578,11 +578,22 @@ local function paintPage(v)
 	return v.psH + 8
 end
 
+-- The band's status: how many worn items have lost durability.
+function repairLine()
+	local n = 0
+	for _, s in ipairs(slots) do
+		local cur, max = GetInventoryItemDurability(s:GetID())
+		if cur and max and max > 0 and cur < max then n = n + 1 end
+	end
+	if n == 0 then return "Gear in good repair" end
+	return n == 1 and "1 item needs repair" or n .. " items need repair"
+end
+
 -- The drawer is shown unless the player put it away (for every character).
 function statsShown() return not (PolestarUIDB and PolestarUIDB.hideStats) end
 
 function refresh()
-	local level, race = UnitLevel("player"), UnitRace("player")
+	local level = UnitLevel("player")
 	f.psName:SetText(playerText(UnitName) or "")
 	f.psLine:SetText(("Level %d %s"):format(level, UnitClass("player")))
 	f.psGuild:SetText(playerText(GetGuildInfo) or "")
@@ -592,8 +603,7 @@ function refresh()
 	f.psKeepTabRow = gear
 	if gear then
 		W.ShellTabs(f, nil)
-		local sub = ("Level %d %s %s"):format(level, race, UnitClass("player"))
-		W.ShellTitle(f, playerText(UnitPVPName) or playerText(UnitName) or "", sub)
+		W.ShellTitle(f, CHARACTER or "Character", repairLine())
 	else
 		W.ShellTabs(f, nil)
 		for _, s in ipairs(SECTIONS) do
