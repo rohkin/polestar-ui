@@ -42,6 +42,7 @@ Doors and secure parts
 Shell pieces
 - `ns.Plain(f, left?)`: a shell made with `sidebar = 0` loses its sidebar and Polestar's emblem; `f.Main` hangs off the window, `left` past its edge (a rail's width).
 - `ns.OptionsButton(f, items)`: the band's Options button; `items` = menu items, or `function(button)` returning them.
+- `ns.Footer(f, left, right)`: `W.ShellFooter` with every reused footer button back on at full alpha; use it, never `W.ShellFooter`, then grey your own with `ns.SetEnabled`.
 - `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
 - `ns.GameIcon(parent, layer)`: texture cropped of the client's icon border.
@@ -53,7 +54,8 @@ Widgets
 - `ns.Coins(copper)`: coins as plain text ("1g 2s 3c") for labels and dialogs.
 - `ns.Money(parent)` / `ns.SetMoney(m, copper, colorToken?)`: coin line as `GetMoneyString` writes it.
 - `ns.TextField(parent, w, letters?)`: one-line edit box (Enter and Escape leave it).
-- `ns.SetEnabled(button, on, why?)`: enable and fade to 45% as Polestar does; `why`, the reason a disabled one shows in its tooltip.
+- `ns.SetEnabled(button, on, why?)`: enable and fade to 45% as Polestar does; `why`, the reason a disabled one shows in its tooltip. A `W.Switch` too (through `W.SetDisabledWhen`; `why` is its tooltip while off).
+- `ns.Pickup(fn, ...)`: `fn(...)` unless a spell waits for its item (`SpellIsTargeting`); every bag, bank or window-slot pickup goes through it. No combat block.
 - `ns.QuestRewards(parent, {x, width, tip, click, selected?})`: pooled text and reward tiles shared by Quest dialog and quest log; `c.Begin(y)`, `c.text/head/pair/tile`, `c.money(label, copper, color?)` (coins, `ns.Money`), `c.Rewards(id, d)` (`d.chooseItems`: "Choose your reward:" on the complete step), `c.End()`, `c.y`.
 - `ns.NpcPortrait(f)`: the NPC portrait well and title in a shell band; returns `paint(unit)`. Shared by Gossip and Quest dialog.
 - `ns.FriendshipBar(parent)`: friendship NPC standing (icon, rank, Skill Bar, tooltip); `b.Paint()` shows or hides it. Shared by Gossip and Quest dialog.
@@ -94,7 +96,7 @@ Module (`Modules/<Key>.lua`), `tests/lua/stub_<key>.lua`, `tests/scenes/<key>*.l
 
 ## Conventions
 - Commits: one imperative sentence, subject line only, one logical change each (e.g. "Add a window scaffold script ..."). No body, no attribution trailer.
-- Module skeleton (copy `Modules/Spellbook.lua`): `local ADDON, ns = ...; local W = Polestar.Widgets`; `build()` = `W.Shell(NAME, {scalePath = "ui.menuScale"})`, `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(NAME)`; `refresh()` = `W.ShellNav/Title/Tabs/Footer/Body`; `M.Show/Toggle`; `M.Enable()` calls `ns.Doors` and registers events; `M.stock()` returns the stock frame when shown; `ns.Module(key, M)`.
+- Module skeleton (copy `Modules/Spellbook.lua`): `local ADDON, ns = ...; local W = Polestar.Widgets`; `build()` = `W.Shell(NAME, {scalePath = "ui.menuScale"})`, `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(NAME)`; `refresh()` = `W.ShellNav/Title/Tabs`, `ns.Footer`, `W.ShellBody`; `M.Show/Toggle`; `M.Enable()` calls `ns.Doors` and registers events; `M.stock()` returns the stock frame when shown; `ns.Module(key, M)`.
 - Never touch the stock window (no show/hide/hook/anchor): the stock one is closed or never opened (CLIENT.md rules 1, 8, 10).
 - Switching a module off that stopped stock routing (`reloadOff`) takes effect "after /reload"; say so in text and tests.
 - Feature-detect Polestar exports and ship without them until they exist, e.g. `if Polestar.MapCanvas and Polestar.MapCanvas.Add then ...` (WorldMap).
