@@ -129,6 +129,7 @@ local function list(panel, pool, head, entries)
 			r.Text = W.Text(r, "body", "text")
 			r.Text:SetPoint("LEFT", r, "LEFT", W.SHELL.side + 24, 0)
 			r.Text:SetPoint("RIGHT", r, "RIGHT", -W.SHELL.side, 0)
+			r.Text:SetWordWrap(true)
 			r:SetScript("OnClick", function(self)
 				PlaySound(SOUNDKIT.IG_QUEST_LIST_SELECT)
 				self.psPick()
@@ -141,9 +142,11 @@ local function list(panel, pool, head, entries)
 		r.Icon:SetDesaturated(e[4] or false)
 		r.Text:SetText(e[1])
 		W.Color(r.Text, e[4] and "textMuted" or "text")
-		r:SetHeight(ROW_H)
+		-- A long title wraps and the row grows; one line stays centred.
+		r.Text:SetWidth(f.BodyWidth - W.SHELL.side * 2 - 24)
+		r:SetHeight(math.max(ROW_H, math.ceil(r.Text:GetStringHeight()) + 12))
 		r:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -ph)
-		ph = ph + ROW_H
+		ph = ph + r:GetHeight()
 		r:Show()
 	end
 	for i = #entries + 1, #pool do pool[i]:Hide() end
