@@ -1,3 +1,4 @@
 .ref/
 tests/golden/*.actual.svg
 .claude/settings.local.json
+.claude/worktrees/
