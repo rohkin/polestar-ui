@@ -4,16 +4,21 @@
 -- buybacks, sells, repairs and junk sales are recorded, never answered.
 
 -- item = { name, itemID, icon, quality, price, stackCount, numAvailable, usable, maxStack, costs }
--- costs = { { icon, value, currencyName } }
+-- costs = { { icon, value, currencyName, itemLink } }; nonref: not refundable
 stub.wares = {
 	{ "Refreshing Spring Water", 159, 132794, 1, 25, 1, -1, true, 20 },
 	{ "Rough Arrow", 2512, 132382, 1, 10, 200, -1, true, 1000 },
 	{ "Tough Hunk of Bread", 4540, 133964, 1, 25, 1, 3, true, 20 },
 	{ "Formula: Enchant Bracer", 6342, 134939, 2, 50000, 1, 0, true, 1 },
 	{ "Mageweave Robe", 4041, 132666, 2, 1800000, 1, -1, false, 1 },
-	{ "Champion's Tabard", 15196, 135026, 4, 0, 1, -1, true, 1, { { 136998, 2, "Honor" } } },
+	{ "Champion's Tabard", 15196, 135026, 4, 0, 1, -1, true, 1, { { 136998, 2, "Honor" } }, nonref = true },
 	{ "Grimoire of Sacrifice", 9214, 133738, 3, 230000, 1, -1, true, 1 },
+	{ "Arcanite Reaper", 12784, 135562, 4, 0, 1, -1, true, 1, { { 133220, 2, nil, "item:12360" } }, quest = true },
+	{ "Bolt of Linen", 2996, 132890, 1, 0, 1, -1, true, 20, { { 132889, 2, nil, "item:2589" } } },
 }
+-- Items paid with: name and quality; how many the player holds.
+stub.costItems = { ["item:12360"] = { "Arcanite Bar", 3 }, ["item:2589"] = { "Linen Cloth", 1 } }
+stub.held = { ["item:2589"] = 9 }
 -- item = { name, itemID, icon, quality, price, quantity }
 stub.buyback = {
 	{ "Linen Cloth", 2589, 132889, 1, 10, 20 },
@@ -35,9 +40,15 @@ C_MerchantFrame = {}
 function C_MerchantFrame.GetItemInfo(i)
 	local w = ware(i)
 	if not w then return nil end
-	return { name = w[1], texture = w[3], price = w[5], stackCount = w[6], numAvailable = w[7], isUsable = w[8], isPurchasable = true, hasExtendedCost = w[10] ~= nil }
+	return { name = w[1], texture = w[3], price = w[5], stackCount = w[6], numAvailable = w[7], isUsable = w[8], isPurchasable = true,
+		hasExtendedCost = w[10] ~= nil, isQuestStartItem = w.quest or false }
 end
-function C_MerchantFrame.IsMerchantItemRefundable(i) return ware(i)[10] == nil end
+function C_MerchantFrame.IsMerchantItemRefundable(i) return not ware(i).nonref end
+function GetMerchantItemID(i) return ware(i)[2] end
+-- The vendor takes Honor; the player holds 1500.
+function C_MerchantFrame.GetMerchantCurrencies() return { 1901 } end
+C_CurrencyInfo = C_CurrencyInfo or {}
+function C_CurrencyInfo.GetCurrencyInfo(id) return id == 1901 and { name = "Honor", quantity = 1500, iconFileID = 136998 } or nil end
 function C_MerchantFrame.IsSellAllJunkEnabled() return true end
 function C_MerchantFrame.GetNumJunkItems() return stub.junk end
 function C_MerchantFrame.SellAllJunkItems() stub.junkSold = stub.junkSold + 1 end
@@ -47,7 +58,7 @@ function CanAffordMerchantItem(i) return GetMoney() >= ware(i)[5] end
 function GetMerchantItemCostInfo(i) return #(ware(i)[10] or {}) end
 function GetMerchantItemCostItem(i, k)
 	local c = (ware(i)[10] or {})[k]
-	if c then return c[1], c[2], nil, c[3] end
+	if c then return c[1], c[2], c[4], c[3] end
 end
 function BuyMerchantItem(i, n) stub.bought[#stub.bought + 1] = { i, n } end
 function PickupMerchantItem(i)
@@ -70,6 +81,16 @@ function RepairAllItems(guild) stub.repaired[#stub.repaired + 1] = guild and "gu
 
 -- A quality per item, from either list, by link.
 C_Item = C_Item or {}
+function C_Item.GetItemInfo(l)
+	local c = stub.costItems[l]
+	if c then return c[1], "[" .. c[1] .. "]", c[2] end
+end
+function C_Item.GetItemCount(l) return stub.held[l] or 0 end
+function GameTooltip:SetMerchantCostItem(i, c)
+	local cost = ware(i)[10][c]
+	self:SetText(cost[3] or stub.costItems[cost[4]][1])
+end
+function GameTooltip:SetCurrencyByID(id) self:SetText(C_CurrencyInfo.GetCurrencyInfo(id).name) end
 function C_Item.GetItemQualityByID(l)
 	local id = tonumber(tostring(l):match("item:(%d+)"))
 	for _, list in ipairs({ stub.wares, stub.buyback }) do

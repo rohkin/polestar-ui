@@ -1,7 +1,7 @@
 --@ title: Merchant
 --@ roots: PolestarUIMerchant
 --@ stubs: stub_npc.lua, stub_merchant.lua
--- The vendor opens ours, never the stock window, with the bags; closing ours ends the visit once, the game ending it closes ours without ending it again. Every ware on one page in two columns: quality names, prices (danger when short of money), a currency cost, stack size and stock left, sold out faded, unusable red. A click buys one, right-click a stack, shift-click asks how many; a high price or a currency cost asks first. A held item dropped on the window is sold. The footer repairs (guild too) and sells junk after asking; the money shows by the tabs; the filter is the game's menu.
+-- The vendor opens ours, never the stock window, with the bags; closing ours ends the visit once, the game ending it closes ours without ending it again. Every ware on one page in two columns: quality names, prices (danger when short of money), each other cost (a currency, an item) as its count and icon with its own tooltip, the vendor's currencies held by the money, a quest bang on a ware that starts one, stack size and stock left, sold out faded, unusable red. A click buys one, right-click a stack, shift-click asks how many; a high price, a currency, an item above uncommon or a purchase that cannot be refunded asks first (the stock rules); shift-click is capped by the money and the cost items held. A held item dropped on the window is sold. The footer repairs (guild too) and sells junk after asking; the money shows by the tabs; the filter is the game's menu.
 local T = Enum.PlayerInteractionType
 local ns = PolestarUI
 local f = function() return PolestarUIMerchant end
@@ -21,10 +21,19 @@ local w = f()
 assert(tostring(w.Title:GetText()) == "Harlan Bagley", "the band names the vendor")
 local rows = {}
 for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex then rows[r.psIndex] = r end end
-assert(#rows == 7, "a row per ware")
+assert(#rows == 9, "a row per ware")
 assert(tostring(rows[2].Stack:GetText()) == "\195\151200" and tostring(rows[3].Stack:GetText()) == "3 left", "stack size and stock")
 assert(rows[4].Well.Icon.desaturated and not rows[1].Well.Icon.desaturated, "sold out not faded")
-assert(not rows[6].Money:IsShown() and tostring(rows[6].Cost:GetText()):find("^2 ") ~= nil, "the currency cost")
+assert(not rows[6].Money:IsShown() and rows[6].Costs[1]:IsShown() and tostring(rows[6].Costs[1].Text:GetText()) == "2" and not rows[6].Costs[2]:IsShown(), "the currency cost")
+-- Each cost has its own tooltip; a quest starts from the Reaper.
+stub.RunScript(rows[8].Costs[1], "OnEnter")
+assert(GameTooltip.lines[1] == "Arcanite Bar", "the cost item's tooltip")
+GameTooltip:Hide()
+assert(rows[8].Quest:IsShown() and not rows[1].Quest:IsShown(), "the quest bang")
+-- The vendor's currency by the money, with its tooltip.
+local token
+for _, c in ipairs({ w.TabRow:GetChildren() }) do if c.psID then token = c end end
+assert(token and token:IsShown() and tostring(token.Text:GetText()) == "1500", "the Honor held")
 assert(tostring(rows[5].Money.psParts[1].text:GetText()) == "180", "the price")
 
 -- Buying.
@@ -47,6 +56,19 @@ rows[6]:Click("LeftButton")
 assert(#stub.bought == 4 and tostring(PolestarModal.Box.Text:GetText()):find("Honor") and tostring(PolestarModal.Box.Text:GetText()):find("refund"), "a currency cost bought without asking")
 PolestarModal.Box.Cancel:Click()
 assert(#stub.bought == 4, "cancel bought")
+-- Paid in an item: above uncommon asks, naming it; a common one does not.
+rows[8]:Click("LeftButton")
+assert(#stub.bought == 4 and tostring(PolestarModal.Box.Text:GetText()):find("2 %[Arcanite Bar%]"), "a rare cost item bought without asking")
+PolestarModal.Box.Cancel:Click()
+rows[9]:Click("LeftButton")
+assert(#stub.bought == 5 and stub.bought[5][1] == 9 and not PolestarModal:IsShown(), "a common cost item asked")
+-- Shift-click: as many as the Linen held pays for (9 / 2 = 4).
+stub.keys.shift = true
+rows[9]:Click("LeftButton")
+stub.keys.shift = false
+for _, c in ipairs({ PolestarModal.Box:GetChildren() }) do local m = rawget(c, "More"); if m and c:IsShown() then for _ = 1, 9 do m:Click() end end end
+PolestarModal.Box.Action:Click()
+assert(stub.bought[6][1] == 9 and stub.bought[6][2] == 4, "not capped by the cost items held")
 -- The visit ends with our dialog open: it goes too.
 rows[5]:Click("LeftButton")
 stub.endInteraction(T.Merchant)
@@ -56,10 +78,10 @@ stub.interact(T.Merchant)
 -- Selling: a held item dropped on a row or the window.
 stub.cursorItem = true
 stub.RunScript(rows[3], "OnReceiveDrag")
-assert(stub.sold == 1 and #stub.bought == 4, "a dropped item not sold")
+assert(stub.sold == 1 and #stub.bought == 6, "a dropped item not sold")
 stub.cursorItem = true
 rows[3]:Click("LeftButton")
-assert(stub.sold == 2 and #stub.bought == 4, "a click with a held item bought")
+assert(stub.sold == 2 and #stub.bought == 6, "a click with a held item bought")
 
 -- The footer: repair, guild repair, junk.
 local left = w.footerButtons.left

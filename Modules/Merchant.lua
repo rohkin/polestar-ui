@@ -10,6 +10,7 @@ local W = Polestar.Widgets
 local NAME = "PolestarUIMerchant"
 local ROW_H, GAP = 52, 16
 local HIGH = MERCHANT_HIGH_PRICE_COST or 1500000
+local MAX_COSTS = MAX_ITEM_COST or 3
 
 local f, money
 local tab = "buy"
@@ -30,33 +31,82 @@ local function purchase(i, n)
 	if n then BuyMerchantItem(i, n) else BuyMerchantItem(i) end
 end
 
--- Buys n of item i (nil: one purchase), first asking as the stock window
--- does for a high price or a cost in currencies or items.
+-- The specs an item is for, as the stock token dialog lists them.
+local function specText(link)
+	local specs = link and C_Item.GetItemSpecInfo and C_Item.GetItemSpecInfo(link)
+	local names = {}
+	for _, id in ipairs(specs or {}) do names[#names + 1] = select(2, GetSpecializationInfoByID(id)) end
+	return #names > 0 and (" For %s."):format(table.concat(names, ", ")) or ""
+end
+
+-- Buys n of item i (nil: one purchase), first asking as the stock window does
+-- (MerchantItemButton_OnClick, MerchantFrame_ConfirmExtendedItemCost): a high
+-- price; a cost in currencies or in items above uncommon; a purchase that
+-- cannot be refunded; the last of a limited currency.
 local function buy(i, n)
 	local it = C_MerchantFrame.GetItemInfo(i)
 	if not it then return end
 	local per = math.max(1, it.stackCount or 1)
 	local times = (n or per) / per
 	local price = (it.price or 0) * times
-	if not it.hasExtendedCost and price < HIGH then return purchase(i, n) end
-	local parts = {}
-	if price > 0 then parts[1] = coins(price) end
-	for k = 1, GetMerchantItemCostInfo(i) or 0 do
-		local tex, value, link, currency = GetMerchantItemCostItem(i, k)
-		if value then parts[#parts + 1] = ("|T%s:0|t %d %s"):format(tex or "", value * times, currency or link or "") end
+	local title, go = ("Buy %s?"):format(it.name or ""), function() purchase(i, n) end
+	local nonref = not C_MerchantFrame.IsMerchantItemRefundable(i)
+	local count = GetMerchantItemCostInfo(i) or 0
+	if count == 0 and not nonref then
+		if price < HIGH then return go() end
+		return ask({ title = title, action = "Buy", onAccept = go, text = ("It costs %s."):format(coins(price)) })
 	end
-	local refund = not C_MerchantFrame.IsMerchantItemRefundable or C_MerchantFrame.IsMerchantItemRefundable(i)
-	ask({ title = ("Buy %s?"):format(it.name or ""), action = "Buy", onAccept = function() purchase(i, n) end,
-		text = ("It costs %s.%s"):format(table.concat(parts, ", "), refund and "" or " You cannot sell it back for a refund.") })
+	local parts, currency, best = {}, false, 0
+	for k = 1, MAX_COSTS do
+		local tex, value, costLink, currencyName = GetMerchantItemCostItem(i, k)
+		if value then
+			value = value * times
+			if currencyName then
+				currency = true
+				parts[#parts + 1] = ("|T%s:0|t %d %s"):format(tex or "", value, currencyName)
+			elseif costLink then
+				-- A limited currency says what is left to earn (MerchantFrame_ConfirmLimitedCurrencyPurchase).
+				local lname, licon, have, most, earned
+				if k == 1 and count == 1 and C_Item.GetLimitedCurrencyItemInfo then lname, licon, have, most, earned = C_Item.GetLimitedCurrencyItemInfo(costLink) end
+				if lname then
+					local left = most - (earned - have) - value
+					local cost = ("|T%s:0|t %d %s"):format(licon or "", value, lname)
+					return ask({ title = title, action = "Buy", onAccept = go, text = left <= 0
+						and ("It costs %s, the last %s you can earn this season."):format(cost, lname)
+						or ("It costs %s. You can still earn %d %s this season."):format(cost, left, lname) })
+				end
+				local _, full, q = C_Item.GetItemInfo(costLink)
+				best = math.max(best, q or 0)
+				parts[#parts + 1] = ("%d %s"):format(value, full or costLink)
+			end
+		end
+	end
+	if nonref and (it.price or 0) > 0 then
+		if #parts == 0 and price < HIGH then return go() end
+		parts[#parts + 1] = coins(price)
+	end
+	if (not currency and best <= 2 and not nonref) or (#parts == 0 and price == 0) then return go() end
+	ask({ title = title, action = "Buy", onAccept = go,
+		text = ("It costs %s.%s%s"):format(table.concat(parts, ", "), nonref and " You cannot sell it back for a refund." or "", specText(GetMerchantItemLink(i))) })
 end
 
 -- Shift-click: how many, on a stepper, up to a stack or what the money buys.
 local stepper, stepN, stepMax
+-- (MerchantItemButton_BuyMultipleStacks: the money and the cost items held cap it.)
 local function howMany(i)
 	local it = C_MerchantFrame.GetItemInfo(i)
-	local most = GetMerchantItemMaxStack(i) or 1
-	if it and (it.price or 0) > 0 then most = math.min(most, math.floor(GetMoney() / (it.price / math.max(1, it.stackCount or 1)))) end
-	if not it or most < 2 then return end
+	if not it then return end
+	local most, per = GetMerchantItemMaxStack(i) or 1, math.max(1, it.stackCount or 1)
+	if (it.price or 0) > 0 then most = math.min(most, math.floor(GetMoney() / (it.price / per))) end
+	if it.hasExtendedCost then
+		for k = 1, MAX_COSTS do
+			local _, value, costLink, currencyName = GetMerchantItemCostItem(i, k)
+			if costLink and not currencyName and value then
+				most = math.min(most, math.floor(C_Item.GetItemCount(costLink, false, false, true) / (value / per)))
+			end
+		end
+	end
+	if most < 2 then return end
 	stepper = stepper or ns.Stepper(UIParent, { get = function() return stepN end, set = function(n) stepN = n end, max = function() return stepMax end })
 	stepN, stepMax = 1, most
 	ask({ title = ("Buy %s"):format(it.name or ""), text = "How many?", action = "Buy", onAccept = function() buy(i, stepN) end }, stepper)
@@ -117,7 +167,31 @@ local function newRow(k)
 	r.Name:SetJustifyH("LEFT")
 	r.Money = ns.Money(r)
 	r.Money:SetPoint("TOPLEFT", r.Well, "RIGHT", 10, -3)
-	r.Cost = W.Text(r, "number", "text")
+	-- A quest starts from it: the game's quest bang on the icon.
+	r.Quest = r.Well:CreateTexture(nil, "OVERLAY")
+	r.Quest:SetAllPoints(r.Well.Icon)
+	r.Quest:SetTexture(TEXTURE_ITEM_QUEST_BANG or "Interface\\ContainerFrame\\UI-Icon-QuestBang")
+	-- The other costs (currencies, items): each its count and icon, and its
+	-- own tooltip (the stock AltCurrencyFrame's buttons).
+	r.Costs = {}
+	for c = 1, MAX_COSTS do
+		local b = CreateFrame("Button", nil, r)
+		b:SetSize(40, 16)
+		b.Text = W.Text(b, "number", "text")
+		b.Text:SetPoint("LEFT", b, "LEFT", 0, 0)
+		b.Icon = ns.GameIcon(b)
+		b.Icon:SetSize(14, 14)
+		b.Icon:SetPoint("LEFT", b.Text, "RIGHT", 3, 0)
+		b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		b:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetMerchantCostItem(r.psIndex, self.psCost)
+			GameTooltip:Show()
+		end)
+		b:SetScript("OnLeave", W.HideTooltip)
+		b:SetScript("OnClick", function(_, button) click(r, button) end)
+		r.Costs[c] = b
+	end
 	r.Stack = W.Text(r, "number", "textDim")
 	r.Stack:SetPoint("TOPRIGHT", r, "RIGHT", -8, -3)
 	r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -148,7 +222,12 @@ local function fill(r, k)
 	end
 	r.psIndex = k
 	local q = l and C_Item.GetItemQualityByID(l)
-	ns.PaintItem(r.Well, { icon = icon, quality = q, count = not it and count or nil, desat = avail == 0, unusable = not usable })
+	-- An heirloom is never red; one the player owns is faded, as sold out.
+	local id = it and GetMerchantItemID(k)
+	local heirloom = id and C_Heirloom and C_Heirloom.IsItemHeirloom(id)
+	local known = heirloom and C_Heirloom.PlayerHasHeirloom(id)
+	ns.PaintItem(r.Well, { icon = icon, quality = q, count = not it and count or nil, desat = avail == 0 or known,
+		unusable = not usable and not (heirloom and it.isPurchasable ~= false) })
 	r.Name:SetText(name or "")
 	local cr, cg, cb = ns.QualityRGB(q)
 	W.Uncolor(r.Name)
@@ -156,15 +235,24 @@ local function fill(r, k)
 	price = price or 0
 	r.Money:SetShown(price > 0)
 	if price > 0 then ns.SetMoney(r.Money, price, it and CanAffordMerchantItem(k) == false and "danger" or nil) end
-	-- The other costs (currencies, items): their icon and count.
-	local parts = {}
-	for c = 1, it and it.hasExtendedCost and GetMerchantItemCostInfo(k) or 0 do
-		local tex, value = GetMerchantItemCostItem(k, c)
-		if value then parts[#parts + 1] = ("%d |T%s:0|t"):format(value, tex or "") end
+	local afford = not it or CanAffordMerchantItem(k) ~= false
+	local prev = price > 0 and r.Money or nil
+	for c, b in ipairs(r.Costs) do
+		local tex, value
+		if it and it.hasExtendedCost then tex, value = GetMerchantItemCostItem(k, c) end
+		b:SetShown(tex ~= nil and value ~= nil)
+		if b:IsShown() then
+			b.psCost = c
+			b.Text:SetText(value)
+			W.Color(b.Text, afford and "text" or "danger")
+			b.Icon:SetTexture(tex)
+			b:SetWidth(math.ceil(b.Text:GetStringWidth()) + 3 + 14)
+			b:ClearAllPoints()
+			if prev then b:SetPoint("LEFT", prev, "RIGHT", 8, 0) else b:SetPoint("TOPLEFT", r.Well, "RIGHT", 10, -3) end
+			prev = b
+		end
 	end
-	r.Cost:SetText(table.concat(parts, "  "))
-	r.Cost:ClearAllPoints()
-	if price > 0 then r.Cost:SetPoint("LEFT", r.Money, "RIGHT", 8, 0) else r.Cost:SetPoint("TOPLEFT", r.Well, "RIGHT", 10, -3) end
+	r.Quest:SetShown(it and it.isQuestStartItem or false)
 	local stack = {}
 	if it and (count or 1) > 1 then stack[1] = "\195\151" .. count end
 	if it and (avail or -1) >= 0 then stack[#stack + 1] = avail == 0 and "Sold out" or ("%d left"):format(avail) end
@@ -187,7 +275,7 @@ local function filterMenu(self)
 		for k = 1, GetNumSpecializations() do
 			radio(select(2, C_SpecializationInfo.GetSpecializationInfo(k, false, false, nil, UnitSex("player"))), LE_LOOT_FILTER_SPEC1 + k - 1)
 		end
-		radio(UnitClass("player"), LE_LOOT_FILTER_CLASS)
+		radio(ALL_SPECS or UnitClass("player"), LE_LOOT_FILTER_CLASS)
 		root:CreateDivider()
 		radio(ITEM_BIND_ON_EQUIP, LE_LOOT_FILTER_BOE)
 		radio(ALL, LE_LOOT_FILTER_ALL)
@@ -220,6 +308,44 @@ local function build()
 		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
 	end)
 	Polestar.CloseOnEscape(NAME)
+end
+
+-- The vendor's currencies and how many the player holds, left of the money
+-- (MerchantFrame_UpdateCurrencies), each with its tooltip.
+local tokens = {}
+local function currencies()
+	local list = C_MerchantFrame.GetMerchantCurrencies() or {}
+	local prev = money
+	for i = 1, math.max(#list, #tokens) do
+		local id, t = list[i], tokens[i]
+		if id and not t then
+			t = CreateFrame("Button", nil, f.TabRow)
+			t:SetHeight(16)
+			t.Text = W.Text(t, "number", "text")
+			t.Text:SetPoint("LEFT", t, "LEFT", 0, 0)
+			t.Icon = ns.GameIcon(t)
+			t.Icon:SetSize(14, 14)
+			t.Icon:SetPoint("LEFT", t.Text, "RIGHT", 3, 0)
+			t:SetScript("OnEnter", function(self)
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:SetCurrencyByID(self.psID)
+				GameTooltip:Show()
+			end)
+			t:SetScript("OnLeave", W.HideTooltip)
+			tokens[i] = t
+		end
+		local info = id and C_CurrencyInfo.GetCurrencyInfo(id)
+		if t then t:SetShown(info ~= nil and (info.name or "") ~= "") end
+		if t and t:IsShown() then
+			t.psID = id
+			t.Text:SetText(info.quantity)
+			t.Icon:SetTexture(info.iconFileID)
+			t:SetWidth(math.ceil(t.Text:GetStringWidth()) + 3 + 14)
+			t:ClearAllPoints()
+			t:SetPoint("RIGHT", prev, "LEFT", -16, 0)
+			prev = t
+		end
+	end
 end
 
 -- Polestar's Restock (QoL/Restock.lua), when this Polestar exports it: what a
@@ -276,6 +402,9 @@ function paint()
 	f.psEmpty:SetText(buyback and "Nothing sold here yet." or "Nothing for sale.")
 	f.psEmpty:SetShown(n == 0)
 	ns.SetMoney(money, GetMoney())
+	currencies()
+	-- A game rule can take the filter away (MerchantFrame_Update).
+	if f.psFilter then f.psFilter:SetShown(not (C_GameRules and C_GameRules.IsGameRuleActive(Enum.GameRule.MerchantFilterDisabled))) end
 	footer()
 	W.ShellBody(f, 24 + math.max(1, math.ceil(n / 2)) * ROW_H + 24)
 end
@@ -292,7 +421,7 @@ function M.Enable()
 	-- window is never opened (docs/DESIGN.md, "NPC windows: how they open").
 	ns.Interaction("merchant", { Enum.PlayerInteractionType.Merchant }, { frame = NAME, close = CloseMerchant, bags = true })
 	local function changed() if f and f:IsShown() then paint() end end
-	for _, e in ipairs({ "MERCHANT_UPDATE", "MERCHANT_FILTER_ITEM_UPDATE", "PLAYER_MONEY", "BAG_UPDATE_DELAYED", "UPDATE_INVENTORY_DURABILITY", "GET_ITEM_INFO_RECEIVED" }) do
+	for _, e in ipairs({ "MERCHANT_UPDATE", "MERCHANT_FILTER_ITEM_UPDATE", "PLAYER_MONEY", "BAG_UPDATE_DELAYED", "UPDATE_INVENTORY_DURABILITY", "GET_ITEM_INFO_RECEIVED", "CURRENCY_DISPLAY_UPDATE", "HEIRLOOMS_UPDATED", "UNIT_INVENTORY_CHANGED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 	-- Restock's amounts and setting.
