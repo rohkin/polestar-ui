@@ -58,11 +58,18 @@ function ns.TooltipHint(text)
 end
 
 -- A shell made with `sidebar = 0` has no sidebar: the main column hangs off the
--- window itself, never off the 0-wide sidebar (docs/CLIENT.md, rule 12).
-function ns.Plain(f)
+-- window itself, never off the 0-wide sidebar (docs/CLIENT.md, rule 12),
+-- `left` past its left edge (a section rail's width). Polestar's emblem,
+-- which sits on the sidebar or the rail, is parked out of sight.
+function ns.Plain(f, left)
 	f.Sidebar:Hide()
+	if not f.psParked then
+		f.psParked = CreateFrame("Frame", nil, f)
+		f.psParked:Hide()
+		for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot }) do r:SetParent(f.psParked) end
+	end
 	f.Main:ClearAllPoints()
-	f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+	f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1 + (left or 0), -1)
 	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
 end
 

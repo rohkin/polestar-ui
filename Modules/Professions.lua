@@ -153,11 +153,7 @@ function ns.ProfessionTabs(win, onOverview)
 		end
 		-- The rail grows to its widest label; a window without a sidebar hangs
 		-- its main column off the rail's edge (docs/CLIENT.md, rule 12).
-		if not win.Sidebar:IsShown() then
-			win.Main:ClearAllPoints()
-			win.Main:SetPoint("TOPLEFT", win, "TOPLEFT", 1 + win.psRail, -1)
-			win.Main:SetPoint("BOTTOMRIGHT", win, "BOTTOMRIGHT", -1, 1)
-		end
+		if not win.Sidebar:IsShown() then ns.Plain(win, win.psRail) end
 	end
 end
 
@@ -287,10 +283,7 @@ local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "professions")
-	f.Sidebar:Hide()
-	local holder = CreateFrame("Frame", nil, f)
-	holder:Hide()
-	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot }) do r:SetParent(holder) end
+	ns.Plain(f, f.psRail)
 	ns.LinkPlace(f)
 	f.psTabs = ns.ProfessionTabs(f)
 	f.psHeads = { W.SectionHeader(f.Body), W.SectionHeader(f.Body) }
