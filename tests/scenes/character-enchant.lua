@@ -12,3 +12,11 @@ assert(a:GetAttribute("*target-slot*") == 1, "wrong slot")
 assert(a:GetAttribute("type2") == "item" and a:GetAttribute("item") == "1", "no use")
 for _, c in ipairs({ PolestarUICharacter.psGear:GetChildren() }) do if c.psLabel and c:GetID() == 2 then stub.RunScript(c, "OnEnter") end end
 assert(a:GetAttribute("type2") == nil and a:GetAttribute("*target-slot*") == 2, "empty slot")
+-- A drag while the enchant waits picks nothing up (applying it is the secure button's).
+stub.RunScript(s, "OnDragStart")
+stub.RunScript(s, "OnReceiveDrag")
+assert(stub.pickedUp == nil, "picked up while targeting")
+stub.targeting = false
+stub.RunScript(s, "OnDragStart")
+assert(stub.pickedUp == 1, "no pickup")
+stub.targeting = true

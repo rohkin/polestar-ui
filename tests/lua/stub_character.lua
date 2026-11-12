@@ -63,6 +63,8 @@ function C_Item.GetItemSpell(link) if link:match("item:10:") then return "Nitro 
 
 -- A spell (an enchant, a stone) waiting for its item: stub.targeting.
 function SpellIsTargeting() return stub.targeting or false end
+-- A worn item picked up (or the cursor's put down): stub.pickedUp = slot id.
+function PickupInventoryItem(id) stub.pickedUp = id end
 
 -- The character-sheet model scene: the preview draws its well, not the model.
 ModelSceneUtil = { SetUpCharacterSheetScene = function(scene) end }
