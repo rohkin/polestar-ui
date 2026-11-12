@@ -129,9 +129,27 @@ local function paintSlot(s, up)
 	s.psUp:SetShown(up and up[id] or false)
 	local icon = GetInventoryItemTexture("player", id)
 	s.Icon:SetTexture(icon or s.psEmpty)
-	s.Icon:SetDesaturated(not icon)
+	-- Locked (moving, being traded) greys out; broken or unusable turns red, as the stock slot.
+	s.Icon:SetDesaturated(not icon or IsInventoryItemLocked(id) or false)
 	s.Icon:SetAlpha(icon and 1 or 0.6)
-	if icon then s.Icon:SetVertexColor(1, 1, 1) else s.Icon:SetVertexColor(Polestar.Theme.Color("textMuted")) end
+	if not icon then
+		s.Icon:SetVertexColor(Polestar.Theme.Color("textMuted"))
+	elseif GetInventoryItemBroken("player", id) or GetInventoryItemEquippedUnusable("player", id) then
+		s.Icon:SetVertexColor(0.9, 0, 0)
+	else
+		s.Icon:SetVertexColor(1, 1, 1)
+	end
+	local n = icon and GetInventoryItemCount("player", id) or 0
+	s.psCount:SetText(n > 1 and (n > 999 and "*" or n) or "")
+	-- In combat the times may be secret (docs/CLIENT.md, rule 3): the sweep runs on.
+	if not InCombatLockdown() then
+		local start, dur, on = GetInventoryItemCooldown("player", id)
+		if icon and start and not (issecretvalue and (issecretvalue(start) or issecretvalue(dur))) and on and on ~= 0 and dur > 0 then
+			s.psCooldown:SetCooldown(start, dur)
+		else
+			s.psCooldown:Clear()
+		end
+	end
 	paintSlotText(s, icon, icon and GetInventoryItemQuality("player", id))
 	if s.psAmmo then s.psAmmo:SetShown(needsAmmo(s)) end
 	local cur, max = GetInventoryItemDurability(id)
@@ -242,6 +260,11 @@ local function newSlot(parent, name, layer, side, size)
 	s.psUp:SetSize(18, 18)
 	s.psUp:SetPoint("TOPLEFT", s, "TOPLEFT", 0, 0)
 	s.psGems = {}
+	-- The stock slot's count (stacks, ammo) and its Use: cooldown's sweep.
+	s.psCount = W.Text(s, "number", "text", "OVERLAY")
+	s.psCount:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", -3, 3)
+	s.psCooldown = CreateFrame("Cooldown", nil, s, "CooldownFrameTemplate")
+	s.psCooldown:SetAllPoints(s.Icon)
 	-- Left out of the chosen gear set (the flyout's "Leave out of the set").
 	s.psOut = W.Tex(s, "OVERLAY", "close", "danger")
 	s.psOut:SetSize(16, 16)
@@ -308,6 +331,9 @@ local function buildGear(body, width)
 			s.psAmmo = newSlot(s, "AmmoSlot", nil, nil, 16)
 			s.psAmmo:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, 0)
 			s.psAmmo.psUp:SetSize(10, 10)
+			s.psAmmo.psCount:ClearAllPoints()
+			s.psAmmo.psCount:SetPoint("BOTTOMRIGHT", s.psAmmo, "TOPRIGHT", -1, 1)
+			s.psAmmo.psCooldown:Hide()
 		end
 	end
 	-- The model well between the columns (docs/DESIGN.md, "Model Well"): no

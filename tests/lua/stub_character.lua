@@ -342,3 +342,9 @@ table.insert(PAPERDOLL_STATCATEGORIES, { categoryName = "Combat", unit = "pet", 
 -- An item dropped on the model: stub.autoEquipped.
 function C_PaperDollInfo.CanAutoEquipCursorItem() return CursorHasItem() end
 function AutoEquipCursorItem() stub.autoEquipped = true; stub.cursorFits = nil end
+
+-- The slots' extras: 200 arrows, the gloves on cooldown, the boots locked.
+function GetInventoryItemCount(unit, id) return id == 0 and 200 or 1 end
+function IsInventoryItemLocked(id) return id == 8 end
+function GetInventoryItemEquippedUnusable(unit, id) return false end
+function GetInventoryItemCooldown(unit, id) if id == 10 then return 100, 120, 1 end return 0, 0, 0 end
