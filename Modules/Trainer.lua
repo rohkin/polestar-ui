@@ -51,17 +51,18 @@ end
 
 -- Why Train cannot buy service i now, or nil when it can: available,
 -- affordable, and for a profession a free slot (as the stock Train button).
-local NO_SLOT = "slot"
 local function blocked(i)
+	if not i then return "Nothing selected." end
 	local _, kind = GetTrainerServiceInfo(i)
 	local cost, isProfession = GetTrainerServiceCost(i)
-	if kind ~= "available" then return kind end
-	if (cost or 0) > purse() then return "cost" end
-	if isProfession and select(2, GetProfessions()) then return NO_SLOT end
+	if kind == "used" then return ITEM_SPELL_KNOWN or "Already known" end
+	if kind ~= "available" then return "Its requirements are not met yet." end
+	if (cost or 0) > purse() then return petTrainer() and "Your pet has too few training points." or (ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") end
+	if isProfession and select(2, GetProfessions()) then return TRAINER_CANNOT_EXCEED_MAX_PROFESSIONS or "You cannot learn any more professions." end
 end
 
 local function train()
-	if not sel or blocked(sel) then return end
+	if blocked(sel) then return end
 	local i = sel
 	if not (IsTradeskillTrainer() and select(2, GetTrainerServiceCost(i))) then return BuyTrainerService(i) end
 	-- The stock CONFIRM_PROFESSION, as Polestar's dialog (StaticPopup is never ours).
@@ -208,16 +209,6 @@ local function build()
 		GameTooltip:Show()
 	end)
 	f.psPoints:SetScript("OnLeave", W.HideTooltip)
-	-- Train off for want of a profession slot says why (ClassTrainerFrame_SetTrainButtonEnabled).
-	local b = f.footerButtons.right[1]
-	b:SetMotionScriptsWhileDisabled(true)
-	b:HookScript("OnEnter", function(self)
-		if not (sel and blocked(sel) == NO_SLOT) then return end
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText(TRAINER_CANNOT_EXCEED_MAX_PROFESSIONS or "You cannot learn any more professions.", 1, 0.82, 0, 1, true)
-		GameTooltip:Show()
-	end)
-	b:HookScript("OnLeave", W.HideTooltip)
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
 	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
 	Polestar.CloseOnEscape(NAME)
@@ -294,7 +285,8 @@ function paint()
 	f.psEmpty:SetShown(#list == 0)
 	W.SetIconState(f.psFilter, not (GetTrainerServiceTypeFilter("available") and GetTrainerServiceTypeFilter("unavailable") and GetTrainerServiceTypeFilter("used")))
 
-	ns.SetEnabled(f.footerButtons.right[1], sel and not blocked(sel) or false)
+	local why = blocked(sel)
+	ns.SetEnabled(f.footerButtons.right[1], not why, why)
 	f.psMoney:SetShown(not pet)
 	ns.SetMoney(f.psMoney, GetMoney())
 	f.psPoints:SetShown(pet and true or false)
