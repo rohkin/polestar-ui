@@ -109,6 +109,11 @@ end
 function GameTooltip:SetMerchantItem(i) self:SetText(ware(i)[1]) end
 function GameTooltip:SetBuybackItem(i) self:SetText(stub.buyback[i][1]) end
 function IsModifiedClick(what) return IsShiftKeyDown() and (what == nil or what == "SPLITSTACK") end
+-- The game's cursors over a ware: buy, can't, buy back, inspect.
+function SetCursor(c) stub.cursorShape = c end
+function ResetCursor() stub.cursorShape = nil end
+function ShowBuybackSellCursor() stub.cursorShape = "BUYBACK" end
+function ShowInspectCursor() stub.cursorShape = "INSPECT" end
 function HandleModifiedItemClick() return false end
 
 -- The filter (LE_LOOT_FILTER_*) and the game's menu, as the stock dropdown reads them.

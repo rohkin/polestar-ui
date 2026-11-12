@@ -20,7 +20,7 @@ stub.interact(T.Merchant)
 local w = f()
 assert(tostring(w.Title:GetText()) == "Harlan Bagley", "the band names the vendor")
 local rows = {}
-for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex then rows[r.psIndex] = r end end
+for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and not r.psBuyback then rows[r.psIndex] = r end end
 assert(#rows == 9, "a row per ware")
 assert(tostring(rows[2].Stack:GetText()) == "\195\151200" and tostring(rows[3].Stack:GetText()) == "3 left", "stack size and stock")
 assert(rows[4].Well.Icon.desaturated and not rows[1].Well.Icon.desaturated, "sold out not faded")

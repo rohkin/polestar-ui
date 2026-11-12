@@ -124,8 +124,11 @@ end
 ---------------------------------------------------------------------------
 -- Item rows: the well, the name in its quality colour, the price under it.
 
+-- A row of something sold here: the Buyback tab's, or the last sold on Buy.
+local function back(r) return r.psBuyback or tab == "buyback" end
+
 local function link(r)
-	return tab == "buyback" and GetBuybackItemLink(r.psIndex) or GetMerchantItemLink(r.psIndex)
+	return back(r) and GetBuybackItemLink(r.psIndex) or GetMerchantItemLink(r.psIndex)
 end
 
 local function click(r, button)
@@ -133,20 +136,24 @@ local function click(r, button)
 	local i = r.psIndex
 	if IsModifiedClick() then
 		if HandleModifiedItemClick(link(r)) then return end
-		if tab == "buy" and IsModifiedClick("SPLITSTACK") then howMany(i) end
-	elseif tab == "buyback" then
+		if not back(r) and IsModifiedClick("SPLITSTACK") then howMany(i) end
+	elseif back(r) then
 		BuybackItem(i)
 	else
 		buy(i, button == "RightButton" and GetMerchantItemMaxStack(i) or nil)
 	end
 end
 
+-- The tooltip, and the game's cursor as on the stock rows: buy (or can't),
+-- buy back, or inspect with the dress-up key.
 local function enter(r)
 	GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
-	if tab == "buyback" then
+	if back(r) then
 		GameTooltip:SetBuybackItem(r.psIndex)
 		ns.TooltipHint("Click to buy it back.")
+		if IsModifiedClick("DRESSUP") then ShowInspectCursor() else ShowBuybackSellCursor(r.psIndex) end
 	else
+		if IsModifiedClick("DRESSUP") then ShowInspectCursor() else SetCursor(CanAffordMerchantItem(r.psIndex) == false and "BUY_ERROR_CURSOR" or "BUY_CURSOR") end
 		GameTooltip:SetMerchantItem(r.psIndex)
 		if GameTooltip_ShowCompareItem then GameTooltip_ShowCompareItem(GameTooltip) end
 		ns.TooltipHint("Click to buy. Right-click buys a stack, Shift-click asks how many.")
@@ -199,19 +206,22 @@ local function newRow(k)
 	r:SetScript("OnClick", click)
 	-- Dragged to the bags, as the stock button; never one that asks first.
 	r:SetScript("OnDragStart", function(self)
-		local it = tab == "buy" and C_MerchantFrame.GetItemInfo(self.psIndex)
+		local it = not back(self) and C_MerchantFrame.GetItemInfo(self.psIndex)
 		if it and not it.hasExtendedCost and (it.price or 0) < HIGH then PickupMerchantItem(self.psIndex) end
 	end)
 	r:SetScript("OnReceiveDrag", sell)
 	r:SetScript("OnEnter", enter)
-	r:SetScript("OnLeave", W.HideTooltip)
+	r:SetScript("OnLeave", function(self)
+		W.HideTooltip(self)
+		ResetCursor()
+	end)
 	rows[k] = r
 	return r
 end
 
 local function fill(r, k)
 	local name, icon, price, count, avail, usable, it, l
-	if tab == "buyback" then
+	if back(r) then
 		name, icon, price, count, avail, usable = GetBuybackItemInfo(k)
 		l = GetBuybackItemLink(k)
 	else
@@ -431,6 +441,24 @@ function paint()
 	local n = buyback and GetNumBuybackItems() or GetMerchantNumItems()
 	for k = 1, n do fill(rows[k] or newRow(k), k) end
 	for k = n + 1, #rows do rows[k]:Hide() end
+	-- On Buy, the last item sold, to buy back (the stock MerchantBuyBackItem).
+	local h = 24 + math.max(1, math.ceil(n / 2)) * ROW_H + 24
+	local last = not buyback and GetNumBuybackItems() or 0
+	if not f.psLast then
+		f.psLast = newRow(0)
+		rows[0] = nil
+		f.psLast.psBuyback = true
+		f.psLastCaption = W.Text(f.Body, "small", "textDim")
+		f.psLastCaption:SetText("Sold last")
+	end
+	f.psLast:SetShown(last > 0)
+	f.psLastCaption:SetShown(last > 0)
+	if last > 0 then
+		f.psLastCaption:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + 8, -h)
+		f.psLast:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(h + 18))
+		fill(f.psLast, last)
+		h = h + 18 + ROW_H + 24
+	end
 	f.psEmpty:SetText(buyback and "Nothing sold here yet." or "Nothing for sale.")
 	f.psEmpty:SetShown(n == 0)
 	ns.SetMoney(money, GetMoney())
@@ -438,7 +466,7 @@ function paint()
 	-- A game rule can take the filter away (MerchantFrame_Update).
 	if f.psFilter then f.psFilter:SetShown(not (C_GameRules and C_GameRules.IsGameRuleActive(Enum.GameRule.MerchantFilterDisabled))) end
 	footer()
-	W.ShellBody(f, 24 + math.max(1, math.ceil(n / 2)) * ROW_H + 24)
+	W.ShellBody(f, h)
 end
 
 function M.Show()
