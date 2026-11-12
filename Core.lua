@@ -91,15 +91,17 @@ function ns.GridCell(v)
 	return s or 1
 end
 
--- An inset well holding a game icon, in the Polestar look: returns the well and its icon.
-function ns.ItemWell(parent, size)
-	local well = CreateFrame("Frame", nil, parent)
+-- An inset well holding a game icon, in the Polestar look: returns the well and
+-- its icon (also well.Icon). `kind` is its frame type, "Frame" when not given.
+function ns.ItemWell(parent, size, kind)
+	local well = CreateFrame(kind or "Frame", nil, parent)
 	well:SetSize(size, size)
 	Polestar.Theme.Skin(well, "inset")
 	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
 	local icon = ns.GameIcon(well)
 	icon:SetPoint("TOPLEFT", 1, -1)
 	icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	well.Icon = icon
 	return well, icon
 end
 
@@ -122,6 +124,100 @@ function ns.SubjectBlock(f)
 	-- To the sidebar's 24 edge; longer text ends in the client's ellipsis.
 	for _, t in ipairs({ name, line }) do t:SetWidth(f.Sidebar:GetWidth() - (24 + 36 + 12) - 24) end
 	return { icon = icon, name = name, line = line }
+end
+
+-- Paints an item well (ns.ItemWell) as the game shows the item: its icon, a
+-- border in its raw quality colour from uncommon up (docs/DESIGN.md, "Slot
+-- Tile"), the stack count at the bottom right when over 1, desaturated (sold
+-- out, locked) or red (unusable). `it` nil empties the well.
+function ns.PaintItem(w, it)
+	local Theme = Polestar.Theme
+	it = it or {}
+	w.Icon:SetTexture(it.icon)
+	w.Icon:SetDesaturated(it.desat and true or false)
+	if it.unusable then w.Icon:SetVertexColor(Theme.Color("danger")) else w.Icon:SetVertexColor(1, 1, 1) end
+	local r, g, b = ns.QualityRGB(it.quality)
+	if r and it.quality >= 2 then Theme.Border(w, r, g, b, 1) else Theme.Border(w, Theme.Wash("border")) end
+	local n = it.count or 0
+	if n > 1 and not w.psCount then
+		w.psCount = Polestar.Widgets.Text(w, "number", "text", "OVERLAY")
+		w.psCount:SetPoint("BOTTOMRIGHT", w, "BOTTOMRIGHT", -3, 3)
+	end
+	if w.psCount then w.psCount:SetText(n > 1 and n or "") end
+end
+
+-- A grid of item wells (buttons, with the hover wash), `cols` to a row, `size`
+-- square, `gap` apart. Returns the grid's frame, for the caller to anchor;
+-- grid.Layout(n) shows the first n wells (made as needed, kept for reuse),
+-- hides the rest, fits the frame's height and returns the wells.
+function ns.ItemGrid(parent, cols, size, gap)
+	local g = CreateFrame("Frame", nil, parent)
+	g:SetSize(cols * (size + gap) - gap, 1)
+	local wells = {}
+	function g.Layout(n)
+		for i = 1, n do
+			local w = wells[i]
+			if not w then
+				w = ns.ItemWell(g, size, "Button")
+				Polestar.Widgets.Hover(w)
+				wells[i] = w
+			end
+			local k = i - 1
+			w:ClearAllPoints()
+			w:SetPoint("TOPLEFT", g, "TOPLEFT", (k % cols) * (size + gap), -math.floor(k / cols) * (size + gap))
+			w:Show()
+		end
+		for i = n + 1, #wells do wells[i]:Hide() end
+		-- Never 0 high: a frame of size 0 has no rect (docs/CLIENT.md, rule 12).
+		g:SetHeight(math.max(1, math.ceil(n / cols) * (size + gap) - gap))
+		return wells
+	end
+	return g
+end
+
+-- A money line: gold, silver and copper, each a number and the game's coin.
+local COINS = { { 10000, "Interface\\MoneyFrame\\UI-GoldIcon" }, { 100, "Interface\\MoneyFrame\\UI-SilverIcon" }, { 1, "Interface\\MoneyFrame\\UI-CopperIcon" } }
+local COIN = 12
+
+function ns.Money(parent)
+	local m = CreateFrame("Frame", nil, parent)
+	m:SetHeight(COIN + 2)
+	m.psParts = {}
+	for i, c in ipairs(COINS) do
+		local p = { text = Polestar.Widgets.Text(m, "number", "text"), coin = m:CreateTexture(nil, "ARTWORK") }
+		p.coin:SetSize(COIN, COIN)
+		p.coin:SetTexture(c[2])
+		m.psParts[i] = p
+	end
+	return m
+end
+
+-- Writes `copper` into a money line as the game writes it (GetMoneyString:
+-- units at zero left out, copper alone for none), in the `color` token (text
+-- when not given). The line is as wide as what it shows: anchor it by either end.
+function ns.SetMoney(m, copper, color)
+	copper = math.floor(copper or 0)
+	local x = 0
+	for i, c in ipairs(COINS) do
+		local p = m.psParts[i]
+		local n = math.floor(copper / c[1])
+		if i > 1 then n = n % 100 end
+		local on = n > 0 or (i == #COINS and copper == 0)
+		p.text:SetShown(on)
+		p.coin:SetShown(on)
+		if on then
+			if x > 0 then x = x + 6 end
+			p.text:SetText(n)
+			Polestar.Widgets.Color(p.text, color or "text")
+			p.text:ClearAllPoints()
+			p.text:SetPoint("LEFT", m, "LEFT", x, 0)
+			x = x + math.ceil(p.text:GetStringWidth()) + 2
+			p.coin:ClearAllPoints()
+			p.coin:SetPoint("LEFT", m, "LEFT", x, 0)
+			x = x + COIN
+		end
+	end
+	m:SetWidth(x)
 end
 
 -- A numeric editbox in the Polestar look; done(box) runs as it loses focus.
@@ -342,6 +438,46 @@ function ns.Doors(module, name, actions, micro, onMicro)
 		end
 		o:SetShown(on)
 	end)
+end
+
+-- An NPC window (docs/DESIGN.md, "NPC windows: how they open"): the stock
+-- window ends the interaction as it hides, so it is never opened. Ours takes
+-- the interaction `types` from the game's manager (RegisterPlayerInteraction,
+-- its own API, replacing the stock entry) and opens through ns.Show(key);
+-- the routes Forever also sends through GameEvent (`o.internal`, event names)
+-- are stopped. Ours is `o.frame` (its global name); closed by the player it
+-- ends the interaction (`o.close`, the stock close call), closed by the game
+-- it does not end it again. `o.bags` opens the bags with it and closes them
+-- after, as the stock window did. Off waits for /reload: routed back from our
+-- code, the stock window would open tainted. Call it from the module's Enable.
+function ns.Interaction(key, types, o)
+	ns.modules[key].reloadOff = true
+	for _, e in ipairs(o.internal or {}) do GameEvent.UnregisterInternalEvent(e) end
+	local hooked, ended
+	local info = {
+		frame = o.frame,
+		showFunc = function()
+			ns.Show(key)
+			local f = _G[o.frame]
+			-- Not opened: end the interaction, as the stock show does.
+			if not (f and f:IsShown()) then return o.close() end
+			if not hooked then
+				hooked = true
+				f:HookScript("OnHide", function(self)
+					if o.bags then CloseAllBags(self) end
+					if not ended then o.close() end
+					ended = nil
+				end)
+			end
+			if o.bags then OpenAllBags(f) end
+		end,
+		hideFunc = function()
+			ended = true
+			_G[o.frame]:Hide()
+			ended = nil
+		end,
+	}
+	for _, t in ipairs(types) do RegisterPlayerInteraction(t, info) end
 end
 
 -- Docking, the default (PolestarUIDB.free turns it off): our windows lay out
