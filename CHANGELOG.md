@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.6
 
 - Character: pick your title; save, wear, rename and delete gear sets; gear slots show sockets, gems, counts, cooldowns and broken items, with Alt-hover choices for another item; reputation, currency and skill details; Honor's weekly cap, season progress and rewards; your pet's loyalty, happiness and stats.
 - Social: friends, friend requests, recent allies, the ignore list and the raid in Polestar's look, with the game's tooltips and menus; drag players between raid groups, ready check, role counts, Raid info and party conversion.
