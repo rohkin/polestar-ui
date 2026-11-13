@@ -80,3 +80,20 @@ function GetMaxUIPanelsWidth() return UIParent:GetRight() - 80 end
 EventRegistry = { callbacks = {} }
 function EventRegistry:RegisterCallback(event, fn) self.callbacks[event] = self.callbacks[event] or {}; table.insert(self.callbacks[event], fn) end
 function EventRegistry:TriggerEvent(event, ...) for _, fn in ipairs(self.callbacks[event] or {}) do fn(self, ...) end end
+
+-- The client's error handler records, as the game's does (it reports and
+-- returns), instead of wow_stub.lua's that raises: Polestar's SafeCall passes
+-- a caught error to it once (later the same message is deduped), so a raise
+-- there died in the outer event dispatch's pcall and login errors (a
+-- module's Enable) went unseen. stub.assertNoErrors() fails with every one.
+stub.errors = {}
+local function record(err)
+	stub.errors[#stub.errors + 1] = debug.traceback(tostring(err), 2)
+end
+function geterrorhandler() return record end
+function stub.assertNoErrors()
+	if #stub.errors == 0 then return end
+	local n, all = #stub.errors, table.concat(stub.errors, "\n\n")
+	stub.errors = {}
+	error(n .. " error(s) reported to the error handler:\n" .. all, 0)
+end
