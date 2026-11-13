@@ -249,9 +249,16 @@ HUD elements cast no window shadow and carry no band: they sit on the world, so
 they follow Polestar's Transparent guide-window rules (outlined text, faint
 tracks), with a panel ground only where the player turns it on.
 
+Unit frames replace the stock ones, which stay as Edit Mode's proxies, only
+veiled (CLIENT.md, rule 16). The other built HUD pieces are restyled in place
+(rule 17: Edit Mode places them, so nothing of theirs is moved, scaled or
+hidden):
+
 | HUD element | Risk | Status | Entry |
 |---|---|---|---|
 | Unit frames: player, target, target of target, focus, focus's target, pet, party, bosses (`PlayerFrame`, `TargetFrame`, `FocusFrame`, their `ToT`, `PetFrame`, `PartyFrame`, `BossTargetFrameContainer`) | high | building (phases 1-3; compact raid next) | [windows/unitframes.md](windows/unitframes.md) |
+| Minimap (`MinimapCluster`, `Minimap`) | high | built | [windows/minimap.md](windows/minimap.md) |
+| Action bars (`MainActionBar`, `MultiBar*`, pet, stance, possess) | high | built | [windows/actionbars.md](windows/actionbars.md) |
 
 ## Components
 

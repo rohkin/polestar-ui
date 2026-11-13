@@ -389,10 +389,8 @@ placed on login, on
 frame while Edit Mode is open (`EventRegistry` "EditMode.Enter" to
 "EditMode.Exit": a drag, a Frame Size change), and as it closes; they copy the
 system's alpha (Opacity). Placing a secure frame is protected (rule 4): in
-combat it waits for `PLAYER_REGEN_ENABLED`. The planner's sibling rule holds
-for every Edit Mode system frame we stand in for (minimap, action bars):
-never Hide, SetPoint, SetScale or reparent it; fade or hide only its art, and
-follow its settings through the stock frame itself.
+combat it waits for `PLAYER_REGEN_ENABLED`. Every other Edit Mode system
+frame (minimap, action bars) keeps rule 17.
 
 **Caught by:** `tests/lua/stub_unitframes.lua` errors on any of those calls
 on a stock unit frame from addon code, and on any move, size, show or
@@ -402,6 +400,57 @@ scene drags and resizes the stock boxes and switches layouts, the
 veils the pet, party and boss frames and places ours on them,
 `unitframes-group-editmode` has ours stand in and follow a drag, and
 `unitframes-off` checks everything comes back.
+
+## 17. Edit Mode system frames: never Hide/SetPoint/SetScale/reparent; fade art with SetAlpha; follow settings through the stock frame
+
+**What the source says:** every Edit Mode system (`MinimapCluster`,
+`MainActionBar`, the `MultiBar*` bars, `StanceBar`, `PetActionBar`,
+`BagsBar`, `MicroMenuContainer`, `QueueStatusButton`,
+`MainMenuBarVehicleLeaveButton` and the others built on
+`EditModeSystemTemplate`) has `EditModeSystemMixin:OnSystemLoad` write
+`SetScale`, `SetPoint`, `ClearAllPoints`, `Hide` and `SetShown` as Lua
+keys on it (`Blizzard_EditMode/Shared/EditModeSystemTemplates.lua`). A call
+of ours runs the override as our code: `SetPointOverride` re-snaps the frame
+(`SetSnappedToFrame`, `EditModeManagerFrame:OnEditModeSystemAnchorChanged`),
+`HideOverride` runs `BreakSnappedFrames`, which writes into every other
+system snapped to it, and `SetScaleOverride` moves the frame and runs
+`ManageFramePositions`. All of that is then tainted, the action bars and their
+secure buttons with it, and the player's layout is no longer the one Edit
+Mode saved. The bars' buttons are secure (`SecureActionButtonTemplate`):
+their place, size, parent and attributes are the game's.
+
+**Rule:** a HUD piece Edit Mode places is restyled in place, never hidden,
+moved, scaled or rebuilt. On a system frame, its children and the secure
+buttons in it: no `Hide`/`Show`/`SetShown`, `SetPoint`/`ClearAllPoints`,
+`SetScale`/`SetSize`, `SetParent`, `SetAttribute`, `EnableMouse`, no
+`hooksecurefunc` on their methods and no Lua key. Only, as rule 15: fade an
+art region with `SetAlpha` (art the game swaps with `SetAtlas` keeps it),
+empty one whose alpha the game writes (`SetTexture(nil)`, given back with
+its atlas), add textures and font strings of ours (`CreateTexture`, kept in a
+weak table), set a font string's face (`Theme.SetFace`), swap a mask
+(`Minimap:SetMaskTexture`, `RemoveMaskTexture`), and put frames of ours
+under the frame (`Polestar.CreateFrameUnder`). Edit Mode's settings are
+read from the stock frame (`GetSettingValueBool`), and what ours draws
+follows them by hanging on the stock frame and repainting on
+`EDIT_MODE_LAYOUTS_UPDATED` and `EditMode.Exit`, never by moving the
+stock frame. A secure button the game makes later (a spell flyout's) is
+restyled out of combat.
+
+The one exception is rule 16's veil on the stock unit frames we replace
+(`PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, the party members,
+`Boss1TargetFrame`..`Boss5TargetFrame`): exactly the calls rule 16 lists
+(`EnableMouse(false)` on the frame, `Hide()` on its two art and bar
+children, `SetAlpha(0)` on the targets of target and the pet's and party's
+art regions), out of combat, from `Modules/UnitFrames.lua`. Nothing else
+of this rule is relaxed for them.
+
+**Caught by:** `tests/lua/stub_editmode.lua`: the minimap and action bar
+stubs guard every system frame, container, secure button and art region,
+and a call above or a key written from Polestar: UI's files errors (the
+`minimap-editmode` and `actionbars-editmode` scenes change Edit Mode's
+settings; `actionbars-combat` restyles a new flyout only after combat).
+The stock unit frames are guarded by `tests/lua/stub_unitframes.lua`
+instead (rule 16), which lets through only the veil's calls.
 
 ## Reading errors from the game
 

@@ -32,5 +32,7 @@ Modules\Social.lua
 Modules\Auction.lua
 Modules\HUD.lua
 Modules\UnitFrames.lua
+Modules\Minimap.lua
+Modules\ActionBars.lua
 Modules\Tooltips.lua
 Modules\Chat.lua
