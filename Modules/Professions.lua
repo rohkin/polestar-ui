@@ -134,26 +134,17 @@ function ns.ProfessionTabs(win, onOverview)
 			end
 		end
 		local active = current or "overview"
-		W.ShellRail(win, items, nil, active, function(key)
+		ns.GameRail(win, items, active, function(key)
 			if key == "overview" and current ~= nil and onOverview then onOverview() end
 		end)
 		for i, d in ipairs(items) do
 			local b = win.railButtons[i]
 			b.psName, b.psSpell, b.psActive = d.label, d.spell, d.key == active
-			-- A game icon, not a glyph: the rail's tint taken off, its border cropped.
-			W.Uncolor(b.Icon)
-			b.Icon:SetVertexColor(1, 1, 1, 1)
-			b.Icon:SetTexture(d.icon)
-			b.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-			b.Icon:SetSize(24, 24)
 			if not b.psCast then
 				b.psCast = true
 				b:HookScript("OnEnter", function(self) if self.psSpell then overTab(self) end end)
 			end
 		end
-		-- The rail grows to its widest label; a window without a sidebar hangs
-		-- its main column off the rail's edge (docs/CLIENT.md, rule 12).
-		if not win.Sidebar:IsShown() then ns.Plain(win, win.psRail) end
 	end
 end
 

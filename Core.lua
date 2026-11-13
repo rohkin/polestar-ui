@@ -73,6 +73,25 @@ function ns.Plain(f, left)
 	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
 end
 
+-- A section rail (W.ShellRail) wearing the game's icons, not glyphs (the Two
+-- Families Rule): the rail's tint taken off, the client's border cropped,
+-- 24px. The rail grows to its widest label; a window without a sidebar hangs
+-- its main column off the rail's edge (docs/CLIENT.md, rule 12). Shared by
+-- Professions (ns.ProfessionTabs) and Character. items: { key, label, icon, tip }.
+function ns.GameRail(win, items, active, onSelect)
+	local W = Polestar.Widgets
+	W.ShellRail(win, items, nil, active, onSelect)
+	for i, d in ipairs(items) do
+		local t = win.railButtons[i].Icon
+		W.Uncolor(t)
+		t:SetVertexColor(1, 1, 1, 1)
+		t:SetTexture(d.icon)
+		t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		t:SetSize(24, 24)
+	end
+	if not win.Sidebar:IsShown() then ns.Plain(win, win.psRail) end
+end
+
 -- W.ShellFooter, its buttons back on at full alpha: the footer reuses them page
 -- to page, and one greyed on the last page would stay greyed. The caller greys
 -- its own after (ns.SetEnabled).

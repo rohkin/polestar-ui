@@ -43,6 +43,7 @@ Doors and secure parts
 Shell pieces
 - `ns.Plain(f, left?)`: a shell made with `sidebar = 0` loses its sidebar and Polestar's emblem; `f.Main` hangs off the window, `left` past its edge (a rail's width).
 - `ns.Footer(f, left, right)`: `W.ShellFooter` with every reused footer button back on at full alpha; use it, never `W.ShellFooter`, then grey your own with `ns.SetEnabled`.
+- `ns.GameRail(win, items, active, onSelect)`: `W.ShellRail` with each item's game icon (`icon`, 24px, untinted, cropped), then `ns.Plain` off the rail when the sidebar is hidden (Professions, Character).
 - `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
 - `ns.GameIcon(parent, layer)`: texture cropped of the client's icon border.
