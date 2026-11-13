@@ -83,7 +83,10 @@ unitFn("UnitGetIncomingHeals", function(d) return stub.secret(d.heals or 0) end)
 unitFn("UnitGetTotalAbsorbs", function(d) return stub.secret(d.absorbs or 0) end, 0)
 unitFn("UnitGetTotalHealAbsorbs", function(d) return stub.secret(d.healAbsorbs or 0) end, 0)
 unitFn("UnitLevel", function(d) return d.level or 1 end, 0)
-unitFn("UnitEffectiveLevel", function(d) return d.level or 1 end, 0)
+unitFn("UnitEffectiveLevel", function(d) return d.level or 1 end)
+-- A unit the stub does not know: its level, as the client answers (a scene's own UnitLevel).
+local effectiveLevel = UnitEffectiveLevel
+function UnitEffectiveLevel(unit) local v = effectiveLevel(unit) if v == nil then return UnitLevel(unit) end return v end
 unitFn("UnitClass", function(d) if not d.class then return nil end return CLASSES[d.class], d.class end)
 unitFn("UnitIsPlayer", function(d) return d.player == true end, false)
 unitFn("UnitReaction", function(d) return d.reaction end)
