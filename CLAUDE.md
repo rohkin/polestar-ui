@@ -68,6 +68,9 @@ Restyle kit (art of ours on a stock frame, CLIENT.md rule 15; Tooltips, Chat)
 - `ns.FadeNine(holder, a)`: the NineSlice pieces keyed on `holder` at alpha `a`.
 - `ns.Hairlines(f, rel, make?)`: four hairline textures on `f` round `rel` (top, bottom, left, right; `make()` supplies them on a pooled menu); `ns.PaintHairlines(e, on, r, g, b, a)` shows, colours and sizes them to one pixel.
 - `ns.PaintGround(fill, on, k?)`: `bg` at `Theme.GroundAlpha()` times `k` (0.85 = the tooltip look).
+HUD kit (`ns.HUD`, `Modules/HUD.lua`; takes secret values, follows every scheme and skin)
+- `H.Bar(parent)` (StatusBar on a progress track; `H.SetBarColor(b, r, g, b)`), `H.Segment(bar, token, alpha, back?)` (continues a fill, or eats into it from its end), `H.Text(parent, role, color)` (outlined; set values with SetFormattedText only), `H.Ground(f)`/`H.PaintGround(g, alpha, r?, g?, b?, a?)`, `H.Portrait(parent)`/`H.SetPortrait(p, unit)` (square 3D well).
+- `H.ClassColor(unit)` (nil while secret), `H.UnitColor(unit)` (theme accent, class colour with Polestar's "Class colour", danger/warning by reaction), `H.PowerColor(unit)`.
 Values
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).
 Slash: `/pui` lists windows, `/pui <key> [on|off]`, `/pui dock on|off`.
@@ -86,6 +89,7 @@ Per window (set before `Show`, read after)
 - NPC (`stub_npc.lua`): `stub.interact(type)`, `stub.endInteraction(type)`, `stub.npcClosed[CloseFn]` counts (`CloseMerchant`, `CloseTrainer`, `CloseMail`, `C_Bank.CloseBankFrame`), `stub.bagsOpen`/`stub.bagsOpener`, `stub.money`, `stub.bag`, `stub.unrouted[event]`.
 - Character: `stub.secretStats`, `stub.targeting`, `stub.cursorFits[slot]`. Spellbook: `stub.pet`, `stub.linked`. Talents: `stub.dual`, `stub.noPoints`, `stub.finishCommit()`.
 - Legacy: `stub.treePoints`, `stub.searched`, `stub.tracked`, `stub.modified`, `stub.finishLegacyCommit()`. World Map: `stub.watched`, `stub.abandoned`, `stub.shared`, `stub.inGroup`, `stub.xpMax`, `stub.maxLevel`, `stub.trivialOut`, `stub.caveListed`, `stub.chatOpen`. Professions: `stub.abandoned`.
+- Unit frames (`stub_unitframes.lua`, loaded for every scene): `stub.units[unit] = {name, level, class, player, reaction, classification, health, max, power, powerMax, powerType, heals, absorbs, healAbsorbs, dead, ghost, offline, tapped, threat}` (values come back as `stub.secret(v)`; `stub.reveal(v)`), `stub.unitWatch()` (re-runs the unit watch and state drivers), `stub.vehicle`, `stub.inRaid`, `stub.raidStyleParty`, `stub.updateParty()`, `stub.updateBosses()`; Edit Mode: `stub.enterEditMode()`, `stub.exitEditMode()`, `stub.moveSystem(frame, x, y, scale?)`, `stub.applyLayout({[frame] = {x, y, scale}})`, `stub.showPartyInEditMode`. Rule 16 calls on a stock unit frame and protected calls in combat error.
 Scene file: leading `--@ key: value` lines (`title`, `roots` = frames drawn, `stubs` = files in `tests/lua`, `saved` = saved-variable Lua); the rest is Lua run after login. `--@ panel` starts another panel (own roots/stubs/saved header). Asserts fail the scene.
 ```lua
 --@ title: Spellbook: search
@@ -102,7 +106,7 @@ Module (`Modules/<Key>.lua`), `tests/lua/stub_<key>.lua`, `tests/scenes/<key>*.l
 ## Conventions
 - Commits: one imperative sentence, subject line only, one logical change each (e.g. "Add a window scaffold script ..."). No body, no attribution trailer.
 - Module skeleton (copy `Modules/Spellbook.lua`): `local ADDON, ns = ...; local W = Polestar.Widgets`; `build()` = `W.Shell(NAME, {scalePath = "ui.menuScale"})`, `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(NAME)`; `refresh()` = `W.ShellNav/Title/Tabs`, `ns.Footer`, `W.ShellBody`; `M.Show/Toggle`; `M.Enable()` calls `ns.Doors` and registers events; `M.stock()` returns the stock frame when shown; `ns.Module(key, M)`.
-- Never touch the stock window (no show/hide/hook/anchor): the stock one is closed or never opened (CLIENT.md rules 1, 8, 10).
+- Never touch the stock window (no show/hide/hook/anchor): the stock one is closed or never opened (CLIENT.md rules 1, 8, 10). Unit frames: the stock ones stay as Edit Mode's proxies, only veiled (rule 16).
 - Switching a module off that stopped stock routing (`reloadOff`) takes effect "after /reload"; say so in text and tests.
 - Feature-detect Polestar exports and ship without them until they exist, e.g. `if Polestar.MapCanvas and Polestar.MapCanvas.Add then ...` (WorldMap).
 - Intended visual change: run `npm run preview`, check `git diff --stat tests/golden`, commit goldens with the change.

@@ -25,7 +25,7 @@ name. `docs/windows/<key>.md` holds each window's catalogue entry.
    code (secure code, other addons) writes into it.
 2. **Pick the strategy** (below). Read `docs/DESIGN.md` "The Replacement
    Contract" and the window's entry in `docs/windows/<key>.md` (or its sibling
-   windows', when it is new), and `docs/CLIENT.md` (all 15 rules; rules 8, 11, 14,
+   windows', when it is new), and `docs/CLIENT.md` (all 16 rules; rules 8, 11, 14,
    15 most often decide it).
 3. **Break it into parts** and map each with `catalog.md` section A. Prefer,
    in order: a W/Theme widget, an `ns.*` helper in Core.lua, a pattern
