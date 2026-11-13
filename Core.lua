@@ -17,7 +17,9 @@ ns.modules, ns.order = {}, {}
 -- stock = fn (the stock window it replaces, when that is the one shown),
 -- reloadOff = true (switching it off waits for /reload), Apply = fn (a module
 -- with no window: switched on or off again live, it restyles or restores),
--- noun = what it switches ("window" when not given) }, keyed by its
+-- noun = what it switches ("window" when not given), micro = the game's micro
+-- button that opens its stock window (ns.Doors sets it; "Use game window"
+-- clicks it) }, keyed by its
 -- slash-command name.
 function ns.Module(key, m)
 	ns.modules[key] = m
@@ -862,7 +864,7 @@ function ns.Doors(module, name, actions, micro, onMicro)
 	keySig = false
 	bindKeys()
 	if not micro then return end
-	ns.modules[module].psMicro = micro
+	ns.modules[module].micro = micro
 	local o = CreateFrame("Button", "PolestarUI" .. name .. "Micro", UIParent, "SecureActionButtonTemplate")
 	o:RegisterForClicks("LeftButtonUp")
 	o:SetAttribute("useOnKeyDown", false)
@@ -1134,8 +1136,7 @@ end
 local gameDoor
 local function gameMicro(key)
 	local m = ns.modules[key]
-	-- Character takes ToggleCharacter, not its micro button (no ns.Doors micro).
-	local micro = m.psMicro or (key == "character" and CharacterMicroButton)
+	local micro = m.micro
 	return not m.reloadOff and micro and micro:GetName() and micro
 end
 local function gameWindowDoor()
@@ -1226,6 +1227,13 @@ if not Polestar.GamepadUI() then
 	-- crafting): that one stays open, and ours opens from the next time.
 	-- Hidden in combat, when the switch is refused.
 	local stockButtons = {}
+	-- Its close button: the frame's own (PortraitFrameTemplate), else its
+	-- border's (the world map's is on BorderFrame; WorldMapFrame.CloseButton is
+	-- set only for the gamepad). rawget: the parentKey fields, not methods.
+	local function closeButton(fr)
+		local border = rawget(fr, "BorderFrame")
+		return rawget(fr, "CloseButton") or border and rawget(border, "CloseButton") or nil
+	end
 	local function useOurs(key)
 		ns.Switch(key, true)
 		if not ns.Enabled(key) then return end
@@ -1258,7 +1266,7 @@ if not Polestar.GamepadUI() then
 					b.psSecure = o
 					stockButtons[key] = b
 				end
-				local o, close = b.psSecure, not m.reloadOff and fr.CloseButton or nil
+				local o, close = b.psSecure, not m.reloadOff and closeButton(fr) or nil
 				if o:GetAttribute("clickbutton") ~= close then
 					o:SetAttribute("type1", close and "click" or nil)
 					o:SetAttribute("clickbutton", close)

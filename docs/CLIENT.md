@@ -275,10 +275,14 @@ the open and close sounds play and the read emote flickers.
 
 **Rule:** take only the doors that run no stock code (keys and the micro
 button, `ns.Doors`). Every door only the game's code knows stays the game's,
-and opens the stock map; never hide it after the game opened it.
+and opens the stock map; never hide it after the game opened it from our code.
+The player's click on a secure button of ours that clicks its own close button
+(`WorldMapFrame.BorderFrame.CloseButton`; `WorldMapFrame.CloseButton` is set
+only for the gamepad) runs that as the game's code: the switch button does
+(Core.lua).
 
 **Caught by:** the map scenes' stub `WorldMapFrame` is only ever shown by the
-game's own bindings; no scene hides it.
+game's own bindings; only `worldmap-switch` hides it, by its close button.
 
 ## 15. A stock frame other code writes into is restyled, never replaced
 

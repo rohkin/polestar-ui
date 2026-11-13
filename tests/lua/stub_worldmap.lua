@@ -82,6 +82,13 @@ end
 -- The game's own map: our doors must not open it.
 WorldMapFrame = createFrame("Frame", "WorldMapFrame", UIParent)
 WorldMapFrame:Hide()
+-- Windowed, as the panel manager places it; its close button is on its border
+-- (WorldMapFrame.CloseButton is set only for the gamepad). A secure click of ours runs it, never our code.
+WorldMapFrame:SetSize(1000, 560)
+WorldMapFrame.x, WorldMapFrame.y = 16, 100
+WorldMapFrame.BorderFrame = createFrame("Frame", nil, WorldMapFrame)
+WorldMapFrame.BorderFrame.CloseButton = createFrame("Button", nil, WorldMapFrame.BorderFrame)
+WorldMapFrame.BorderFrame.CloseButton:SetScript("OnClick", function() WorldMapFrame:Hide() end)
 stub.bindings.TOGGLEWORLDMAP = { "M" }
 function stub.bindingRun.TOGGLEWORLDMAP() WorldMapFrame:Show() end
 
@@ -205,6 +212,8 @@ stub.bindings.TOGGLEQUESTLOG = { "L" }
 function stub.bindingRun.TOGGLEQUESTLOG() WorldMapFrame:Show() end
 QuestLogMicroButton = createFrame("Button", "QuestLogMicroButton", UIParent)
 QuestLogMicroButton.tooltipText = "Quest Log (L)"
+-- Its own click: the game's quest log toggle (a secure click of ours runs it, never our code).
+QuestLogMicroButton:SetScript("OnClick", function() stub.bindingRun.TOGGLEQUESTLOG() end)
 
 -- The map's filters (the stock tracking menu's): its CVars, on as the
 -- preview draws, and the low-level quests' tracking filter.

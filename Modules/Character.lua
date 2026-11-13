@@ -1049,5 +1049,7 @@ end
 
 -- The stock window, for the button that switches back to ours (Core.lua).
 function M.stock() return CharacterFrame end
+-- The game's door to it, for "Use game window" (Core.lua); ours takes ToggleCharacter, not this button.
+M.micro = CharacterMicroButton
 
 ns.Module("character", M)

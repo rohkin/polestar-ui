@@ -6,6 +6,7 @@
 - Switching windows swaps them in place: the Polestar button above a game window closes it and opens Polestar's, and "Use game window" closes Polestar's and opens the game's (an NPC or crafting window: Polestar's from its next opening, the game's after /reload; Social has no micro button, so its keys open the game's).
 - Fixed: Mail no longer errors after taking an attachment or opening a letter with fewer attachments, nor the Character flyout on a slot with fewer choices than the last one.
 - Fixed: the Character flyout's Put in bags and wearing an item do nothing while a spell waits for its item, instead of a blocked-action error.
+- Fixed: the Polestar button above the game's World Map now closes it and opens Polestar's map, instead of leaving the game's open until next time.
 
 ## 0.0.6
 
