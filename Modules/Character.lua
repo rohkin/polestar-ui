@@ -41,8 +41,6 @@ local RIGHT = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot",
 local WEAPONS = { { "MainHandSlot", "right" }, { "SecondaryHandSlot", "below" }, { "RangedSlot", "left" } }
 local slots = {}
 
-local qualityRGB = ns.QualityRGB
-
 -- The worn item's permanent enchant, as its tooltip line reads, without the
 -- "Enchanted: " the game puts before it.
 local ENCHANT_LINE = Enum and Enum.TooltipDataLineType and Enum.TooltipDataLineType.ItemEnchantmentPermanent or 15
@@ -65,7 +63,7 @@ local function paintSlotText(s, icon, q)
 	local link = icon and GetInventoryItemLink("player", s:GetID())
 	local name = link and link:match("%[(.-)%]")
 	s.psName:SetText(name or s.psLabel)
-	local r, g, b = qualityRGB(q or 1)
+	local r, g, b = ns.QualityRGB(q or 1)
 	if name and r then s.psName:SetTextColor(r, g, b) else W.Color(s.psName, name and "text" or "textMuted") end
 	local ench = link and enchantText(s:GetID())
 	s.psEnchant:SetText(ench or "")
@@ -167,7 +165,7 @@ local function paintSlot(s, up)
 	else
 		local q = icon and GetInventoryItemQuality("player", id)
 		-- Common and poor items wear the hairline, as an empty slot does.
-		if q and q >= 2 then r, g, b = qualityRGB(q); a = 0.9 end
+		if q and q >= 2 then r, g, b = ns.QualityRGB(q); a = 0.9 end
 	end
 	if not r then r, g, b, a = Polestar.Theme.Wash("border") end
 	Polestar.Theme.Border(s, r, g, b, a)
@@ -803,7 +801,6 @@ local function paintDrawer()
 	d.Title:SetShown(not tabs)
 	d.Title:SetText(v and v.psTitle or "")
 end
-
 
 local function build()
 	-- No sidebar: the section rail holds the sections, the main column as wide

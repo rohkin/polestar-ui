@@ -191,18 +191,14 @@ local function productTip(owner, id, info)
 	GameTooltip:Show()
 end
 
-local quality = ns.QualityRGB
-
 -- An item's icon and name: the name in its quality colour, lifted to read;
 -- the well as ns.PaintItem paints it (docs/DESIGN.md, "Slot Tile").
 local function paintQuality(text, well, q, icon)
 	ns.PaintItem(well, { icon = icon, quality = q })
-	local r, g, b = quality(q)
+	local r, g, b = ns.QualityRGB(q)
 	W.Uncolor(text)
 	if r then text:SetTextColor(Theme.Legible(r, g, b)) else W.Color(text, "text") end
 end
-
-local iconWell = ns.ItemWell
 
 local function place(b, y)
 	b:ClearAllPoints()
@@ -359,7 +355,7 @@ local function tile(i)
 	local t = CreateFrame("Button", nil, f.Body)
 	t:SetHeight(TILE_H)
 	W.Hover(t)
-	t.Well, t.Icon = iconWell(t, TILE_H)
+	t.Well, t.Icon = ns.ItemWell(t, TILE_H)
 	t.Well:SetPoint("LEFT", t, "LEFT", 0, 0)
 	t.Count = W.Text(t, "number", "text")
 	t.Count:SetPoint("RIGHT", t, "RIGHT", -8, 0)
@@ -538,7 +534,6 @@ local function paintPage(info)
 	end
 	return y + 24
 end
-
 
 local function hidePage()
 	f.psProduct:Hide()
@@ -883,7 +878,7 @@ local function build()
 	-- The recipe page's parts; the reagent tiles are made as needed.
 	local p = CreateFrame("Button", nil, f.Body)
 	p:SetHeight(PRODUCT)
-	p.Well, p.Icon = iconWell(p, PRODUCT)
+	p.Well, p.Icon = ns.ItemWell(p, PRODUCT)
 	p.Well:SetPoint("LEFT", p, "LEFT", 0, 0)
 	p.Name = W.Text(p, "title", "text")
 	p.Name:SetJustifyH("LEFT")
@@ -913,7 +908,7 @@ local function build()
 	local t = CreateFrame("Button", nil, f.Body)
 	t:SetHeight(TILE_H)
 	W.Hover(t)
-	t.Well, t.Icon = iconWell(t, TILE_H)
+	t.Well, t.Icon = ns.ItemWell(t, TILE_H)
 	t.Well:SetPoint("LEFT", t, "LEFT", 0, 0)
 	t.Name = W.Text(t, "label", "textMuted")
 	t.Name:SetPoint("LEFT", t.Well, "RIGHT", 8, 0)
