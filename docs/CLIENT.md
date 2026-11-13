@@ -319,13 +319,13 @@ bubbles come only from `C_ChatBubbles.GetAllChatBubbles()`, which leaves out
 the forbidden ones (every bubble in an instance); never touch a frame whose
 `IsForbidden()` is true.
 
-**Exception (the user's leave):** `QuestFrame:UnregisterEvent(...)` and
-`LootFrame:UnregisterEvent(...)`, only on those two frames and only for their
-own open events (`QUEST_GREETING`, `QUEST_DETAIL`, `QUEST_PROGRESS`,
-`QUEST_COMPLETE`; `LOOT_OPENED`), so the game's frame never opens beside ours.
-Also `InspectFrame:UnregisterEvent("INSPECT_READY")` (pending the user's
-review): the stock frame shows itself on that event, and its `OnHide` clears
-the inspect data ours shows (`ClearInspectPlayer`).
+**Exception (the user's leave):** `QuestFrame:UnregisterEvent(...)`,
+`LootFrame:UnregisterEvent(...)` and `InspectFrame:UnregisterEvent(...)`,
+only on those three frames and only for their own open events
+(`QUEST_GREETING`, `QUEST_DETAIL`, `QUEST_PROGRESS`, `QUEST_COMPLETE`;
+`LOOT_OPENED`; `INSPECT_READY`), so the game's frame never opens beside ours
+(the inspect frame's `OnHide` would also clear the data ours shows,
+`ClearInspectPlayer`).
 It is a widget call that writes no Lua value on the frame. Nothing else on
 these frames is touched: no hook, no hide, no key written.
 
