@@ -24,25 +24,33 @@ local W = Polestar.Widgets
 
 local NAME = "${NAME}"
 
-local f
+-- The stock ${stock}'s tabs, in stock order, as a section rail (ns.GameRail).
+local PAGES = {
+	{ key = "main", label = "${Name}", icon = nil }, -- TODO: stock tab icon (grep .ref for ${stock}'s tabs)
+}
+
+local f, page
 local M = {}
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
+	-- No sidebar: the rail holds the pages, the main column as wide as beside a sidebar.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, sidebar = 0, rail = true })
 	ns.Dock(f)
+	ns.Plain(f, f.psRail) -- hides the 0-wide sidebar and its version line
 	ns.WindowMenu(f, "${key}")
 	Polestar.CloseOnEscape(NAME)
 end
 
 local function refresh()
-	W.ShellNav(f, { { key = "main", label = "${Name}", icon = "bolt" } }, "main", function() M.Show() end)
-	W.ShellTitle(f, "${Name}", "")
+	ns.GameRail(f, PAGES, page, function(k) M.Show(k) end)
+	W.ShellTitle(f, "${Name}", "") -- TODO: the subject's name in the title, the page in the subtitle
 	W.ShellTabs(f, nil)
 	ns.Footer(f, {}, {})
 	W.ShellBody(f, 0)
 end
 
-function M.Show()
+function M.Show(k)
+	page = k or page or PAGES[1].key
 	if not f then build() end
 	refresh()
 	f:Show()

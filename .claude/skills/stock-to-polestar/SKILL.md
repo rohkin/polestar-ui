@@ -120,7 +120,7 @@ Restyle in place (rule 15):
       panel with its own header. Asserts cover doors (`stub.pressKey`), combat
       (`stub.inCombat`), secrets, the switch off/on, and for restyles that other
       code's lines still show and the stock art comes back off. A new window
-      starts from `node tools/new-window.js <key> <StockFrameName>` (module,
+      starts from `node tools/new-window.js <key> <StockFrameName>` (module with a stock-icon `ns.GameRail`,
       stub, scene and `.toc` line; refuses to overwrite).
 - [ ] A new CLIENT.md rule gets a stub check where it can.
 - [ ] Bless and compare: `node tools/preview.js <scene>` writes
