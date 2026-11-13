@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Macros: /macro and the game menu open Polestar's window: general and character macros with their counts, the body with its character count, Save and Cancel, a name and icon picker with the game's icon filter, drag to an action bar, and shift-clicked links written as /cast, /use or /equip lines. Editing waits out combat, and a change typed before a fight is saved after it.
 - Character: the sections move to an icon rail on the left, as Professions, in the game's order with its own tab icons (your portrait, Reputation, Skills, your faction's Honor, Currency, Statistics); the Character page's title is your name with your chosen title, and its subtitle your level and class, the class in its colour.
 - Switching windows swaps them in place: the Polestar button above a game window closes it and opens Polestar's, and "Use game window" closes Polestar's and opens the game's (an NPC or crafting window: Polestar's from its next opening, the game's after /reload; Social has no micro button, so its keys open the game's).
 - Fixed: Mail no longer errors after taking an attachment or opening a letter with fewer attachments, nor the Character flyout on a slot with fewer choices than the last one.
