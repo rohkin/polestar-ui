@@ -44,6 +44,8 @@ function GetInboxText(i)
 	return stub.inbox[i][11], nil, nil, stub.inbox[i][11] ~= "", stub.inbox[i].invoice ~= nil
 end
 function GetInboxItem(i, a)
+	-- The client's own check (a hidden well's nil index threw it live).
+	assert(type(i) == "number" and type(a) == "number", "Usage: GetInboxItem(messageIndex, attachIndex)")
 	local it = letter(i)[12][a]
 	if it then return unpack(it) end
 end

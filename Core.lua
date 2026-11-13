@@ -207,12 +207,13 @@ end
 -- A grid of item wells (buttons, with the hover wash), `cols` to a row, `size`
 -- square, `gap` apart. Returns the grid's frame, for the caller to anchor;
 -- grid.Layout(n) shows the first n wells (made as needed, kept for reuse),
--- hides the rest, fits the frame's height and returns the wells.
+-- hides the rest, fits the frame's height and returns those n wells.
 function ns.ItemGrid(parent, cols, size, gap)
 	local g = CreateFrame("Frame", nil, parent)
 	g:SetSize(cols * (size + gap) - gap, 1)
 	local wells = {}
 	function g.Layout(n)
+		local shown = {}
 		for i = 1, n do
 			local w = wells[i]
 			if not w then
@@ -224,11 +225,12 @@ function ns.ItemGrid(parent, cols, size, gap)
 			w:ClearAllPoints()
 			w:SetPoint("TOPLEFT", g, "TOPLEFT", (k % cols) * (size + gap), -math.floor(k / cols) * (size + gap))
 			w:Show()
+			shown[i] = w
 		end
 		for i = n + 1, #wells do wells[i]:Hide() end
 		-- Never 0 high: a frame of size 0 has no rect (docs/CLIENT.md, rule 12).
 		g:SetHeight(math.max(1, math.ceil(n / cols) * (size + gap) - gap))
-		return wells
+		return shown
 	end
 	return g
 end
