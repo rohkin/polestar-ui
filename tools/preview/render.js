@@ -195,6 +195,10 @@ function resolve(objects, fonts) {
 		else if (sp) {
 			const pr = rectOf(sp);
 			r = { x: pr.x, y: pr.y - (sp.vscroll || 0) * s, w: (o.w || 0) * s, h: (o.h || 0) * s };
+		} else if (o.barFrac != null && !o.points.length) {
+			// A status bar's fill: its share of the bar, from the left (or the right: SetReverseFill).
+			const pr = parent ? rectOf(parent) : { x: 0, y: 0, w: 0, h: 0 };
+			r = { x: o.barReverse ? pr.x + pr.w * (1 - o.barFrac) : pr.x, y: pr.y, w: pr.w * o.barFrac, h: pr.h };
 		} else if (!o.points.length) {
 			const pr = parent ? rectOf(parent) : { x: 0, y: 0, w: 0, h: 0 };
 			r = { x: pr.x, y: pr.y, w: (o.w || 0) * s, h: (o.h || 0) * s };

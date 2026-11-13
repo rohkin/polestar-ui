@@ -261,11 +261,22 @@ local function entry(o)
 		e.checkedTexture = idOf(o.checkedTexture)
 		e.thumbTexture = idOf(o.thumbTexture)
 		e.mask = idOf(o.mask)
-		e.value, e.minValue, e.maxValue = o.value, o.minValue, o.maxValue
+		local reveal = stub.reveal or function(v) return v end
+		e.value, e.minValue, e.maxValue = num(reveal(o.value)), num(reveal(o.minValue)), num(reveal(o.maxValue))
 		e.euiSkin = o.euiSkin
 		e.euiOpts = o.euiOpts
 		e.euiSelected = o.euiSelected
 		e.hover = preview.hover == o or nil
+	end
+	-- A status bar's fill: as wide as its share of the bar, in the bar's colour
+	-- (the client sizes and tints it; the stub only keeps the values).
+	local bar = o.parent
+	if o.kind == "Texture" and bar and bar.barTexture == o and bar.kind == "StatusBar" then
+		local reveal = stub.reveal or function(v) return v end
+		local v, lo, hi = num(reveal(bar.value)) or 0, num(reveal(bar.minValue)) or 0, num(reveal(bar.maxValue)) or 1
+		e.barFrac = hi > lo and math.max(0, math.min(1, (v - lo) / (hi - lo))) or 0
+		e.vertexColor = copy(bar.barColor) or e.vertexColor
+		e.barReverse = bar.reverseFill or nil
 	end
 	-- preview.entryExtra(object, entry): a caller's own fields (tools/play).
 	if preview.entryExtra then preview.entryExtra(o, e) end
