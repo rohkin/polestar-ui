@@ -75,6 +75,7 @@ Generic (Polestar `wow_stub.lua`, `stub_ui.lua`; `stub_client.lua`)
 - `stub.advance(sec)`: step time (0.05 s) running timers and OnUpdates.
 - `stub.RunScript(frame, "OnTextChanged", ...)`: run a frame's script and hooks (type text, click: `stub.RunScript(btn, "OnClick")`).
 - `stub.inCombat = true`: `InCombatLockdown()` answers it. `stub.keys.shift = true`: `IsShiftKeyDown()`.
+- `geterrorhandler()` records into `stub.errors` (it does not raise); every scene ends with `stub.assertNoErrors()`, so an error Polestar catches (a module's Enable, any event handler) fails it (`tests/errors.test.js`).
 - `stub.cvars.<name> = "1"`; `stub.messages`: chat lines printed; `stub.frame(name)`; `stub.SECRET`: a secret value.
 - `stub.openMenu(owner, tag, labels)` / `stub.closeMenu()`, `stub.chatEvent`, `stub.activateChat`, `stub.makeChat`, `stub.chatBubble(name, text, x, y, forbidden)`, `stub.openOverflow()`, `stub.loadCombatLog()`, `stub.withShoppingTooltip()`: chat/tooltip scenes (`stub_chat.lua`, `wow_stub_local.lua`).
 Per window (set before `Show`, read after)

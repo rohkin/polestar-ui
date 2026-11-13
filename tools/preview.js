@@ -76,7 +76,7 @@ function dumpPanel(panel, prelude) {
 		before: `${prelude}\ndofile(${JSON.stringify(path.join(ROOT, 'tools', 'preview', 'stub.lua'))})`,
 		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, { name: 'Polestar_UI', dir: ROOT }],
 		saved: panel.saved && { Polestar_UI: panel.saved },
-		script: `uistub.install()\nstub.login()\n${panel.script}\nstub.advance(1)\npreview.emit()`,
+		script: `uistub.install()\nstub.login()\n${panel.script}\nstub.advance(1)\nstub.assertNoErrors()\npreview.emit()`,
 	});
 	const dump = emitted[emitted.length - 1];
 	if (!dump || !dump.objects) throw new Error('preview: the scene emitted no frames');
@@ -99,7 +99,7 @@ function render(only = []) {
 	return out;
 }
 
-module.exports = { SCENES, GOLDEN, render, loadFonts };
+module.exports = { SCENES, GOLDEN, render, loadFonts, dumpPanel, metricsLua };
 
 if (require.main === module) {
 	const args = process.argv.slice(2);
