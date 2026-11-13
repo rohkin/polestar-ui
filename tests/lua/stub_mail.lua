@@ -144,7 +144,6 @@ function GameLimitedMode_IsActive() return stub.trial or false end
 function SpellIsTargeting() return stub.targeting or false end
 C_ChatInfo = C_ChatInfo or {}
 function C_ChatInfo.PerformEmote(e) stub.emote = e end
-function C_ChatInfo.CancelEmote() stub.emote = nil end
 
 -- The guild roster, asked for as the mailbox opens (To's completion reads it).
 function IsInGuild() return true end

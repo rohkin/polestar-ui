@@ -6,7 +6,6 @@ function UnitClass(unit) return "Warrior", "WARRIOR", 1 end
 RAID_CLASS_COLORS.WARRIOR.colorStr = "ffc69b6d"
 function GetClassAtlas(class) return "classicon-" .. class end
 function UnitPVPName(unit) return InCombatLockdown() and stub.SECRET or "Testchar" end
-function GetGuildInfo(unit) return InCombatLockdown() and stub.SECRET or "The Night Watch", "Member", 3 end
 function ToggleCharacter(tab, onlyShow) end
 -- The game's own open for a spell waiting on an item (an enchant): with the
 -- stock frame hidden, it toggles.

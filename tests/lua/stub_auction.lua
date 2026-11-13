@@ -118,7 +118,6 @@ stub.reqLevel = { [6975] = 42, [2244] = 40 }
 function AH.GetItemKeyRequiredLevel(k) return stub.reqLevel[k.itemID] or 0 end
 function AH.GetExtraBrowseInfo(k) return 0 end
 function AH.ShouldAutoPopulatePrice() return true end
-function AH.SupportsCopperValues() return true end
 
 -- Favorites: kept by item ID; the favorites search lists them.
 stub.favorites, stub.maxFavorites = {}, 3

@@ -32,7 +32,6 @@ local WOW = {
 local ignores = { "Spamalot", "Goldseller" }
 C_FriendList = {}
 function C_FriendList.GetNumFriends() return #WOW end
-function C_FriendList.GetNumOnlineFriends() return 3 end
 function C_FriendList.GetFriendInfoByIndex(i)
 	local w = WOW[i]
 	return w and { name = w[1], connected = w[2], level = w[2] and w[3] or 0, className = w[2] and CLASSES[w[4]] or nil,

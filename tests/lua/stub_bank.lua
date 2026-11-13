@@ -51,7 +51,6 @@ function C_Bank.FetchPurchasedBankTabData(t)
 	for _, tab in ipairs(stub.bankTabs[t] or {}) do out[#out + 1] = { ID = tab.ID, bankType = t, name = tab.name, icon = tab.icon, depositFlags = 0 } end
 	return out
 end
-function C_Bank.FetchNumPurchasedBankTabs(t) return #(stub.bankTabs[t] or {}) end
 function C_Bank.FetchMaxNumBankTabs(t) return stub.maxTabs[t] end
 function C_Bank.CanPurchaseBankTab(t) return stub.tabCost[t] ~= nil end
 function C_Bank.FetchNextPurchasableBankTabData(t)
