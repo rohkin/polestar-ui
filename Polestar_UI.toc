@@ -32,6 +32,7 @@ Modules\Social.lua
 Modules\Auction.lua
 Modules\Guild.lua
 Modules\Macros.lua
+Modules\Inspect.lua
 Modules\HUD.lua
 Modules\UnitFrames.lua
 Modules\Minimap.lua
