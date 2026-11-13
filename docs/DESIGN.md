@@ -255,6 +255,7 @@ them, so nothing of theirs is moved, scaled or hidden):
 | HUD piece | Risk | Status | Entry |
 |---|---|---|---|
 | Minimap (`MinimapCluster`, `Minimap`) | high | built | [windows/minimap.md](windows/minimap.md) |
+| Action bars (`MainActionBar`, `MultiBar*`, pet, stance, possess) | high | built | [windows/actionbars.md](windows/actionbars.md) |
 
 ## Components
 

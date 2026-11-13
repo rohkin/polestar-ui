@@ -31,5 +31,6 @@ Modules\Loot.lua
 Modules\Social.lua
 Modules\Auction.lua
 Modules\Minimap.lua
+Modules\ActionBars.lua
 Modules\Tooltips.lua
 Modules\Chat.lua
