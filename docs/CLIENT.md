@@ -334,6 +334,75 @@ our ground follows the window alpha, and switched off, the stock art is back;
 beside it, the tab menu is restyled and the next menu on the same pooled
 frame is the game's, and a forbidden bubble is never touched.
 
+## 16. The stock unit frames stay, as Edit Mode's proxies
+
+**What the source says:** `PlayerFrame`, `TargetFrame`, `FocusFrame` and
+`PetFrame` are secure unit buttons and Edit Mode systems; `PartyFrame` and
+`BossTargetFrameContainer` are systems holding secure unit buttons (the
+pooled party members, `Boss1TargetFrame`..`Boss5TargetFrame`). `EditModeSystemMixin:OnSystemLoad`
+(`Blizzard_EditMode`, `EditModeSystemTemplates.lua`) replaces their
+`SetPoint`, `ClearAllPoints`, `SetScale`, `Hide` and `SetShown` with its own
+(the Hide override breaks snapped frames, writing into other systems); Edit
+Mode places them from the layout (`ApplySystemAnchor`), scales them (Frame
+Size), sets their alpha (Opacity) and draws its selection box on them (their
+`Selection` child, `AnchorSelectionFrame`). They also carry other frames: the
+pet frame and totems hang off `PlayerFrame`, combo points
+(`ComboFrame`) and the target of target off `TargetFrame`, and the game's
+target auras, status and raid icons sit in their `Content.Contextual` layer.
+Hiding, moving, scaling or reparenting one, or unregistering its events,
+would taint Edit Mode's state, end what hangs off it, and leave Edit Mode
+nothing to show the player.
+
+**Rule (the user's leave, Modules/UnitFrames.lua only):** the stock unit
+frames we replace stay shown, where Edit Mode puts them, with their events.
+Out of combat, from our code, only:
+- `EnableMouse(false)` on the frame (its clicks are ours now);
+- `Hide()` on the two plain child frames that hold its art and bars:
+  `PlayerFrameContainer` and `PlayerFrameContent.PlayerFrameContentMain`
+  (the target's and focus's `TargetFrame...` alike). Its `Contextual` layer
+  (auras, leader, PvP, raid target, quest and threat icons) stays the game's;
+- the targets of target (`TargetFrameToT`, `FocusFrameToT`: no system, but
+  children of one) faded with `SetAlpha(0)` and their mouse off;
+- the pet frame's and a party member's pieces, which the game only shows
+  and hides, faded with `SetAlpha(0)` (`PetPortrait`, `PetFrameTexture`,
+  `PetFrameFlash`, `PetAttackModeTexture`, `PetName`, `PetFrameHealthBar`,
+  `PetFrameManaBar`; a member's `Texture`, `VehicleTexture`, `Flash`, `Name`,
+  `HealthBarContainer`, `ManaBar`, `PartyMemberOverlay.Status`), and a
+  member's `Portrait`, which the game re-alphas at low health, hidden.
+  Happiness, the party's icons, auras and pets stay the game's. A boss frame
+  is veiled as the target's.
+
+Never `Hide`, `Show`, `SetShown`, `SetPoint`, `ClearAllPoints`, `SetScale`,
+`SetSize`, `SetParent`, `SetScript` or `UnregisterEvent` on the frame
+itself, in or out of combat. Switched off, the same calls give everything
+back.
+
+Ours read the stock frame and never anchor to it (rule 10): each is placed on
+the system's `Selection` box (GetLeft, GetTop, size and effective scale),
+which Edit Mode lays where the stock frame's body is, so the box the player
+drags in Edit Mode is where ours are. A party member or boss sits on its own
+stock frame (a boss on its body); one the game has not shown yet, where its
+system will stack it. While Edit Mode shows the party, boss or pet frames
+with no unit, ours stand in with the player, as the game's do. They are
+placed on login, on
+`EDIT_MODE_LAYOUTS_UPDATED` (the next frame: a layout switch, a reset), every
+frame while Edit Mode is open (`EventRegistry` "EditMode.Enter" to
+"EditMode.Exit": a drag, a Frame Size change), and as it closes; they copy the
+system's alpha (Opacity). Placing a secure frame is protected (rule 4): in
+combat it waits for `PLAYER_REGEN_ENABLED`. The planner's sibling rule holds
+for every Edit Mode system frame we stand in for (minimap, action bars):
+never Hide, SetPoint, SetScale or reparent it; fade or hide only its art, and
+follow its settings through the stock frame itself.
+
+**Caught by:** `tests/lua/stub_unitframes.lua` errors on any of those calls
+on a stock unit frame from addon code, and on any move, size, show or
+attribute change of a protected frame in combat; the `unitframes-editmode`
+scene drags and resizes the stock boxes and switches layouts, the
+`unitframes-combat` scene applies a layout mid-fight, `unitframes-group`
+veils the pet, party and boss frames and places ours on them,
+`unitframes-group-editmode` has ours stand in and follow a drag, and
+`unitframes-off` checks everything comes back.
+
 ## Reading errors from the game
 
 With !BugGrabber installed, every Lua error and blocked action is saved, with
