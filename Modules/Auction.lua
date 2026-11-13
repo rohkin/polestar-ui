@@ -1508,7 +1508,7 @@ local function build()
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.AUCTION_WINDOW_OPEN) end)
 	-- As the stock hide: a pending quote or post dropped, the browse reset, our dialogs gone.
 	f:HookScript("OnHide", function()
-		if asked and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == asked then PolestarModal:Hide() end
+		ns.CloseModal(asked)
 		if quote then AH.CancelCommoditiesPurchase() end
 		-- A multisell still running stops (the stock item sell frame's OnHide).
 		if sell.multi then

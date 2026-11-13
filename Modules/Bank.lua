@@ -301,7 +301,7 @@ local function build()
 	f:HookScript("OnHide", function()
 		f.Search:SetText("")
 		C_Container.SetItemSearch("")
-		if asked and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == asked then PolestarModal:Hide() end
+		ns.CloseModal(asked)
 	end)
 	Polestar.CloseOnEscape(NAME)
 end

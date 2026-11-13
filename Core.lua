@@ -742,6 +742,12 @@ function ns.ModalWith(spec, body)
 	return s
 end
 
+-- Closes Polestar's dialog while it still shows `spec`: a window's own
+-- dialog, as the window hides.
+function ns.CloseModal(spec)
+	if spec and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == spec then PolestarModal:Hide() end
+end
+
 -- An item quality's colour as r, g, b (nil when the client has none).
 function ns.QualityRGB(q)
 	if q == nil then return end

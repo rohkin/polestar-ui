@@ -366,7 +366,7 @@ local function build()
 		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
 	end)
 	f:HookScript("OnHide", function()
-		if asked and PolestarModal and PolestarModal:IsShown() and PolestarModal.psSpec == asked then PolestarModal:Hide() end
+		ns.CloseModal(asked)
 		if InRepairMode() then HideRepairCursor() end
 		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
 	end)
