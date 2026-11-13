@@ -88,7 +88,7 @@ Replace:
 - [ ] Fonts: every FontString via `W.Text` (rule 2).
 - [ ] Lists that change with no event: redraw after our own change (rule 6).
 - [ ] No frame 0 wide used as an anchor (rule 12): drop a sidebar by
-      anchoring `f.Main` to the window (`ns.ProfessionTabs`).
+      anchoring `f.Main` to the window (`ns.Plain`).
 - [ ] Gamepad UI on: module off by default (`ns.Enabled`, Contract step 4).
 - [ ] Trait trees: `canPurchaseRank` ignores cost (rule 13).
 

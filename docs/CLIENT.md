@@ -232,7 +232,7 @@ nothing anchored to it was placed or drawn. The stub placed it anyway.
 
 **Rule:** never anchor anything to a frame of size 0. To drop a shell's
 sidebar, anchor `f.Main` to the window itself, past the rail when there is
-one (`ns.ProfessionTabs` in Professions.lua).
+one (`ns.Plain` in Core.lua).
 
 **Caught by:** the `professions` scene checks the main column is anchored to
 the window.

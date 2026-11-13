@@ -3,7 +3,7 @@
 WoW (Forever client) addon: replaces stock Blizzard windows with Polestar's kit (`Polestar.Widgets`, `Polestar.Theme`). Lua 5.1, tested in Node under a client stub. Depends on the Polestar addon.
 
 ## Layout
-- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
+- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, HUD, UnitFrames, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
 - `docs/CLIENT.md`: client rules learnt from bugs (taint, secret values, secure buttons, doors). MANDATORY reading before any surface work; this file does not repeat them.
 - `docs/DESIGN.md`: shared sections (Replacement Contract, Shell, Components) plus the window index. Each window's entry: `docs/windows/<key>.md`.
 - `.claude/skills/stock-to-polestar`: the process for a new window or reskin (produces a plan).
@@ -62,8 +62,12 @@ Widgets
 - `ns.FriendshipBar(parent)`: friendship NPC standing (icon, rank, Skill Bar, tooltip); `b.Paint()` shows or hides it. Shared by Gossip and Quest dialog.
 - `ns.MoneyInput(parent, onChange(copper))`: g/s/c fields; `m.Set(copper)`.
 - `ns.Stepper(parent, {get, set, max})`: -, count, +, Max; caller calls `s.Paint()` after its own changes.
-- `ns.ModalWith(spec, body)`: `W.Modal(spec)` with our frame (stepper, input) under its text.
+- `ns.ModalWith(spec, body)`: `W.Modal(spec)` with our frame (stepper, input) under its text. `ns.CloseModal(spec)`: closes Polestar's dialog while it still shows `spec` (a window's own dialog, from its OnHide).
 - `ns.TooltipHint(text)`: textMuted hint line ending the shown tooltip.
+Restyle kit (art of ours on a stock frame, CLIENT.md rule 15; Tooltips, Chat)
+- `ns.FadeNine(holder, a)`: the NineSlice pieces keyed on `holder` at alpha `a`.
+- `ns.Hairlines(f, rel, make?)`: four hairline textures on `f` round `rel` (top, bottom, left, right; `make()` supplies them on a pooled menu); `ns.PaintHairlines(e, on, r, g, b, a)` shows, colours and sizes them to one pixel.
+- `ns.PaintGround(fill, on, k?)`: `bg` at `Theme.GroundAlpha()` times `k` (0.85 = the tooltip look).
 Values
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).
 Slash: `/pui` lists windows, `/pui <key> [on|off]`, `/pui dock on|off`.

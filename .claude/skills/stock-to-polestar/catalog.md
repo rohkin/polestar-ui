@@ -10,9 +10,9 @@ things by name (grep it). Design rules per part are in `docs/DESIGN.md`
 
 | Stock part (where) | Polestar element | API, example | Gotchas |
 |---|---|---|---|
-| Window frame: `PortraitFrameTemplate` (S/Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml), `ButtonFrameTemplate`, `DefaultPanelTemplate`, NineSlice border (S/Blizzard_SharedXML/NineSlice.lua) | `W.Shell` (window skin, band, sidebar, main column, footer) | `W.Shell(name, { scalePath="ui.menuScale", width, height, sidebar, rail, plain, searchPlaceholder, onSearch })`; then `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(name)`. `build` in `Spellbook.lua` | Fields: `f.Header Sidebar Main Body Content Footer Search Close HeaderTools NavScroll Rail Title Subtitle`. 960x680 with sidebar; plain/tabs-only smaller, height <= 600. `sidebar = 0` needs `f.Main` re-anchored (rule 12, `build` in `Professions.lua`) |
+| Window frame: `PortraitFrameTemplate` (S/Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml), `ButtonFrameTemplate`, `DefaultPanelTemplate`, NineSlice border (S/Blizzard_SharedXML/NineSlice.lua) | `W.Shell` (window skin, band, sidebar, main column, footer) | `W.Shell(name, { scalePath="ui.menuScale", width, height, sidebar, rail, plain, searchPlaceholder, onSearch })`; then `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(name)`. `build` in `Spellbook.lua` | Fields: `f.Header Sidebar Main Body Content Footer Search Close HeaderTools NavScroll Rail Title Subtitle`. 960x680 with sidebar; plain/tabs-only smaller, height <= 600. `sidebar = 0` needs `f.Main` re-anchored: `ns.Plain(f, left)` (rule 12; `build` in `Professions.lua`) |
 | Separate panel/drawer skin (stats drawer) | `Theme.Skin(frame, "window")` | `buildStats` in `Character.lua` | Ground alpha = `Theme.GroundAlpha()` (player's Background opacity) |
-| Portrait (round icon top-left) | Subject Block: 36px game icon on an inset well + name (Title) + one Small textDim line, Polestar emblem/wordmark/search reparented to a hidden holder | `build` in `Character.lua` (copied in the `build` of Spellbook, Talents, Crafting, Legacy and WorldMap) | Never Polestar's emblem in a game window's sidebar. Icons: `ns.GameIcon` (`Core.lua`) crops the baked border |
+| Portrait (round icon top-left) | Subject Block: 36px game icon on an inset well + name (Title) + one Small textDim line, Polestar emblem/wordmark/search reparented to a hidden holder | `ns.SubjectBlock(f)` (`Core.lua`); `build` in `Spellbook.lua` | Never Polestar's emblem in a game window's sidebar. Icons: `ns.GameIcon` (`Core.lua`) crops the baked border |
 | Close button `UIPanelCloseButton` (SharedUIPanelTemplates.xml) | the shell's `f.Close` (house `close` paint) | built by `W.Shell` | Escape via `Polestar.CloseOnEscape` (P/Core/Init.lua) |
 | Title bar / title text | band: `W.ShellTitle(f, title, subtitle)` | `Spellbook.lua`, every module | Subtitle: a fact or a one-line "what you can do here" |
 | Window "..." / options | `ns.WindowMenu(f, key, options)` (`Core.lua`): the window's options first, a divider, then "Use game window" | `optionsItems` in `Spellbook.lua`, `Crafting.lua`, `Social.lua` | No separate Options button on the band |
@@ -32,14 +32,14 @@ things by name (grep it). Design rules per part are in `docs/DESIGN.md`
 | Checkboxes `UICheckButtonTemplate` (Shared/Button/CheckButtonTemplates.xml), `MinimalCheckboxTemplate` | `W.Checkbox(parent, onClick)`; `W.Switch(parent, get, set, tip)`; settings rows `W.Toggle` | none in Modules yet | In a menu: `checked` on a `W.ShowMenu` item (Character's "Show stats" in its "..." menu) |
 | Sliders `MinimalSliderWithSteppersTemplate` (Shared/Slider/MinimalSlider.xml) | `W.Slider(parent, label, path, lo, hi, step, fmt, desc, depends, { get, set })` | none in Modules yet | Without a settings path use `opts.get/set`. Quantity steppers: `build` in `Crafting.lua` (-, field, +, Max) |
 | Settings-style dropdown (a choice) | `W.Dropdown(parent, label, path, choices, ...)` | none yet | Bound to a settings path |
-| Item / spell slots `ItemButton` (S/Blizzard_ItemButton/Shared/ItemButtonTemplate.xml), `SetItemButtonQuality` (Mainline/ItemButtonTemplate.lua), `SpellBookItemTemplate` (S/Blizzard_PlayerSpells/SpellBook/Blizzard_SpellBookItem.xml) | **well/tile pattern**: Frame sized to the icon, `Theme.Skin(well, "inset")` + `Theme.Border(well, Theme.Wash("border"))`, `ns.GameIcon` inset 1px; quality: border raw from uncommon up, name via `Theme.Legible` | `iconWell` + `paintQuality` in `Crafting.lua`; slot tile `newSlot` in `Character.lua`; spell row `ns.SpellRow` (`newRow` in `Spellbook.lua`); reward/reagent tile `tile` in `Crafting.lua` and `QuestLog.lua`; `iconWell` in `Legacy.lua`; talent node `newNode` in `Talents.lua` | Press nudges icon 1px; desaturate for unknown/locked; `W.ItemTip`/`W.SpellTip` for tooltips, `W.ItemClick` for modified clicks. Cast/use/target = `ns.Overlay` |
+| Item / spell slots `ItemButton` (S/Blizzard_ItemButton/Shared/ItemButtonTemplate.xml), `SetItemButtonQuality` (Mainline/ItemButtonTemplate.lua), `SpellBookItemTemplate` (S/Blizzard_PlayerSpells/SpellBook/Blizzard_SpellBookItem.xml) | **well/tile pattern**: Frame sized to the icon, `Theme.Skin(well, "inset")` + `Theme.Border(well, Theme.Wash("border"))`, `ns.GameIcon` inset 1px; quality: border raw from uncommon up, name via `Theme.Legible` | `ns.ItemWell` + `ns.PaintItem` (`Core.lua`); `paintQuality` in `Crafting.lua`; slot tile `newSlot` in `Character.lua`; spell row `ns.SpellRow` (`newRow` in `Spellbook.lua`); reward/reagent tile `tile` in `Crafting.lua` and `QuestLog.lua`; talent node `newNode` in `Talents.lua` | Press nudges icon 1px; desaturate for unknown/locked; `W.ItemTip`/`W.SpellTip` for tooltips, `W.ItemClick` for modified clicks. Cast/use/target = `ns.Overlay` |
 | Cooldown sweep `CooldownFrameTemplate` (S/Blizzard_FrameXMLUtil/Mainline/Cooldown.xml) | the stock template on our well, fed by a duration object | `paintCooldown` in `Spellbook.lua` | Rule 3: `SetCooldown` refuses secret times |
 | Status / progress bars (rep, skill, XP) | Skill Bar: `W.ProgressLine(parent, 2)` + `W.SetProgress(f, frac, width)`; rank "145/150" in Number textDim above its right end | `setBar` in `CharacterPages.lua`, `newCard` in `Professions.lua`, `buildTrack` in `Legacy.lua` | Never thicker than 2-3px; standing colour for reputation |
 | Small labelled badge | `W.Chip(parent)` + `W.SetChip(c, text, kind)` | (talent rank chips are hand-built in `Talents.lua`) | — |
 | Tooltips on our things | `W.Tooltip(owner, anchor, title, lines)` / game tooltips `W.ItemTip`, `W.SpellTip`, `GameTooltip:Set*`; `W.HideTooltip` on leave; hint line `ns.TooltipHint(text)` (`Core.lua`) | `newSlot` in `Character.lua`, `refresh` in `Talents.lua` | Hint = textMuted after a blank line, says what a click does now |
 | Modals / confirms (`StaticPopupTemplate` S/Blizzard_StaticPopup_Game/GameDialog.xml, `StaticPopup_Show` S/Blizzard_StaticPopup/StaticPopup.lua) | `W.Modal({ title, text, icon, action, danger, onAccept, cancel, onCancel })` | `unlearn` in `Professions.lua`, `abandon` in `QuestLog.lua` | Never replace or restyle StaticPopup (shared with secure dialogs); only our own flows call W.Modal |
 | Flyouts / drawers | outside the window's edge: `ns.DockFlyout(f, fly, overlap)` (`Core.lua`); inside: grow the window | `build` in `Character.lua`; map quest log `ns.QuestLog` (`QuestLog.lua`) | Docking width counts shown flyouts |
-| Inset wells `InsetFrameTemplate` (SharedUIPanelTemplates.xml) | `Theme.Skin(frame, "inset")` (shade at 25%) | every `iconWell` | — |
+| Inset wells `InsetFrameTemplate` (SharedUIPanelTemplates.xml) | `Theme.Skin(frame, "inset")` (shade at 25%) | `ns.ItemWell` (`Core.lua`) | — |
 | Cards / raised panels | `Theme.Skin(c, "panel")` | `newCard` in `Professions.lua` | — |
 | Sidebar-ground sub panel | `Theme.Skin(p, "sidebar")` | `ns.QuestLog` in `QuestLog.lua` | — |
 | Hairlines / fills / hover | `W.Divider(parent, vertical)`, `W.Fill(parent, token)`, `W.Hover(frame)`, `W.Tex`, `W.Text(parent, role, color)` | everywhere | Every FontString via `W.Text` (rule 2) |
@@ -50,7 +50,7 @@ things by name (grep it). Design rules per part are in `docs/DESIGN.md`
 - Colours only through tokens: `Theme.Color(name)`, `Theme.Wash(name)` (hover, border, thumb...), `Theme.Accent()`, `W.Color`/`W.Painter` (repaint on theme change). Game colours (quality, difficulty, standing) through `Theme.Legible(r,g,b)` before they carry text; raw only on a 1px border.
 - Window grounds: `bg` at `Theme.GroundAlpha()` (`ui.bgOpacity`, default 0.94). `Theme.Skin(f,"window")` does it for our frames.
 - Menus and inputs: near-solid. Polestar's own menu is `Theme.Skin(menu, "panel")` (`panel` token, alpha ~0.98); inputs `"editbox"` (shade at 35%, accent border focused). Note: `Chat.lua`'s `menuLook` currently paints `bg` x `GroundAlpha()`; check against this rule when touching it.
-- Tooltip look (tooltips, chat bubbles): `bg` at `GroundAlpha() * 0.85`, 1px `border` hairline (`paintGround` in `Tooltips.lua`).
+- Tooltip look (tooltips, chat bubbles): `bg` at `GroundAlpha() * 0.85`, 1px `border` hairline (`ns.PaintGround(fill, on, 0.85)` + `ns.PaintHairlines`; `paintGround` in `Tooltips.lua`).
 - Hairline width: `Theme.Pixel(frame)` (one physical pixel).
 
 ## B. In-place restyle kit (Tooltips.lua, Chat.lua)
@@ -58,10 +58,10 @@ things by name (grep it). Design rules per part are in `docs/DESIGN.md`
 | Pattern | Where | Notes |
 |---|---|---|
 | Weak table keyed by stock frame, holding our textures | `looks` in `Tooltips.lua`, `Chat.lua` (`looks`, `look(f, make)`) | Never a key on the stock frame |
-| Fade art with `SetAlpha` (art the game never re-alphas) | `fade` in `Tooltips.lua` (NineSlice pieces), `fadeArt` in Chat (tabs, buttons, scroll bar, strip) | `SetAtlas` keeps alpha, so state swaps stay faded |
+| Fade art with `SetAlpha` (art the game never re-alphas) | `ns.FadeNine(holder, a)` (NineSlice pieces: tooltips, Chat's overflow list and bubbles), `fadeArt` in Chat (tabs, buttons, scroll bar, strip) | `SetAtlas` keeps alpha, so state swaps stay faded |
 | Hide / empty art the game re-alphas | Chat `panel`/`bare`: border pieces `SetShown(false)`, ground `SetTexture(nil)` | Game writes window alpha/fades into it (`FCF_SetWindowAlpha` S/Blizzard_ChatFrameBase/Mainline/FloatingChatFrame.lua) |
 | Copy a live alpha onto ours | Chat `M.Enable` driver `OnUpdate` | Driver also follows edit-box focus, button state |
-| Our ground + 4 hairlines on the stock frame | `ground` in `Tooltips.lua`; Chat `tex` + `hairline` + `paintLine` | Created with `CreateTexture` on the stock frame (widget call, no Lua key) |
+| Our ground + 4 hairlines on the stock frame | `ns.Hairlines(f, rel)` + `ns.PaintHairlines`, `ns.PaintGround` (`Core.lua`); `ground` in `Tooltips.lua`, `panel` in `Chat.lua` | Created with `CreateTexture` on the stock frame (widget call, no Lua key) |
 | Re-apply after the game resets style | `hooksecurefunc("SharedTooltip_SetBackdropStyle", ...)` `M.Enable` in `Tooltips.lua` (S/Blizzard_SharedXML/SharedTooltipTemplates.lua); Chat hooks `FCF_OpenTemporaryWindow`, `FCF_MinimizeFrame`, `FCFTab_UpdateColors`, `FCF_SetButtonSide` | Post-hooks only |
 | Theme repaint | `Theme.OnChanged(function() if ns.Enabled(key) then M.Apply() end end)` | both modules |
 | Live on/off | `M.Apply()` paints on and off from `ns.Enabled(key)`; `ns.Switch` calls `Apply` (`Core.lua`) | Off restores stock textures, alphas, fonts (`stockFonts` in Tooltips) |
@@ -71,15 +71,15 @@ things by name (grep it). Design rules per part are in `docs/DESIGN.md`
 | Chat bubbles | `C_ChatBubbles.GetAllChatBubbles()`, child frame, skip `IsForbidden()`; scan from the driver ~0.1s | Chat `bubble`/`bubbles` |
 | Stock buttons as icon buttons | Chat `iconButton(b, glyph, size, keepLit)` + `paintState` | Fade normal/pushed/disabled/highlight; our hover + glyph |
 
-### Duplicated helpers (candidates for one shared helper; not extracted)
-- **Edge table + four hairlines**: `EDGES` + `ground` (`Tooltips.lua`), `EDGES` + `hairline`/`paintLine` (Chat), and a third inline copy in Chat `menuLook` (AttachTexture variant).
-- **NineSlice piece list + fade loop**: `PIECES` + `fade` (`Tooltips.lua`) vs `NINE` + the loops in Chat `overflow` and `bubble`; Chat `fadeArt` is the general form.
-- **Tooltip-look ground** (`bg` x `GroundAlpha()*0.85` + border hairline): `paintGround` (`Tooltips.lua`) vs Chat `bubble`.
-- **Window-look ground** (`bg` x `GroundAlpha()` + hairline): Chat `panel`, `overflow`, `menuLook`.
-- **Weak `looks` table + `look(f, make)`** and the `Theme.OnChanged -> M.Apply` line: both modules.
+### Shared helpers (`Core.lua`): use them, never copy
+- **Four hairlines round a region**: `ns.Hairlines(f, rel, make?)` + `ns.PaintHairlines(e, on, r, g, b, a)`; `make` hands in a pooled menu's `AttachTexture` pieces (Chat `menuLook`).
+- **NineSlice fade**: `ns.FadeNine(holder, a)`. Other piece lists (tabs, edit box, border) stay per module; Chat `fadeArt` fades loose textures.
+- **Window-look / tooltip-look ground**: `ns.PaintGround(fill, on, k?)` (`k` 0.85 for tooltips and bubbles).
+- **Icon well**: `ns.ItemWell`, painted by `ns.PaintItem`. **Subject block**: `ns.SubjectBlock`. **Secret-safe reads**: `ns.Clean`, `ns.Num`. **Item quality colour**: `ns.QualityRGB`.
+- **A window's own dialog closing with it**: `ns.CloseModal(spec)` from its OnHide (`ask` in `Auction.lua`, `Bank.lua`, `Merchant.lua`).
 
-Beyond the two restyle modules (same shape, copied):
-- **Icon well** (inset skin + border wash + `ns.GameIcon` inset 1px): `iconWell` in `Crafting.lua` and `Legacy.lua`, inline in `newRow` (`Spellbook.lua`), `tile` (`QuestLog.lua`), `newNode` and `paintTrees` (`Talents.lua`), `newCard` (`Professions.lua`), `build` (`WorldMap.lua`).
-- **Subject block** (hide Polestar's lockup into a holder, 36px well, name, line): `build` in `Character.lua`, `Spellbook.lua`, `Talents.lua`, `Crafting.lua`, `Legacy.lua`, `WorldMap.lua`.
-- **Secret-safe reads**: `clean` (`Spellbook.lua`, `Professions.lua`), `num` (`Talents.lua`, `Legacy.lua`).
-- **Item quality colour**: `qualityRGB` (`Character.lua`) vs `quality` (`Crafting.lua`).
+### Still duplicated (candidates; not extracted)
+- **Weak `looks` table + `look`** and the `Theme.OnChanged -> M.Apply` line: `Tooltips.lua`, `Chat.lua` (their `look` differ: Chat's takes a maker and checks the switch).
+- **A name in a game colour, lifted to read** (`W.Uncolor`, `Theme.Legible`, else the `text` token): `paintQuality` (`Crafting.lua`), `fill` (`Merchant.lua`, `Auction.lua`), Loot's rows; Merchant and Auction keep common items in `text`.
+- **A nav or rail button wearing a game icon** (`W.Uncolor`, white vertex colour, 0.08-0.92 crop): `ns.GameRail` (`Core.lua`), `gameIcons` (`Spellbook.lua`), `navigation` (`Bank.lua`).
+- **Secret predicate**: `local secret = issecretvalue or ...` (`Character.lua`, `Loot.lua`) and inline `issecretvalue and issecretvalue(v)` where `ns.Clean` does not fit (a kept nil, a `type()` check first).
