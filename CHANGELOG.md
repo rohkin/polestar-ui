@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Guild: the guild window in Polestar's look (the guild key and button; shift-click for the game's window with communities, Guild Finder and recruitment): the roster with sortable columns, Show offline, professions and member details (rank, notes, remove, invite), the message of the day and guild information, challenges, news with its filters, perks and rewards, the guild log, and Invite member, Guild control, Guild chat and Leave guild.
 - Character: the sections move to an icon rail on the left, as Professions, in the game's order with its own tab icons (your portrait, Reputation, Skills, your faction's Honor, Currency, Statistics); the Character page's title is your name with your chosen title, and its subtitle your level and class, the class in its colour.
 - Switching windows swaps them in place: the Polestar button above a game window closes it and opens Polestar's, and "Use game window" closes Polestar's and opens the game's (an NPC or crafting window: Polestar's from its next opening, the game's after /reload; Social has no micro button, so its keys open the game's).
 - Fixed: Mail no longer errors after taking an attachment or opening a letter with fewer attachments, nor the Character flyout on a slot with fewer choices than the last one.

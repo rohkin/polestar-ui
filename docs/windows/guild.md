@@ -31,7 +31,7 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   dungeon score), `C_GuildInfo.GuildRoster()` asked on show as the stock Info
   tab does. These read `SecretInChatMessagingLockdown`: a read that comes back
   secret keeps the last clean roster (rule 3).
-- **Shell:** 900×600 with sidebar (240): the roster's columns need the stock
+- **Shell:** 960×600 with sidebar (240): the roster's columns need the stock
   roster's width. Subject block: the guild's emblem
   (`C_GuildInfo.GetGuildTabardInfo`), its name, "Officer · 85 members".
   Search ("Search the roster": name, zone, rank, note) filters the roster;
@@ -45,8 +45,9 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   stock tab shows), Log. Not in a guild: one page saying so, and that Guild
   Finder is on the game's window.
 - **Roster:** the stock columns, each header a sort button as stock
-  (`SortByColumnIndex`: a second click reverses; zone sorts offline members by
-  last online): Level, class icon, Name (class colour; textMuted offline),
+  (`SortByColumnIndex`: a second click reverses; ours sorts A to Z and low to
+  high first, ties in the stock order; zone puts online members by zone, then
+  offline ones by last online): Level, class icon, Name (class colour; textMuted offline),
   Zone ("Last online 3 days ago" / "Mobile" as the stock column), Rank, Note,
   then the chosen extra column. The default order is the stock one
   (`CommunitiesUtil.SortMemberInfo`: presence, level, rank, name). Professions
