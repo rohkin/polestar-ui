@@ -7,7 +7,7 @@
 PolestarUI.Show("guild", "info")
 local f = PolestarUIGuild
 assert(stub.asked.roster and stub.asked.challenges, "info not asked for")
-assert(f.Title:GetText() == "Info" and f.Subtitle:GetText() == "1 of 3 challenges done this week", "band: " .. tostring(f.Subtitle:GetText()))
+assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members · 1 of 3 challenges done this week", "band: " .. tostring(f.Subtitle:GetText()))
 local function line(text)
 	for _, r in ipairs({ f.psLines:GetChildren() }) do
 		if r:IsShown() and ((r.Head:IsShown() and r.Head.Text:GetText() == text) or (r.Text:IsShown() and r.Text:GetText() == text)) then return r end

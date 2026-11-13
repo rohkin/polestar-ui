@@ -10,7 +10,7 @@ stub.impeach = true
 PolestarUI.Show("guild", "news")
 local f = PolestarUIGuild
 assert(stub.asked.news and stub.asked.calendar, "news not asked for")
-assert(f.Title:GetText() == "News" and f.Subtitle:GetText() == "3 news items", "band: " .. tostring(f.Subtitle:GetText()))
+assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members · 3 news items", "band: " .. tostring(f.Subtitle:GetText()))
 local function line(pat)
 	for _, r in ipairs({ f.psLines:GetChildren() }) do
 		if r:IsShown() and ((r.Head:IsShown() and r.Head.Text:GetText():find(pat, 1, true)) or (r.Text:IsShown() and r.Text:GetText():find(pat, 1, true))) then return r end

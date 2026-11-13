@@ -31,19 +31,24 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   dungeon score), `C_GuildInfo.GuildRoster()` asked on show as the stock Info
   tab does. These read `SecretInChatMessagingLockdown`: a read that comes back
   secret keeps the last clean roster (rule 3).
-- **Shell:** 960×600 with sidebar (240): the roster's columns need the stock
-  roster's width. Subject block: the guild's emblem
-  (`C_GuildInfo.GetGuildTabardInfo`), its name, "Officer · 85 members".
-  Search ("Search the roster": name, zone, rank, note) filters the roster;
-  typing on another page goes to the roster. A Filter icon ends the search row
-  (as Social): Show offline members (the stock check box; CVar
-  `communitiesShowOffline`) and the stock column dropdown's choices that can
-  show here (Professions where `C_TradeSkillUI.IsGuildTradeSkillsEnabled`,
+- **Shell:** no sidebar: the stock side tabs are an icon rail (`ns.GameRail`,
+  as Character and Professions), the main column as wide as beside a
+  sidebar, 600 tall. The rail wears the stock tabs' own icons in their order:
+  Roster (`achievement_guildperk_everybodysfriend`), Benefits
+  (`achievement_guildperk_honorablemention`; only as the stock tab shows),
+  Info (`inv_misc_scrollunrolled01`), then News and Log, which sit on the
+  stock Guild Info tab and have no tab icon of their own: note icons
+  (`INV_Misc_Note_02`, `inv_misc_note_06`). Not in a guild: one Guild tab and
+  a page saying so, and that Guild Finder is on the game's window.
+- **Band:** the guild's name; under it "Officer · 9 members", then the page's
+  fact ("6 online", "3 news items", "2 perks · 3 rewards", "4 events", the
+  week's challenges).
+- **Tools row:** atop the Roster, a search ("Search the roster": name, zone,
+  rank, note) and a Filter icon: Show offline members (the stock check box;
+  CVar `communitiesShowOffline`) and the stock column dropdown's choices that
+  can show here (Professions where `C_TradeSkillUI.IsGuildTradeSkillsEnabled`,
   Dungeon score where `C_MythicPlus.IsMythicPlusActive`; Achievement points is
-  off on Camelot).
-- **Nav:** Roster (online count), Info, News (count), Benefits (only as the
-  stock tab shows), Log. Not in a guild: one page saying so, and that Guild
-  Finder is on the game's window.
+  off on Camelot). Atop News, the Filter icon alone (the news filters).
 - **Roster:** the stock columns, each header a sort button as stock
   (`SortByColumnIndex`: a second click reverses; ours sorts A to Z and low to
   high first, ties in the stock order; zone puts online members by zone, then

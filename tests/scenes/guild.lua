@@ -27,8 +27,7 @@ stub.RunScript(o, "PostClick", "LeftButton")
 local f = PolestarUIGuild
 assert(f:IsShown() and not CommunitiesFrame.shown, "micro")
 assert(stub.asked.roster, "roster not asked for")
-assert(f.Title:GetText() == "Roster" and f.Subtitle:GetText() == "6 of 9 online", "band: " .. tostring(f.Subtitle:GetText()))
-assert(f.psName:GetText() == "The Night Watch" and f.psLine:GetText() == "Officer · 9 members", "subject block")
+assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members · 6 online", "band: " .. tostring(f.Subtitle:GetText()))
 
 local function names()
 	local t = {}
@@ -73,12 +72,12 @@ assert(stub.popup and stub.popup[1] == "COMMUNITIES_GUILD_MEMBER" and stub.popup
 -- A secret read (chat lockdown) keeps the last roster.
 stub.secretRoster = true
 PolestarUI.Show("guild")
-assert(row("Brannoc") and f.psLine:GetText() == "Officer · 9 members", "secret roster dropped")
+assert(row("Brannoc") and f.Subtitle:GetText():find("9 members", 1, true), "secret roster dropped")
 stub.secretRoster = false
 -- Search: name, zone, rank, note.
-f.Search:SetText("heal"); stub.RunScript(f.Search, "OnTextChanged", true)
+f.psSearch:SetText("heal"); stub.RunScript(f.psSearch, "OnTextChanged", true)
 assert(names() == "Brannoc", "search: " .. names())
-f.Search:SetText(""); stub.RunScript(f.Search, "OnTextChanged", true)
+f.psSearch:SetText(""); stub.RunScript(f.psSearch, "OnTextChanged", true)
 head("Zone"):Click()
 head("Zone"):Click()
 assert(not CommunitiesFrame.shown, "stock window opened")

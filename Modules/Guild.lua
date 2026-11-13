@@ -10,6 +10,8 @@ local Theme = Polestar.Theme
 local NAME = "PolestarUIGuild"
 local ROW_H, HEAD_H, GAP = 26, 28, 8
 local DETAIL_W = 300
+-- The roster and news open under a row of their own tools (search, filter).
+local TOP = 8 + 30 + 12
 
 local f, page, query = nil, "roster", ""
 local M = {}
@@ -306,7 +308,7 @@ end
 local function paintVisible()
 	local p = f.psRoster.Rows
 	if not p:IsShown() then return end
-	local top = f.Scroll:GetVerticalScroll() - 8 - HEAD_H
+	local top = f.Scroll:GetVerticalScroll() - TOP - HEAD_H
 	local first = math.max(1, math.floor(top / ROW_H) + 1)
 	local n = math.ceil((f.psViewH or 600) / ROW_H) + 1
 	local cols = columns()
@@ -371,9 +373,9 @@ local function paintRoster()
 	f.psEmpty:SetText(query ~= "" and "No one matches." or "No one in your guild is online.")
 	f.psEmpty:SetShown(#list == 0)
 	f.psEmpty:ClearAllPoints()
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(8 + HEAD_H + 16))
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(TOP + HEAD_H + 16))
 	paintVisible()
-	return 8 + HEAD_H + #list * ROW_H + 24
+	return TOP + HEAD_H + #list * ROW_H + 24
 end
 
 ---------------------------------------------------------------------------
@@ -585,6 +587,8 @@ end
 -- { bar = frac, text, right }.
 local function paintLines(list)
 	local p, y = f.psLines, 0
+	local top = page == "news" and TOP or 8
+	p:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -top)
 	local w = f.BodyWidth
 	for i, e in ipairs(list) do
 		local r = lines[i] or newLine(p)
@@ -670,7 +674,7 @@ local function paintLines(list)
 	end
 	for i = #list + 1, #lines do lines[i]:Hide() end
 	p:SetHeight(math.max(1, y))
-	return 8 + y + 24
+	return top + y + 24
 end
 
 -- Info: the stock Guild Info tab.
@@ -916,26 +920,31 @@ local function filterItems()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 960, height = 600, sidebar = 240, searchPlaceholder = "Search the roster",
-		onSearch = function(text)
-			query = (text or ""):lower()
-			if query ~= "" then page = "roster" end
-			if f:IsShown() then M.Show() end
-		end })
+	-- No sidebar: the stock window's tabs are an icon rail (ns.GameRail, as
+	-- Character and Professions), the main column as wide as beside a sidebar.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, height = 600, sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "guild", optionsItems)
-	local b = ns.SubjectBlock(f)
-	f.psEmblem, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The roster's options and the news filters end the search row (as Social).
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", function(self)
+	f.Search:Hide()
+	ns.Plain(f, f.psRail)
+	-- The roster's search and options, the news filters: a row atop the page.
+	f.psTools = CreateFrame("Frame", nil, f.Body)
+	f.psTools:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -8)
+	f.psTools:SetSize(300, 30)
+	f.psSearch = W.SearchBox(f.psTools, "Search the roster", function(text)
+		query = (text or ""):lower()
+		if f:IsShown() then M.Show() end
+	end)
+	f.psSearch:SetPoint("TOPLEFT", f.psTools, "TOPLEFT", 0, 0)
+	f.psSearch:SetWidth(240)
+	Theme.Skin(f.psSearch, "editbox")
+	f.psFilter = W.IconButton(f.psTools, "sliders", 30, "Filter", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		W.ShowMenu(self, filterItems(), { minWidth = 200 })
 	end, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -(W.SHELL.header - 30))
 	Theme.Skin(f.psFilter, "editbox")
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 36), -(W.SHELL.header - 30))
 	local R = CreateFrame("Frame", nil, f.Body)
-	R:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -8)
+	R:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -TOP)
 	R:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
 	R:SetHeight(1)
 	R.Rows = W.RowPanel(R)
@@ -966,22 +975,24 @@ local function refresh()
 	local all = readRoster()
 	local on = 0
 	for _, m in ipairs(all) do if online(m) then on = on + 1 end end
-	local tabard = inGuild and C_GuildInfo.GetGuildTabardInfo("player")
-	f.psEmblem:SetTexture(tabard and tabard.emblemFileID or 135026) -- else a guild banner icon
-	f.psName:SetText(inGuild and (guild or "Guild") or "No guild")
-	f.psLine:SetText(inGuild and ("%s · %s"):format(rank or "", count(#all, "member")) or "Not in a guild")
+	-- The stock tabs' own icons, in their order (Roster, Guild Benefits,
+	-- Guild Info); News and the log sit on the stock Info tab: note icons.
 	local nav
 	if inGuild then
-		nav = { { key = "roster", label = "Roster", icon = "compact", count = on }, { key = "info", label = "Info", icon = "info" },
-			{ key = "news", label = "News", icon = "flag" } }
-		if benefitsOn() then nav[#nav + 1] = { key = "benefits", label = "Benefits", icon = "star" } end
-		nav[#nav + 1] = { key = "log", label = "Log", icon = "icon-note" }
+		nav = { { key = "roster", label = "Roster", icon = "Interface/Icons/achievement_guildperk_everybodysfriend" } }
+		if benefitsOn() then nav[#nav + 1] = { key = "benefits", label = "Benefits", icon = "Interface/Icons/achievement_guildperk_honorablemention" } end
+		nav[#nav + 1] = { key = "info", label = "Info", icon = "Interface/Icons/inv_misc_scrollunrolled01" }
+		nav[#nav + 1] = { key = "news", label = "News", icon = "Interface/Icons/INV_Misc_Note_02" }
+		nav[#nav + 1] = { key = "log", label = "Log", icon = "Interface/Icons/inv_misc_note_06" }
 	else
-		nav = { { key = "none", label = "Guild", icon = "flag" } }
+		nav = { { key = "none", label = "Guild", icon = "Interface/Icons/achievement_guildperk_everybodysfriend" } }
 	end
-	W.ShellNav(f, nav, page, function(k) M.Show(k) end)
+	ns.GameRail(f, nav, page, function(k) M.Show(k) end)
 	W.ShellTabs(f, nil)
-	f.psFilter:SetShown(page == "roster" or page == "news")
+	f.psTools:SetShown(page == "roster" or page == "news")
+	f.psSearch:SetShown(page == "roster")
+	f.psFilter:ClearAllPoints()
+	f.psFilter:SetPoint("TOPLEFT", f.psTools, "TOPLEFT", page == "roster" and 246 or 0, 0)
 	local filtersOn = page == "roster" and (showOffline() or extra ~= nil)
 	if page == "news" then for _, v in ipairs({ GetGuildNewsFilters() }) do if not v then filtersOn = true end end end
 	W.SetIconState(f.psFilter, filtersOn)
@@ -1006,9 +1017,15 @@ local function refresh()
 	f.psRoster:SetShown(page == "roster")
 	f.psLines:SetShown(page ~= "roster" and page ~= "none")
 	f.psEmpty:Hide()
+	-- The guild's name in the band, its rank and members under it (as
+	-- Character's name and level), then the page's own fact.
+	local function title(fact)
+		local line = ("%s · %s"):format(rank or "", count(#all, "member"))
+		W.ShellTitle(f, guild or "Guild", fact and line .. " · " .. fact or line)
+	end
 	local h
 	if page == "roster" then
-		W.ShellTitle(f, "Roster", ("%d of %d online"):format(on, #all))
+		title(("%d online"):format(on))
 		h = paintRoster()
 	elseif page == "none" then
 		W.ShellTitle(f, "Guild", "Not in a guild")
@@ -1032,7 +1049,7 @@ local function refresh()
 			status = count(#list, "event")
 			if #list == 0 then list = { { para = "Nothing in the guild log yet.", dim = true } } end
 		end
-		W.ShellTitle(f, ({ info = "Info", news = "News", benefits = "Benefits", log = "Log" })[page], status)
+		title(status)
 		h = paintLines(list)
 	end
 	paintDetail()
