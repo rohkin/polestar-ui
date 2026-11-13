@@ -15,9 +15,6 @@ local Theme = Polestar.Theme
 
 local NAMES = { "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2", "ItemRefShoppingTooltip1",
 	"ItemRefShoppingTooltip2", "EmbeddedItemTooltip", "GameNoHeaderTooltip", "GameSmallHeaderTooltip" }
--- The NineSlice's pieces (nineSliceSetup in NineSlice.lua).
-local PIECES = { "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }
-local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
 -- The tooltip font objects, each in the weight of a Polestar role.
 local FONTS = { GameTooltipHeaderText = "heading", GameTooltipText = "body", GameTooltipTextSmall = "small" }
 local BAR = "Interface\\TargetingFrame\\UI-TargetingFrame-BarFill" -- the health bar's stock fill (GameTooltip.xml)
@@ -28,25 +25,14 @@ local M = { noun = "tooltips" }
 
 -- A style reset (SharedTooltip_SetBackdropStyle, every hide) can lay a new
 -- layout's pieces: faded again.
-local function fade(tip, a)
-	for _, k in ipairs(PIECES) do
-		local p = tip.NineSlice[k]
-		if p then p:SetAlpha(a) end
-	end
-end
+local function fade(tip, a) ns.FadeNine(tip.NineSlice, a) end
 
 -- Our ground (fill) and the four hairlines round `rel`, on frame `f`.
 local function ground(f, rel)
-	local l = { fill = f:CreateTexture(nil, "BACKGROUND", nil, -8), edges = {} }
+	local l = { fill = f:CreateTexture(nil, "BACKGROUND", nil, -8) }
 	l.fill:SetTexture(Theme.Media("white"))
 	l.fill:SetAllPoints(rel)
-	for i, e in ipairs(EDGES) do
-		local t = f:CreateTexture(nil, "BORDER", nil, 7)
-		t:SetTexture(Theme.Media("white"))
-		t:SetPoint(e[1], rel, e[1], 0, 0)
-		t:SetPoint(e[2], rel, e[2], 0, 0)
-		l.edges[i] = t
-	end
+	l.edges = ns.Hairlines(f, rel)
 	return l
 end
 
@@ -66,16 +52,9 @@ end
 
 -- The ground a touch more see-through than the windows' (the player's
 -- Background opacity still scales it): 0.80 at the default 0.94.
-local function paintGround(l, on, f)
-	local r, g, b = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha() * 0.85)
-	l.fill:SetShown(on)
-	local px = Theme.Pixel(f)
-	for i, t in ipairs(l.edges) do
-		t:SetShown(on)
-		t:SetVertexColor(Theme.Color("border"))
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
+local function paintGround(l, on)
+	ns.PaintGround(l.fill, on, 0.85)
+	ns.PaintHairlines(l.edges, on, Theme.Color("border"))
 end
 
 -- The comparison's "Equipped" plate (ShoppingTooltipTemplate's CompareHeader,
@@ -93,14 +72,14 @@ local function plate(tip, on)
 		looks[h] = l
 	end
 	l.art:SetAlpha(on and 0 or 1)
-	paintGround(l, on, h)
+	paintGround(l, on)
 	if on then h.Label:SetTextColor(Theme.Color("text")) else h.Label:SetTextColor(unpack(l.color)) end
 end
 
 local function paint(tip, on)
 	local l = look(tip)
 	fade(tip, on and 0 or 1)
-	paintGround(l, on, tip)
+	paintGround(l, on)
 	if l.track then
 		-- The fill's colour stays the game's (health, HealthBar_OnValueChanged).
 		tip.StatusBar:SetStatusBarTexture(on and Theme.Media("white") or BAR)

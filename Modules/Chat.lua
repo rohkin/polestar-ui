@@ -23,7 +23,6 @@ local GROUND = "Interface\\ChatFrame\\ChatFrameBackground"
 local TAB = { "Left", "Middle", "Right", "ActiveLeft", "ActiveMiddle", "ActiveRight", "HighlightLeft", "HighlightMiddle", "HighlightRight" }
 -- ChatFrameEditBoxTemplate's art, by global name after the edit box's.
 local INPUT = { "Left", "Mid", "Right", "FocusLeft", "FocusMid", "FocusRight" }
-local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
 
 local looks = setmetatable({}, { __mode = "k" }) -- stock frame -> its textures of ours
 local M = { noun = "chat" }
@@ -35,26 +34,7 @@ local function tex(f, layer, sub)
 	return t
 end
 
--- Four hairlines round region `r`, on frame `f`.
-local function hairline(f, r)
-	local e = {}
-	for i, p in ipairs(EDGES) do
-		local t = tex(f, "BORDER", 7)
-		t:SetPoint(p[1], r, p[1], 0, 0)
-		t:SetPoint(p[2], r, p[2], 0, 0)
-		e[i] = t
-	end
-	return e
-end
-
-local function paintLine(e, on, r, g, b, a)
-	local px = Theme.Pixel(e[1]:GetParent())
-	for i, t in ipairs(e) do
-		t:SetShown(on)
-		t:SetVertexColor(r, g, b, a)
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
-end
+local hairline, paintLine = ns.Hairlines, ns.PaintHairlines
 
 -- A frame never restyled has nothing to give back.
 local function look(f, make)
@@ -110,9 +90,7 @@ local function panel(f)
 	bare(f, on)
 	bare(f.buttonFrame, on)
 	place(f, l)
-	local r, g, b = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha())
-	l.fill:SetShown(on)
+	ns.PaintGround(l.fill, on)
 	paintLine(l.edges, on, Theme.Color("border"))
 	l.rule:SetVertexColor(Theme.Wash("divider"))
 	l.rule:SetHeight(Theme.Pixel(f))
@@ -206,13 +184,11 @@ local function input(e, f)
 		local p = name and _G[name .. k]
 		if p then p:SetAlpha(on and 0 or 1) end
 	end
-	local r, g, b = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha())
-	l.fill:SetShown(on)
+	ns.PaintGround(l.fill, on)
 	l.well:SetVertexColor(Theme.Color("inputBg"))
 	l.well:SetShown(on)
 	paintLine(l.edges, on, Theme.Color("border"))
-	r, g, b = Theme.Accent()
+	local r, g, b = Theme.Accent()
 	paintLine({ l.lit }, on, r, g, b, 0.5)
 	if on then paintFocus(e, l) else l.lit:Hide() end
 end
@@ -347,7 +323,6 @@ end
 -- The dock's overflow button (its highlight is the alert pulse, kept) and
 -- its list (TooltipBackdropTemplate): the list's NineSlice faded under our
 -- ground and hairline.
-local NINE = { "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }
 local function overflow()
 	iconButton(_G.GeneralDockManagerOverflowButton, "chevron-right", 12, true)
 	local list = _G.GeneralDockManagerOverflowButtonList
@@ -359,13 +334,8 @@ local function overflow()
 	end)
 	if not l then return end
 	local on = ns.Enabled("chat")
-	for _, k in ipairs(NINE) do
-		local p = list.NineSlice[k]
-		if p then p:SetAlpha(on and 0 or 1) end
-	end
-	local r, g, b = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha())
-	l.fill:SetShown(on)
+	ns.FadeNine(list.NineSlice, on and 0 or 1)
+	ns.PaintGround(l.fill, on)
 	paintLine(l.edges, on, Theme.Color("border"))
 end
 
@@ -394,10 +364,7 @@ local function menuLook(menu)
 	fill:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
 	fill:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 7)
 	local px = Theme.Pixel(menu)
-	for i, e in ipairs(EDGES) do
-		local t = piece("BORDER", 7, Theme.Color("border"))
-		t:SetPoint(e[1], fill, e[1], 0, 0)
-		t:SetPoint(e[2], fill, e[2], 0, 0)
+	for i, t in ipairs(hairline(menu, fill, function() return piece("BORDER", 7, Theme.Color("border")) end)) do
 		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
 	end
 end
@@ -420,14 +387,9 @@ local function bubble(f, on)
 		return l
 	end)
 	if not l then return end
-	for _, k in ipairs(NINE) do
-		local p = f[k]
-		if p then p:SetAlpha(on and 0 or 1) end
-	end
+	ns.FadeNine(f, on and 0 or 1)
 	f.Tail:SetAlpha(on and 0 or 1)
-	local r, g, b = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, b, Theme.GroundAlpha() * 0.85)
-	l.fill:SetShown(on)
+	ns.PaintGround(l.fill, on, 0.85)
 	paintLine(l.edges, on, Theme.Color("border"))
 end
 

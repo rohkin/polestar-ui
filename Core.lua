@@ -753,6 +753,54 @@ function ns.QualityRGB(q)
 	if t then return t.r, t.g, t.b end
 end
 
+-- The in-place restyle kit (Tooltips.lua, Chat.lua): art of ours on a stock
+-- frame, made and painted through widget calls only, never a key written on
+-- it (docs/CLIENT.md, rule 15).
+-- The NineSlice pieces (nineSliceSetup in NineSlice.lua) keyed on `holder`, at alpha `a`.
+local NINE = { "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }
+function ns.FadeNine(holder, a)
+	for _, k in ipairs(NINE) do
+		local p = holder[k]
+		if p then p:SetAlpha(a) end
+	end
+end
+
+-- Four hairlines round region `rel` (top, bottom, left, right): white
+-- textures on frame `f`, or what `make()` returns (a pooled menu's AttachTexture).
+local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
+function ns.Hairlines(f, rel, make)
+	local e = {}
+	for i, p in ipairs(EDGES) do
+		local t = make and make()
+		if not t then
+			t = f:CreateTexture(nil, "BORDER", nil, 7)
+			t:SetTexture(Polestar.Theme.Media("white"))
+		end
+		t:SetPoint(p[1], rel, p[1], 0, 0)
+		t:SetPoint(p[2], rel, p[2], 0, 0)
+		e[i] = t
+	end
+	return e
+end
+
+-- Shows (or hides) hairlines `e` in r, g, b, a, one pixel of their frame thick.
+function ns.PaintHairlines(e, on, r, g, b, a)
+	local px = Polestar.Theme.Pixel(e[1]:GetParent())
+	for i, t in ipairs(e) do
+		t:SetShown(on)
+		t:SetVertexColor(r, g, b, a)
+		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
+	end
+end
+
+-- Polestar's window ground on texture `fill`: bg at the player's Background
+-- opacity, times `k` (0.85 for the tooltip look: 0.80 at the default 0.94).
+function ns.PaintGround(fill, on, k)
+	local r, g, b = Polestar.Theme.Color("bg")
+	fill:SetVertexColor(r, g, b, Polestar.Theme.GroundAlpha() * (k or 1))
+	fill:SetShown(on)
+end
+
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the
