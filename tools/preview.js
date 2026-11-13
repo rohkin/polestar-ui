@@ -24,7 +24,7 @@ const FALLBACK = 'Inter-Medium.ttf';
 
 // Scenes: one file each in tests/scenes/<name>.lua, Lua run once the player has
 // logged in. Leading `--@ key: value` lines give the title, the `roots` (frames
-// drawn), extra `stubs` (tests/lua; stub_character.lua is always loaded) and
+// drawn), extra `stubs` (tests/lua; stub_character.lua and stub_unitframes.lua are always loaded) and
 // `saved` variables; a `--@ panel` line starts a further panel (its own header).
 const SCENE_DIR = path.join(ROOT, 'tests', 'scenes');
 
@@ -72,7 +72,7 @@ function metricsLua(fonts) {
 
 function dumpPanel(panel, prelude) {
 	const { emitted } = runAddon({
-		stubs: ['stub_ui.lua', 'stub_ui_local.lua', 'stub_client.lua', 'stub_character.lua', ...panel.stubs],
+		stubs: ['stub_ui.lua', 'stub_ui_local.lua', 'stub_client.lua', 'stub_character.lua', 'stub_unitframes.lua', ...panel.stubs],
 		before: `${prelude}\ndofile(${JSON.stringify(path.join(ROOT, 'tools', 'preview', 'stub.lua'))})`,
 		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, { name: 'Polestar_UI', dir: ROOT }],
 		saved: panel.saved && { Polestar_UI: panel.saved },
