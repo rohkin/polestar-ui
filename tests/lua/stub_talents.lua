@@ -226,9 +226,14 @@ PlayerSpellsFrame.x, PlayerSpellsFrame.y = 16, 100
 PlayerSpellsFrame.TalentsFrame = CreateFrame("Frame", nil, PlayerSpellsFrame)
 PlayerSpellsFrame.TalentsFrame:Hide()
 function PlayerSpellsFrame.Hide() error("addon code hid PlayerSpellsFrame", 2) end
+-- Its close button: the game's own code hides it (a secure click of ours runs it, never our code).
+PlayerSpellsFrame.CloseButton = CreateFrame("Button", nil, PlayerSpellsFrame)
+PlayerSpellsFrame.CloseButton:SetScript("OnClick", function() UIParent.Hide(PlayerSpellsFrame) end)
 function stub.bindingRun.TOGGLETALENTS() PlayerSpellsFrame:Show(); PlayerSpellsFrame.TalentsFrame:Show() end
 TalentMicroButton = CreateFrame("Button", "TalentMicroButton", UIParent)
 TalentMicroButton.tooltipText = "Talents (N)"
+-- Its own click: the game's toggle (a secure click of ours runs it, never our code).
+TalentMicroButton:SetScript("OnClick", function() stub.bindingRun.TOGGLETALENTS() end)
 -- High in its bar, as the micro menu sits: the overlay must land above it.
 TalentMicroButton:SetFrameStrata("HIGH")
 TalentMicroButton:SetFrameLevel(40)

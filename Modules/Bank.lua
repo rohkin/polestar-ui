@@ -16,7 +16,7 @@ local COLS = 11
 
 local f, grid, strip, money
 local shown -- the shown bank type (bags), or the shown tab's container ID (tabs)
-local M = {}
+local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local paint, buy
 
 local function bagMode() return C_Bank.ShouldUsePlayerBagsInBank() end

@@ -15,7 +15,7 @@ local f, subject
 local rows = {}
 local cat, sel = ALL, nil -- the shown category; the selected service's index
 local query = "" -- the sidebar search, lowercased
-local M = {}
+local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local paint
 
 -- A pet trainer's costs are the pet's training points, not money (Camelot).

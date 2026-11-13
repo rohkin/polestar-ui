@@ -16,7 +16,7 @@ local f, money, subject
 local tab = "buy"
 local query = "" -- the sidebar search, lowercased
 local rows = {}
-local M = {}
+local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local paint
 
 local coins = ns.Coins

@@ -9,7 +9,7 @@ local NAME = "PolestarUIMail"
 local ROW, LETTER_W, RECEIVE, SEND = 52, 340, 16, 12
 
 local f, letter, send
-local M = {}
+local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local tab, open, taking = "inbox", nil, nil -- the page; the open letter; what the take loop empties (a letter, or "all")
 local cod, copper = false, 0 -- the Send page's money: COD or sent, and how much
 local replyTo -- the letter the Send page answers (Reply), as the stock sendMode "reply"

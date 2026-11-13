@@ -860,6 +860,7 @@ function ns.Doors(module, name, actions, micro, onMicro)
 	keySig = false
 	bindKeys()
 	if not micro then return end
+	ns.modules[module].psMicro = micro
 	local o = CreateFrame("Button", "PolestarUI" .. name .. "Micro", UIParent, "SecureActionButtonTemplate")
 	o:RegisterForClicks("LeftButtonUp")
 	o:SetAttribute("useOnKeyDown", false)
@@ -1119,6 +1120,56 @@ end
 -- window), left of the close button; the Menu scale slider moves left of it.
 -- `options`: the window's own items (or a function(button) returning them),
 -- first, a divider, then "Use game window".
+-- "Use game window" closes ours and opens the game's window in its place. Our
+-- code must not open it (rule 8), and a menu row is Polestar's, not secure: a
+-- secure button of ours (PolestarUIGameWindow) lies over that row, placed by
+-- position out of combat. Its PreClick switches the window off (ours closes,
+-- the keys and micro button are the game's again); then its secure action
+-- clicks the game's micro button, which opens the game's window from secure
+-- code, as the micro overlays' shift-click does (ns.Doors). A window with no
+-- micro button (Social) or that waits for /reload (NPC windows, crafting)
+-- keeps the plain row: switched off, its keys open the game's window.
+local gameDoor
+local function gameMicro(key)
+	local m = ns.modules[key]
+	-- Character takes ToggleCharacter, not its micro button (no ns.Doors micro).
+	local micro = m.psMicro or (key == "character" and CharacterMicroButton)
+	return not m.reloadOff and micro and micro:GetName() and micro
+end
+local function gameWindowDoor()
+	local o = CreateFrame("Button", "PolestarUIGameWindow", UIParent, "SecureActionButtonTemplate")
+	o:RegisterForClicks("LeftButtonUp")
+	o:SetAttribute("useOnKeyDown", false)
+	o:SetAttribute("type1", "macro")
+	o:SetScript("PreClick", function(self)
+		Polestar.Widgets.HideMenu()
+		ns.Switch(self.psKey, false)
+	end)
+	local function row(script) return function() local r = o.psRow; if r and r:GetScript(script) then r:GetScript(script)(r) end end end
+	o:SetScript("OnEnter", row("OnEnter"))
+	o:SetScript("OnLeave", row("OnLeave"))
+	o:Hide()
+	-- Over the menu's row while it shows; out of combat only (a secure button
+	-- cannot move or hide in combat; its macro does nothing there).
+	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
+		if InCombatLockdown() then return end
+		local menu, r = PolestarMenu
+		for _, x in ipairs(menu and menu:IsVisible() and menu.rows or {}) do
+			if x:IsVisible() and x.psItem == o.psItem then r = x end
+		end
+		o.psRow = r
+		if not (r and r:GetLeft()) then return o:Hide() end
+		local k = r:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		o:ClearAllPoints()
+		o:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", r:GetLeft() * k, r:GetBottom() * k)
+		o:SetSize(r:GetWidth() * k, r:GetHeight() * k)
+		o:SetFrameStrata(menu:GetFrameStrata())
+		o:SetFrameLevel(r:GetFrameLevel() + 5)
+		o:Show()
+	end)
+	return o
+end
+
 function ns.WindowMenu(f, key, options)
 	local W = Polestar.Widgets
 	local m = ns.modules[key]
@@ -1128,9 +1179,18 @@ function ns.WindowMenu(f, key, options)
 		local items = {}
 		for _, it in ipairs(type(options) == "function" and options(self) or options or {}) do items[#items + 1] = it end
 		if #items > 0 then items[#items + 1] = { separator = true } end
-		items[#items + 1] = { text = "Use game window", icon = "window", onClick = function() ns.Switch(key, false) end,
-			tip = (m.reloadOff and "After /reload, the game's own window opens in its place." or "The game's own window opens in its place.")
+		local micro = gameMicro(key)
+		local item = { text = "Use game window", icon = "window", onClick = function() ns.Switch(key, false) end,
+			tip = (m.reloadOff and "After /reload, the game's own window opens in its place."
+				or micro and "Closes this one and opens the game's own window in its place."
+				or "Its keys open the game's own window from now on.")
 				.. " Type /pui " .. key .. " on to come back." }
+		items[#items + 1] = item
+		if micro and not InCombatLockdown() then
+			gameDoor = gameDoor or gameWindowDoor()
+			gameDoor.psKey, gameDoor.psItem = key, item
+			gameDoor:SetAttribute("macrotext", "/click [nocombat] " .. micro:GetName())
+		end
 		W.ShowMenu(self, items, #items > 1 and { minWidth = 200 } or nil)
 	end, 14)
 	local t = f.HeaderTools
@@ -1155,30 +1215,67 @@ if not Polestar.GamepadUI() then
 	-- UIParent, placed by position: nothing is added to, hooked on or anchored
 	-- to the stock frame, which is only read (docs/CLIENT.md, rule 10). Not
 	-- shown when there is no room above it (a maximised map).
+	-- Clicked, the stock window closes and ours opens in its place. Our code
+	-- must not hide it (rules 1, 8, 14), so the click is a secure button of
+	-- ours (PolestarUISwitch<key>) over the drawn one, clicking the stock
+	-- window's own close button from secure code, as the micro overlays'
+	-- shift-click does (ns.Doors); then ours switches on and opens. Not for a
+	-- window whose closing ends what it shows (reloadOff: NPC windows,
+	-- crafting): that one stays open, and ours opens from the next time.
+	-- Hidden in combat, when the switch is refused.
 	local stockButtons = {}
+	local function useOurs(key)
+		ns.Switch(key, true)
+		if not ns.Enabled(key) then return end
+		local fr = ns.modules[key].stock()
+		if fr and fr:IsShown() then return say(key .. ": Polestar's window from the next time it opens.") end
+		ns.Show(key)
+	end
 	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
 		for _, key in ipairs(ns.order) do
 			local m, b = ns.modules[key], stockButtons[key]
 			local fr = PolestarUIDB and not ns.Enabled(key) and m.stock and m.stock()
 			local k = fr and fr:IsVisible() and fr:GetTop() and fr:GetEffectiveScale() / UIParent:GetEffectiveScale()
-			if k and (fr:GetTop() * k + 30 <= UIParent:GetTop()) then
+			if InCombatLockdown() then
+				if b then b:Hide() end
+			elseif k and (fr:GetTop() * k + 30 <= UIParent:GetTop()) then
 				if not b then
-					b = Polestar.Widgets.Button(UIParent, "Polestar", function() ns.Switch(key, true) end, { height = 22, icon = "emblem" })
-					b:HookScript("OnEnter", function(self)
+					b = Polestar.Widgets.Button(UIParent, "Polestar", nil, { height = 22, icon = "emblem" })
+					local o = CreateFrame("Button", "PolestarUISwitch" .. key, UIParent, "SecureActionButtonTemplate")
+					o:RegisterForClicks("LeftButtonUp")
+					o:SetAttribute("useOnKeyDown", false)
+					o:SetScript("PostClick", function() useOurs(key) end)
+					o:SetScript("OnEnter", function(self)
 						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 						GameTooltip:SetText("Use Polestar's window")
-						ns.TooltipHint("Its keys and micro button open Polestar's window in place of this one. Or type /pui " .. key .. " on.")
+						ns.TooltipHint("Closes this one and opens Polestar's; its keys and micro button open Polestar's from now on. Or type /pui " .. key .. " on.")
 						GameTooltip:Show()
 					end)
-					b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+					o:SetScript("OnLeave", function() GameTooltip:Hide() end)
+					if RegisterStateDriver then RegisterStateDriver(o, "visibility", "[combat] hide; show") end
+					b.psSecure = o
 					stockButtons[key] = b
 				end
+				local o, close = b.psSecure, not m.reloadOff and fr.CloseButton or nil
+				if o:GetAttribute("clickbutton") ~= close then
+					o:SetAttribute("type1", close and "click" or nil)
+					o:SetAttribute("clickbutton", close)
+				end
+				local x, y = fr:GetRight() * k, fr:GetTop() * k + 4
 				b:ClearAllPoints()
-				b:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", fr:GetRight() * k, fr:GetTop() * k + 4)
+				b:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", x, y)
 				b:SetFrameStrata(fr:GetFrameStrata())
 				b:Show()
+				-- By position, on UIParent: anchored to ours, it would protect it (rule 10).
+				o:ClearAllPoints()
+				o:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", x, y)
+				o:SetSize(b:GetWidth(), b:GetHeight())
+				o:SetFrameStrata(b:GetFrameStrata())
+				o:SetFrameLevel(b:GetFrameLevel() + 5)
+				o:Show()
 			elseif b then
 				b:Hide()
+				b.psSecure:Hide()
 			end
 		end
 	end)

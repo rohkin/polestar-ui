@@ -141,7 +141,7 @@ local quote -- a commodity purchase waiting on its quote: { id, n, unit, total, 
 local sell = { n = 1, price = 0, bid = 0, buyoutOnly = true } -- loc, key, commodity, touched, multi
 local pendingPost, bidAmount
 local rows = {}
-local M = {}
+local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local paint, moreResults
 
 local coins = ns.Coins

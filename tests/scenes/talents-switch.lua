@@ -2,7 +2,7 @@
 --@ roots: PolestarUITalents
 --@ stubs: stub_talents.lua
 --@ saved: PolestarUIDB = { modules = { talents = false } }
--- The switch: saved off, the talents key is the game's and a Polestar button sits above the stock window (ours on UIParent, not anchored to it); it switches on live (keys, overlay). The window's menu switches it off live; not in combat; /pui switches and lists each window (the Character toggle hook stands aside while off; crafting off waits for /reload).
+-- The switch: saved off, the talents key is the game's and a Polestar button sits above the stock window (ours on UIParent, not anchored to it); it closes the stock window (its own close button, clicked by a secure button of ours) and opens ours, switched on live (keys, overlay); hidden in combat. The window's menu switches it off live and opens the game's window in its place (a secure button of ours over the row clicks the micro button); not in combat; /pui switches and lists each window (the Character toggle hook stands aside while off; crafting off waits for /reload).
 local said = {}
 print = function(m) said[#said + 1] = m end
 local function lastSaid() return said[#said] or "" end
@@ -13,12 +13,27 @@ local sb
 for _, c in ipairs({ UIParent:GetChildren() }) do if c:IsShown() and type(c.Label) == "table" and c.Label.GetText and c.Label:GetText() == "Polestar" then sb = c end end
 local p, rel, rp, x, y = sb:GetPoint(1)
 assert(sb and rel == UIParent and p == "BOTTOMRIGHT" and rp == "BOTTOMLEFT" and x == PlayerSpellsFrame:GetRight() and y == PlayerSpellsFrame:GetTop() + 4, "no switch-back button above the stock window, or anchored to it")
-sb:Click()
-assert(PolestarUIDB.modules.talents == true and stub.overrides["N"] == "PolestarUITalentsTOGGLETALENTS", "the stock button did not switch on live")
+-- Its click is a secure button of ours over it (by position, on UIParent) that clicks the stock close button from secure code.
+local o = PolestarUISwitchtalents
+local op, orel, orp, ox, oy = o:GetPoint(1)
+assert(o:IsShown() and orel == UIParent and ox == x and oy == y and o:GetAttribute("type1") == "click" and o:GetAttribute("clickbutton") == PlayerSpellsFrame.CloseButton, "no secure click over the stock button, or it does not close the stock window")
+stub.inCombat = true
 stub.advance(0.1)
-assert(not sb:IsShown() and PolestarUITalentsMicro:IsShown(), "on: the overlay, no stock button")
-stub.pressKey("N")
+assert(not sb:IsShown(), "in combat (no switch): the stock button still shown")
+stub.inCombat = false
+stub.advance(0.1)
+assert(sb:IsShown(), "after combat: no stock button")
+-- The client's secure click: the action (the stock close button's own click), then our PostClick.
+o:GetAttribute("clickbutton"):Click()
+stub.RunScript(o, "PostClick", "LeftButton", false)
 local f = PolestarUITalents
+assert(PolestarUIDB.modules.talents == true and stub.overrides["N"] == "PolestarUITalentsTOGGLETALENTS", "the stock button did not switch on live")
+assert(not PlayerSpellsFrame:IsShown() and f and f:IsShown(), "the stock button did not close the stock window and open ours")
+stub.advance(0.1)
+assert(not sb:IsShown() and not o:IsShown() and PolestarUITalentsMicro:IsShown(), "on: the overlay, no stock button")
+stub.pressKey("N")
+assert(not f:IsShown(), "on: the key closes ours")
+stub.pressKey("N")
 assert(f:IsShown(), "on: the key opens ours")
 f.psMenu:Click()
 -- The window's options first, a divider, then "Use game window".
@@ -26,8 +41,18 @@ assert(PolestarMenu.rows[1].psItem.text == "Game's talents: shift-click their mi
 local row = PolestarMenu.rows[2]
 assert(PolestarMenu:IsShown() and row:IsShown() and row.psItem.text == "Use game window" and row.psItem.tip:find("/pui talents on", 1, true), "menu entry")
 assert(select(2, f.psMenu:GetPoint(1)) == f.Close and select(2, f.HeaderTools:GetPoint(1)) == f.psMenu, "menu button between the scale and the close button")
-row:Click()
+-- Its click is a secure button of ours over the row (by position, on UIParent) whose macro clicks the game's micro button.
+stub.advance(0.1)
+local g = PolestarUIGameWindow
+assert(g and g:IsShown() and select(2, g:GetPoint(1)) == UIParent and g:GetLeft() == row:GetLeft() and g:GetTop() == row:GetTop() and g:GetWidth() == row:GetWidth(), "no secure button over Use game window")
+assert(g:GetAttribute("type1") == "macro" and g:GetAttribute("macrotext") == "/click [nocombat] TalentMicroButton", "it does not click the game's micro button")
+-- The client's secure click: our PreClick, then the action (the micro button's own click).
+stub.RunScript(g, "PreClick", "LeftButton", false)
+TalentMicroButton:Click()
 assert(not f:IsShown() and PolestarUIDB.modules.talents == false and not stub.overrides["N"], "off: ours closed, the key unbound")
+assert(PlayerSpellsFrame:IsShown() and PlayerSpellsFrame.TalentsFrame:IsShown() and not PolestarMenu:IsShown(), "off: the game's window did not open in its place")
+stub.advance(0.1)
+assert(not g:IsShown(), "the secure button stayed after the menu closed")
 stub.advance(0.1)
 assert(not PolestarUITalentsMicro:IsShown(), "off: overlay still over the micro button")
 stub.pressKey("N")
