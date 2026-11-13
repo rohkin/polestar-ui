@@ -8,32 +8,50 @@ window in `CHAT_FRAMES` (the whisper windows as they open), its button frame,
 tab, edit box, scroll bar and buttons, minimised windows, the side buttons,
 the dock's overflow list, the combat log's filter strip, the chat's own
 menus and chat bubbles.
-- **Ground:** one Polestar window per chat window: one ground (`bg` at the
-  Background opacity setting) and one 1px `border` hairline round the
-  message area, the button strip on its side (left or right, as the game
-  puts it; re-placed when it moves) and a 22px tab header above both, which
-  a `divider` rule closes as the guide window's tab strip; with the strip on
-  the right, 6px of room left of the text. All of it our textures on the
+- **Calm and warm:** at rest the chat is quiet: a soft ground, no outline,
+  no footer, the side strip's icons gone, the tabs the game's faded labels.
+  It turns warm while the game fades it in (the mouse over it, read from
+  the window's `hasBeenFaded`), while the mouse is on a tab (any docked tab
+  warms the docked windows), on its shown edit box or on the social button,
+  or while its edit box is typed in: the full ground and its hairline, the
+  side icons back. Ours eases in over 0.15 s
+  (the game's fade-in) and out over 1 s.
+- **Ground:** one flat Polestar surface per chat window: one ground (`bg` at
+  the Background opacity setting) round the message area, the button strip
+  on its side (left or right, as the game puts it; re-placed when it moves)
+  and a 22px tab header above both, no divider. The header's ground and
+  hairline are on `GeneralDockManager`, under the docked tabs (its
+  children, LOW strata): the chat window (frame level 5) draws above the
+  docked tabs, so nothing of ours on the window may reach above its ground,
+  or it covers them. Undocked windows have no header (their tab, MEDIUM
+  strata, sits above them); with the strip on the right,
+  6px of room left of the text. At rest the ground is 35% of Polestar's
+  (`REST`), warm all of it, with a 1px `border` hairline round it. The
+  player's chat opacity no longer scales it. All of it our textures on the
   window, anchored to the stock grounds (window and button frame), whose
-  pieces are hidden and grounds emptied: no stock frame is moved or sized. The game still writes the player's
-  chat opacity and the mouse-over fade into its own ground's alpha; ours
-  copies that alpha each frame, so the player's opacity scales Polestar's
-  ground (0 is see-through, 1 is Polestar's ground). The player's window
-  colour is kept for when it is switched off.
-- **Tabs:** the guide window's tabs on that header: no box, the label in
+  pieces are hidden and grounds emptied: no stock frame is moved or sized.
+  The game still writes the player's opacity and fades into its own
+  (emptied) ground; the player's window colour is kept for when it is
+  switched off.
+- **Tabs:** plain text on that header: no box, no ground, the label in
   Polestar's face (`small`'s) at the game's size (the game sizes a tab to its
-  text once), `textMuted`, the selected one `text` over a 2px accent bar
-  (no wash, as the guide window's tab); the hover wash on a hovered tab
-  only, so hover never reads as selected. Which tab is selected is the
-  dock's answer (undocked, or `FCFDock_GetSelectedWindow`), never the
-  stock Active art, which shows on the combat log's tab until the dock
-  first colours it. A tab the game colours (a whisper's)
-  keeps its label colour. The new-message glow and the tab's fading stay the
-  game's, the glow in the accent.
-- **Edit box:** the window's footer, 24px under its ground, in Polestar's
-  input: the window's ground (at the window's alpha) under the `inputBg`
-  well, the window's hairline carried round it, the window's bottom edge
-  its divider; while typing, that divider in the accent at 50%.
+  text once), `textMuted`, the selected one `text` over a 2px accent
+  underline as wide as its label. A hovered tab: its label `text` at full
+  alpha (out of the tab's fade, `SetIgnoreParentAlpha`) on the hover wash,
+  which lies under the label (BACKGROUND, shown by our driver); in the
+  HIGHLIGHT layer it drew over the label and washed it out. Which
+  tab is selected is the dock's answer (undocked, or
+  `FCFDock_GetSelectedWindow`), never the stock Active art, which shows on
+  the combat log's tab until the dock first colours it. A tab the game
+  colours (a whisper's) keeps its label colour; its conversation icon is
+  desaturated and drawn in Polestar's `icon` colour. The tabs' own fade (0.4
+  selected, 0.2 others at rest; 1 and 0.6 on mouse-over) and the
+  new-message glow stay the game's, the glow in the accent.
+- **Edit box:** only while typing, the window's footer, 24px under its
+  ground, in Polestar's input: the window's ground under the `inputBg` well,
+  the hairline carried round it, its top edge the accent at 50%. Not typing
+  there is no footer, whether the game hides the box (classic chat style) or
+  leaves it shown at 0.35 (IM style, the default).
 - **Combat log:** its filter strip's black band faded, a divider under it.
 - **Buttons:** the side buttons (chat menu, channels, voice, speech) and each
   window's minimise, resize and scroll-to-bottom buttons as Polestar's icon
@@ -41,9 +59,32 @@ menus and chat bubbles.
   matches (chat menu `icon-talk`, minimise `chevron-down`, restore
   `chevron-up`, grip `resize`, scroll to bottom `chevron-down`, dock overflow
   `chevron-right`), else the stock icon (channels, the voice states, speech)
-  on our ground. Pressed, the glyph nudges 1px; disabled, it dims to 35%.
-  The alerts (the channel button's flash, scroll to bottom's flash, the
-  overflow pulse) stay the game's.
+  desaturated and drawn in Polestar's `icon` colour. The side strip's icons
+  show only while a shown window is warm. Pressed, the glyph nudges 1px;
+  disabled, it dims to 35%. The alerts (the channel button's flash, scroll
+  to bottom's flash, the overflow pulse) stay the game's.
+- **Social button:** the Quick Join button (`QuickJoinToastButton`) shown at
+  the foot of the side strip, just above the chat menu button (2px apart, a
+  voice button's 27x26, a 15px friend icon `groupfinder-icon-friend` flat in
+  `icon`, the online count copied from the stock count in `textMuted`,
+  none at 0), with the strip. Anchored on the menu button, which the game
+  keeps at the strip's bottom, it stays inside the strip whether the voice
+  buttons show or not; in a voice channel on a window at its minimum height
+  (120) the strip is too short for all five and it meets the mute button.
+  The stock button cannot move (ChatAlertFrame places it as an alert
+  subsystem), so ours is a copy: an icon frame on the strip and a secure
+  button of ours over it, placed out of combat by position (rule 10). A
+  click opens Polestar's Social window while that module is on (PostClick,
+  as our doors), shift-click the stock button; with the module off, or while
+  a Quick Join toast shows (its click opens that group), a click is the stock
+  button's own (`type1` `click`, its OnClick untainted). The route is set
+  out of combat. Its tooltip is the stock one's (Social and its key, the
+  shift-click hint on ours, or the disabled reason). The stock button's
+  icon, count and highlight are faded; its toasts and queue icon (alpha the
+  game animates) and its click area at its old place stay.
+- **Clipping:** the message frame clips a line that sticks out at its top or
+  bottom (a large chat font): half a line under the tabs, a cut descender at
+  the foot. That is the game's frame, not ours, and stays.
 - **Scroll bar:** its track and thumb art faded; a 2px `textMuted` thumb,
   4px `iconHover` under the cursor; the steppers as chevrons.
 - **Minimised windows:** as a tab (panel ground, hairline, hover wash); the

@@ -234,6 +234,7 @@ local function entry(o)
 		texture = (type(o.texture) == "string" or type(o.texture) == "number") and o.texture or nil, color = copy(o.color),
 		vertexColor = copy(o.vertexColor), texCoord = copy(o.texCoord), gradient = o.gradient, desaturation = o.desaturation,
 		rotation = o.rotation, blend = o.blend, vertexOffset = copy(o.vertexOffset),
+		ignoreParentAlpha = o.ignoreParentAlpha == true or nil,
 	}
 	-- A Line (CreateLine): its two ends, each relative to a point of a frame, and its thickness.
 	if o.kind == "Line" then

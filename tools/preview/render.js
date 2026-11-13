@@ -356,7 +356,8 @@ function svg(dump, { fonts, textures, roots, margin = 28, prefix = 'p', shared, 
 		let a = 1, cur = o;
 		while (cur) {
 			a *= cur.alpha ?? 1;
-			cur = cur.parent != null ? byId.get(cur.parent) : null;
+			// SetIgnoreParentAlpha: the ancestors' alpha stops here.
+			cur = cur.parent != null && !cur.ignoreParentAlpha ? byId.get(cur.parent) : null;
 		}
 		return a;
 	};

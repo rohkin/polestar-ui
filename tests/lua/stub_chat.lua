@@ -8,7 +8,11 @@
 -- stub.chatEvent runs the message event filters, as ChatFrame_MessageEventHandler.
 -- Also each window's scroll bar, grip and scroll-to-bottom button, the side
 -- buttons, a minimised window, the dock's overflow list, the chat's menus
--- (Blizzard_Menu's pooled frame) and chat bubbles.
+-- (Blizzard_Menu's pooled frame) and chat bubbles. As the client shows it at
+-- login: the IM style's edit box shown at 0.35, every window at rest (the
+-- tabs faded to 0.4 and 0.2); FCF_FadeInChatFrame warms them. Not modelled:
+-- the message frame clipping a line that sticks out at its top or bottom
+-- (the preview does not clip).
 
 local PIECES = { "TopLeftTexture", "BottomLeftTexture", "TopRightTexture", "BottomRightTexture", "LeftTexture", "RightTexture", "BottomTexture", "TopTexture" }
 -- Each piece's anchors on the Background: corners 8 square, edges 3 thick, 4 outside it.
@@ -58,14 +62,37 @@ end
 NORMAL_FONT_COLOR = { r = 1, g = 0.82, b = 0 }
 DEFAULT_TAB_SELECTED_COLOR_TABLE = { r = 1, g = 0.5, b = 0.25 }
 
--- The selected art, the label and glow coloured (the window's colour, else the game's gold).
+-- The selected art, the label and glow coloured (the window's colour, else
+-- the game's gold); a whisper's conversation icon in its colour.
 function FCFTab_UpdateColors(tab, selected)
 	for _, k in ipairs({ "ActiveLeft", "ActiveMiddle", "ActiveRight" }) do tab[k]:SetShown(selected) end
 	local c = tab.selectedColorTable or DEFAULT_TAB_SELECTED_COLOR_TABLE
 	local n = tab.selectedColorTable or NORMAL_FONT_COLOR
 	if tab.Text then tab.Text:SetTextColor(n.r, n.g, n.b) end
 	tab.glow:SetVertexColor(c.r, c.g, c.b)
+	if tab.conversationIcon then tab.conversationIcon:SetVertexColor(c.r, c.g, c.b) end
 end
+
+-- The mouse-over fades (FCF_FadeInChatFrame, FCF_FadeOutChatFrame, done at
+-- once): hasBeenFaded, the ground at the window alpha, each docked tab at its
+-- mouse-over or rest alpha (FCFTab_UpdateAlpha: selected 1 / 0.4, others
+-- 0.6 / 0.2), the scroll bar at 0.6 or gone (FCF_FadeInScrollbar). At login
+-- every window is at rest.
+local function fade(on)
+	for _, name in ipairs(CHAT_FRAMES) do
+		local f = _G[name]
+		f.hasBeenFaded = on or nil
+		if f.ScrollBar then
+			f.ScrollBar:SetAlpha(on and 0.6 or 0)
+			f.ScrollToBottomButton:SetAlpha(on and 0.65 or 0)
+		end
+		local selected = not f.isDocked or GENERAL_CHAT_DOCK.selected == f
+		local t = _G[name .. "Tab"]
+		t:SetAlpha(selected and (on and 1 or 0.4) or (on and 0.6 or 0.2))
+	end
+end
+function FCF_FadeInChatFrame() fade(true) end
+function FCF_FadeOutChatFrame() fade(false) end
 
 -- The button frame on the window's left or right, 3 off its ground (FCF_SetButtonSide).
 function FCF_SetButtonSide(frame, side)
@@ -91,6 +118,11 @@ B.GetDisabledTexture = B.GetDisabledTexture or function(self) return self.disabl
 B.GetButtonState = B.GetButtonState or function(self) return self.buttonState or "NORMAL" end
 B.SetButtonState = B.SetButtonState or function(self, s) self.buttonState = s end
 B.IsForbidden = B.IsForbidden or function(self) return self.forbidden == true end
+B.SetIgnoreParentAlpha = B.SetIgnoreParentAlpha or function(self, v) self.ignoreParentAlpha = v and true or false end
+B.IsIgnoringParentAlpha = B.IsIgnoringParentAlpha or function(self) return self.ignoreParentAlpha == true end
+-- The mouse: over stub.mouseOver (a scene sets it), else over nothing.
+local mouseOver = B.IsMouseOver
+B.IsMouseOver = function(self, ...) return stub.mouseOver == self or mouseOver(self, ...) end
 
 -- A stock button's art: its plate (normal), the pressed and disabled plates
 -- (drawn only in their state, so hidden here) and the highlight.
@@ -117,12 +149,24 @@ local function button(name, parent, w, h, r, g, bl)
 	return art(b, r, g, bl)
 end
 
--- An icon of its own (a voice button's state atlas), over the plate.
+-- A colour texture standing in for a coloured client icon, drawn grey while
+-- desaturated (the preview desaturates only image files).
+local function iconTexture(t, r, g, b)
+	t:SetColorTexture(r, g, b, 1)
+	local base = t.SetDesaturated
+	function t.SetDesaturated(self, v)
+		base(self, v)
+		local y = 0.3 * r + 0.59 * g + 0.11 * b
+		self:SetColorTexture(v and y or r, v and y or g, v and y or b, 1)
+	end
+end
+
+-- An icon of its own (a voice button's state atlas, gold in the client), over the plate.
 local function icon(b)
 	b.Icon = b:CreateTexture(nil, "OVERLAY")
 	b.Icon:SetSize(15, 15)
 	b.Icon:SetPoint("CENTER", b, "CENTER", 0, 0)
-	b.Icon:SetColorTexture(0.85, 0.85, 0.9, 1)
+	iconTexture(b.Icon, 0.95, 0.78, 0.2)
 	return b
 end
 
@@ -166,12 +210,20 @@ local function scrollBar(f)
 	return bar
 end
 
+-- The dock (DockManagerTemplate: LOW strata, a frame of UIParent's), the
+-- docked tabs its children (FCFDock_UpdateTabs: SetParent(dock)), so LOW and a
+-- level above it, while every chat window is level 5 (FloatingChatFrameTemplate):
+-- a window draws above the docked tabs. Anchored once ChatFrame1 is made.
+local dock = CreateFrame("Frame", "GeneralDockManager", UIParent)
+dock:SetFrameStrata("LOW")
+dock:SetFrameLevel(1)
+
 local tabs = {}
 local function makeTab(id, text)
-	local t = CreateFrame("Button", "ChatFrame" .. id .. "Tab", UIParent)
+	local t = CreateFrame("Button", "ChatFrame" .. id .. "Tab", dock)
+	t:SetFrameLevel(2)
 	t:SetID(id)
 	t:SetSize(20 + 7 * #text, 32)
-	t:SetFrameStrata("MEDIUM")
 	local prev = tabs[#tabs]
 	if prev then t:SetPoint("LEFT", prev, "RIGHT", 1, 0) else t:SetPoint("BOTTOMLEFT", ChatFrame1Background, "TOPLEFT", 0, 0) end
 	tabs[#tabs + 1] = t
@@ -258,11 +310,21 @@ function stub.chatEvent(frame, event, msg, sender)
 	frame:AddMessage(string.format("[%s] says: %s", sender, msg), 1, 1, 1)
 end
 
--- Opening a chat line, as ChatFrameUtil.ActivateChat: shown, focused, its focus art on.
+-- Opening a chat line, as ChatFrameUtil.ActivateChat: shown, at full alpha, focused, its focus art on.
 function stub.activateChat(e)
 	e:Show()
+	e:SetAlpha(1)
 	e:SetFocus()
 	for _, t in ipairs({ e.focusLeft, e.focusMid, e.focusRight }) do t:Show() end
+end
+
+-- Leaving it in the IM chat style (the client's default; ChatFrameEditBoxMixin:Deactivate):
+-- still shown, at 0.35, no header, no focus art.
+function stub.deactivateChat(e)
+	e:ClearFocus()
+	e:SetAlpha(0.35)
+	e.header:SetText("")
+	for _, t in ipairs({ e.focusLeft, e.focusMid, e.focusRight }) do t:Hide() end
 end
 
 local function makeChat(id, name)
@@ -271,6 +333,7 @@ local function makeChat(id, name)
 	f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 70, 120)
 	f:SetSize(430, 120)
 	f:SetFrameStrata("LOW")
+	f:SetFrameLevel(5)
 	f:SetID(id)
 	f.isDocked = true
 	bordered(f, -2, 3, 15, -6)
@@ -327,6 +390,10 @@ GENERAL_CHAT_DOCK = { selected = ChatFrame1 }
 function FCFDock_GetSelectedWindow(dock) return dock.selected end
 makeChat(2, "Combat Log"):Hide()
 stub.makeChat = makeChat
+-- At login: the IM style's edit box shown at rest, every window at rest.
+stub.deactivateChat(ChatFrame1EditBox)
+ChatFrame1EditBox:Show()
+FCF_FadeOutChatFrame(ChatFrame1)
 
 -- The first window's side buttons (FloatingChatFrame.xml, FloatingChatFrameVoiceChat.xml):
 -- the chat menu's icon drawn into its plate, the channel and voice buttons' icons their own.
@@ -340,7 +407,26 @@ local deafen = icon(button("ChatFrameToggleVoiceDeafenButton", UIParent, 27, 26,
 deafen:SetPoint("TOP", channel, "BOTTOM", 0, -2)
 local mute = icon(button("ChatFrameToggleVoiceMuteButton", UIParent, 27, 26, 0.35, 0.3, 0.25))
 mute:SetPoint("TOP", deafen, "BOTTOM", 0, -2)
+-- Shown only in a voice channel (VoiceToggleButtonMixin): not by default.
+deafen:Hide()
+mute:Hide()
 button("ChatFrameMenuButton", ChatFrame1ButtonFrame, 32, 32, 0.6, 0.5, 0.3):SetPoint("BOTTOM", ChatFrame1ButtonFrame, "BOTTOM", 0, 0)
+
+-- The social button (QuickJoinToastButton, Blizzard_QuickJoin): ChatAlertFrame
+-- keeps it above the chat on the button side; its friends icon and online
+-- count; a click opens the friends list (QuickJoinToastMixin:OnClick).
+local q = CreateFrame("Button", "QuickJoinToastButton", UIParent)
+q:SetSize(32, 32)
+q:SetFrameStrata("LOW")
+q:SetPoint("BOTTOMLEFT", ChatFrame1ButtonFrame, "TOPLEFT", 0, 30)
+q.FriendsButton = q:CreateTexture(nil, "BACKGROUND")
+q.FriendsButton:SetAllPoints(q)
+q.FriendsButton:SetColorTexture(0.95, 0.78, 0.2, 1)
+q.FriendCount = q:CreateFontString(nil, "BORDER", GameFontHighlightSmall)
+q.FriendCount:SetPoint("BOTTOM", q, "BOTTOM", 0, 4)
+q.FriendCount:SetText("10")
+q:SetHighlightTexture((function() local t = q:CreateTexture(nil, "HIGHLIGHT") t:SetAllPoints(q) t:SetColorTexture(1, 1, 1, 0.3) return t end)())
+q:SetScript("OnClick", function() stub.socialOpened = (stub.socialOpened or 0) + 1 end)
 
 -- A window minimised (FCF_MinimizeFrame): its minimised frame, made the first time, in its place.
 function FCF_MinimizeFrame(chatFrame)
@@ -401,13 +487,13 @@ end
 
 -- The dock (GeneralDockManager) and its overflow button, whose list
 -- (TooltipBackdropTemplate: a NineSlice) names the docked windows.
-local dock = CreateFrame("Frame", "GeneralDockManager", UIParent)
 dock:SetPoint("BOTTOMLEFT", ChatFrame1Background, "TOPLEFT", 0, 0)
 dock:SetPoint("BOTTOMRIGHT", ChatFrame1Background, "TOPRIGHT", 0, 0)
 dock:SetHeight(26)
 local over = button("GeneralDockManagerOverflowButton", dock, 16, 16, 0.8, 0.7, 0.5)
 over:SetPoint("BOTTOMRIGHT", dock, "BOTTOMRIGHT", 0, 0)
 over:SetAlpha(0.6)
+over:Hide() -- shown only while the tabs overflow
 local list = CreateFrame("Frame", "GeneralDockManagerOverflowButtonList", over)
 list:SetPoint("BOTTOMLEFT", over, "BOTTOMRIGHT", 0, 0)
 list:SetWidth(160)
@@ -428,6 +514,7 @@ function stub.openOverflow()
 		r:SetTextColor(1, 0.82, 0)
 	end
 	list:SetHeight(25 + #CHAT_FRAMES * 15)
+	over:Show()
 	list:Show()
 end
 
@@ -510,6 +597,18 @@ function stub.chatBubble(name, text, x, y, forbidden)
 	return f
 end
 
+-- The chat as the scenes draw it: a few lines (the login lines cleared) and a whisper window's tab.
+function stub.chatSample()
+	for _, l in ipairs(ChatFrame1.lines) do l:Hide() end
+	ChatFrame1.lines = {}
+	ChatFrame1:AddMessage("Welcome to World of Warcraft!", 1, 1, 0)
+	ChatFrame1:AddMessage("|cff40ff40[Guild] [Jegba]: you can turn in the box for 6.5k xp|r")
+	ChatFrame1:AddMessage("|cff40ff40[Guild] [Satory]: what does it do?|r")
+	stub.chatEvent(ChatFrame1, "CHAT_MSG_SAY", "anyone lfg for Deadmines?", "Thrall")
+	ChatFrame1:AddMessage("|cff33ff99Another addon:|r its own line, through AddMessage", 0.8, 0.8, 1)
+	FCF_OpenTemporaryWindow("WHISPER", "Jaina", ChatFrame1)
+end
+
 -- The combat log's filter strip, when Blizzard_CombatLog loads (on demand).
 function stub.loadCombatLog()
 	local q = CreateFrame("Frame", "CombatLogQuickButtonFrame_Custom", ChatFrame2Tab)
@@ -528,6 +627,17 @@ function FCF_OpenTemporaryWindow(chatType, chatTarget, source, select)
 	local f = makeChat(maxTemp, chatTarget)
 	maxTemp = maxTemp + 1
 	FCF_SetWindowAlpha(f, source and source.oldAlpha or 0.25)
+	-- FCF_SetTemporaryWindowType: the whisper colour, the conversation icon left of the label.
+	local t = _G[f:GetName() .. "Tab"]
+	t.selectedColorTable = { r = 1, g = 0.5, b = 1 }
+	t.conversationIcon = t:CreateTexture(nil, "ARTWORK")
+	t.conversationIcon:SetSize(12, 12)
+	t.conversationIcon:SetPoint("RIGHT", t.Text, "LEFT", -2, 0)
+	iconTexture(t.conversationIcon, 1, 1, 1)
+	t.conversationIcon.iconDisplayInfo = { allowColorOverride = true }
+	t:SetWidth(t:GetWidth() + 14)
+	FCFTab_UpdateColors(t, false)
+	fade(ChatFrame1.hasBeenFaded)
 	if not select then f:Hide() end
 	return f
 end

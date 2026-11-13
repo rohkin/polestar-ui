@@ -305,10 +305,14 @@ Art the game itself fades (the chat windows' ground and border, whose
 alpha `FCF_SetWindowAlpha` and the mouse-over fades write) cannot be faded
 with `SetAlpha`: the next fade writes over it. Hide the pieces the game only
 fades while shown, empty a piece whose alpha must stay live
-(`SetTexture(nil)` on the chat ground), and copy its alpha onto ours from a
-frame of our own (`Modules/Chat.lua`). A frame other code types into (the
-chat edit box: slash commands, macros) gets no script hook; read its state
-(`HasFocus`) from our own frame.
+(`SetTexture(nil)` on the chat ground), and draw our own ground instead:
+Polestar's, soft at rest and full while the game fades the window in (read
+from `hasBeenFaded`, from a frame of our own; `Modules/Chat.lua`). A frame
+other code types into (the chat edit box: slash commands, macros) gets no
+script hook; read its state (`HasFocus`) from our own frame. Docked chat tabs
+are children of `GeneralDockManager` (LOW strata) below `ChatFrame1`
+(frameLevel 5), so anything of ours drawn on the window above its ground
+covers the tabs: header art goes on the dock.
 
 The game's menus (Blizzard_Menu) are pooled frames every menu shares, and a
 menu frame refuses `CreateTexture`. Restyle one only by its tag
@@ -333,7 +337,7 @@ these frames is touched: no hook, no hide, no key written.
 look holds through a style reset (embedded and back), and switched off, the
 stock art and fonts are back. The `chat` scene: a filtered message and
 another addon's `AddMessage` line show, a new whisper window is restyled,
-our ground follows the window alpha, and switched off, the stock art is back;
+our ground is soft at rest and full while the game fades the window in, and switched off, the stock art is back;
 beside it, the tab menu is restyled and the next menu on the same pooled
 frame is the game's, and a forbidden bubble is never touched.
 
