@@ -232,6 +232,18 @@ local comp = stateButton("AddonCompartmentFrame", 23, 22)
 comp:SetPoint("TOPLEFT", cal, "BOTTOMLEFT", -1, 1)
 comp.Text = text(comp, nil, "3", 10)
 comp.Text:SetPoint("CENTER", comp, "CENTER", 0, 0)
+comp.registeredAddons = { {}, {}, {} }
+-- AddonCompartmentMixin: UpdateDisplay (on RegisterAddon) writes the count
+-- and shows it; OnButtonStateChanged (hover, press, menu) sets the state
+-- atlas again and shows the hover at its alpha.
+function stub.compartmentAdd(data)
+	table.insert(comp.registeredAddons, data or {})
+	comp.Text:SetText(#comp.registeredAddons)
+	comp:SetShown(#comp.registeredAddons > 0)
+	comp.StateTexture:SetAtlas("ui-hud-minimap-addon-indicator")
+	comp.AddTexture:SetShown(true)
+	comp.AddTexture:SetAlpha(0.1)
+end
 local clock = CreateFrame("Button", "TimeManagerClockButton", cluster)
 clock:SetSize(40, 16)
 clock:SetPoint("RIGHT", zone, "RIGHT", -3, -1)

@@ -14,7 +14,7 @@
 -- tracking, calendar and mail indicator faded, with bare icons of ours in the
 -- map's corners that do what theirs do (the game re-anchors its header on a
 -- header side change, so a stock one is never moved); the addon compartment
--- faded, with a cell of ours at the head of the flyout opening its menu; the
+-- faded with no stand-in (the flyout is the one list of addons); the
 -- two menus in the chat's menu look (by tag). No key is written on a
 -- stock frame and no stock frame is moved, sized, shown or hidden: what is
 -- ours is kept in weak tables. The zone name is read through ns.Clean
@@ -41,7 +41,7 @@ local M = { noun = "minimap" }
 local looks = setmetatable({}, { __mode = "k" }) -- stock frame -> its textures of ours
 local stockFonts = setmetatable({}, { __mode = "k" }) -- font string -> { path, size, flags }
 local taken = setmetatable({}, { __mode = "k" }) -- addon button -> where it was
-local edge, north, dock, zoneLabel, clockLabel, compartment, addons
+local edge, north, dock, zoneLabel, clockLabel, addons
 local clamp -- the screen clamp to the map's edges (below)
 local corner = {} -- the corners' icons of ours: { b = ours, at = its corner, stock = function() -> the game's }
 local INSET = 4 -- a corner icon's, the zone's and the clock's distance from the map's edge
@@ -306,7 +306,6 @@ local function paintEdge()
 	if corner.glow then
 		corner.glow:SetVertexColor(Theme.Accent())
 		corner.hover:SetVertexColor(Theme.Wash("hover"))
-		compartment.hover:SetVertexColor(Theme.Wash("hover"))
 	end
 	local r, g, b = Theme.Accent()
 	paintLine(looks[edge].edges, true, r, g, b, 1)
@@ -363,29 +362,6 @@ local function collect()
 	end
 end
 
--- The addon compartment (its count) at the head of the flyout, while the game
--- shows its own: LibDBIcon puts a button in the compartment only when its
--- addon asks (and other addons' buttons never), so the flyout holds both.
-local function buildCompartment()
-	compartment = CreateFrame("Button", nil, dock)
-	compartment:SetSize(CELL, CELL)
-	compartment.hover = tex(compartment, "HIGHLIGHT")
-	compartment.hover:SetAllPoints(compartment)
-	compartment.count = H.Text(compartment, "number", "text")
-	compartment.count:SetJustifyH("CENTER")
-	compartment.count:SetPoint("CENTER", compartment, "CENTER", 0, 0)
-	compartment:SetScript("OnMouseDown", function(self) openMenu(rawget(_G, "AddonCompartmentFrame"), self) end)
-	gameTip(compartment, function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-		GameTooltip:SetText(ADDONS)
-	end)
-end
-
-local function compartmentCount()
-	local c = rawget(_G, "AddonCompartmentFrame")
-	return c and c:IsShown() and c.Text and c.Text:GetText() or nil
-end
-
 -- The flyout: on the map, up from the addons icon in its bottom-right
 -- corner, each button scaled to the cell; a column further left when the
 -- map's height is full. Hidden until the icon opens it: a button parented to
@@ -420,12 +396,6 @@ local function layout()
 	local list = {}
 	for b in pairs(taken) do if b:IsShown() then list[#list + 1] = b end end
 	table.sort(list, function(a, b) return a:GetName() < b:GetName() end)
-	local count = compartmentCount()
-	compartment:SetShown(count ~= nil)
-	if count then
-		compartment.count:SetText(count)
-		table.insert(list, 1, compartment)
-	end
 	local room = Minimap:GetHeight() - addons:GetHeight() - 3 * INSET - 2 * PAD
 	local per = math.max(1, math.floor((room + GAP) / (CELL + GAP)))
 	local cols = math.ceil(#list / per)
@@ -453,7 +423,7 @@ local function watch(elapsed)
 	local names = {}
 	for b in pairs(taken) do if b:IsShown() then names[#names + 1] = b:GetName() end end
 	table.sort(names)
-	local key = table.concat(names, ",") .. "|" .. tostring(compartmentCount())
+	local key = table.concat(names, ",")
 	placeCorner()
 	if key ~= shownKey then
 		shownKey = key
@@ -618,7 +588,6 @@ function M.Enable()
 	buildEdge()
 	buildCorner()
 	buildFlyout()
-	buildCompartment()
 	edge:SetScript("OnUpdate", function(_, elapsed)
 		placeNorth()
 		watch(elapsed)

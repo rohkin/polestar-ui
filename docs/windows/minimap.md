@@ -78,15 +78,15 @@ of ours under the `Minimap` (`Polestar.CreateFrameUnder`).
   (`PolestarUIMinimapDock`, Polestar's ground and a border hairline) on the
   map, up from the icon. It is shut by default, by a second click, by
   Escape (`UISpecialFrames`) and by a click anywhere else
-  (`GLOBAL_MOUSE_DOWN` off the flyout and icon). At its foot the addon
-  compartment (a cell of ours with its count, shown while the game shows
-  `AddonCompartmentFrame`, opening its menu by its generator), then the
-  addon buttons, 18-unit cells (each button scaled to fit, raised over the
+  (`GLOBAL_MOUSE_DOWN` off the flyout and icon). It holds the addon
+  buttons only, 18-unit cells (each button scaled to fit, raised over the
   ground; scale and level given back), a column further left when the map's
   height is full; laid again on `EDIT_MODE_LAYOUTS_UPDATED` and
-  `EditMode.Exit`. The flyout holds both because LibDBIcon puts a button in
-  the compartment only when its addon asks (`AddButtonToCompartment`) and
-  other addons' buttons never. A collected button is parented to the
+  `EditMode.Exit`. The addon compartment has no stand-in in it (the user
+  asked: a count opening a second list of addons is one flyout too many);
+  addons listed only in the compartment (`AddonCompartmentFunc`) are
+  reached through the game's faded button where it sits, or their own
+  commands. A collected button is parented to the
   flyout, so while it is shut the button stays out of sight even when its
   addon shows it again (LibDBIcon does on updates). Collected: LibDBIcon's
   buttons (`LibStub("LibDBIcon-1.0", true)`, `GetButtonList`, and
@@ -105,7 +105,12 @@ of ours under the `Minimap` (`Polestar.CreateFrameUnder`).
   the game writes; given back with its atlas); the compartment's count
   (`Text`) and the mail icon (`MiniMapMailIcon`) faded, the invite flash
   (`GameTimeCalendarInvitesTexture`, `...Glow`, whose alpha the game
-  writes) emptied: the corners and flyout stand in for them. With another
+  writes) emptied: the corners stand in for the rest. The game's update
+  path (`UpdateDisplay` writing the count and showing it,
+  `OnButtonStateChanged` the state atlas and the hover's alpha) keeps
+  them unseen: it never writes the faded alphas, and the hover has no
+  texture. A faded button still takes the mouse where the game puts it
+  (rule 17: no `Hide`, `EnableMouse` or move on a cluster child). With another
   addon owning the shape they are bare icons in place with the hover wash:
   the tracking button wears the `search` glyph, the calendar today's day,
   the compartment its count. The
