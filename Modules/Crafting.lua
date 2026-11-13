@@ -651,7 +651,7 @@ end
 -- Left: pick up or put down (the stock slot's own call); with a modifier,
 -- the client's link and try-on. While a spell targets an item, picking up is
 -- applying it, which is not ours to call (docs/CLIENT.md, rule 4).
-local function gearPickup(s) if not SpellIsTargeting() then PickupInventoryItem(s:GetID()) end end
+local function gearPickup(s) ns.Pickup(PickupInventoryItem, s:GetID()) end
 local function gearClick(s, button)
 	local link = GetInventoryItemLink("player", s:GetID())
 	if link and IsModifiedClick() and HandleModifiedItemClick(link) then return end

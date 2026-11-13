@@ -218,7 +218,7 @@ end
 -- apply it ("target-slot"). Everything else (pick up, drag, link) it hands
 -- back to the slot. In combat the slots only pick up and link.
 local overSlot
-local function pickupWorn(s) if not SpellIsTargeting() then PickupInventoryItem(s:GetID()) end end
+local function pickupWorn(s) ns.Pickup(PickupInventoryItem, s:GetID()) end
 overSlot = ns.Overlay("PolestarUICharacterSlot", {
 	enter = slotEnter,
 	pickup = pickupWorn,
