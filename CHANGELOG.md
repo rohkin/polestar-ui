@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Unit frames: the player, target, target of target, focus, focus's target, pet, party and boss frames in Polestar's look, after EllesmereUI's: flat bars in your theme's colours (class colours with Polestar's "Class colour" on), a square 3D portrait, heals and absorbs, threat on the edge. Move and size them in the game's Edit Mode as before, where they stand in when there is no party, pet or boss; the game's auras, cast bars, icons, combo points, pet happiness and party pets stay. /pui unitframes for their settings.
 - Character: the sections move to an icon rail on the left, as Professions, in the game's order with its own tab icons (your portrait, Reputation, Skills, your faction's Honor, Currency, Statistics); the Character page's title is your name with your chosen title, and its subtitle your level and class, the class in its colour.
 - Switching windows swaps them in place: the Polestar button above a game window closes it and opens Polestar's, and "Use game window" closes Polestar's and opens the game's (an NPC or crafting window: Polestar's from its next opening, the game's after /reload; Social has no micro button, so its keys open the game's).
 - Fixed: Mail no longer errors after taking an attachment or opening a letter with fewer attachments, nor the Character flyout on a slot with fewer choices than the last one.

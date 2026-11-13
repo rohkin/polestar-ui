@@ -249,6 +249,10 @@ HUD elements cast no window shadow and carry no band: they sit on the world, so
 they follow Polestar's Transparent guide-window rules (outlined text, faint
 tracks), with a panel ground only where the player turns it on.
 
+| HUD element | Risk | Status | Entry |
+|---|---|---|---|
+| Unit frames: player, target, target of target, focus, focus's target, pet, party, bosses (`PlayerFrame`, `TargetFrame`, `FocusFrame`, their `ToT`, `PetFrame`, `PartyFrame`, `BossTargetFrameContainer`) | high | building (phases 1-3; compact raid next) | [windows/unitframes.md](windows/unitframes.md) |
+
 ## Components
 
 New components, built from Polestar's widgets. Each takes its colours through

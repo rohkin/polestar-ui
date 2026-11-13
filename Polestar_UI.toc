@@ -30,5 +30,7 @@ Modules\QuestDialog.lua
 Modules\Loot.lua
 Modules\Social.lua
 Modules\Auction.lua
+Modules\HUD.lua
+Modules\UnitFrames.lua
 Modules\Tooltips.lua
 Modules\Chat.lua
