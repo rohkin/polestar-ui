@@ -323,8 +323,11 @@ the forbidden ones (every bubble in an instance); never touch a frame whose
 `LootFrame:UnregisterEvent(...)`, only on those two frames and only for their
 own open events (`QUEST_GREETING`, `QUEST_DETAIL`, `QUEST_PROGRESS`,
 `QUEST_COMPLETE`; `LOOT_OPENED`), so the game's frame never opens beside ours.
+Also `InspectFrame:UnregisterEvent("INSPECT_READY")` (pending the user's
+review): the stock frame shows itself on that event, and its `OnHide` clears
+the inspect data ours shows (`ClearInspectPlayer`).
 It is a widget call that writes no Lua value on the frame. Nothing else on
-either frame is touched: no hook, no hide, no key written.
+these frames is touched: no hook, no hide, no key written.
 
 **Caught by:** the `tooltips` scene: another addon's hook adds its line, the
 look holds through a style reset (embedded and back), and switched off, the
