@@ -9,7 +9,9 @@
 -- map's ground is masked by whatever Minimap:SetMaskTexture was given
 -- (the game's round mask drawn as a disc, WHITE8X8 square). Every stock frame
 -- is guarded (stub_editmode.lua). Also: LibDBIcon with two buttons, another
--- addon's named button, a map pin, a stock button on the backdrop, the
+-- addon's named button, a map pin, a stock button on the backdrop, new mail
+-- and its senders, pending calendar invites, the tracking and compartment
+-- menus by their generators (opened as context menus), the
 -- rotation CVar and its game callback, the player's facing, and Edit Mode's
 -- minimap settings (header underneath, size).
 
@@ -45,6 +47,11 @@ stub.cvars.rotateMinimap = "0"
 stub.minimapSettings = { [0] = false }
 stub.facing = 0
 function GetPlayerFacing() return stub.facing end
+-- The zone name (secret in combat: stub.SECRET) and the clock (GameTimeUtil.lua, by the TimeManager CVars).
+stub.zone = "Goldshire"
+function GetMinimapZoneText() return stub.zone end
+stub.clock = "21:40"
+function GameTime_GetTime() return stub.clock end
 C_DateAndTime = C_DateAndTime or {}
 C_DateAndTime.GetCurrentCalendarTime = C_DateAndTime.GetCurrentCalendarTime or function() return { monthDay = 13, month = 11, year = 2026 } end
 
@@ -99,6 +106,20 @@ mail:SetPoint("TOPLEFT", indicator, "TOPLEFT", 0, 0)
 mail.MailIcon = art(mail, "ARTWORK", 0.85, 0.8, 0.65, 1)
 mail.MailIcon:SetSize(18, 13)
 mail.MailIcon:SetPoint("CENTER", mail, "CENTER", 0, 0)
+_G.MiniMapMailIcon = mail.MailIcon
+mail:Hide()
+-- New mail (UPDATE_PENDING_MAIL): the indicator shown; its tooltip the latest
+-- three senders (MinimapMailFrameUpdate, FormatUnreadMailTooltip).
+stub.mailSenders = {}
+function stub.newMail(senders)
+	stub.mailSenders = senders or {}
+	mail:SetShown(senders ~= nil)
+end
+function MinimapMailFrameUpdate()
+	GameTooltip:AddLine(#stub.mailSenders > 0 and "You have mail from:" or "You have unread mail")
+	for _, n in ipairs(stub.mailSenders) do GameTooltip:AddLine(n) end
+	GameTooltip:Show()
+end
 
 -- The map: its ground (fields, a road, the player's arrow), masked.
 local container = CreateFrame("Frame", nil, cluster)
@@ -181,6 +202,32 @@ cal:SetPoint("TOPLEFT", zone, "TOPRIGHT", -4, 0)
 local invites = art(cal, "ARTWORK", 1, 0.8, 0.2, 1)
 _G.GameTimeCalendarInvitesTexture = invites
 invites:Hide()
+-- The calendar (GameTimeFrameMixin:OnClick): pending invites, the calendar toggled or shown.
+stub.invites, stub.calendar = 0, {}
+C_Calendar = C_Calendar or {}
+C_Calendar.GetNumPendingInvites = function() return stub.invites end
+function ToggleCalendar() table.insert(stub.calendar, "toggle") end
+function Calendar_LoadUI() end
+function Calendar_Show() table.insert(stub.calendar, "show") end
+GAMETIME_TOOLTIP_TOGGLE_CALENDAR = "Click to show/hide the calendar."
+GAMETIME_TOOLTIP_CALENDAR_INVITES = "You have pending calendar invites."
+ADDONS, TRACKING = "AddOns", "Tracking"
+-- A stock dropdown's menu (DropdownButtonMixin:SetupMenu keeps its
+-- generator): opened as a context menu, its tag and entries kept.
+function stub.dropdown(b, tag, entries)
+	b.menuGenerator = function(_, root)
+		root:SetTag(tag)
+		for _, e in ipairs(entries) do root:CreateButton(e) end
+	end
+end
+MenuUtil = MenuUtil or {}
+function MenuUtil.CreateContextMenu(owner, gen)
+	local m = { owner = owner, entries = {} }
+	function m.SetTag(self, tag) self.tag = tag end
+	function m.CreateButton(self, text) table.insert(self.entries, text) end
+	gen(owner, m)
+	stub.contextMenu = m
+end
 local comp = stateButton("AddonCompartmentFrame", 23, 22)
 comp:SetPoint("TOPLEFT", cal, "BOTTOMLEFT", -1, 1)
 comp.Text = text(comp, nil, "3", 10)
@@ -191,11 +238,19 @@ clock:SetPoint("RIGHT", zone, "RIGHT", -3, -1)
 clock:SetFrameLevel(11)
 text(clock, "TimeManagerClockTicker", "21:40", 12, "", 1, 1, 1):SetPoint("CENTER", clock, "CENTER", 3, 0)
 
+stub.dropdown(track, "MENU_MINIMAP_TRACKING", { "Find Herbs", "Find Minerals" })
+stub.dropdown(comp, "MENU_ADDON_COMPARTMENT", { "Bagnon", "Details", "Atlas" })
+
 secure("MinimapCluster", "Minimap", "MinimapBackdrop", "ExpansionLandingPageMinimapButton", "GameTimeFrame",
 	"AddonCompartmentFrame", "TimeManagerClockButton", "MinimapZoneText", "TimeManagerClockTicker")
-for _, f in ipairs({ cluster, container, zone, tracking, track, indicator, mail, Minimap, backdrop, landing, diel, cal, comp, clock }) do
+for _, f in ipairs({ container, zone, tracking, track, indicator, mail, Minimap, backdrop, landing, diel, cal, comp, clock }) do
 	stub.guard(f, CALLS)
 end
+-- The cluster: all of rule 17 but its clamp insets (the exception).
+local clusterCalls = {}
+for _, n in ipairs(CALLS) do if n ~= "SetClampRectInsets" then clusterCalls[#clusterCalls + 1] = n end end
+stub.guard(cluster, clusterCalls)
+stub.hookAllowed[cluster] = { UpdateClampOffsets = true, UpdateSystemSetting = true }
 for _, r in ipairs({ zone.StateTexture, zone.AddTexture, zoneText, tracking.Background, track.StateTexture, track.AddTexture,
 	underlay, compass, diel.Background, cal.StateTexture, cal.AddTexture, comp.StateTexture, comp.AddTexture, comp.Text, mail.MailIcon }) do
 	stub.guard(r)
@@ -210,7 +265,64 @@ CVarCallbackRegistry:RegisterCallback("rotateMinimap", function()
 	underlay:SetShown(rotate)
 end, cluster)
 
--- Edit Mode's minimap settings, as MinimapClusterMixin applies them.
+-- Edit Mode's hold on the cluster (EditModeSystemMixin): its Selection box
+-- over it, and the screen clamp set from the Selection's edges
+-- (UpdateClampOffsets), the game's widget call keeping the insets.
+local sel = CreateFrame("Frame", nil, cluster)
+cluster.Selection = sel
+sel:SetAllPoints(cluster)
+-- A rect read right after the game's insets replaced ours lays the cluster
+-- out clamped by them (a box placed off screen pulled back on): from our
+-- files, an error. (Before ours were ever set the game has read it already.)
+local stockClamp, oursLive = false, false
+local function fromUs(level)
+	local info = debug.getinfo(level + 1, "S")
+	return info and stub.addonSources[info.source] == "Polestar_UI"
+end
+function cluster.SetClampRectInsets(self, l, r, t, b)
+	rawset(self, "clampInsets", { l, r, t, b })
+	local us = fromUs(2)
+	stockClamp = not us and oursLive
+	oursLive = us
+end
+for _, name in ipairs({ "GetLeft", "GetRight", "GetTop", "GetBottom", "GetRect" }) do
+	local base = cluster[name]
+	cluster[name] = function(self, ...)
+		if stockClamp and fromUs(2) then
+			local msg = "Polestar: UI read MinimapCluster's rect under the game's clamp insets (" .. name .. ")"
+			table.insert(stub.breaches, msg) -- raised again by the next stub.advance, should a handler catch it
+			error(msg, 2)
+		end
+		return base(self, ...)
+	end
+end
+function cluster.GetClampRectInsets(self) return unpack(self.clampInsets or { 0, 0, 0, 0 }) end
+function cluster.UpdateClampOffsets(self)
+	self:SetClampRectInsets(sel:GetLeft() - self:GetLeft(), sel:GetRight() - self:GetRight(), sel:GetTop() - self:GetTop(), sel:GetBottom() - self:GetBottom())
+end
+function cluster.UpdateSystemSetting(self, setting) end
+
+-- Where the client lays them (the stub keeps no layout of its own; GetLeft
+-- and the like answer these, each in the frame's own units): the cluster at
+-- the screen's top-right, ResizeLayoutFrame's size round the container (256
+-- at 100%), the map in the container 10 right of the cluster's centre and 30
+-- from its header edge.
+local function place()
+	local s = container:GetScale()
+	local w, h = 215 * s + 41, 226 * s + 30
+	cluster:SetSize(w, h)
+	sel:SetSize(w, h)
+	rawset(cluster, "x", UIParent.width - w) rawset(cluster, "y", UIParent.height - h)
+	sel.x, sel.y = cluster.x, cluster.y
+	local cx = cluster.x + w / 2 + 10
+	local cy = stub.minimapSettings[0] and cluster.y + 30 + 226 * s / 2 or cluster.y + h - 30 - 226 * s / 2
+	rawset(Minimap, "x", cx / s - 99) rawset(Minimap, "y", cy / s - 99)
+end
+place()
+cluster:UpdateClampOffsets()
+
+-- Edit Mode's minimap settings, as MinimapClusterMixin applies them, then
+-- UpdateSystemSetting for each (the game's, which our hook follows).
 function stub.minimapEdit(o)
 	if o.scale then container:SetScale(o.scale) end
 	if o.headerUnderneath ~= nil then
@@ -224,12 +336,17 @@ function stub.minimapEdit(o)
 			zone:SetPoint("BOTTOM", cluster, "BOTTOM", -1, 8)
 			indicator:SetPoint("BOTTOMLEFT", zone, "TOPLEFT", 0, 0)
 		else
-			container:SetPoint("TOP", cluster, "TOP", 10, -30)
+			local s = container:GetScale()
+			container:SetPoint("TOP", cluster, "TOP", 10 / s, -30 / s)
 			zone:SetPoint("TOP", cluster, "TOP", 10, 0)
 			indicator:SetPoint("TOPLEFT", zone, "BOTTOMLEFT", 0, 0)
 		end
 	end
 	if o.rotate ~= nil then stub.setCVar("rotateMinimap", o.rotate and "1" or "0") end
+	place()
+	for _, k in ipairs({ "scale", "headerUnderneath", "rotate" }) do
+		if o[k] ~= nil then cluster:UpdateSystemSetting(k) end
+	end
 	stub.exitEditMode()
 end
 

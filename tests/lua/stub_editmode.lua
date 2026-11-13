@@ -7,6 +7,7 @@
 -- Polestar: UI's own files, and errors on any Lua key our files write on it.
 -- The stub's own code (standing in for the game's) may still call them.
 -- hooksecurefunc on a guarded frame errors too (it writes the method's key).
+-- MinimapCluster's clamp insets are rule 17's minimap exception (hookAllowed).
 -- The stock unit frames are not guarded here: rule 16's veil (EnableMouse,
 -- SetAlpha, its children's Hide) is rule 17's one exception, and
 -- stub_unitframes.lua guards them, allowing exactly those calls.
@@ -33,7 +34,8 @@ end
 
 -- What Polestar: UI must never call on an Edit Mode system frame or a secure button.
 stub.SYSTEM_CALLS = { "SetPoint", "ClearAllPoints", "SetAllPoints", "SetScale", "Hide", "Show", "SetShown", "SetParent",
-	"SetAttribute", "EnableMouse", "SetSize", "SetWidth", "SetHeight", "SetFrameStrata", "SetFrameLevel", "SetAlpha" }
+	"SetAttribute", "EnableMouse", "SetSize", "SetWidth", "SetHeight", "SetFrameStrata", "SetFrameLevel", "SetAlpha",
+	"SetClampRectInsets" }
 
 stub.guarded = setmetatable({}, { __mode = "k" })
 function stub.guard(f, calls, label)
@@ -57,9 +59,15 @@ function stub.guard(f, calls, label)
 	return f
 end
 
+-- Rule 17's one minimap exception (the user's leave): Polestar: UI may
+-- hook MinimapCluster's UpdateClampOffsets and UpdateSystemSetting (to
+-- re-set the clamp insets after Edit Mode's); every other hook on a
+-- guarded frame errors. SetClampRectInsets is a call on the cluster alone.
+stub.hookAllowed = setmetatable({}, { __mode = "k" })
+
 local hook = hooksecurefunc
 function hooksecurefunc(a, b, c)
-	if type(a) == "table" and stub.guarded[a] and ours(2) then breach("Polestar: UI hooked " .. tostring(b) .. " on " .. stub.guarded[a]) end
+	if type(a) == "table" and stub.guarded[a] and ours(2) and not (stub.hookAllowed[a] and stub.hookAllowed[a][b]) then breach("Polestar: UI hooked " .. tostring(b) .. " on " .. stub.guarded[a]) end
 	return hook(a, b, c)
 end
 

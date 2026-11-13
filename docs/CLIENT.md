@@ -439,6 +439,21 @@ follows them by hanging on the stock frame and repainting on
 stock frame. A secure button the game makes later (a spell flyout's) is
 restyled out of combat.
 
+**Exception (the user's leave), the minimap's screen clamp:** from
+`Modules/Minimap.lua` only, `MinimapCluster:SetClampRectInsets(...)` to
+the visible map square's edges inside the cluster's box, re-set by
+`hooksecurefunc(MinimapCluster, "UpdateClampOffsets" | "UpdateSystemSetting",
+...)` on the instance (so it follows Edit Mode's own insets and every
+setting that moves the map), and given back as the game's (the Selection's
+edges) when switched off. Edit Mode clamps the cluster by its box, which
+holds the stock header strip and ring margin, so our square could never
+reach the screen's edge. Why it is safe: `MinimapCluster` is not protected
+(no secure template; nothing secure is anchored to it); the clamp rect is a
+widget property, not a Lua key; Edit Mode only writes it
+(`UpdateClampOffsets`) and never reads it back; `hooksecurefunc` runs after
+the game's code with no taint, and the cluster's place, size and saved
+layout stay Edit Mode's. Nothing else on the cluster is relaxed.
+
 The one exception is rule 16's veil on the stock unit frames we replace
 (`PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, the party members,
 `Boss1TargetFrame`..`Boss5TargetFrame`): exactly the calls rule 16 lists
@@ -449,7 +464,9 @@ of this rule is relaxed for them.
 
 **Caught by:** `tests/lua/stub_editmode.lua`: the minimap and action bar
 stubs guard every system frame, container, secure button and art region,
-and a call above or a key written from Polestar: UI's files errors (the
+and a call above or a key written from Polestar: UI's files errors, the
+minimap clamp exception aside (`stub.hookAllowed`; the cluster's guard
+lets `SetClampRectInsets` through, every other system frame's does not) (the
 `minimap-editmode` and `actionbars-editmode` scenes change Edit Mode's
 settings; `actionbars-combat` restyles a new flyout only after combat).
 The stock unit frames are guarded by `tests/lua/stub_unitframes.lua`
