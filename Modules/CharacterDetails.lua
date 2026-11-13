@@ -4,7 +4,7 @@
 -- the PvP rank. Each is a pane in ns.CharacterPanes (Character.lua).
 
 local ADDON, ns = ...
-local W, Theme = Polestar.Widgets, Polestar.Theme
+local W = Polestar.Widgets
 
 local PANE_W, CHECK_H = 280, 28
 
@@ -87,7 +87,6 @@ local function detailView(holder, nChecks)
 	end
 	return sf
 end
-ns.CharacterDetailView = detailView
 
 ---------------------------------------------------------------------------
 -- Reputation: the chosen faction's standing, its bar and description, and

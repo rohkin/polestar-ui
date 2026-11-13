@@ -28,7 +28,6 @@ local function choose(fn)
 	if PolestarUIDB then PolestarUIDB.hideStats = nil end
 	if ns.RefreshCharacter then ns.RefreshCharacter() end
 end
-ns.CharacterChoose = choose
 
 -- The selection wash behind a row (hidden until chosen).
 local function selWash(r)
@@ -213,7 +212,6 @@ local function paragonLines(d, st)
 		GameTooltip:AddLine(("%s / %s"):format(BreakUpLargeNumbers(p.value % p.threshold), BreakUpLargeNumbers(p.threshold)), 1, 1, 1)
 	end
 end
-ns.CharacterParagonLines = paragonLines
 
 local function repEnter(r)
 	local d = r.psData

@@ -6,7 +6,6 @@
 
 local ADDON, ns = ...
 local W = Polestar.Widgets
-local Theme = Polestar.Theme
 
 local NAME = "PolestarUIQuestDialog"
 local OPEN = { QUEST_GREETING = "greeting", QUEST_DETAIL = "detail", QUEST_PROGRESS = "progress", QUEST_COMPLETE = "reward" }

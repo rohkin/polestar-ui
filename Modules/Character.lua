@@ -631,7 +631,6 @@ function paintStats(sf, unit, top)
 	end
 	W.SetScrollContent(sf, y, f:GetHeight() - STATS_TOP - 4)
 end
-ns.CharacterStats = paintStats -- the pet pane's
 
 ---------------------------------------------------------------------------
 -- The drawer: the stock window's right pane, docked flush to the window's
@@ -649,7 +648,6 @@ local paneSel = {} -- section -> the pane chosen there
 
 ns.CharacterPanes.stats = { page = "PaperDollFrame", label = "Stats", order = 1,
 	build = statsView, paint = function(sf) paintStats(sf, "player") end }
-ns.CharacterStatsView = statsView
 
 -- The pet (HasPetUI): its level, family and loyalty, its happiness (a
 -- hunter's pet), its experience, then its stats as the stock Pet pane
