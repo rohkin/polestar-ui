@@ -19,6 +19,20 @@ assert(slot[8].Icon.desaturated and not slot[7].Icon.desaturated, "lock")
 UnitEffectiveLevel = function() return 20 end
 EFFECTIVE_LEVEL_FORMAT = "%d (%d)"
 PolestarUI.RefreshCharacter()
-assert(PolestarUICharacter.psLine:GetText() == "Level 20 (24) Warrior", "level: " .. PolestarUICharacter.psLine:GetText())
+-- The stock sheet's title (UnitPVPName) and its level line, the class in its colour.
+assert(PolestarUICharacter.Title:GetText() == "Testchar", "title: " .. PolestarUICharacter.Title:GetText())
+assert(PolestarUICharacter.psSubtitle:find("^Level 20 %(24%) |cffc69b6dWarrior|r · "), "level: " .. PolestarUICharacter.psSubtitle)
 UnitEffectiveLevel = nil
 PolestarUI.RefreshCharacter()
+-- The rail sections wear the stock mode tabs' icons: the portrait, the faction's honor icon.
+local nav = PolestarUICharacter.railButtons
+assert(nav[1].Icon:GetTexture() == 132355, "Character row: not the player's portrait")
+assert(nav[2].Icon:GetTexture() == "Interface/ICONS/INV_SideTab_Reputation2_c60", "Reputation row icon")
+assert(nav[4].Icon:GetTexture() == "Interface/ICONS/INV_SideTab_Honor_Alliance_c60", "Honor row: not the Alliance icon")
+nav[1].Icon:SetTexture(nil); stub.fire("UNIT_PORTRAIT_UPDATE", "player")
+assert(nav[1].Icon:GetTexture() == 132355, "Character row: portrait not repainted")
+-- No sidebar; another page keeps its own title.
+assert(not PolestarUICharacter.Sidebar:IsShown(), "sidebar shown")
+PolestarUI.Show("character", "ReputationFrame")
+assert(PolestarUICharacter.Title:GetText() == "Reputation", "Reputation title: " .. PolestarUICharacter.Title:GetText())
+PolestarUI.Show("character", "PaperDollFrame")

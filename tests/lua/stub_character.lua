@@ -3,6 +3,7 @@
 function UnitLevel(unit) return 24 end
 function UnitRace(unit) return "Human", "Human" end
 function UnitClass(unit) return "Warrior", "WARRIOR", 1 end
+RAID_CLASS_COLORS.WARRIOR.colorStr = "ffc69b6d"
 function GetClassAtlas(class) return "classicon-" .. class end
 function UnitPVPName(unit) return InCombatLockdown() and stub.SECRET or "Testchar" end
 function GetGuildInfo(unit) return InCombatLockdown() and stub.SECRET or "The Night Watch", "Member", 3 end
@@ -115,6 +116,7 @@ PAPERDOLL_STATCATEGORIES = {
 -- The other sections: a few factions, currencies, skills and a PvP rank.
 function UnitSex(unit) return 2 end
 function UnitFactionGroup(unit) return "Alliance", "Alliance" end
+function SetPortraitTexture(tex, unit) tex:SetTexture(132355) end
 function BreakUpLargeNumbers(n)
 	local s = tostring(math.floor(n))
 	while true do

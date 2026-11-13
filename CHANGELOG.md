@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Character: the sections move to an icon rail on the left, as Professions, in the game's order with its own tab icons (your portrait, Reputation, Skills, your faction's Honor, Currency, Statistics); the Character page's title is your name with your chosen title, and its subtitle your level and class, the class in its colour.
+
 ## 0.0.6
 
 - Character: pick your title; save, wear, rename and delete gear sets; gear slots show sockets, gems, counts, cooldowns and broken items, with Alt-hover choices for another item; reputation, currency and skill details; Honor's weekly cap, season progress and rewards; your pet's loyalty, happiness and stats.

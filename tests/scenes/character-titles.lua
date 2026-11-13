@@ -15,3 +15,7 @@ assert(table.concat(names, ",") == "None,Scout,the Explorer,Private" or table.co
 assert(sf.rows[3].Check:IsShown(), "worn title not checked")
 sf.rows[4]:Click()
 assert(stub.title == 4 or stub.title == sf.rows[4].psID, "not worn")
+-- The longest title with a 12-letter name fits the band, a size smaller.
+UnitPVPName = function() return "Testcharacte, Champion of the Frozen Wastes" end
+PolestarUI.RefreshCharacter()
+assert(PolestarUICharacter.Title:GetText():find("Champion", 1, true), "title: " .. PolestarUICharacter.Title:GetText())

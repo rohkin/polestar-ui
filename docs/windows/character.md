@@ -5,27 +5,39 @@ Code: `Character.lua` (shell, gear, stats, the drawer and its Pet pane),
 `CharacterPages.lua` (the other sections' lists), `CharacterGear.lua` (Gear
 sets, Titles, the slot flyout), `CharacterDetails.lua` (the other sections'
 details).
-- **Shell:** 960×680 with sidebar (240).
-- **Subject block:** the class icon (36px, the game's class atlas,
-  `GetClassAtlas`, on an inset well, hairline), the first name in Title (no
-  surname: the sidebar has no room), the level line as the stock sheet writes
-  it ("Level 24 Warrior"; "Level 20 (24)" when scaled; the specialization
-  when the class picks one) in Small textDim; the guild under it in Small
-  textMuted (none without one); each to the 24 edge, ending in an ellipsis
-  past it. Name and guild are read out of combat (CLIENT.md, rule 3).
-- **Sidebar sections** (stock subframes, in stock order): Character
-  (`PaperDollFrame`), Reputation, Currency (always: the stock
+- **Shell:** 808×680: no sidebar, a section rail (88) at the left edge, as
+  Professions (`sidebar = 0`, `rail = true`, `ns.Plain`); the main column
+  keeps the width it had beside a 240 sidebar.
+- **Rail sections** (stock subframes, in stock order, Camelot
+  `CHARACTER_FRAME_TAB`): Character (`PaperDollFrame`), Reputation, Skills,
+  Honor (`PVPRankFrame`), Currency (always: the stock
   `ShouldShowCurrencyTab` returns true; only the `TOGGLECURRENCY` key does
-  nothing with an empty list, as `ToggleTokenFrame` does), Honor
-  (`PVPRankFrame`), Skills, Statistics.
-- **Band:** the section's name as title; a status subtitle (Character: "2
-  items need repair" or "Gear in good repair"; Reputation: "Watching
+  nothing with an empty list, as `ToggleTokenFrame` does), Statistics. Drawn
+  by `ns.GameRail` (Core.lua, shared with Professions): the rail's
+  selection and tooltip, each section wearing the stock mode tab's icon
+  (`CHARACTER_MODE_TAB_ICONS` in Camelot `CharacterFrame.lua`) at 24px,
+  untinted, border cropped: the player's portrait (Character; repainted on
+  `UNIT_PORTRAIT_UPDATE` and `PORTRAITS_UPDATED`, as stock),
+  `INV_SideTab_Reputation2_c60`, `Ability_Racial_JackofAllTrades` (Skills),
+  `INV_SideTab_Honor_Alliance_c60` or `_Horde_c60` by faction,
+  `INV_SideTab_Currency_c60`, `INV_SideTab_Stats_c60`.
+- **Band:** the section's name as title, except on Character: the stock
+  sheet's title, `UnitPVPName` (the chosen title with the name; repainted on
+  `UNIT_NAME_UPDATE` and `PLAYER_PVP_RANK_CHANGED`, as stock), in Hero,
+  stepping down to Display, then Title, until it fits the band (the longest
+  title with a 12-letter name fits); read out of combat (CLIENT.md, rule 3).
+  No class icon and no guild line (the stock Camelot sheet shows neither).
+  A status subtitle (Character: the level line as `PaperDollFrame_SetLevel`
+  writes it, "Level 24 Warrior", "Level 20 (24)" when scaled, the
+  specialization when the class picks one, the class (and specialization)
+  in its `RAID_CLASS_COLORS` colorStr, then " · " and "2 items need repair"
+  or "Gear in good repair"; Reputation: "Watching
   Stormwind" or the faction count; Currency, Skills, Statistics: their
   counts; Honor: the season); in the "..." menu on every section with a drawer: "Show
   stats" (Character) or "Show details", checked while the drawer shows.
 - **The drawer** (the stock right pane): 280px wide, its own window skin,
-  docked flush to the window's right edge and as tall (the shell stays 960
-  wide; open, the two read as one 1240px window, as in the armory). That item
+  docked flush to the window's right edge and as tall (the shell stays 808
+  wide; open, the two read as one 1088px window, as in the armory). That item
   puts it away and back, for every character (`PolestarUIDB.hideStats`), on
   every section at once, as the stock pane's collapse. Its top band (72px)
   holds the Character page's pane tabs (Stats, Gear sets, Titles, Pet with a

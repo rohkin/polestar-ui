@@ -5,22 +5,24 @@ local ADDON, ns = ...
 local W = Polestar.Widgets
 
 local NAME = "PolestarUICharacter"
--- The stock subframes, in stock order; their keys are what ToggleCharacter takes.
+-- The stock subframes, in stock order (CHARACTER_FRAME_TAB), as a section
+-- rail (ns.GameRail, as Professions'); their keys are what ToggleCharacter
+-- takes. Each wears the stock mode tab's icon (CHARACTER_MODE_TAB_ICONS,
+-- Camelot CharacterFrame.lua): the player's portrait, the faction's honor icon.
 local SECTIONS = {
-	{ key = "PaperDollFrame", label = CHARACTER or "Character", icon = "icon-level" },
-	{ key = "ReputationFrame", label = REPUTATION or "Reputation", icon = "icon-rep" },
-	{ key = "TokenFrame", label = CURRENCY or "Currency", icon = "qol-coin" },
-	{ key = "PVPRankFrame", label = PVP or "Honor", icon = "flag" },
-	{ key = "SkillsFrame", label = SKILLS or "Skills", icon = "icon-skill" },
-	{ key = "StatisticsFrame", label = STATISTICS or "Statistics", icon = "icon-achieve" },
+	{ key = "PaperDollFrame", label = CHARACTER or "Character" },
+	{ key = "ReputationFrame", label = REPUTATION or "Reputation", icon = "Interface/ICONS/INV_SideTab_Reputation2_c60" },
+	{ key = "SkillsFrame", label = SKILLS or "Skills", icon = "Interface/ICONS/Ability_Racial_JackofAllTrades" },
+	{ key = "PVPRankFrame", label = PVP or "Honor" },
+	{ key = "TokenFrame", label = CURRENCY or "Currency", icon = "Interface/ICONS/INV_SideTab_Currency_c60" },
+	{ key = "StatisticsFrame", label = STATISTICS or "Statistics", icon = "Interface/ICONS/INV_SideTab_Stats_c60" },
 }
 local f, section = nil, "PaperDollFrame"
 local M = {}
 
--- The player's name (UnitName, UnitPVPName, GetGuildInfo) as last read out
--- of combat: in combat the client may hand our code a secret one, which
--- tooltips and our strings refuse (docs/CLIENT.md, rule 3). A nil (no guild)
--- is kept too.
+-- The player's name (UnitName, UnitPVPName) as last read out of combat: in
+-- combat the client may hand our code a secret one, which tooltips and our
+-- strings refuse (docs/CLIENT.md, rule 3). A nil is kept too.
 local known = {}
 local function playerText(fn)
 	local v = fn("player")
@@ -806,7 +808,9 @@ end
 
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
+	-- No sidebar: the section rail holds the sections, the main column as wide
+	-- as beside the old sidebar.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, sidebar = 0, rail = true })
 	ns.Dock(f)
 	-- The window menu's options: the drawer put away and back, for every
 	-- character, on the sections that have it.
@@ -817,16 +821,8 @@ local function build()
 			refresh()
 		end } }
 	end)
-	-- The subject block names the window, in place of Polestar's lockup:
-	-- the class icon, the name, the level and class, and the guild under them.
 	f.Search:Hide()
-	local b = ns.SubjectBlock(f)
-	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	f.psGuild = W.Text(f.Sidebar, "small", "textMuted")
-	f.psGuild:SetPoint("TOPLEFT", f.psLine, "BOTTOMLEFT", 0, -4)
-	-- A longer guild ends in an ellipsis (a fixed width on an unwrapped
-	-- string: the client's own truncation).
-	f.psGuild:SetWidth(f.psLine:GetWidth())
+	ns.Plain(f, f.psRail)
 	f.psGear = buildGear(f.Body, f.BodyWidth)
 	f.psStats = buildDrawer()
 	-- The dock makes room for the drawer, and the window keeps it on screen.
@@ -856,17 +852,20 @@ end
 
 -- "Level 24 Warrior" as the stock sheet writes it (PaperDollFrame_SetLevel):
 -- the effective level beside a scaled one, the specialization when the class
--- picks one.
+-- picks one; the class (and specialization) in its class colour, as
+-- PaperDollFrame_SetLevel writes it (RAID_CLASS_COLORS' colorStr).
 function levelLine(level)
-	local class, _, classID = UnitClass("player")
+	local class, token, classID = UnitClass("player")
+	local color = RAID_CLASS_COLORS[token] and RAID_CLASS_COLORS[token].colorStr
+	local function paint(text) return color and ("|c%s%s|r"):format(color, text) or text end
 	local eff = UnitEffectiveLevel and UnitEffectiveLevel("player") or level
 	local lv = eff ~= level and (EFFECTIVE_LEVEL_FORMAT or "%d (%d)"):format(eff, level) or tostring(level)
 	local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization and C_SpecializationInfo.GetSpecialization()
 	if spec and C_SpecializationInfo.IsSpecSelectionEnabled and C_SpecializationInfo.IsSpecSelectionEnabled(classID) then
 		local _, name = C_SpecializationInfo.GetSpecializationInfo(spec, false, false, nil, UnitSex("player"))
-		if name and name ~= "" then return ("Level %s %s %s"):format(lv, name, class) end
+		if name and name ~= "" then return ("Level %s %s"):format(lv, paint(name .. " " .. class)) end
 	end
-	return ("Level %s %s"):format(lv, class)
+	return ("Level %s %s"):format(lv, paint(class))
 end
 
 -- The band's status: how many worn items have lost durability.
@@ -885,15 +884,18 @@ function statsShown() return not (PolestarUIDB and PolestarUIDB.hideStats) end
 
 function refresh()
 	local level = UnitLevel("player")
-	f.psName:SetText(playerText(UnitName) or "")
-	f.psLine:SetText(levelLine(level))
-	f.psGuild:SetText(playerText(GetGuildInfo) or "")
-	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
-	W.ShellNav(f, SECTIONS, section, function(k) M.Show(k) end)
+	SECTIONS[4].icon = UnitFactionGroup("player") == "Alliance" and "Interface/ICONS/INV_SideTab_Honor_Alliance_c60"
+		or "Interface/ICONS/INV_SideTab_Honor_Horde_c60"
+	ns.GameRail(f, SECTIONS, section, function(k) M.Show(k) end)
+	local portrait = f.railButtons[1].Icon
+	SetPortraitTexture(portrait, "player")
+	portrait:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
 	local gear = section == "PaperDollFrame"
 	if gear then
 		W.ShellTabs(f, nil)
-		W.ShellTitle(f, CHARACTER or "Character", repairLine())
+		-- The stock sheet's title (UnitPVPName: the chosen title with the
+		-- name) and level line; the shell cuts either with an ellipsis.
+		W.ShellTitle(f, playerText(UnitPVPName) or playerText(UnitName) or CHARACTER or "Character", levelLine(level) .. " · " .. repairLine())
 	else
 		W.ShellTabs(f, nil)
 	end
@@ -921,6 +923,12 @@ function refresh()
 				if s.key == key then W.ShellTitle(f, s.label, v.psSub) end
 			end
 		end
+	end
+	-- The Character page's title (a chosen title with the name) steps down the
+	-- size ladder until it fits the band; every other page keeps the shell's.
+	for _, role in ipairs(gear and { "hero", "display", "title" } or { "hero" }) do
+		Polestar.Theme.Font(f.Title, role)
+		if f.Title:GetUnboundedStringWidth() <= f.Title:GetWidth() then break end
 	end
 	-- After the page: a page chooses what its details show.
 	if f.psStats:IsShown() then paintDrawer() end
@@ -973,7 +981,6 @@ function M.Enable()
 		if not f then build() end
 		playerText(UnitName)
 		playerText(UnitPVPName)
-		playerText(GetGuildInfo)
 		for _, holder in pairs(f.psStats.panes) do paintPane(holder) end
 		for _, v in pairs(f.psPages) do paintPage(v) end
 	end
@@ -1022,6 +1029,18 @@ function M.Enable()
 	-- The pet: its pane comes and goes with it (UNIT_PET), and its stats change.
 	Polestar.RegisterEvent("UNIT_PET", function(_, unit) if unit == "player" and f and f:IsShown() then refresh() end end)
 	for _, e in ipairs({ "PET_STATS_UPDATE", "UNIT_PET_EXPERIENCE", "UNIT_HAPPINESS" }) do Polestar.RegisterEvent(e, changed) end
+	-- A new title or name: the Character page's title, on the stock sheet's events.
+	local function named(_, unit)
+		if (unit == nil or unit == "player") and f and f:IsShown() then refresh() end
+	end
+	Polestar.RegisterEvent("UNIT_NAME_UPDATE", named)
+	Polestar.RegisterEvent("PLAYER_PVP_RANK_CHANGED", named)
+	-- A new portrait on the Character row, on the stock sheet's events.
+	local function portrait(_, unit)
+		if (unit == nil or unit == "player") and f and f:IsShown() then SetPortraitTexture(f.railButtons[1].Icon, "player") end
+	end
+	Polestar.RegisterEvent("UNIT_PORTRAIT_UPDATE", portrait)
+	Polestar.RegisterEvent("PORTRAITS_UPDATED", portrait)
 	-- A new look (gear, form) rebuilds the scene, as the stock sheet does.
 	Polestar.RegisterEvent("UNIT_MODEL_CHANGED", function(_, unit)
 		if unit == "player" and f and f:IsShown() and f.psGear:IsShown() then showModel() end
