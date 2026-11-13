@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Minimap: square, with a thin border in your accent, an N while it turns, your addons' minimap buttons in a row under it (above it with the header underneath), and the zone text, clock, calendar, tracking and addon list in Polestar's look; Edit Mode's minimap settings still apply (/pui minimap off gives the game's back).
 - Character: the sections move to an icon rail on the left, as Professions, in the game's order with its own tab icons (your portrait, Reputation, Skills, your faction's Honor, Currency, Statistics); the Character page's title is your name with your chosen title, and its subtitle your level and class, the class in its colour.
 - Switching windows swaps them in place: the Polestar button above a game window closes it and opens Polestar's, and "Use game window" closes Polestar's and opens the game's (an NPC or crafting window: Polestar's from its next opening, the game's after /reload; Social has no micro button, so its keys open the game's).
 - Fixed: Mail no longer errors after taking an attachment or opening a letter with fewer attachments, nor the Character flyout on a slot with fewer choices than the last one.

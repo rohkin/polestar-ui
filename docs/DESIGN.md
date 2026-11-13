@@ -249,6 +249,13 @@ HUD elements cast no window shadow and carry no band: they sit on the world, so
 they follow Polestar's Transparent guide-window rules (outlined text, faint
 tracks), with a panel ground only where the player turns it on.
 
+Built HUD pieces are restyled in place (CLIENT.md, rule 16: Edit Mode places
+them, so nothing of theirs is moved, scaled or hidden):
+
+| HUD piece | Risk | Status | Entry |
+|---|---|---|---|
+| Minimap (`MinimapCluster`, `Minimap`) | high | built | [windows/minimap.md](windows/minimap.md) |
+
 ## Components
 
 New components, built from Polestar's widgets. Each takes its colours through
