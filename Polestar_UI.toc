@@ -30,6 +30,7 @@ Modules\QuestDialog.lua
 Modules\Loot.lua
 Modules\Social.lua
 Modules\Auction.lua
+Modules\Guild.lua
 Modules\HUD.lua
 Modules\UnitFrames.lua
 Modules\Minimap.lua
