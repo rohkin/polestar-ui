@@ -27,7 +27,6 @@ local SQUARE = "Interface\\Buttons\\WHITE8X8"
 local ROUND = "ui-hud-minimap-frame-generic-mask"
 local HYBRID_ROUND = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 local CLAMP = "CLAMPTOBLACKADDITIVE"
-local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
 local CELL, GAP = 32, 2 -- a dock cell (a LibDBIcon button is 31 square) and the room between cells
 local MENUS = { "MENU_MINIMAP_TRACKING", "MENU_ADDON_COMPARTMENT" }
 
@@ -51,26 +50,9 @@ local function tex(f, layer, sub)
 	return t
 end
 
--- Four hairlines round region `r`, on frame `f`.
-local function hairline(f, r)
-	local e = {}
-	for i, p in ipairs(EDGES) do
-		local t = tex(f, "OVERLAY", 7)
-		t:SetPoint(p[1], r, p[1], 0, 0)
-		t:SetPoint(p[2], r, p[2], 0, 0)
-		e[i] = t
-	end
-	return e
-end
-
-local function paintLine(e, shown, r, g, b, a)
-	local px = Theme.Pixel(e[1]:GetParent())
-	for i, t in ipairs(e) do
-		t:SetShown(shown)
-		t:SetVertexColor(r, g, b, a)
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
-end
+-- Four hairlines round region `r`, on frame `f` (over the map: OVERLAY).
+local function hairline(f, r) return ns.Hairlines(f, r, function() return tex(f, "OVERLAY", 7) end) end
+local paintLine = ns.PaintHairlines
 
 -- A font string in Polestar's face (role) at the game's size and flags; off, the game's face.
 local function face(fs, role, shown)
@@ -351,10 +333,7 @@ local function menuLook(menu)
 	fill:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
 	fill:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 7)
 	local px = Theme.Pixel(menu)
-	for i, e in ipairs(EDGES) do
-		local t = piece("BORDER", 7, Theme.Color("border"))
-		t:SetPoint(e[1], fill, e[1], 0, 0)
-		t:SetPoint(e[2], fill, e[2], 0, 0)
+	for i, t in ipairs(ns.Hairlines(menu, fill, function() return piece("BORDER", 7, Theme.Color("border")) end)) do
 		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
 	end
 end
