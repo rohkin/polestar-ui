@@ -106,6 +106,7 @@ Module (`Modules/<Key>.lua`), `tests/lua/stub_<key>.lua`, `tests/scenes/<key>*.l
 ## Conventions
 - Commits: one imperative sentence, subject line only, one logical change each (e.g. "Add a window scaffold script ..."). No body, no attribution trailer.
 - Module skeleton (copy `Modules/Spellbook.lua`): `local ADDON, ns = ...; local W = Polestar.Widgets`; `build()` = `W.Shell(NAME, {scalePath = "ui.menuScale"})`, `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(NAME)`; `refresh()` = `W.ShellNav/Title/Tabs`, `ns.Footer`, `W.ShellBody`; `M.Show/Toggle`; `M.Enable()` calls `ns.Doors` and registers events; `M.stock()` returns the stock frame when shown; `ns.Module(key, M)`.
+- Page nav = the stock window's tabs: when stock has tabs (side or bottom), use `ns.GameRail` with each tab's stock icon (Character, Professions), not `W.ShellNav` with Polestar glyphs; the name/subject goes in the title and subtitle, not a sidebar block. Glyph nav only where stock has no tab icons.
 - Never touch the stock window (no show/hide/hook/anchor): the stock one is closed or never opened (CLIENT.md rules 1, 8, 10). Unit frames: the stock ones stay as Edit Mode's proxies, only veiled (rule 16).
 - Switching a module off that stopped stock routing (`reloadOff`) takes effect "after /reload"; say so in text and tests.
 - Feature-detect Polestar exports and ship without them until they exist, e.g. `if Polestar.MapCanvas and Polestar.MapCanvas.Add then ...` (WorldMap).
