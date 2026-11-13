@@ -547,7 +547,6 @@ local function build()
 	f.psHeads = {}
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
-	f.psEmpty:SetText("No talents yet: they open at level 10.")
 	-- The stock window's sounds: it never opens now to play them.
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_OPEN_WINDOW) end)
 	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_CLOSE_WINDOW) end)
@@ -593,9 +592,16 @@ local function refresh()
 	found = 0
 	local height = paintTrees(config)
 	local active = group == activeGroup()
-	local staged = active and not committing and C_Traits.ConfigHasStagedChanges(config)
+	local staged = active and config and not committing and C_Traits.ConfigHasStagedChanges(config)
+	-- A spec without a combat config (a second spec just bought) has its talents
+	-- made by the client once activated (TRAIT_CONFIG_CREATED), as the stock frame waits.
+	local made = config or not C_SpecializationInfo.HasPlayerEarnedATalentPoint()
+	f.psEmpty:SetText(made and "No talents yet: they open at level 10."
+		or active and "Loading this spec's talents…" or "Activate this spec to spend its points.")
 	local sub
-	if query ~= "" then
+	if not made and not activating then
+		sub = active and "Loading this spec's talents…" or "Not your active spec."
+	elseif query ~= "" then
 		sub = found == 1 and "1 talent matches." or ("%d talents match."):format(found)
 	elseif activating then
 		sub = "Switching to this spec…"
@@ -672,8 +678,9 @@ function M.Enable()
 	end)
 	Polestar.RegisterEvent("TRAIT_CONFIG_UPDATED", committed)
 	Polestar.RegisterEvent("CONFIG_COMMIT_FAILED", committed)
-	for _, e in ipairs({ "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
-		"ACTIVE_COMBAT_CONFIG_CHANGED", "PLAYER_REGEN_ENABLED" }) do
+	-- TRAIT_CONFIG_CREATED and PLAYER_TALENT_UPDATE: a fresh spec's config is made after the switch.
+	for _, e in ipairs({ "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED", "TRAIT_CONFIG_CREATED",
+		"PLAYER_TALENT_UPDATE", "ACTIVE_COMBAT_CONFIG_CHANGED", "PLAYER_REGEN_ENABLED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
 end

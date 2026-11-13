@@ -4,6 +4,8 @@
 -- per talent tree, positions in the client's units.
 --   stub.dual        a second spec learnt (Secondary in the sidebar)
 --   stub.specGroup   the active spec group (1)
+--   stub.freshSpec   a spec group with no combat config yet (a second spec just
+--                    bought: the client makes it, TRAIT_CONFIG_CREATED, after the switch)
 function UnitLevel(unit) return 24 end
 function UnitClass(unit) return "Mage", "MAGE", 8 end
 function GetClassAtlas(className) return ("classicon-%s"):format(className) end
@@ -62,6 +64,12 @@ CONFIGS[12] = { ranks = {} }
 fill(CONFIGS[12].ranks, 2, 15)
 CONFIGS[12].staged = CONFIGS[12].ranks
 local POINTS = 15
+-- The client makes the fresh spec's config: empty, every point to spend.
+function stub.createConfig()
+	local id = 10 + stub.freshSpec
+	CONFIGS[id], stub.freshSpec = { ranks = {}, staged = {} }, nil
+	stub.fire("TRAIT_CONFIG_CREATED", { ID = id, type = 1 })
+end
 
 local function spentBy(c, spec)
 	local s = 0
@@ -71,7 +79,7 @@ end
 
 C_SpecializationInfo = {}
 function C_SpecializationInfo.GetActiveSpecGroup() return stub.specGroup or 1 end
-function C_SpecializationInfo.GetCombatConfigIDForSpecGroup(g) return 10 + g end
+function C_SpecializationInfo.GetCombatConfigIDForSpecGroup(g) if g ~= stub.freshSpec then return 10 + g end end
 -- stub.noPoints: a character who has not earned a talent point yet.
 function C_SpecializationInfo.HasPlayerEarnedATalentPoint() return not stub.noPoints end
 function GetNumSpecGroups() return stub.dual and 2 or 1 end
@@ -155,6 +163,7 @@ function C_Traits.ResetTreeByCurrency(config, tree, currency)
 	return true
 end
 function C_Traits.ConfigHasStagedChanges(config)
+	assert(config, "Usage: local hasChanges = C_Traits.ConfigHasStagedChanges(configID)")
 	local c = CONFIGS[config]
 	for id in pairs(data.nodes) do if (c.staged[id] or 0) ~= (c.ranks[id] or 0) then return true end end
 	return false

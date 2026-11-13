@@ -18,7 +18,11 @@ applied. Not protected, but refused in combat and while
   active spec's row with the dot, the other with its points spent as the
   count. Until dual spec is learnt (`GetNumSpecGroups() > 1`) Secondary is
   locked, as the stock tab: the lock glyph, receding (a count of 0), a click
-  does nothing, and its tooltip is the stock `TALENT_SPEC_LOCKED`.
+  does nothing, and its tooltip is the stock `TALENT_SPEC_LOCKED`. A spec
+  just bought has no combat config (`GetCombatConfigIDForSpecGroup` nil)
+  until the client makes it after the first switch (`TRAIT_CONFIG_CREATED`):
+  the body says "Activate this spec to spend its points." (then "Loading this
+  spec's talents…"), never the level-10 line, and refreshes when it is made.
 - **Search:** as the stock frame's, a talent matches on its name or its
   description; the others recede to 25%, and the subtitle counts the matches
   ("7 talents match."). The stock search options on a filter at the end of
