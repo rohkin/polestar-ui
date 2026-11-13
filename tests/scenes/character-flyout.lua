@@ -13,6 +13,14 @@ for _, w in ipairs({ fly().Grid:GetChildren() }) do if w:IsShown() then wells[#w
 assert(#wells == 2 and wells[1].psEntry.text == "Put in bags" and wells[2].psEntry.bag == 0, "flyout entries")
 wells[2]:Click()
 assert(stub.wornFrom and stub.wornFrom[2] == 1 and stub.pickedUp == 1, "not worn")
+-- A spell waiting for its item: neither wearing nor Put in bags picks anything up (forbidden to us).
+stub.wornFrom, stub.pickedUp, stub.targeting = nil, nil, true
+stub.RunScript(slot[1], "OnEnter")
+wells[2]:Click()
+stub.RunScript(slot[1], "OnEnter")
+wells[1]:Click()
+assert(stub.wornFrom == nil and stub.pickedUp == nil and not stub.toBags, "picked up while a spell waits for its item")
+stub.targeting = false
 -- In combat the helm stays; the sword still goes in the main hand.
 stub.wornFrom, stub.pickedUp = nil, nil
 stub.inCombat = true

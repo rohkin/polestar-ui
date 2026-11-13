@@ -340,6 +340,8 @@ local UNDO_ICON = "Interface\\PaperDollInfoFrame\\UI-GearManager-Undo"
 local flyout, flySlot
 
 local function lockedOut(slot)
+	-- While a spell waits for its item, picking one up is applying it: forbidden to us.
+	if SpellIsTargeting() then return true end
 	if InCombatLockdown() and not (INVSLOTS_EQUIPABLE_IN_COMBAT and INVSLOTS_EQUIPABLE_IN_COMBAT[slot]) then
 		UIErrorsFrame:AddExternalErrorMessage(ERR_CLIENT_LOCKED_OUT or "You can't do that right now.")
 		return true
