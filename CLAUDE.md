@@ -3,7 +3,7 @@
 WoW (Forever client) addon: replaces stock Blizzard windows with Polestar's kit (`Polestar.Widgets`, `Polestar.Theme`). Lua 5.1, tested in Node under a client stub. Depends on the Polestar addon.
 
 ## Layout
-- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, Guild, HUD, UnitFrames, Minimap, ActionBars, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
+- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, Guild, Macros, HUD, UnitFrames, Minimap, ActionBars, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
 - `docs/CLIENT.md`: client rules learnt from bugs (taint, secret values, secure buttons, doors). MANDATORY reading before any surface work; this file does not repeat them.
 - `docs/DESIGN.md`: shared sections (Replacement Contract, Shell, Components) plus the window index. Each window's entry: `docs/windows/<key>.md`.
 - `.claude/skills/stock-to-polestar`: the process for a new window or reskin (produces a plan).

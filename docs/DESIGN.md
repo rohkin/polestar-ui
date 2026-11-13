@@ -201,6 +201,7 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 | Gossip (`GossipFrame`) | medium | built | [windows/gossip.md](windows/gossip.md) |
 | Quest dialog (`QuestFrame`) | medium | built | [windows/questdialog.md](windows/questdialog.md) |
 | Loot (`LootFrame`) | high | built | [windows/loot.md](windows/loot.md) |
+| Macros (`MacroFrame`, Blizzard_MacroUI) | medium | built | [windows/macros.md](windows/macros.md) |
 | Game menu (`GameMenuFrame`) | high | dropped | [windows/gamemenu.md](windows/gamemenu.md) |
 | Tooltips (`GameTooltip` and the stock tooltips) | low | built | [windows/tooltips.md](windows/tooltips.md) |
 | Chat (`ChatFrame1`..`ChatFrameN`, the whisper windows) | medium | built | [windows/chat.md](windows/chat.md) |
