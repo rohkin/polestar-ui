@@ -42,3 +42,6 @@ assert(tostring(g:GetText()) == "123" and tostring(sv:GetText()) == "45" and tos
 sv:SetText("5")
 stub.RunScript(sv, "OnTextChanged", true)
 assert(got == 1230567, "typed money not read as copper")
+Polestar.SetHidden(true)
+assert(PolestarModal:IsVisible(), "hiding Polestar hid the dialog our windows ask through")
+Polestar.SetHidden(false)

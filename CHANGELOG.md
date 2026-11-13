@@ -7,6 +7,7 @@
 - Fixed: Mail no longer errors after taking an attachment or opening a letter with fewer attachments, nor the Character flyout on a slot with fewer choices than the last one.
 - Fixed: the Character flyout's Put in bags and wearing an item do nothing while a spell waits for its item, instead of a blocked-action error.
 - Fixed: the Polestar button above the game's World Map now closes it and opens Polestar's map, instead of leaving the game's open until next time.
+- Fixed: hiding Polestar no longer hides Polestar: UI's windows and their dialogs; they replace the game's, so they stay.
 
 ## 0.0.6
 

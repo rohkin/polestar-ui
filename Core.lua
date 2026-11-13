@@ -1041,7 +1041,18 @@ function ns.SetDocked(on)
 	layout()
 end
 
+-- W.Shell parents to Polestar's layer (Polestar.UIParent), which hiding
+-- Polestar hides; ours stand in for the game's windows, so they hang off
+-- UIParent (no secure child: allowed in combat too).
+local function offLayer(f)
+	local strata = f:GetFrameStrata()
+	f:SetParent(UIParent)
+	f:SetFrameStrata(strata)
+end
+hooksecurefunc(Polestar.Widgets, "Modal", function() if PolestarModal:GetParent() ~= UIParent then offLayer(PolestarModal) end end)
+
 function ns.Dock(f)
+	offLayer(f)
 	local startMoving = f.StartMoving
 	-- The shell's drag handles call f:StartMoving(); docked, the dock places it.
 	f.StartMoving = function(self) if not ns.Docked() and not self.psFull then startMoving(self) end end

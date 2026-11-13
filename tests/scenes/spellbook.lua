@@ -35,3 +35,7 @@ for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then last = r end end
 assert(last.psItem.text == "Use game window" and PolestarMenu.seps[1]:IsShown(), "Use game window not after a divider")
 win.psMenu:Click()
 assert(not PolestarMenu:IsShown(), "menu left open")
+-- Hiding Polestar (its layer, Polestar.UIParent) leaves ours: a window of ours stands in for the game's.
+Polestar.SetHidden(true)
+assert(PolestarUISpellbook:IsVisible(), "hiding Polestar hid ours")
+Polestar.SetHidden(false)
