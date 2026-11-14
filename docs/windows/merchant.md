@@ -8,18 +8,18 @@ whole: Vendor and Keep (sell junk, repair) run on `MERCHANT_SHOW`, no
 frame; Restock hangs its button under `MerchantFrame`, so ours carries it in
 the footer instead (Polestar's `QoL.Restock.Plan`/`Run`, its total in the
 label; gone when the plan is empty).
-- **Shell:** 880×600: the sidebar and the 640 stock-sized page. Subject
-  block: the vendor's portrait and name (the stock `SetPortraitToUnit`,
-  `SetTitle`), the player's money under it. Sidebar: the search (the wares'
-  names, on both tabs) and, ending its row, the filter (`MENU_MERCHANT_FRAME`,
-  the game's Menu kept, with "Clear filters"): lit while it hides anything
-  (the visit starts on the class, as the stock show resets it), "Filter (1
-  on)" in its tooltip, gone under the `MerchantFilterDisabled` game rule.
-  Band: "Merchant" or "Buyback", subtitle how many items ("9 items for sale",
-  "1 of 9 items for sale" while searching, "2 items to buy back").
-- **Tabs:** Buy, Buyback (`W.ShellTabs`; the stock `MerchantFrameTab1/2`). At
-  the tab row's right: the vendor's currencies the player holds
-  (`C_MerchantFrame.GetMerchantCurrencies`, each with its tooltip).
+- **Shell:** 640×560 on the compact grid (`ns.Compact`), no sidebar. Band:
+  "Merchant" or "Buyback", subtitle the vendor's name then how many items
+  ("Harlan Bagley · 9 items for sale", "… · 1 of 9 items for sale" while
+  searching, "… · 2 items to buy back"); the portrait is gone. Tab row
+  (`ns.TopNav`): the tabs Merchant and Buyback (the stock `MerchantFrameTab1/2`),
+  at its right the vendor's currencies the player holds
+  (`C_MerchantFrame.GetMerchantCurrencies`, each with its tooltip), the
+  player's money, the search (the wares' names, on both tabs) and, ending the
+  row, the filter (`MENU_MERCHANT_FRAME`, the game's Menu kept, with "Clear
+  filters"): lit while it hides anything (the visit starts on the class, as
+  the stock show resets it), "Filter (1 on)" in its tooltip, gone under the
+  `MerchantFilterDisabled` game rule (the search then runs to the row's edge).
 - **Buy:** every item on one scrolling page (the stock 10 a page is gone):
   two columns of item rows, each an Item Well (36px), the name in Label
   (quality colour, legible; one line, truncated; centred on the well when
@@ -60,4 +60,4 @@ label; gone when the plan is empty).
   the Replacement Contract forbids; a right-click sell of a refundable item
   sells it without asking.
 - **Taint:** no protected calls (`ShowRepairCursor` is not protected).
-- **Tests:** `stub_merchant.lua` (interaction manager, `GetMerchantItemInfo`, costs, currencies, buyback, repair, refunds); scenes `merchant` (`RegisterPlayerInteraction` took the type; `MerchantFrame` never shown; closing ours ends the interaction once; the subject block, the search, the filter lit and cleared, no drag while targeting), `merchant-buyback`, `merchant-restock` (Polestar's plan shows in the footer).
+- **Tests:** `stub_merchant.lua` (interaction manager, `GetMerchantItemInfo`, costs, currencies, buyback, repair, refunds); scenes `merchant` (`RegisterPlayerInteraction` took the type; `MerchantFrame` never shown; closing ours ends the interaction once; the band's subtitle, the search, the filter lit and cleared, no drag while targeting), `merchant-buyback`, `merchant-restock` (Polestar's plan shows in the footer).

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Merchant: the vendor window moves to the compact grid (640×560, no sidebar): Merchant, Buyback and the other pages as top tabs, with the money, search and filter on the same row; a new scene shows the game's looks.
 - Chat: calmer look: a soft ground and no outline at rest; the full ground, hairline and side buttons fade in on mouse-over (tabs, edit box and side strip included); the edit box's footer only while typing; tabs as plain labels with an accent underline, lit when hovered; the social button sits in the side strip and opens Polestar's Social window; voice, social and whisper icons in Polestar's icon colour.
 - Chat: copy your chat as plain text (side strip button or a tab's menu); chat windows keep their last lines across /reload and logout.
 - Fix the Talents window saying talents open at level 10 on a second spec just bought: it waits for the game to make the spec's talents, then shows its tree with every point to spend.

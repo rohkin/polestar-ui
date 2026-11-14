@@ -8,7 +8,7 @@ local w = PolestarUIMerchant
 w.tabButtons[2]:Click()
 local rows = {}
 for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and r:IsShown() then rows[r.psIndex] = r end end
-assert(#rows == 2 and tostring(w.Title:GetText()) == "Buyback" and tostring(w.Subtitle:GetText()) == "2 items to buy back", "a row per item sold")
+assert(#rows == 2 and tostring(w.Title:GetText()) == "Buyback" and tostring(w.Subtitle:GetText()) == "Harlan Bagley · 2 items to buy back", "a row per item sold")
 assert(tostring(rows[1].Name:GetText()) == "Linen Cloth" and tostring(rows[1].Well.psCount:GetText()) == "20", "name and count")
 assert(tostring(rows[2].Stack:GetText()) == "" and rows[2].Money:IsShown(), "price, no stack size")
 rows[2]:Click("LeftButton")

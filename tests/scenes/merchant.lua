@@ -18,8 +18,7 @@ assert(not f():IsShown() and stub.npcClosed.CloseMerchant == 1, "the game's end 
 
 stub.interact(T.Merchant)
 local w = f()
-assert(tostring(w.psSubject.name:GetText()) == "Harlan Bagley" and w.psSubject.icon:GetTexture() == 132355, "the subject block names the vendor")
-assert(tostring(w.Title:GetText()) == "Merchant" and tostring(w.Subtitle:GetText()) == "9 items for sale", "the band's title and status")
+assert(tostring(w.Title:GetText()) == "Merchant" and tostring(w.Subtitle:GetText()) == "Harlan Bagley · 9 items for sale", "the band's title and status")
 local rows = {}
 for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and not r.psBuyback then rows[r.psIndex] = r end end
 assert(#rows == 9, "a row per ware")
@@ -44,11 +43,11 @@ stub.targeting = false
 stub.RunScript(rows[1], "OnDragStart")
 assert(stub.pickedUp == 1, "a drag did not pick it up")
 stub.pickedUp = nil
--- The sidebar search keeps the wares whose names match.
+-- The tab row search keeps the wares whose names match.
 w.Search:SetText("bread"); stub.RunScript(w.Search, "OnTextChanged", true)
 local shown = 0
 for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and not r.psBuyback and r:IsShown() then shown = shown + 1 end end
-assert(shown == 1 and tostring(w.Subtitle:GetText()) == "1 of 9 items for sale", "the search: " .. tostring(w.Subtitle:GetText()))
+assert(shown == 1 and tostring(w.Subtitle:GetText()) == "Harlan Bagley · 1 of 9 items for sale", "the search: " .. tostring(w.Subtitle:GetText()))
 w.Search:SetText(""); stub.RunScript(w.Search, "OnTextChanged", true)
 
 -- Buying.
@@ -143,7 +142,7 @@ stub.fire("MERCHANT_UPDATE")
 
 -- The filter: the game's menu at the end of the search row, lit while on
 -- (the visit starts on the class), its choice applied at once, Clear filters.
-assert(w.psFilter:GetParent() == w.Sidebar and w.psFilter.psActive and w.psFilter.psTip == "Filter (1 on)", "the filter not lit for the class")
+assert(w.psFilter:GetParent() == w.TabRow and w.psFilter.psActive and w.psFilter.psTip == "Filter (1 on)", "the filter not lit for the class")
 w.psFilter:Click()
 assert(stub.menu.tag == "MENU_MERCHANT_FRAME" and #stub.menu.items == 4 and stub.menu.items[4].text == "Clear filters", "the filter menu")
 stub.menu.items[1].set(stub.menu.items[1].value)
