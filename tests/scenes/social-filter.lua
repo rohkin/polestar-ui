@@ -23,7 +23,7 @@ local function menuTexts()
 	for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then t[#t + 1] = r.Text:GetText() end end
 	return table.concat(t, ",")
 end
-assert(f.Search.Placeholder:GetText() == "Search for keywords", "placeholder")
+assert(f.Search.Placeholder:GetText() == "Search", "placeholder")
 -- Presence pips: online, away (WoW and Battle.net), busy, offline.
 local Theme = Polestar.Theme
 local function pip(name) return { row(name).Pip:GetVertexColor() } end

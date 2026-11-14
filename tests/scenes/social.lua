@@ -21,9 +21,9 @@ stub.pressKey("O")
 assert(f:IsShown() and not FriendsFrame:IsShown(), "the key in combat")
 stub.inCombat = false
 -- The sidebar counts each page; the subtitle counts friends online; the subject block holds the BattleTag.
-assert(f.psSubtitle == "5 of 8 friends online", "subtitle: " .. tostring(f.psSubtitle))
+assert(f.psSubtitle == "Testchar · 5 of 8 friends online", "subtitle: " .. tostring(f.psSubtitle))
 assert(f.psLine:GetText() == "Testchar#1000", "subject line: " .. tostring(f.psLine:GetText()))
-assert(f.psName:GetText() == "Testchar", "player name")
+assert(f.Subtitle:GetText():find("^Testchar"), "player name leads the subtitle")
 -- One list, as the stock one orders it: the Favorites and Friends
 -- groups headed online/total, online Battle.net then WoW friends before offline ones;
 -- online Battle.net rows carry their client's icon, favorites a star after the name.

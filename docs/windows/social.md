@@ -16,10 +16,12 @@ Battle.net toasts, `/friends` and the gamepad radial call
 window (its Quick Join and Recruit a Friend where the game has them: the
 Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
 `SocialUIFrame` or `FriendsFrame`, whichever is shown.
-- **Shell:** 760×600 with sidebar (240). Subject block: the class icon with
-  the player's Battle.net presence as a dot, the player's name, and the
-  BattleTag in Small textDim ("Battle.net offline" when disconnected). The
-  whole block is a button (the stock BattleNetBar): its menu sets Online,
+- **Shell:** 580×560, compact grid (`ns.Compact`), no sidebar. Top tabs
+  (`ns.TopNav`): Friends, Allies, Requests (with its count), Ignored, Raid
+  (the stock has no sub-tabs). The player's name leads the band's subtitle.
+  The Battle.net status is a chip at the footer's left (after a left footer
+  button): the presence as a dot, the BattleTag in Small textDim ("Battle.net
+  offline" when disconnected). The chip is a button (the stock BattleNetBar): its menu sets Online,
   Away, Busy or Appear offline (`C_BattleNet.SetAFK`/`SetDND`/
   `SetAppearOffline`) copies the BattleTag (a modal with it selected), sets the
   broadcast (the stock broadcast box: the current message to edit, 127
@@ -31,9 +33,9 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   lockouts" (Raid info). The "..." menu's options
   (the Nothing Lost Rule: Quick Join and Recruit a Friend, where the game
   has them, stay on the game's window) come before "Use game window".
-- **Sidebar:** the shell's search ("Search for keywords"; names and
+- **Tab row:** the shell's search ("Search"; names and
   Battle.net character names) and, on Friends, a Filter icon button ending
-  the search row as in Crafting (accent while a filter is on). Its menu is
+  the tab row as in Crafting (accent while a filter is on). Its menu is
   the stock list's: Status (Online, Away, Busy, Offline, In Queue, Available
   For Queue), then the Interests and Roles tags this game type supports (no
   Delves on Forever), and Clear filters; a pick keeps it open; the tooltip
@@ -42,8 +44,7 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   any checked tag); WoW friends stay only for the presence filters. In Queue
   and Available For Queue are on no friend's data: the restricted
   `C_BattleNet.SearchFriends` answers them, called only from the pick's
-  click, and that answer holds until the next pick. Then Friends, Recent allies, Friend requests, Ignored, Raid as
-  nav rows, each with its count.
+  click, and that answer holds until the next pick.
 - **Friends:** the stock list's folding groups "Favorites 2/5" and "Friends 9/54" (online of
   shown), Battle.net favorites, then online Battle.net and WoW friends, then
   offline ones. Rows as Polestar's Characters page (`Alts/View.lua`) lays

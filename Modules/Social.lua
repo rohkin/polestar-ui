@@ -790,8 +790,8 @@ local function paintRaid()
 		end
 	end
 	local bar = raidBar()
-	bar:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
-	bar:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	bar:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
+	bar:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	bar.All:SetChecked(IsEveryoneAssistant())
 	ns.SetEnabled(bar.All, UnitIsGroupLeader("player"), "Only the raid leader can set this.")
 	bar.Counts:SetText(("%d Tanks · %d Healers · %d Damage"):format(roles.TANK, roles.HEALER, roles.DAMAGER))
@@ -800,7 +800,7 @@ local function paintRaid()
 	local top, y = 24 + 24 + 16, 0
 	for i = 1, 8 do
 		local g, c = raidGroup(i), (i - 1) % 2
-		local x = W.SHELL.pad + c * (col + COL_GAP)
+		local x = f.psPad + c * (col + COL_GAP)
 		y = top + math.floor((i - 1) / 2) * (W.PLAIN_SECTION_H + 5 * RAID_H + 16)
 		W.SetSection(g.Head, ("Group %d"):format(i))
 		g.Head:SetWidth(col)
@@ -1054,31 +1054,31 @@ local function presenceItems()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, sidebar = 240, searchPlaceholder = "Search for keywords",
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 580, height = 560, searchPlaceholder = "Search",
 		onSearch = function(text)
 			query = (text or ""):lower()
 			if f:IsShown() then M.Show() end
 		end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "social", optionsItems)
-	local b = ns.SubjectBlock(f)
-	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The player's Battle.net status (the stock BattleNetBar) is the subject
-	-- block: a dot on the class icon, the BattleTag under the name, and a click
-	-- for the presence menu.
-	local well = f.psClass:GetParent()
-	f.psDot = W.Tex(well, "OVERLAY", "circle", "success")
-	f.psDot:SetSize(10, 10)
-	f.psDot:SetPoint("CENTER", well, "BOTTOMRIGHT", -2, 2)
-	local st = CreateFrame("Button", nil, f.Sidebar)
-	st:SetPoint("TOPLEFT", well, "TOPLEFT", -8, 8)
-	st:SetPoint("BOTTOMRIGHT", f.Sidebar, "TOPRIGHT", -16, -47 - 26)
+	ns.Compact(f)
+	-- The player's Battle.net status (the stock BattleNetBar) is a chip in the
+	-- footer: a dot, the BattleTag and a chevron, with a click for the presence
+	-- menu. The player's name leads the band's subtitle.
+	local st = CreateFrame("Button", nil, f.Footer)
+	st:SetHeight(28)
 	W.Hover(st)
-	st.Label, st.Dot = f.psLine, f.psDot
-	f.psLine:SetWidth(f.psLine:GetWidth() - 16)
+	st.Dot = W.Tex(st, "OVERLAY", "circle", "success")
+	st.Dot:SetSize(10, 10)
+	st.Dot:SetPoint("LEFT", st, "LEFT", 8, 0)
 	st.Arrow = W.Tex(st, "ARTWORK", "chevron-down", "textDim")
 	st.Arrow:SetSize(12, 12)
 	st.Arrow:SetPoint("RIGHT", st, "RIGHT", -8, 0)
+	st.Label = W.Text(st, "small", "textDim")
+	st.Label:SetPoint("LEFT", st.Dot, "RIGHT", 6, 0)
+	st.Label:SetPoint("RIGHT", st.Arrow, "LEFT", -4, 0)
+	st.Label:SetJustifyH("LEFT")
+	f.psLine, f.psDot = st.Label, st.Dot
 	st:SetScript("OnClick", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		W.ShowMenu(self, presenceItems(), { minWidth = 200 })
@@ -1093,18 +1093,17 @@ local function build()
 	f.psStatus = st
 	-- The filter acts on the list: it ends the search row as in Crafting, its
 	-- glyph in the accent while a filter is on.
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", function(self)
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		W.ShowMenu(self, filterItems(), { minWidth = 200 })
 	end, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -(W.SHELL.header - 30))
 	Theme.Skin(f.psFilter, "editbox")
 	f.psPanel = CreateFrame("Frame", nil, f.Body)
-	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -8) -- as the Characters page: no strip above the list
-	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -8) -- as the Characters page: no strip above the list
+	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
-	f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
+	f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	f.psEmpty:SetJustifyH("LEFT")
 	f.psEmpty:SetWordWrap(true)
 	-- The stock window's sounds: it never opens now to play them.
@@ -1159,8 +1158,7 @@ local function refresh()
 	if page == "allies" and not alliesOn() then page = "friends" end
 	if page ~= "raid" then raidInfo = false end
 	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {}, requests = requests() }
-	f.psName:SetText(keep("player", UnitName("player")) or "")
-	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
+	local me = keep("player", UnitName("player")) or ""
 	W.Color(f.psDot, statusColor())
 	local st, n = f.psStatus, 0
 	local filtered = filterSets[page] ~= nil
@@ -1168,20 +1166,21 @@ local function refresh()
 	W.SetIconState(f.psFilter, n > 0)
 	f.psFilter.psTip = n > 0 and ("Filter (%d on)"):format(n) or "Filter"
 	f.psFilter:SetShown(filtered)
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + (filtered and 36 or 0)), -(W.SHELL.header - 30))
+	-- Flush right of the tab row when the filter is off, else before the filter (as ns.TopNav sets it).
+	f.Search:ClearAllPoints()
+	if filtered then f.Search:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0) else f.Search:SetPoint("RIGHT", f.TabRow, "RIGHT", -f.psPad, 0) end
 	st.Label:SetText(BNConnected() and battleTag() or "Battle.net offline")
 	st:SetEnabled(BNConnected())
 	st.Arrow:SetShown(BNConnected())
 	local nFriends = #lists.friends
-	local nav = { { key = "friends", label = "Friends", icon = "star", count = nFriends } }
-	if alliesOn() then nav[#nav + 1] = { key = "allies", label = "Recent allies", icon = "compact", count = #lists.allies } end
-	nav[#nav + 1] = { key = "requests", label = "Friend requests", icon = "plus", count = #lists.requests }
-	nav[#nav + 1] = { key = "ignored", label = "Ignored", icon = "close", count = #lists.ignored }
-	nav[#nav + 1] = { key = "raid", label = "Raid", icon = "bolt", count = IsInRaid() and GetNumGroupMembers() or 0 }
-	W.ShellNav(f, nav, page, function(k) page = k; M.Show() end)
+	local nav = { { key = "friends", label = "Friends" } }
+	if alliesOn() then nav[#nav + 1] = { key = "allies", label = "Allies" } end
+	nav[#nav + 1] = { key = "requests", label = "Requests", count = #lists.requests }
+	nav[#nav + 1] = { key = "ignored", label = "Ignored" }
+	nav[#nav + 1] = { key = "raid", label = "Raid" }
+	ns.TopNav(f, nav, page, function(k) page = k; M.Show() end)
 	local p = PAGES[page == "raid" and raidInfo and "raidinfo" or page]
-	W.ShellTitle(f, p[1], p[2](page == "raid" and raidInfo and raidLocks() or lists[page] or {}))
-	W.ShellTabs(f, nil)
+	W.ShellTitle(f, p[1], me .. " · " .. p[2](page == "raid" and raidInfo and raidLocks() or lists[page] or {}))
 	local lead = UnitIsGroupLeader("player")
 	ns.Footer(f, page == "raid" and {
 		-- The stock Raid Info button: on while there are saved instances.
@@ -1198,6 +1197,9 @@ local function refresh()
 		{ label = "Send message", onClick = function() ChatFrameUtil.OpenChat(SLASH_WHISPER1 .. " ") end },
 	})
 	local fb = f.footerButtons
+	st:ClearAllPoints()
+	if fb.left[1] and fb.left[1]:IsShown() then st:SetPoint("LEFT", fb.left[1], "RIGHT", 8, 0) else st:SetPoint("LEFT", f.Footer, "LEFT", f.psPad, 0) end
+	st:SetWidth(150)
 	if page ~= "raid" then
 		ns.SetEnabled(fb.right[1], page == "ignored" or not C_SocialRestrictions.IsFriendsDisabled(), "Adding friends is disabled.")
 	elseif not IsInRaid() then
