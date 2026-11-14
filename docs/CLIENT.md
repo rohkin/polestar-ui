@@ -76,6 +76,15 @@ from addon code. Draw a spell's sweep from its duration object
 `SetCooldownFromDurationObject`), which carries them without our code
 reading them (`paintCooldown` in Spellbook.lua).
 
+Auras are not handed over secret: while they are secret (combat, an
+encounter, a keystone, a PvP match: `C_Secrets.ShouldAurasBeSecret()`) every
+`C_UnitAuras` call of a tainted caller (`GetUnitAuraInstanceIDs`,
+`GetAuraDataByAuraInstanceID`, `GetAuraDuration`, ...: the
+`RequiresUnitAuraAccess` precondition) and `GameTooltip:SetUnitAuraBy...`
+from our code errors outright (3,937 "Auras cannot be accessed when secret
+while tainted" from Auras.lua). There is no addon path: show the game's
+auras then, and read none (`secret()` in Auras.lua).
+
 The player's own name (`UnitName("player")`, `UnitPVPName`) is secret in
 combat too: `GameTooltip:SetText` refuses it. Read it through `playerText`,
 which keeps the last name read out of combat.
@@ -394,7 +403,9 @@ Out of combat, from our code, only:
   is veiled as the target's.
 
 **Exception (the user's leave), the target's and focus's auras:** from
-`Modules/Auras.lua` only, out of combat, `SetAlpha(0)` (and `SetAlpha(1)` to
+`Modules/Auras.lua` only, out of combat and while auras are not secret
+(rule 3; given back on `PLAYER_REGEN_DISABLED`, before the lockdown),
+`SetAlpha(0)` (and `SetAlpha(1)` to
 give it back) on `TargetFrame`'s and `FocusFrame`'s
 `TargetFrameContent.TargetFrameContentContextual.Auras`, the client's secure
 aura container, and nothing else of it: no `Hide`, no mouse call, no anchor,
@@ -431,7 +442,8 @@ frame (minimap, action bars) keeps rule 17.
 
 **Caught by:** the stub's aura container (`psStockAuras`) errors on every
 guarded call but `SetAlpha` out of combat (the `auras-target` scene veils
-it, gives it back with either module off, and leaves it alone mid-fight).
+it, gives it back with either module off, as combat starts and while auras
+are secret; `stub_auras.lua` errors on every aura call while they are).
 `tests/lua/stub_unitframes.lua` errors on any of those calls
 on a stock unit frame from addon code, and on any move, size, show or
 attribute change of a protected frame in combat; the `unitframes-editmode`

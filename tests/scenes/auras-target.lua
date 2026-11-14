@@ -1,7 +1,7 @@
 --@ title: Target and focus auras: rows of ours, the game's veiled
 --@ roots: PolestarUITargetFrame, PolestarUIFocusFrame
 --@ stubs: stub_auras.lua
--- Under our target and focus frames, a row of square aura icons of ours in a 1px hairline, the game's own aura container faded (rule 16's exception: SetAlpha on that container alone, out of combat). A hostile creature: debuffs first, the player's own first and large, another player's left out (the game's filter), then its buffs; a debuff's hairline in its dispel type's colour. A friend: buffs first. The time is the game's countdown in the number face, the stacks outlined. In combat everything of an aura is secret and handed over unread.
+-- Under our target and focus frames, a row of square aura icons of ours in a 1px hairline, the game's own aura container faded (rule 16's exception: SetAlpha on that container alone, out of combat). A hostile creature: debuffs first, the player's own first and large, another player's left out (the game's filter), then its buffs; a debuff's hairline in its dispel type's colour. A friend: buffs first. The time is the game's countdown in the number face, the stacks outlined. While auras are secret (combat, an encounter, a keystone, a PvP match) the client refuses every aura call of ours: the game's container shows instead.
 local T, F = PolestarUITargetFrame, PolestarUIFocusFrame
 -- The shown icons of the row under one of our frames, left to right.
 local function row(f)
@@ -70,15 +70,26 @@ assert(stockAuras(TargetFrame):GetAlpha() == 0 and order(T) == "1,5,3,4", "not v
 PolestarUI.Switch("auras", false)
 assert(stockAuras(TargetFrame):GetAlpha() == 1 and order(T) == "", "auras off: the game's are not back, or ours still show")
 PolestarUI.Switch("auras", true)
--- In combat: every field secret, handed over unread; the order (by id) holds, an unknown dispel type is the plain red, the stacks still show; the veil is not touched mid-fight.
-stub.inCombat = true
+-- In combat auras are secret, and the client refuses every aura call of a tainted caller
+-- (BugGrabber: 3,937 "GetUnitAuraInstanceIDs(): Auras cannot be accessed when secret while
+-- tainted"): ours read nothing and hide, and the game's container is given back as combat
+-- starts (PLAYER_REGEN_DISABLED runs before the lockdown, rule 4).
 stub.fire("PLAYER_REGEN_DISABLED")
+stub.inCombat = true
 stub.fire("UNIT_AURA", "target")
+stub.fire("PLAYER_TARGET_CHANGED")
 stub.advance(0.2)
-t = row(T)
-assert(order(T) == "1,5,2,3,4" or order(T) == "1,5,3,4", "the row in combat: " .. order(T))
-r, g, b = edge(t[1])
-assert(r == info.None.color.r and g == info.None.color.g, "a secret dispel type is not the plain debuff red")
-assert(t[1].count:GetText() == "3" and issecretvalue(t[1].Icon:GetTexture()) == false, "the secret count or icon was not handed over")
+assert(order(T) == "" and order(F) == "", "our rows still show in combat: " .. order(T))
+assert(stockAuras(TargetFrame):GetAlpha() == 1 and stockAuras(FocusFrame):GetAlpha() == 1, "the game's auras are not back in combat")
 stub.inCombat = false
 stub.fire("PLAYER_REGEN_ENABLED")
+stub.advance(0.2)
+assert(stockAuras(TargetFrame):GetAlpha() == 0 and order(T) == "1,5,3,4", "not veiled again after combat: " .. order(T))
+-- Out of combat but secret (an encounter, a keystone, a PvP match): the game's auras, ours hidden.
+stub.aurasSecret = true
+stub.fire("UNIT_AURA", "target")
+stub.advance(0.2)
+assert(stockAuras(TargetFrame):GetAlpha() == 1 and order(T) == "", "secret out of combat: " .. order(T))
+stub.aurasSecret = false
+stub.advance(0.2)
+assert(stockAuras(TargetFrame):GetAlpha() == 0 and order(T) == "1,5,3,4", "not veiled again once no longer secret: " .. order(T))

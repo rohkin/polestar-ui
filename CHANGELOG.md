@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Auras: fixed a flood of "Auras cannot be accessed when secret" errors from the target and focus aura rows; the game's auras show in combat, keystones and PvP, ours otherwise.
 - Unit frames: the stock pet frame's red attack pulse and threat flash no longer show through around the pet portrait.
 - Macros: the macro window moves to the compact grid (640×560, no sidebar): General and Character are top tabs showing their counts; a new scene shows the game's looks.
 - Bank: the bank window moves to the compact grid (560×560, no sidebar): its banks are top tabs, the search sits on the tab row and the banker's name in the subtitle; a new scene shows the game's looks.

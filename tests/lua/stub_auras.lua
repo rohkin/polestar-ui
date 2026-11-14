@@ -244,8 +244,10 @@ end
 -- frames: stub.units[unit].auras = { { id, harmful = true, mine = true,
 -- fromPlayer = true (another player's), time = sec, count = n, dispel =
 -- "Magic", icon = fileID }, ... }. The ids come sorted as the client sorts
--- them (UnitAuraSortRule.Default: the player's own first); in combat every
--- field of an aura but its id is secret, and so is its count.
+-- them (UnitAuraSortRule.Default: the player's own first). While auras are
+-- secret (in combat, or stub.aurasSecret: an encounter, a keystone, a PvP
+-- match; C_Secrets.ShouldAurasBeSecret) every call of addon code errors, as
+-- the client's RequiresUnitAuraAccess does for a tainted caller.
 ---------------------------------------------------------------------------
 
 Enum = Enum or {}
@@ -260,8 +262,14 @@ local function find(unit, id)
 	for _, a in ipairs(aurasOf(unit)) do if a.id == id then return a end end
 end
 local function hide(v) if stub.inCombat then return stub.secret(v) end return v end
+C_Secrets = C_Secrets or {}
+function C_Secrets.ShouldAurasBeSecret() return (stub.inCombat or stub.aurasSecret) and true or false end
+local function access(name)
+	if C_Secrets.ShouldAurasBeSecret() then error(name .. "(): Auras cannot be accessed when secret while tainted by 'Polestar_UI'", 3) end
+end
 
 function C_UnitAuras.GetUnitAuraInstanceIDs(unit, filter, max, rule)
+	access("GetUnitAuraInstanceIDs")
 	local harmful, mine = filter:find("HARMFUL", 1, true) ~= nil, filter:find("PLAYER", 1, true) ~= nil
 	local out = {}
 	for pass = 1, 2 do
@@ -273,17 +281,20 @@ function C_UnitAuras.GetUnitAuraInstanceIDs(unit, filter, max, rule)
 	return out
 end
 function C_UnitAuras.GetAuraDataByAuraInstanceID(unit, id)
+	access("GetAuraDataByAuraInstanceID")
 	local a = find(unit, id)
 	if not a then return nil end
 	return { auraInstanceID = id, icon = hide(a.icon or 136116), dispelName = hide(a.dispel), isFromPlayerOrPlayerPet = hide(a.mine or a.fromPlayer or false),
 		nameplateShowAll = hide(false), applications = hide(a.count or 0), isHarmful = hide(a.harmful or false) }
 end
 function C_UnitAuras.GetAuraDuration(unit, id)
+	access("GetAuraDuration")
 	local a = find(unit, id)
 	if not a then return nil end
 	return { GetRemainingDuration = function() return stub.secret(a.time or 0) end }
 end
 function C_UnitAuras.GetAuraApplicationDisplayCount(unit, id, min)
+	access("GetAuraApplicationDisplayCount")
 	local a = find(unit, id)
 	return hide(a and (a.count or 0) >= (min or 2) and tostring(a.count) or "")
 end
@@ -305,7 +316,10 @@ function M.SetCooldownFromDurationObject(self, d)
 	self:GetCountdownFontString():SetText(left > 0 and (left >= 60 and string.format("%dm", math.ceil(left / 60)) or tostring(math.floor(left))) or "")
 end
 
-function GameTooltip.SetUnitAuraByAuraInstanceID(_, unit, id) stub.auraTip = unit .. ":" .. tostring(id) end
+function GameTooltip.SetUnitAuraByAuraInstanceID(_, unit, id)
+	access("GetUnitAuraByAuraInstanceID")
+	stub.auraTip = unit .. ":" .. tostring(id)
+end
 
 -- Friend or foe by the unit stub's reaction (5 and up: friendly).
 local isFriend = UnitIsFriend

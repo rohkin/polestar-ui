@@ -73,8 +73,13 @@ addon code) and over showing both.
 **The veil (CLIENT.md rule 16, the exception).** Out of combat, `SetAlpha(0)`
 on `TargetFrame`'s and `FocusFrame`'s
 `TargetFrameContent.TargetFrameContentContextual.Auras`, nothing else. It is
-veiled while both `auras` and `unitframes` are on and our frame exists, and
-given back (alpha 1) when either is switched off; a change waits out combat.
+veiled while both `auras` and `unitframes` are on, our frame exists and
+auras are not secret, and given back (alpha 1) when either is switched off,
+as combat starts (`PLAYER_REGEN_DISABLED`, before the lockdown) and while
+`C_Secrets.ShouldAurasBeSecret()` (an encounter, a keystone, a PvP match);
+other changes wait out combat. While auras are secret the client refuses
+every `C_UnitAuras` call and the aura tooltip from addon code (CLIENT.md
+rule 3), so ours hide and the game's show.
 A container that is forbidden or refuses the call is left alone, and then
 ours does not show (never both). The game's container still lays its rows
 out, so the stock cast bar still hangs under them.
@@ -98,7 +103,7 @@ game hangs 26 units under our frame with no auras and lower with them.
 | Tooltip | the game's | `GameTooltip:SetUnitAuraByAuraInstanceID(unit, id)` on hover |
 
 Repainted on `UNIT_AURA` for the unit, a target or focus change, and as
-combat starts and ends.
+combat ends; hidden from combat's start, and while auras are secret.
 
 **Gaps:** one row (the game wraps to more); the stealable (purple) border on
 an enemy's buff; Buffs On Top (Edit Mode's target setting: ours is always
@@ -107,16 +112,17 @@ player's pet; private auras on the target; the bosses' auras stay the
 game's. The countdown numbers follow the game's own cooldown-numbers option.
 
 **Tests:** the unit aura API in `stub_auras.lua` (ids sorted as the client
-sorts them, every field secret in combat), the stock container and its guard
+sorts them; every call errors while auras are secret, in combat or with
+`stub.aurasSecret`), the stock container and its guard
 in `stub_unitframes.lua`. Scene `auras-target`: the veil, both orders, the
 filter and its CVar, sizes, colours, stacks, the tooltip, both switches, the
-secret case.
+game's container back in combat and while secret out of combat.
 
 **Live checks (not in the preview):** the `/run` in the report first (the
 container takes `SetAlpha(0)`; whether its faded buttons still catch the
 mouse: the game's tooltips over nothing, about 13 to 35 units under our
-frame, partly under our row); that `GetUnitAuraInstanceIDs` and
-`GetAuraDataByAuraInstanceID` answer for the target in combat; the
+frame, partly under our row); that the game's auras come back as combat
+starts and ours return after it (no "Auras cannot be accessed" errors); the
 countdown's face and size; an aura's sweep direction; that our icons, being
 mouse-enabled children of a secure frame, show and hide mid-fight without a
 blocked action.

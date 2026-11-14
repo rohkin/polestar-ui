@@ -101,11 +101,20 @@ end
 -- goes into SetTexture, the time into a Cooldown as a duration object, the
 -- stack count into SetFormattedText; only the dispel type (through
 -- ns.Clean: plain red while secret) and who applied it are looked at.
+-- While auras are secret (combat, an encounter, a keystone, a PvP match) the
+-- client refuses every C_UnitAuras call (and the aura tooltip) of a tainted
+-- caller outright ("Auras cannot be accessed when secret while tainted"):
+-- ours hide and the game's container shows (docs/CLIENT.md, rule 3).
 local ROWS = {
 	{ unit = "target", ours = "PolestarUITargetFrame", stock = "TargetFrame" },
 	{ unit = "focus", ours = "PolestarUIFocusFrame", stock = "FocusFrame" },
 }
 local SIZE, SMALL, GAP = 20, 16, 2 -- the player's own auras large, as the game's (21 and 17)
+
+local fighting -- PLAYER_REGEN_DISABLED to PLAYER_REGEN_ENABLED
+local function secret()
+	return fighting or InCombatLockdown() or (C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()) or false
+end
 
 local function stockAuras(row)
 	local f = rawget(_G, row.stock)
@@ -116,11 +125,12 @@ local function stockAuras(row)
 end
 
 -- Fade the game's container while ours stands in (both modules on, our
--- frame there), give it back otherwise. Out of combat only; a container
+-- frame there, auras not secret), give it back otherwise. Out of combat
+-- only (PLAYER_REGEN_DISABLED still is, rule 4: the veil lifts there); a container
 -- that refuses is left alone, and ours never shows beside it. -> true when
 -- it changed.
 local function veil(row)
-	local want = (ns.Enabled(KEY) and ns.Enabled("unitframes") and rawget(_G, row.ours) ~= nil) or false
+	local want = (ns.Enabled(KEY) and ns.Enabled("unitframes") and rawget(_G, row.ours) ~= nil and not secret()) or false
 	if want == (row.veiled or false) or row.refused or InCombatLockdown() then return end
 	local a = stockAuras(row)
 	if not a then return end
@@ -190,7 +200,7 @@ end
 
 local function paintRow(row)
 	local ours = rawget(_G, row.ours)
-	if not (ours and row.veiled and C_UnitAuras and C_UnitAuras.GetAuraDataByAuraInstanceID) then
+	if not (ours and row.veiled and C_UnitAuras and C_UnitAuras.GetAuraDataByAuraInstanceID) or secret() then
 		if row.frame then row.frame:Hide() end
 		return
 	end
@@ -291,6 +301,8 @@ function M.Enable()
 	driver:SetScript("OnUpdate", update)
 	for _, e in ipairs({ "UNIT_AURA", "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED" }) do driver:RegisterEvent(e) end
 	driver:SetScript("OnEvent", function(_, event, unit)
+		-- Combat starting: the veil lifts now, while it still may.
+		if event == "PLAYER_REGEN_DISABLED" then fighting = true; veilRows() elseif event == "PLAYER_REGEN_ENABLED" then fighting = false end
 		if event == "UNIT_AURA" then paintRows(unit) else paintRows() end
 	end)
 	Theme.OnChanged(function() paintRows() end)
