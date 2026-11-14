@@ -41,5 +41,6 @@ Modules\Auras.lua
 Modules\CastBars.lua
 Modules\CooldownViewer.lua
 Modules\ResourceDisplay.lua
+Modules\DamageMeter.lua
 Modules\Tooltips.lua
 Modules\Chat.lua

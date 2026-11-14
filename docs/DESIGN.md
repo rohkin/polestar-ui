@@ -280,6 +280,7 @@ hidden):
 | Cast bars: player, target, focus (`PlayerCastingBarFrame`, `TargetFrameSpellBar`, `FocusFrameSpellBar`) | high | built | [windows/castbars.md](windows/castbars.md) |
 | Cooldown Viewer: essential, utility, tracked buffs and bars (`EssentialCooldownViewer`, `UtilityCooldownViewer`, `BuffIconCooldownViewer`, `BuffBarCooldownViewer`) | high | built | [windows/cooldowns.md](windows/cooldowns.md) |
 | Personal Resource Display (`PersonalResourceDisplayFrame`) | medium | built | [windows/resource.md](windows/resource.md) |
+| Damage meter (`DamageMeter`, `DamageMeterSessionWindow1`..`3`) | medium | built | [windows/damagemeter.md](windows/damagemeter.md) |
 
 ## Components
 

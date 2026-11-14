@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Damage meter: the game's own meter in the HUD's look, restyled in place (our ground at its Background Transparency, flat sky bars or class colours with its Show Class Color, Polestar's faces, our glyphs on its header buttons on one line, and our ground, radios, ticks, chevrons and hover in its menus); Edit Mode, the player's extra windows and the breakdown stay the game's. /pui damagemeter on|off.
 - Restyle the Cooldown Viewer (essential, utility, tracked buff icons and bars) in place in the HUD's look: square icons with a gap, a hairline and a square sweep, Polestar's faces, and buff bars as flat sky (or class colour) fills; Edit Mode settings stay the game's (`/pui cooldowns`).
 - Fixed: a hatched circle inside the square minimap near area quests (the game's quest blob ring, drawn at the round map's edge).
 - Personal Resource Display: the game's own bars in Polestar's look (flat fills, track, hairline, heal, absorb and cost segments as on our unit frames; class colour with Edit Mode's Show Class Color or Polestar's Class colour). Every Edit Mode setting stays the game's; /pui resource off gives the stock look back.
