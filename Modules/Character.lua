@@ -5,12 +5,12 @@ local ADDON, ns = ...
 local W = Polestar.Widgets
 
 local NAME = "PolestarUICharacter"
--- The stock subframes, in stock order (CHARACTER_FRAME_TAB), as a section
--- rail (ns.GameRail, as Professions'); their keys are what ToggleCharacter
--- takes. Each wears the stock mode tab's icon (CHARACTER_MODE_TAB_ICONS,
--- Camelot CharacterFrame.lua): the player's portrait, the faction's honor icon.
+-- The stock subframes, in stock order (CHARACTER_FRAME_TAB), as top tabs
+-- (ns.TopNav); their keys are what ToggleCharacter takes. Each wears the stock
+-- mode tab's icon (CHARACTER_MODE_TAB_ICONS, Camelot CharacterFrame.lua): the
+-- player's portrait (painted over the stand-in), the faction's honor icon.
 local SECTIONS = {
-	{ key = "PaperDollFrame", label = CHARACTER or "Character" },
+	{ key = "PaperDollFrame", label = CHARACTER or "Character", icon = "Interface/ICONS/INV_Misc_QuestionMark" },
 	{ key = "ReputationFrame", label = REPUTATION or "Reputation", icon = "Interface/ICONS/INV_SideTab_Reputation2_c60" },
 	{ key = "SkillsFrame", label = SKILLS or "Skills", icon = "Interface/ICONS/Ability_Racial_JackofAllTrades" },
 	{ key = "PVPRankFrame", label = PVP or "Honor" },
@@ -310,10 +310,11 @@ local function newSlot(parent, name, layer, side, size)
 end
 
 -- The two columns on the body's edges, the weapons centred under them.
-local function buildGear(body, width)
+local GEAR_TOP = 20
+local function buildGear(body, width, pad)
 	local colH = #LEFT * (SLOT + GAP) - GAP
 	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
+	v:SetPoint("TOPLEFT", body, "TOPLEFT", pad, -GEAR_TOP)
 	-- The weapon row and, under the off hand, its two lines.
 	local weapH = SLOT + 36
 	v:SetSize(width, colH + 16 + weapH)
@@ -418,7 +419,7 @@ end
 -- numbers and tooltips are the stock sheet's own: each row is handed to
 -- PAPERDOLL_STATINFO[stat].updateFunc, which fills Label, Value and tooltip.
 
-local STAT_H, HEAD_H, SECTION_GAP, STATS_W, STATS_TOP = 28, 44, 22, 280, 72
+local STAT_H, HEAD_H, SECTION_GAP, STATS_W, STATS_TOP = 28, 44, 22, 280, 60 -- the top band, as tall as the compact header (ns.Compact)
 
 local function statEnter(r)
 	if r.onEnterFunc then r.onEnterFunc(r) else PaperDollStatTooltip(r) end
@@ -803,9 +804,9 @@ local function paintDrawer()
 end
 
 local function build()
-	-- No sidebar: the section rail holds the sections, the main column as wide
-	-- as beside the old sidebar.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, sidebar = 0, rail = true })
+	-- The compact grid, no sidebar: the sections are top tabs, the window as
+	-- wide as its six tabs need (the gear wants 640).
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 700, height = 540 })
 	ns.Dock(f)
 	-- The window menu's options: the drawer put away and back, for every
 	-- character, on the sections that have it.
@@ -817,15 +818,16 @@ local function build()
 		end } }
 	end)
 	f.Search:Hide()
-	ns.Plain(f, f.psRail)
-	f.psGear = buildGear(f.Body, f.BodyWidth)
+	ns.Plain(f) -- before the grid: BodyWidth is the compact one
+	ns.Compact(f)
+	f.psGear = buildGear(f.Body, f.BodyWidth, f.psPad)
 	f.psStats = buildDrawer()
 	-- The dock makes room for the drawer, and the window keeps it on screen.
 	ns.DockFlyout(f, f.psStats, 1)
 	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
 	f.psPages = {}
 	for key, page in pairs(ns.CharacterPages) do
-		local v = page.build(f.Body, f.BodyWidth)
+		local v = page.build(f.Body, f.BodyWidth, f.psPad)
 		v:Hide()
 		v.psPaint, v.psH = page.paint, 0
 		f.psPages[key] = v
@@ -877,22 +879,24 @@ end
 -- The drawer is shown unless the player put it away (for every character).
 function statsShown() return not (PolestarUIDB and PolestarUIDB.hideStats) end
 
+-- The player's portrait on the Character tab, as the stock mode tab.
+local function paintPortrait()
+	local t = f.tabButtons[1].psNavIcon
+	SetPortraitTexture(t, "player")
+	t:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
+end
+
 function refresh()
 	local level = UnitLevel("player")
 	SECTIONS[4].icon = UnitFactionGroup("player") == "Alliance" and "Interface/ICONS/INV_SideTab_Honor_Alliance_c60"
 		or "Interface/ICONS/INV_SideTab_Honor_Horde_c60"
-	ns.GameRail(f, SECTIONS, section, function(k) M.Show(k) end)
-	local portrait = f.railButtons[1].Icon
-	SetPortraitTexture(portrait, "player")
-	portrait:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
+	ns.TopNav(f, SECTIONS, section, function(k) M.Show(k) end)
+	paintPortrait()
 	local gear = section == "PaperDollFrame"
 	if gear then
-		W.ShellTabs(f, nil)
 		-- The stock sheet's title (UnitPVPName: the chosen title with the
 		-- name) and level line; the shell cuts either with an ellipsis.
 		W.ShellTitle(f, playerText(UnitPVPName) or playerText(UnitName) or CHARACTER or "Character", levelLine(level) .. " · " .. repairLine())
-	else
-		W.ShellTabs(f, nil)
 	end
 	ns.Footer(f, {}, {})
 	local panes = #panesOf(section) > 0
@@ -907,21 +911,23 @@ function refresh()
 		for _, s in ipairs(slots) do if s.psSide then s:SetShown(not pet) end end
 		paintGear()
 		showModel()
-		h = f.psGear:GetHeight() + 24
+		h = GEAR_TOP + f.psGear:GetHeight()
 	end
 	for key, v in pairs(f.psPages) do
 		local on = key == section
 		v:SetShown(on)
 		if on then
 			h = paintPage(v)
+			-- The player leads the subtitle.
+			local who = playerText(UnitName)
 			for _, s in ipairs(SECTIONS) do
-				if s.key == key then W.ShellTitle(f, s.label, v.psSub) end
+				if s.key == key then W.ShellTitle(f, s.label, who and v.psSub and (who .. " · " .. v.psSub) or who or v.psSub) end
 			end
 		end
 	end
 	-- The Character page's title (a chosen title with the name) steps down the
-	-- size ladder until it fits the band; every other page keeps the shell's.
-	for _, role in ipairs(gear and { "hero", "display", "title" } or { "hero" }) do
+	-- size ladder until it fits the band; every other page keeps the grid's.
+	for _, role in ipairs(gear and { "display", "title" } or { "display" }) do
 		Polestar.Theme.Font(f.Title, role)
 		if f.Title:GetUnboundedStringWidth() <= f.Title:GetWidth() then break end
 	end
@@ -1030,9 +1036,9 @@ function M.Enable()
 	end
 	Polestar.RegisterEvent("UNIT_NAME_UPDATE", named)
 	Polestar.RegisterEvent("PLAYER_PVP_RANK_CHANGED", named)
-	-- A new portrait on the Character row, on the stock sheet's events.
+	-- A new portrait on the Character tab, on the stock sheet's events.
 	local function portrait(_, unit)
-		if (unit == nil or unit == "player") and f and f:IsShown() then SetPortraitTexture(f.railButtons[1].Icon, "player") end
+		if (unit == nil or unit == "player") and f and f:IsShown() then paintPortrait() end
 	end
 	Polestar.RegisterEvent("UNIT_PORTRAIT_UPDATE", portrait)
 	Polestar.RegisterEvent("PORTRAITS_UPDATED", portrait)

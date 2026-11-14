@@ -24,15 +24,19 @@ assert(PolestarUICharacter.Title:GetText() == "Testchar", "title: " .. PolestarU
 assert(PolestarUICharacter.psSubtitle:find("^Level 20 %(24%) |cffc69b6dWarrior|r · "), "level: " .. PolestarUICharacter.psSubtitle)
 UnitEffectiveLevel = nil
 PolestarUI.RefreshCharacter()
--- The rail sections wear the stock mode tabs' icons: the portrait, the faction's honor icon.
-local nav = PolestarUICharacter.railButtons
-assert(nav[1].Icon:GetTexture() == 132355, "Character row: not the player's portrait")
-assert(nav[2].Icon:GetTexture() == "Interface/ICONS/INV_SideTab_Reputation2_c60", "Reputation row icon")
-assert(nav[4].Icon:GetTexture() == "Interface/ICONS/INV_SideTab_Honor_Alliance_c60", "Honor row: not the Alliance icon")
-nav[1].Icon:SetTexture(nil); stub.fire("UNIT_PORTRAIT_UPDATE", "player")
-assert(nav[1].Icon:GetTexture() == 132355, "Character row: portrait not repainted")
--- No sidebar; another page keeps its own title.
-assert(not PolestarUICharacter.Sidebar:IsShown(), "sidebar shown")
+-- The top tabs wear the stock mode tabs' icons: the portrait, the faction's honor icon.
+local nav = PolestarUICharacter.tabButtons
+assert(nav[1].psNavIcon:GetTexture() == 132355, "Character tab: not the player's portrait")
+assert(nav[2].psNavIcon:GetTexture() == "Interface/ICONS/INV_SideTab_Reputation2_c60", "Reputation tab icon")
+assert(nav[4].psNavIcon:GetTexture() == "Interface/ICONS/INV_SideTab_Honor_Alliance_c60", "Honor tab: not the Alliance icon")
+nav[1].psNavIcon:SetTexture(nil); stub.fire("UNIT_PORTRAIT_UPDATE", "player")
+assert(nav[1].psNavIcon:GetTexture() == 132355, "Character tab: portrait not repainted")
+-- The compact grid: no sidebar, no rail, every tab on the tab row; another
+-- page keeps its own title, the player leading its subtitle.
+local f = PolestarUICharacter
+assert(not f.Sidebar:IsShown() and f.psCompact and (f.psRail or 0) == 0, "not the compact grid")
+assert(f.psTabsRight <= f:GetWidth() - f.psPad, "tabs overflow the row: " .. f.psTabsRight)
 PolestarUI.Show("character", "ReputationFrame")
-assert(PolestarUICharacter.Title:GetText() == "Reputation", "Reputation title: " .. PolestarUICharacter.Title:GetText())
+assert(f.Title:GetText() == "Reputation", "Reputation title: " .. f.Title:GetText())
+assert(f.psSubtitle:find("^Testchar · "), "Reputation subtitle: " .. f.psSubtitle)
 PolestarUI.Show("character", "PaperDollFrame")

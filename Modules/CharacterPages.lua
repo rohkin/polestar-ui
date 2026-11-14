@@ -1,6 +1,6 @@
 -- The Character window's other sections (docs/DESIGN.md, "Character"):
 -- Reputation, Currency, Honor, Skills and Statistics. Each page is
---   ns.CharacterPages[stock subframe] = { build = fn(body, width) -> frame, paint = fn(frame) -> height }
+--   ns.CharacterPages[stock subframe] = { build = fn(body, width, pad) -> frame, paint = fn(frame) -> height }
 -- and is painted only out of combat (docs/CLIENT.md, rule 3): in combat a page
 -- keeps what it last drew, and Character.lua reads it again once combat ends.
 
@@ -42,9 +42,9 @@ end
 -- spec = { height, new = fn(row), draw = fn(row, data), plain }; plain: the
 -- rows sit on the page, with no panel or hairlines around them.
 
-local function listView(body, width)
+local function listView(body, width, pad)
 	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, 0)
+	v:SetPoint("TOPLEFT", body, "TOPLEFT", pad, 0)
 	v:SetWidth(width)
 	v.groups = {}
 	return v
@@ -624,9 +624,9 @@ local function seasonEnds()
 end
 
 pages.PVPRankFrame = {
-	build = function(body, width)
+	build = function(body, width, pad)
 		local v = CreateFrame("Frame", nil, body)
-		v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
+		v:SetPoint("TOPLEFT", body, "TOPLEFT", pad, -24)
 		v:SetWidth(width)
 		v.Rank = W.Text(v, "display", "text")
 		v.Rank:SetPoint("TOPLEFT", v, "TOPLEFT", 0, 0)

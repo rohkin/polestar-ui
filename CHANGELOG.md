@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Character: the Character window moves to the compact grid (700×540, was 808×680) with its sections as top tabs wearing the stock icons, the player in the subtitle, and the drawer's band level with the header.
 - Gossip and Quest dialog: Gossip (520×400, was 640×560) and the Quest dialog (520×540, was 640×600) move to the compact grid at one width, with the NPC's portrait and name in the slimmer band.
 - Mail: the mail window moves to the compact grid (560×560, was 760×600) with Inbox and Send Mail as top tabs.
 - Auras: fixed a flood of "Auras cannot be accessed when secret" errors from the target and focus aura rows; the game's auras show in combat, keystones and PvP, ours otherwise.

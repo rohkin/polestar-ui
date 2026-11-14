@@ -5,17 +5,17 @@ Code: `Character.lua` (shell, gear, stats, the drawer and its Pet pane),
 `CharacterPages.lua` (the other sections' lists), `CharacterGear.lua` (Gear
 sets, Titles, the slot flyout), `CharacterDetails.lua` (the other sections'
 details).
-- **Shell:** 808×680: no sidebar, a section rail (88) at the left edge, as
-  Professions (`sidebar = 0`, `rail = true`, `ns.Plain`); the main column
-  keeps the width it had beside a 240 sidebar.
-- **Rail sections** (stock subframes, in stock order, Camelot
+- **Shell:** 700×540 on the compact grid (`ns.Plain`, then
+  `ns.Compact`): no sidebar, no rail, the sections as top tabs. 700 is what
+  the six tabs with their icons need; the gear alone wants 640 (its columns
+  and the weapon row's item names).
+- **Top tabs** (stock subframes, in stock order, Camelot
   `CHARACTER_FRAME_TAB`): Character (`PaperDollFrame`), Reputation, Skills,
   Honor (`PVPRankFrame`), Currency (always: the stock
   `ShouldShowCurrencyTab` returns true; only the `TOGGLECURRENCY` key does
   nothing with an empty list, as `ToggleTokenFrame` does), Statistics. Drawn
-  by `ns.GameRail` (Core.lua, shared with Professions): the rail's
-  selection and tooltip, each section wearing the stock mode tab's icon
-  (`CHARACTER_MODE_TAB_ICONS` in Camelot `CharacterFrame.lua`) at 24px,
+  by `ns.TopNav`, each tab wearing the stock mode tab's icon
+  (`CHARACTER_MODE_TAB_ICONS` in Camelot `CharacterFrame.lua`) at 16px,
   untinted, border cropped: the player's portrait (Character; repainted on
   `UNIT_PORTRAIT_UPDATE` and `PORTRAITS_UPDATED`, as stock),
   `INV_SideTab_Reputation2_c60`, `Ability_Racial_JackofAllTrades` (Skills),
@@ -23,8 +23,8 @@ details).
   `INV_SideTab_Currency_c60`, `INV_SideTab_Stats_c60`.
 - **Band:** the section's name as title, except on Character: the stock
   sheet's title, `UnitPVPName` (the chosen title with the name; repainted on
-  `UNIT_NAME_UPDATE` and `PLAYER_PVP_RANK_CHANGED`, as stock), in Hero,
-  stepping down to Display, then Title, until it fits the band (the longest
+  `UNIT_NAME_UPDATE` and `PLAYER_PVP_RANK_CHANGED`, as stock), in Display,
+  stepping down to Title when it does not fit the band (the longest
   title with a 12-letter name fits); read out of combat (CLIENT.md, rule 3).
   No class icon and no guild line (the stock Camelot sheet shows neither).
   A status subtitle (Character: the level line as `PaperDollFrame_SetLevel`
@@ -34,12 +34,14 @@ details).
   or "Gear in good repair"; Reputation: "Watching
   Stormwind" or the faction count; Currency, Skills, Statistics: their
   counts; Honor: the season); in the "..." menu on every section with a drawer: "Show
-  stats" (Character) or "Show details", checked while the drawer shows.
+  stats" (Character) or "Show details", checked while the drawer shows. On
+  every other section the player's name leads the subtitle ("Testchar ·
+  Watching Stormwind").
 - **The drawer** (the stock right pane): 280px wide, its own window skin,
-  docked flush to the window's right edge and as tall (the shell stays 808
-  wide; open, the two read as one 1088px window, as in the armory). That item
+  docked flush to the window's right edge and as tall (the shell stays 700
+  wide; open, the two read as one 980px window, as in the armory). That item
   puts it away and back, for every character (`PolestarUIDB.hideStats`), on
-  every section at once, as the stock pane's collapse. Its top band (72px)
+  every section at once, as the stock pane's collapse. Its top band (60px, level with the window's header)
   holds the Character page's pane tabs (Stats, Gear sets, Titles, Pet with a
   pet; Label, the chosen one text with a 2px accent line under it, the rest
   textDim), or another section's details heading in Heading (the chosen
@@ -73,7 +75,7 @@ details).
     pet (`C_PetInfo.GetPetUIModelSceneID`) and the gear slots step aside.
 - **Character page** — no tabs: the gear, the model between its columns.
   Item level is not shown anywhere: it means nothing in Forever.
-  - *Gear*: two slot columns on the 32 and right edges (Head, Neck, Shoulder,
+  - *Gear*: two slot columns on the body's edges (`f.psPad`), 20 down (Head, Neck, Shoulder,
     Back, Chest, Shirt, Tabard, Wrist; Hands, Waist, Legs, Feet, Finger ×2,
     Trinket ×2), then, 16px down, the weapons in a row centred under the model
     well (Main Hand, Off Hand, Ranged), as the stock sheet and the armory lay
