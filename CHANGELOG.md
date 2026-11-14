@@ -14,6 +14,7 @@
 - Party frames: role icons, class colours and a thicker power strip.
 - Buffs and debuffs: square icons with a thin border in the debuff type's colour, time and stacks in Polestar's numbers; right-click, tooltips and Edit Mode work as before (/pui auras off).
 - Target and focus auras: a row of square icons under Polestar's target and focus frames, your own first and larger; the game's are hidden.
+- Cast bars: your, your target's and your focus's cast bars as thick flat bars with the icon, name and time inside, in the header band's blue (class colour with Class colour on); grey when it can't be interrupted, red when interrupted or failed (/pui castbars off).
 - Action bars: square buttons with a thin border, the key and count in Polestar's type, and an accent wash while pressed or on; every bar, the pet and stance bars and spell flyouts, with Edit Mode's bar settings untouched (/pui actionbars off gives the game's back).
 - Action bars: hotkeys and counts outlined; the range dot keeps the game's font.
 - Minimap: square, with a thin border in your accent and an N while it turns, in Polestar's look; Edit Mode's minimap settings still apply (/pui minimap off gives the game's back).
@@ -29,7 +30,7 @@
 - Fixed: the Character flyout's Put in bags and wearing an item do nothing while a spell waits for its item, instead of a blocked-action error.
 - Fixed: the Polestar button above the game's World Map now closes it and opens Polestar's map, instead of leaving the game's open until next time.
 - Fixed: hiding Polestar no longer hides Polestar: UI's windows and their dialogs; they replace the game's, so they stay.
-- Fixed: a flood of secret-value errors from the unit frames' segments in combat.
+- Fixed: a flood of secret-value errors from the unit frames' segments and from the target and focus cast bars in combat.
 
 ## 0.0.6
 

@@ -64,7 +64,11 @@ Geometry can be secret too (5,440 errors from `H.Segment`): a frame anchored
 to a StatusBar's fill texture moves with the bar's secret value, so in combat
 its `OnSizeChanged` and `GetWidth` give secret numbers. Never feed them to
 `SetWidth` or any other Set* call; size such a frame from clean layout numbers
-(the unit frames' `layout`).
+(the unit frames' `layout`). A stock frame's own size can be secret as well:
+`TargetFrameSpellBar:GetHeight()` in combat (900 errors from one `~=` in
+CastBars.lua; the bar hangs off the unit frame and the secure aura
+container). Read no geometry of a stock HUD frame from code that runs in
+combat: hang ours on it by anchors and give it constants.
 
 Cooldown times are secret in combat, and `Cooldown:SetCooldown` refuses them
 from addon code. Draw a spell's sweep from its duration object
@@ -499,8 +503,9 @@ minimap clamp exception aside (`stub.hookAllowed`; the cluster's guard
 lets `SetClampRectInsets` through, every other system frame's does not) (the
 `minimap-editmode` and `actionbars-editmode` scenes change Edit Mode's
 settings; `actionbars-combat` restyles a new flyout only after combat).
-The aura stub (`stub_auras.lua`) guards its frames, buttons and regions
-the same way (the `auras*` scenes).
+The aura and cast bar stubs (`stub_auras.lua`, `stub_castbars.lua`) guard
+their frames, buttons and regions the same way (the `auras*` and
+`castbars*` scenes).
 The stock unit frames are guarded by `tests/lua/stub_unitframes.lua`
 instead (rule 16), which lets through only the veil's calls.
 

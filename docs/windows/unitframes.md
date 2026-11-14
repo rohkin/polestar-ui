@@ -149,7 +149,7 @@ stand in with the player too, and go back to their units as it closes.
 | Threat (glow), combat flash | the hairline's colour; the threat glow is gradient strips outside the frame |
 | Numeric threat, leader, guide, PvP/prestige, raid target, quest, pet battle, role, ready check, rest, group, play time, ping icons; the bosses' auras | the game's own, still drawn by the stock frame's Contextual layer where the stock puts them |
 | Target and focus auras | a row of ours under our target and focus frames, the game's container veiled ([auras.md](auras.md); rule 16's exception) |
-| Cast bars (target, focus, player) | the game's own (children of the stock frames, or their own Edit Mode system) |
+| Cast bars (target, focus, player) | the game's own, restyled in place where the game puts them ([castbars.md](castbars.md)) |
 | Combo points, totems, pet frame, alternate power | the game's own (they hang off the stock frames, which stay) |
 | Left click targets, right click opens the unit menu, click casting, pings | secure attributes (`target`, `togglemenu`), SecureUnitButtonTemplate, PingableUnitFrameTemplate |
 | Tooltip on hover | GameTooltip:SetUnit |

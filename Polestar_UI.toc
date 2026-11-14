@@ -38,5 +38,6 @@ Modules\UnitFrames.lua
 Modules\Minimap.lua
 Modules\ActionBars.lua
 Modules\Auras.lua
+Modules\CastBars.lua
 Modules\Tooltips.lua
 Modules\Chat.lua
