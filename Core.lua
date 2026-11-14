@@ -75,12 +75,210 @@ function ns.Plain(f, left)
 	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
 end
 
+-- The compact grid (docs/DESIGN.md, "The Game Window Shell"): Polestar's shell
+-- lays out by W.SHELL (a 112 band, 40 tabs, 56 footer, 32 pad) on every
+-- ShellTabs, ShellFooter and ShellBody; a window made compact (ns.Compact) is
+-- laid out again after each, by its own sizes (f.psHead, f.psTabsH, f.psFootH,
+-- f.psPad). Polestar is not changed: these are post-hooks on its table.
+local function compactPlace(f)
+	local W, pad = Polestar.Widgets, f.psPad
+	local mainW = f:GetWidth() - 2 - (f.psRail or 0) - (f.Sidebar:IsShown() and f.psSidebar or 0)
+	f.BodyWidth = mainW - 2 * pad
+	f.Band:SetTexCoord(Polestar.Theme.BandCoords(mainW, f.psHead))
+	f.psHazeOpts.width = mainW * 0.9
+	f.psHaze:SetSize(mainW * 0.9, f.psHead)
+	f.psViewH = f:GetHeight() - f.psHead - (f.TabRow:IsShown() and f.psTabsH or 0) - (f.Footer:IsShown() and f.psFootH or 0)
+	local x = pad - 12
+	for _, t in ipairs(f.tabButtons) do
+		if t:IsShown() then
+			t:SetHeight(f.psTabsH)
+			t:ClearAllPoints()
+			t:SetPoint("BOTTOMLEFT", f.TabRow, "BOTTOMLEFT", x, 0)
+			x = x + t:GetWidth() + 4
+		end
+	end
+	f.psTabsRight = x
+	for side, sign in pairs({ left = 1, right = -1 }) do
+		local b = f.footerButtons[side][1]
+		if b and b:IsShown() then
+			b:ClearAllPoints()
+			b:SetPoint(side == "left" and "LEFT" or "RIGHT", f.Footer, side == "left" and "LEFT" or "RIGHT", sign * (pad - (b.psGhost and 8 or 0)), 0)
+		end
+	end
+	-- The search (ns.TopNav) takes the tab row's room right of the tabs, 200 at most.
+	if f.psTopNav then
+		local filter = rawget(f, "psFilter")
+		local room = mainW - pad - x - 12 - (filter and 36 or 0)
+		f.Search:SetWidth(math.max(120, math.min(200, room)))
+	end
+end
+
+do
+	local W = Polestar.Widgets
+	for _, name in ipairs({ "ShellTabs", "ShellFooter" }) do
+		hooksecurefunc(W, name, function(f) if rawget(f, "psCompact") then compactPlace(f) end end)
+	end
+	hooksecurefunc(W, "ShellBody", function(f) if rawget(f, "psCompact") then f.Body:SetWidth(f.BodyWidth + 2 * f.psPad) end end)
+end
+
+-- The header's tools on the compact band's middle: the close button (when the
+-- skin draws it there; the game's looks put it on the frame's corner), the
+-- "..." menu and the scale left of it; the title on the band's top line, clear of them.
+local function compactHeader(f)
+	local head, H, pad = f.Header, f.psHead, f.psPad
+	f.Close:ClearAllPoints()
+	f.Close:SetPoint("RIGHT", head, "TOPRIGHT", -12, -H / 2)
+	local right = f.Close:IsShown() and f.Close or nil
+	for _, it in ipairs({ { rawget(f, "psMenu"), 4 }, { rawget(f, "HeaderTools"), 14 } }) do
+		local b = it[1]
+		if b and b:IsShown() then
+			b:ClearAllPoints()
+			if right then b:SetPoint("RIGHT", right, "LEFT", -it[2], 0) else b:SetPoint("RIGHT", head, "TOPRIGHT", -pad, -H / 2) end
+			right = b
+		end
+	end
+	f.Title:ClearAllPoints()
+	f.Title:SetPoint("TOPLEFT", head, "TOPLEFT", pad, -10)
+	if right then
+		f.Title:SetPoint("TOPRIGHT", right, "TOPLEFT", -16, H / 2 - right:GetHeight() / 2 - 10)
+	else
+		f.Title:SetPoint("TOPRIGHT", head, "TOPRIGHT", -pad, -10)
+	end
+end
+
+-- A shell (W.Shell) on the compact grid: a 60 band (the title in Display, its
+-- subtitle one line under it), 36 tabs (the skin's when smaller), a 44 footer
+-- and a 24 pad (the skin's less 8). The band's art is cropped to the new
+-- height, never stretched. f.psPad is the body's edge: lay content out by it,
+-- not W.SHELL.pad. Call after ns.WindowMenu.
+function ns.Compact(f)
+	local W, Theme = Polestar.Widgets, Polestar.Theme
+	f.psCompact = true
+	f.psHead, f.psTabsH, f.psFootH, f.psPad = 60, math.min(W.SHELL.tabs, 36), 44, W.SHELL.pad - 8
+	f.Header:SetHeight(f.psHead)
+	f.TabRow:SetHeight(f.psTabsH)
+	f.Footer:SetHeight(f.psFootH)
+	-- Polestar's haze is sized to its band on every repaint: ours, as tall as this one.
+	f.Haze:SetAlpha(0)
+	f.psHazeOpts = { height = f.psHead }
+	f.psHaze = W.Haze(f.Header, f.psHazeOpts)
+	Theme.Font(f.Title, "display")
+	f.Subtitle:SetWordWrap(false)
+	f.Subtitle:SetHeight(16)
+	f.Subtitle:ClearAllPoints()
+	f.Subtitle:SetPoint("TOPLEFT", f.Title, "BOTTOMLEFT", 0, -4)
+	f.Subtitle:SetPoint("TOPRIGHT", f.Title, "BOTTOMRIGHT", 0, -4)
+	local tools = rawget(f, "HeaderTools")
+	if tools then hooksecurefunc(tools, "Place", function() compactHeader(f) end) end
+	compactHeader(f)
+	compactPlace(f)
+end
+
+-- Page nav as top tabs (docs/DESIGN.md, "The Game Window Shell"): the window
+-- has no sidebar (ns.Plain); its pages are W.ShellTabs, each keeping a nav
+-- row's state, and the search (f.Search, and f.psFilter when the window has
+-- one) moves to the tab row's right end. items: { key, label, icon (a game
+-- texture, cropped), count, dot, locked, tip }: a locked tab recedes and its
+-- click does nothing; `tip` (its tooltip under the label) says why. `active`
+-- nil marks none (a search across every page).
+function ns.TopNav(f, items, active, onSelect)
+	local W, Theme = Polestar.Widgets, Polestar.Theme
+	if not f.psTopNav then
+		f.psTopNav = true
+		if f.Sidebar:IsShown() then ns.Plain(f, f.psRail) end
+		f.psKeepTabRow = true
+		local pad = f.psPad or W.SHELL.pad
+		local filter = rawget(f, "psFilter")
+		f.Search:SetParent(f.TabRow)
+		f.Search:ClearAllPoints()
+		if filter then
+			filter:SetParent(f.TabRow)
+			filter:ClearAllPoints()
+			filter:SetPoint("RIGHT", f.TabRow, "RIGHT", -pad, 0)
+			f.Search:SetPoint("RIGHT", filter, "LEFT", -6, 0)
+		else
+			f.Search:SetPoint("RIGHT", f.TabRow, "RIGHT", -pad, 0)
+		end
+	end
+	local locked = {}
+	for _, it in ipairs(items) do locked[it.key] = it.locked end
+	W.ShellTabs(f, items, active, function(k) if not locked[k] then onSelect(k) end end)
+	for i, it in ipairs(items) do
+		local t = f.tabButtons[i]
+		if t and t:IsShown() then
+			if not t.psNavIcon then
+				t.psNavIcon = ns.GameIcon(t)
+				t.psNavIcon:SetSize(16, 16)
+				t.psNavIcon:SetPoint("RIGHT", t.Label, "LEFT", -6, 0)
+				t.psNavCount = W.Text(t, "number", "textMuted")
+				t.psNavCount:SetPoint("LEFT", t.Label, "RIGHT", 6, 0)
+				t.psNavDot = W.Tex(t, "ARTWORK", "circle", "warning")
+				t.psNavDot:SetSize(6, 6)
+				t.psNavDot:SetPoint("LEFT", t.Label, "RIGHT", 6, 0)
+				t:HookScript("OnEnter", function(self)
+					if not self.psNavTip then return end
+					GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+					GameTooltip:SetText(self.Label:GetText())
+					if self.psNavLocked then
+						GameTooltip:AddLine(self.psNavTip, 1, 0.2, 0.2, true)
+					else
+						GameTooltip:AddLine(self.psNavTip, 1, 1, 1, true)
+					end
+					GameTooltip:Show()
+				end)
+				t:HookScript("OnLeave", W.HideTooltip)
+			end
+			-- A locked page without a stock icon wears the lock glyph.
+			local icon = it.icon or (it.locked and Theme.Media("lock"))
+			t.psNavIcon:SetShown(icon and true or false)
+			t.psNavIcon:SetTexture(icon)
+			if it.icon then
+				W.Uncolor(t.psNavIcon)
+				t.psNavIcon:SetVertexColor(1, 1, 1, 1)
+				t.psNavIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+			elseif icon then
+				t.psNavIcon:SetTexCoord(0, 1, 0, 1)
+				W.Color(t.psNavIcon, "textMuted")
+			end
+			local count = it.count and it.count ~= 0 and not it.dot
+			t.psNavCount:SetText(count and it.count or "")
+			t.psNavCount:SetShown(count and true or false)
+			t.psNavDot:SetShown(it.dot and true or false)
+			t.psNavTip, t.psNavLocked = it.tip, it.locked
+			if it.locked then W.Color(t.Label, "textMuted") end
+			t:SetAlpha(it.locked and 0.55 or 1)
+			-- The tab widens by what it now holds; its label shifts to keep the lot centred.
+			local l = icon and 22 or 0
+			local r = count and math.ceil(t.psNavCount:GetStringWidth()) + 6 or it.dot and 12 or 0
+			t:SetWidth(t:GetWidth() + l + r)
+			local p, rel, rp, _, y = t.Label:GetPoint(1)
+			t.Label:ClearAllPoints()
+			t.Label:SetPoint(p, rel, rp, (l - r) / 2, y)
+		end
+	end
+	if f.psCompact then
+		compactPlace(f)
+	else
+		local x = W.SHELL.pad - 12
+		for _, t in ipairs(f.tabButtons) do
+			if t:IsShown() then
+				t:ClearAllPoints()
+				t:SetPoint("BOTTOMLEFT", f.TabRow, "BOTTOMLEFT", x, 0)
+				x = x + t:GetWidth() + 4
+			end
+		end
+	end
+end
+
 -- A section rail (W.ShellRail) wearing the game's icons, not glyphs (the Two
 -- Families Rule): the rail's tint taken off, the client's border cropped,
 -- 24px. The rail grows to its widest label; a window without a sidebar hangs
 -- its main column off the rail's edge (docs/CLIENT.md, rule 12). Shared by
 -- Professions (ns.ProfessionTabs) and Character. items: { key, label, icon, tip }.
-function ns.GameRail(win, items, active, onSelect)
+-- opts.slim: a 48 rail of icons only, from the band's line down, each label in
+-- its tooltip (where the stock window has icon side-tabs).
+local SLIM = 48
+function ns.GameRail(win, items, active, onSelect, opts)
 	local W = Polestar.Widgets
 	W.ShellRail(win, items, nil, active, onSelect)
 	for i, d in ipairs(items) do
@@ -91,7 +289,30 @@ function ns.GameRail(win, items, active, onSelect)
 		t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 		t:SetSize(24, 24)
 	end
+	if opts and opts.slim then
+		local grow = SLIM - win.psRail
+		if grow ~= 0 then
+			win.psRail = SLIM
+			win.Rail:SetWidth(SLIM)
+			win.Sidebar:SetPoint("TOPLEFT", win, "TOPLEFT", 1 + SLIM, -1)
+			win.Sidebar:SetPoint("BOTTOMLEFT", win, "BOTTOMLEFT", 1 + SLIM, 1)
+			win:SetWidth(win:GetWidth() + grow)
+			W.LayoutRim(win)
+		end
+		local top = win.psHead or W.SHELL.header
+		for i, b in ipairs(win.railButtons) do
+			if b:IsShown() then
+				b:SetSize(SLIM, SLIM)
+				b.Label:Hide()
+				b.Icon:ClearAllPoints()
+				b.Icon:SetPoint("CENTER", b, "CENTER", 0, 0)
+				b:ClearAllPoints()
+				b:SetPoint("TOPLEFT", win.Rail, "TOPLEFT", 0, -(top + (i - 1) * SLIM))
+			end
+		end
+	end
 	if not win.Sidebar:IsShown() then ns.Plain(win, win.psRail) end
+	if win.psCompact then compactPlace(win) end
 end
 
 -- W.ShellFooter, its buttons back on at full alpha: the footer reuses them page
