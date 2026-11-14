@@ -7,11 +7,12 @@ local W, Theme = Polestar.Widgets, Polestar.Theme
 
 local NAME = "PolestarUIInspect"
 local clean = ns.Clean
--- The stock mode tabs (INSPECTFRAME_SUBFRAMES), in stock order, as a section
--- rail with each tab's own icon (Camelot Blizzard_InspectUI.lua): the unit's
--- portrait, its faction's honor icon, the guild tabard.
+-- The stock mode tabs (INSPECTFRAME_SUBFRAMES), in stock order, as top tabs
+-- (ns.TopNav) with each tab's own icon (Camelot Blizzard_InspectUI.lua): the
+-- unit's portrait (painted over the stand-in), its faction's honor icon, the
+-- guild tabard.
 local SECTIONS = {
-	{ key = "gear", label = CHARACTER or "Character" },
+	{ key = "gear", label = CHARACTER or "Character", icon = "Interface/ICONS/INV_Misc_QuestionMark" },
 	{ key = "pvp", label = PVP or "PvP" },
 	{ key = "guild", label = GUILD or "Guild", icon = "Interface/ICONS/INV_Shirt_GuildTabard_01" },
 }
@@ -32,7 +33,7 @@ end
 -- Gear: the Character window's slot columns and model well, read off the
 -- inspected unit; a slot only shows (no pick up, use or flyout), as the stock one.
 
-local SLOT, GAP, TEXT_W = 36, 6, 220
+local SLOT, GAP, TEXT_W, TOP = 36, 6, 220, 20
 local LEFT = { "HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot" }
 local RIGHT = { "HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot", "Trinket1Slot" }
 local WEAPONS = { { "MainHandSlot", "right" }, { "SecondaryHandSlot", "below" }, { "RangedSlot", "left" } }
@@ -148,10 +149,10 @@ end
 local FACTION_LOGO = { Alliance = "Interface\\Timer\\Alliance-Logo", Horde = "Interface\\Timer\\Horde-Logo", Neutral = "Interface\\Timer\\Panda-Logo" }
 
 pages.gear = {
-	build = function(body, width)
+	build = function(body, width, pad)
 		local colH = #LEFT * (SLOT + GAP) - GAP
 		local v = CreateFrame("Frame", nil, body)
-		v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
+		v:SetPoint("TOPLEFT", body, "TOPLEFT", pad, -TOP)
 		v:SetSize(width, colH + 16 + SLOT + 36)
 		local text = CreateFrame("Frame", nil, v)
 		text:SetAllPoints(v)
@@ -189,7 +190,7 @@ pages.gear = {
 	end,
 	paint = function(v)
 		for _, s in ipairs(slots) do paintSlot(s) end
-		return v:GetHeight() + 24
+		return TOP + v:GetHeight()
 	end,
 }
 
@@ -213,9 +214,9 @@ local function rankTitle(rank)
 end
 
 pages.pvp = {
-	build = function(body, width)
+	build = function(body, width, pad)
 		local v = CreateFrame("Frame", nil, body)
-		v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
+		v:SetPoint("TOPLEFT", body, "TOPLEFT", pad, -TOP)
 		v:SetSize(width, 1)
 		v.Rank = W.Text(v, "display", "text")
 		v.Rank:SetPoint("TOPLEFT", v, "TOPLEFT", 0, 0)
@@ -265,7 +266,7 @@ pages.pvp = {
 		W.SetProgress(v.Bar, nxt > 0 and math.min(1, cur / nxt) or 0, v:GetWidth())
 		v.Rows[1].Value:SetText(BreakUpLargeNumbers(lifetime))
 		v.Rows[2].Value:SetText(BreakUpLargeNumbers(today))
-		return 96 + 44 + 56 + 24
+		return TOP + 96 + 44 + 56
 	end,
 }
 
@@ -274,9 +275,9 @@ pages.pvp = {
 -- faction and member count.
 
 pages.guild = {
-	build = function(body, width)
+	build = function(body, width, pad)
 		local v = CreateFrame("Frame", nil, body)
-		v:SetPoint("TOPLEFT", body, "TOPLEFT", 32, -24)
+		v:SetPoint("TOPLEFT", body, "TOPLEFT", pad, -TOP)
 		v:SetSize(width, 72)
 		v.Well = ns.ItemWell(v, 72)
 		v.Well:SetPoint("TOPLEFT", v, "TOPLEFT", 0, 0)
@@ -303,7 +304,7 @@ pages.guild = {
 			v.Emblem:SetSize(56, 56)
 			SetLargeGuildTabardTextures(unit, v.Emblem)
 		end
-		return 72 + 24
+		return TOP + 72
 	end,
 }
 
@@ -334,20 +335,23 @@ local function levelLine()
 end
 
 local function portrait()
-	local t = f.railButtons[1].Icon
+	local t = f.tabButtons[1].psNavIcon
 	SetPortraitTexture(t, unit)
 	t:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, sidebar = 0, rail = true })
+	-- The compact grid, no sidebar: the stock tabs are top tabs, the window as
+	-- wide as the gear's columns and weapon row need.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 540 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "inspect")
 	f.Search:Hide()
-	ns.Plain(f, f.psRail)
+	ns.Plain(f) -- before the grid: BodyWidth is the compact one
+	ns.Compact(f)
 	f.psPages = {}
 	for key, page in pairs(pages) do
-		local v = page.build(f.Body, f.BodyWidth)
+		local v = page.build(f.Body, f.BodyWidth, f.psPad)
 		v:Hide()
 		f.psPages[key] = v
 	end
@@ -368,7 +372,7 @@ local function refresh()
 	if guildOf(unit) then items[3] = SECTIONS[3] elseif section == "guild" then section = "gear" end
 	SECTIONS[2].icon = UnitFactionGroup(unit) == "Alliance" and "Interface/ICONS/INV_SideTab_Honor_Alliance_c60"
 		or "Interface/ICONS/INV_SideTab_Honor_Horde_c60"
-	ns.GameRail(f, items, section, function(k)
+	ns.TopNav(f, items, section, function(k)
 		section = k
 		refresh()
 	end)
@@ -376,7 +380,6 @@ local function refresh()
 	-- The stock title (GetUnitName with the realm); a secret one keeps the last.
 	f.psName = clean(GetUnitName(unit, true)) or f.psName
 	W.ShellTitle(f, f.psName or "", levelLine())
-	W.ShellTabs(f, nil)
 	ns.Footer(f, {}, {})
 	local h = 0
 	for key, v in pairs(f.psPages) do

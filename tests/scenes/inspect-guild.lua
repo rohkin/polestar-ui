@@ -5,7 +5,7 @@
 InspectUnit("target")
 stub.inspectReady("target")
 local f = PolestarUIInspect
-stub.RunScript(f.railButtons[3], "OnClick")
+stub.RunScript(f.tabButtons[3], "OnClick")
 local v = f.psPages.guild
 assert(v:IsShown() and v.Name:GetText() == "Silver Hand", "guild page")
 assert(v.Faction:GetText() == "Alliance Guild" and v.Members:GetText() == "42 Members", "faction or members")
@@ -15,10 +15,10 @@ stub.inspectGuild = { 0, 0, "", "" }
 stub.noModel = true
 InspectUnit("party1")
 stub.inspectReady("party1")
-assert(f.psPages.gear:IsShown() and not f.railButtons[3]:IsShown(), "guild tab kept for a unit without a guild")
+assert(f.psPages.gear:IsShown() and not f.tabButtons[3]:IsShown(), "guild tab kept for a unit without a guild")
 assert(f.psPages.gear.Logo:IsShown() and not f.psPages.gear.Model:IsShown(), "no faction logo for a model out of range")
 stub.inspectGuild = { 0, 42, "Silver Hand", "" }
 stub.noModel = nil
 InspectUnit("target")
 stub.inspectReady("target")
-stub.RunScript(f.railButtons[3], "OnClick")
+stub.RunScript(f.tabButtons[3], "OnClick")

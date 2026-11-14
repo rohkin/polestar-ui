@@ -16,11 +16,12 @@ assert(f:IsShown() and not InspectFrame:IsShown(), "ours not shown, or the stock
 assert(f.Title:GetText() == "Aldric-Silvermoon", "title: " .. tostring(f.Title:GetText()))
 assert(f.psSubtitle == "Level 60 |cfff48cbaPaladin|r", "level line: " .. f.psSubtitle)
 assert(f.psPages.gear.Model.modelUnit == "target" and not f.psPages.gear.Logo:IsShown(), "model")
--- The rail: the stock mode tabs, each with its own icon.
-local rail = f.railButtons
-assert(rail[1].Icon:GetTexture() == 132355, "Character: not the unit's portrait")
-assert(rail[2].Icon:GetTexture() == "Interface/ICONS/INV_SideTab_Honor_Alliance_c60", "PvP icon")
-assert(rail[3]:IsShown() and rail[3].Icon:GetTexture() == "Interface/ICONS/INV_Shirt_GuildTabard_01", "Guild icon")
+-- The top tabs: the stock mode tabs, each with its own icon; no sidebar, no rail.
+local tabs = f.tabButtons
+assert(tabs[1].psNavIcon:GetTexture() == 132355, "Character: not the unit's portrait")
+assert(tabs[2].psNavIcon:GetTexture() == "Interface/ICONS/INV_SideTab_Honor_Alliance_c60", "PvP icon")
+assert(tabs[3]:IsShown() and tabs[3].psNavIcon:GetTexture() == "Interface/ICONS/INV_Shirt_GuildTabard_01", "Guild icon")
+assert(f.psCompact and not f.Sidebar:IsShown() and (f.psRail or 0) == 0, "not the compact grid")
 
 -- Another unit while open: ours closes without forgetting the new request.
 InspectUnit("party1")

@@ -18,8 +18,9 @@ the data ours shows would go with it. The gamepad smart navigation focuses it
   extended to this frame and event). Off after `/reload` (`reloadOff`).
   The unit menu's Inspect Talents opens the game's talents window
   (`PlayerSpellsFrame`): it stays the game's (rule 8).
-- **Shell:** as Character's: 808×680, no sidebar, the stock mode tabs on
-  the icon rail (`ns.GameRail`) with each tab's own icon: Character (the
+- **Shell:** 640×540 on the compact grid (`ns.Plain`, then
+  `ns.Compact`), as wide as the gear needs: no sidebar, no rail, the stock
+  mode tabs as top tabs (`ns.TopNav`) with each tab's own icon: Character (the
   unit's portrait, `UNIT_PORTRAIT_UPDATE`/`PORTRAITS_UPDATED`), PvP
   (`INV_SideTab_Honor_Alliance_c60` or `_Horde_c60` by the unit's faction),
   Guild (`INV_Shirt_GuildTabard_01`, only for a unit in a guild, as the

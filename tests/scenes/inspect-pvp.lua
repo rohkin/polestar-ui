@@ -5,7 +5,7 @@
 InspectUnit("target")
 stub.inspectReady("target")
 local f = PolestarUIInspect
-stub.RunScript(f.railButtons[2], "OnClick")
+stub.RunScript(f.tabButtons[2], "OnClick")
 local v = f.psPages.pvp
 assert(v:IsShown() and not f.psPages.gear:IsShown(), "PvP page not shown")
 assert(v.Rank:GetText() == "Sergeant · Rank 5", "rank: " .. tostring(v.Rank:GetText()))
