@@ -12,7 +12,7 @@ Talents window's.
   its border cropped; the class's skill line icon for General,
   `GetClassSkillLineInfo`, the skill line's own, the pet's, `GetPetIcon`)
   before the name. The stock book's Transmog tab (outfits) is not built: its
-  shift-click on the micro button opens it. The search ("Search spells",
+  shift-click on the micro button opens it. The search ("Search",
   every category at once, titled "Search" with the count, no tab lit) and
   the filter at the tab row's right end.
 - **Filter:** a 30px square on the search field's well, the `sliders` glyph,
