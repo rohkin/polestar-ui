@@ -271,6 +271,9 @@ function M.SetAtlas(self, atlas, ...)
 	if c then self:SetColorTexture(c[1], c[2], c[3], 1) end
 	return setAtlas(self, atlas, ...)
 end
+-- As the client: a texture set (or emptied) drops its atlas.
+local setTexture = M.SetTexture
+function M.SetTexture(self, ...) self.atlas = nil; return setTexture(self, ...) end
 
 -- A status bar filled from its right end (SetReverseFill), as the preview draws it.
 function M.SetReverseFill(self, v) self.reverseFill = v and true or nil end
@@ -450,6 +453,8 @@ for _, n in ipairs({ "PetPortrait", "PetFrameTexture", "PetFrameFlash", "PetAtta
 	_G[n] = art(PetFrame, 0.35, 0.28, 0.12)
 	_G[n]:SetAllPoints(PetFrame)
 end
+PetFrameFlash:SetAtlas("UI-HUD-UnitFrame-TargetofTarget-PortraitOn-InCombat")
+PetAttackModeTexture:SetAtlas("UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Status")
 for _, n in ipairs({ "PetFrameHealthBar", "PetFrameManaBar" }) do
 	_G[n] = create("StatusBar", n, PetFrame)
 	fill(_G[n], PetFrame)

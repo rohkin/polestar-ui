@@ -383,8 +383,11 @@ Out of combat, from our code, only:
   children of one) faded with `SetAlpha(0)` and their mouse off;
 - the pet frame's and a party member's pieces, which the game only shows
   and hides, faded with `SetAlpha(0)` (`PetPortrait`, `PetFrameTexture`,
-  `PetFrameFlash`, `PetAttackModeTexture`, `PetName`, `PetFrameHealthBar`,
-  `PetFrameManaBar`; a member's `Texture`, `VehicleTexture`, `Flash`, `Name`,
+  `PetName`, `PetFrameHealthBar`, `PetFrameManaBar`; `PetFrameFlash` and
+  `PetAttackModeTexture`, whose vertex alpha the game writes (a texture's
+  alpha is that one value, so a fade would not hold: the attack pulse showed
+  round our pet), emptied with `SetTexture(nil)` and given back with their
+  atlas, which the game never sets again; a member's `Texture`, `VehicleTexture`, `Flash`, `Name`,
   `HealthBarContainer`, `ManaBar`, `PartyMemberOverlay.Status`), and a
   member's `Portrait`, which the game re-alphas at low health, hidden.
   Happiness, the party's icons, auras and pets stay the game's. A boss frame
@@ -493,7 +496,7 @@ The one exception is rule 16's veil on the stock unit frames we replace
 `Boss1TargetFrame`..`Boss5TargetFrame`): exactly the calls rule 16 lists
 (`EnableMouse(false)` on the frame, `Hide()` on its two art and bar
 children, `SetAlpha(0)` on the targets of target and the pet's and party's
-art regions), out of combat, from `Modules/UnitFrames.lua`. Nothing else
+art regions, `SetTexture(nil)` on the pet's two flashes), out of combat, from `Modules/UnitFrames.lua`. Nothing else
 of this rule is relaxed for them.
 
 **Caught by:** `tests/lua/stub_editmode.lua`: the minimap and action bar

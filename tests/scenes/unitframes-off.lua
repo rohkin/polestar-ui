@@ -12,6 +12,7 @@ PolestarUI.Switch("unitframes", false)
 assert(not PolestarUIPlayerFrame:IsShown() and not PolestarUITargetFrame:IsShown(), "ours hidden")
 assert(PlayerFrame:IsMouseEnabled() and PlayerFrame.PlayerFrameContainer:IsShown() and PlayerFrame.PlayerFrameContent.PlayerFrameContentMain:IsShown(), "stock player back")
 assert(TargetFrameToT:GetAlpha() == 1 and TargetFrameToT:IsMouseEnabled(), "stock target of target back")
+assert(PetAttackModeTexture:GetAtlas() == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Status" and PetFrameFlash:GetAtlas() == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-InCombat", "stock pet flash and attack pulse back")
 -- A target change while off: ours stay hidden (the unit watch is off).
 stub.fire("PLAYER_TARGET_CHANGED")
 stub.unitWatch()

@@ -44,7 +44,13 @@ local PET_BODY = { 4, 3, 4, 6 }
 -- What the game only shows and hides on a pet frame and a party member:
 -- faded; a party portrait, which the game re-alphas at low health
 -- (PartyMemberFrameMixin:UpdateMemberHealth), hidden.
-local PET_PARTS = { "PetPortrait", "PetFrameTexture", "PetFrameFlash", "PetAttackModeTexture", "PetName", "PetFrameHealthBar", "PetFrameManaBar" }
+local PET_PARTS = { "PetPortrait", "PetFrameTexture", "PetName", "PetFrameHealthBar", "PetFrameManaBar" }
+-- A texture's alpha is its vertex colour's, and the game writes that on these
+-- (the threat flash, UnitFrame_UpdateThreatIndicator; the attack pulse,
+-- PetFrameMixin:OnUpdate), so a fade would not hold: emptied instead, and
+-- given back with the atlas they had (the game never sets it again).
+local PET_EMPTIED = { "PetFrameFlash", "PetAttackModeTexture" }
+local petAtlas = {}
 local PARTY_PARTS = { "Texture", "VehicleTexture", "Flash", "Name", "HealthBarContainer", "ManaBar" }
 
 local function member(i) return PartyFrame and rawget(PartyFrame, "MemberFrame" .. i) end
@@ -515,6 +521,19 @@ local function veil(f, on)
 		for _, n in ipairs(PET_PARTS) do
 			local r = _G[n]
 			if r then r:SetAlpha(on and 0 or 1) end
+		end
+		for _, n in ipairs(PET_EMPTIED) do
+			local r = _G[n]
+			if r then
+				petAtlas[n] = petAtlas[n] or { r:GetAtlas(), r:GetTexture() }
+				if on then
+					r:SetTexture(nil)
+				elseif petAtlas[n][1] then
+					r:SetAtlas(petAtlas[n][1], true)
+				else
+					r:SetTexture(petAtlas[n][2])
+				end
+			end
 		end
 	elseif kind == "party" then
 		for _, k in ipairs(PARTY_PARTS) do
