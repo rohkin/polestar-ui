@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed: the Character Skills page and its details no longer error when the game makes a skill's bonus (Defense's gear bonus) secret; they show the last bonus read instead.
 - World Map: the World Map moves to the compact grid: a bigger 900×600 map in a smaller window, Quests and Map Legend as top tabs, the map navigation on the tab row, and the stock Map Legend with pins that glow on hover.
 - Auction House: the Auction House moves to the compact grid (880×600, was 960×680) with Buy, Sell, Auctions and Bids as top tabs, the money, search and options on the tab row, and the auctioneer leading the subtitle.
 - Legacy: Legacy moves to the compact grid (760×600, was 1088×720) with its sections on a slim icon rail, the trees as top tabs, the categories in a column of the page and the search and filter on the tab row.

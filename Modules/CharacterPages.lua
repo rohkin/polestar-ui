@@ -428,6 +428,18 @@ local CLASS_SKILLS = 7 -- the stock page's HIDDEN_SKILL_LINE_CATEGORIES
 
 local DEFENSE_SKILL = 95
 
+-- A skill line's bonus, Defense's with its gear bonus as the stock page reads
+-- it. It can be secret even out of combat (docs/CLIENT.md, rule 3): then
+-- none, or Defense's last clean one. Shared with the Skills details pane.
+local defenseBonus
+function ns.SkillModifier(d)
+	if d.skillID == DEFENSE_SKILL and UnitDefenseSkill then
+		defenseBonus = ns.Clean(select(2, UnitDefenseSkill("player"))) or defenseBonus
+		return defenseBonus
+	end
+	return ns.Clean(d.modifier)
+end
+
 local skillSpec = {
 	height = BAR_ROW_H,
 	new = function(r)
@@ -462,8 +474,7 @@ pages.SkillsFrame = pageOf(function(v)
 		local d = C_SkillInfo.GetSkillLineInfo(i)
 		if d then
 			d.index = i
-			-- Defense counts its gear bonus, as the stock page reads it.
-			if d.skillID == DEFENSE_SKILL and UnitDefenseSkill then d.modifier = select(2, UnitDefenseSkill("player")) end
+			d.modifier = ns.SkillModifier(d)
 		end
 		if d and d.parentSkillLineID == 0 then
 			if d.isHeader then

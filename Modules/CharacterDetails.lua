@@ -270,8 +270,7 @@ ns.CharacterPanes.skill = { page = "SkillsFrame", label = SKILLS or "Skills", or
 		end
 		local c = sf.c
 		sf.psTitle = d.name
-		if d.skillID == 95 and UnitDefenseSkill then d.modifier = select(2, UnitDefenseSkill("player")) end
-		local mod = d.modifier or 0
+		local mod = ns.SkillModifier(d) or 0
 		c.text("number", "textDim", mod ~= 0 and ("%d (%+d) / %d"):format(d.rank, mod, d.maxRank) or ("%d / %d"):format(d.rank, d.maxRank), 0)
 		sf.bar(d.maxRank > 0 and d.rank / d.maxRank or 0)
 		if d.description and d.description ~= "" then c.text("body", "textDim", d.description, 14) end

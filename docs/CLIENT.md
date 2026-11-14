@@ -89,6 +89,10 @@ The player's own name (`UnitName("player")`, `UnitPVPName`) is secret in
 combat too: `GameTooltip:SetText` refuses it. Read it through `playerText`,
 which keeps the last name read out of combat.
 
+Defense's gear bonus (`UnitDefenseSkill`) was secret in a background read
+out of combat: a page painted only out of combat still errored comparing it.
+Skill bonuses go through `ns.SkillModifier` (CharacterPages.lua).
+
 **Caught by:** the `character-stats-secret` scene (stats turn secret out of
 combat; the rows keep what they read) and the `character-stats-combat` scene (a stub stat that errors in
 combat; the tab is first opened mid-fight and must show every stat).
