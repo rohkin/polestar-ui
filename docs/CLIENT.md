@@ -60,6 +60,12 @@ combat:
 `pcall` is not enough: a stock function can succeed and leave secret values
 behind, and an error inside a secure hook escapes it.
 
+Geometry can be secret too (5,440 errors from `H.Segment`): a frame anchored
+to a StatusBar's fill texture moves with the bar's secret value, so in combat
+its `OnSizeChanged` and `GetWidth` give secret numbers. Never feed them to
+`SetWidth` or any other Set* call; size such a frame from clean layout numbers
+(the unit frames' `layout`).
+
 Cooldown times are secret in combat, and `Cooldown:SetCooldown` refuses them
 from addon code. Draw a spell's sweep from its duration object
 (`C_SpellBook.GetSpellBookItemCooldownDuration` into

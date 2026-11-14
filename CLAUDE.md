@@ -70,6 +70,7 @@ Restyle kit (art of ours on a stock frame, CLIENT.md rule 15; Tooltips, Chat)
 - `ns.PaintGround(fill, on, k?)`: `bg` at `Theme.GroundAlpha()` times `k` (0.85 = the tooltip look).
 HUD kit (`ns.HUD`, `Modules/HUD.lua`; takes secret values, follows every scheme and skin)
 - `H.Bar(parent)` (StatusBar on a progress track; `H.SetBarColor(b, r, g, b)`), `H.Segment(bar, token, alpha, back?)` (continues a fill, or eats into it from its end), `H.Text(parent, role, color)` (outlined; set values with SetFormattedText only), `H.Ground(f)`/`H.PaintGround(g, alpha, r?, g?, b?, a?)`, `H.Portrait(parent)`/`H.SetPortrait(p, unit)` (square 3D well).
+- `H.Face(fontString, role, on)` (a stock font string in Polestar's face, outlined, at the game's size; off gives it back), `H.GroundAlpha()` (the unit frames' Background opacity), `H.FillTexture()`.
 - `H.ClassColor(unit)` (nil while secret), `H.UnitColor(unit)` (theme accent, class colour with Polestar's "Class colour", danger/warning by reaction), `H.PowerColor(unit)`.
 Values
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).

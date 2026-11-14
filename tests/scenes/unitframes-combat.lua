@@ -14,8 +14,8 @@ stub.advance(0.3)
 local P, T = PolestarUIPlayerFrame, PolestarUITargetFrame
 assert(T:IsShown() and PolestarUITargetToT:IsShown(), "target shown by the unit watch")
 assert(issecretvalue(T.Health:GetValue()) and issecretvalue(P.Power:GetValue()), "secrets handed to the bars")
-assert(T.healthText:GetText() == "25%  300", "both: " .. tostring(T.healthText:GetText()))
-assert(T.levelText:GetText() == "11 Rare Elite", "rank")
+assert(T.healthText:GetText() == "300 || 25%", "both, from secrets: " .. tostring(T.healthText:GetText()))
+assert(T.levelText:GetText() == "11R+", "rank chip: " .. tostring(T.levelText:GetText()))
 -- A layout applied in combat: ours cannot move now (protected), and wait.
 local _, _, _, x0 = P:GetPoint(1)
 stub.applyLayout({ [PlayerFrame] = { 300, 650 } })
@@ -32,6 +32,6 @@ stub.inCombat = true
 stub.fire("PLAYER_REGEN_DISABLED")
 -- A vehicle: the player's frame shows it, and its clicks follow (toggleForVehicle).
 stub.vehicle = true
-stub.units.vehicle = { name = "Siege Engine", level = 24, health = 5000, max = 8000, power = 50, powerMax = 100, powerType = 3, reaction = 5 }
+stub.units.vehicle = { name = "Demolisher", level = 24, health = 5000, max = 8000, power = 50, powerMax = 100, powerType = 3, reaction = 5 }
 stub.fire("UNIT_ENTERED_VEHICLE", "player")
-assert(P.Name:GetText() == "Siege Engine", "vehicle shown: " .. tostring(P.Name:GetText()))
+assert(P.Name:GetText() == "Demolisher", "vehicle shown: " .. tostring(P.Name:GetText()))

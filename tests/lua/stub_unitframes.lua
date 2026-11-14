@@ -41,6 +41,30 @@ function AbbreviateNumbers(v)
 	return abbreviate(v)
 end
 
+-- A frame anchored to a StatusBar's fill texture: the fill's edge moves with
+-- the bar's secret value, so the frame's size is secret too. Its OnSizeChanged
+-- hands secret numbers on, and SetWidth refuses a secret from addon code.
+-- (Only the bar's children are looked at: the preview stub owns SetPoint.)
+local setValue, setWidth = M.SetValue, M.SetWidth
+function M.SetValue(self, v, interpolation)
+	setValue(self, v)
+	self.interpolation = interpolation
+	local fill = self.barTexture
+	if not (held(v) and fill) then return end
+	for _, f in ipairs(self.children or {}) do
+		for _, p in ipairs(f.points or {}) do
+			if p.rel == fill then
+				stub.RunScript(f, "OnSizeChanged", stub.secret(f:GetWidth()), stub.secret(f:GetHeight()))
+				break
+			end
+		end
+	end
+end
+function M.SetWidth(self, w)
+	if held(w) then error("bad argument #1 to 'SetWidth' (Secret values are only allowed during untainted execution)", 2) end
+	return setWidth(self, w)
+end
+
 ---------------------------------------------------------------------------
 -- Units: stub.units[unit] = { name, level, class (file), player, reaction,
 -- classification, health, max, power, powerMax, powerType, dead, ghost,
@@ -49,6 +73,8 @@ end
 
 stub.units = {}
 stub.vehicle = false
+-- The client's default status text (Interface > Status Text: None).
+stub.cvars.statusText, stub.cvars.statusTextDisplay = "0", "NONE"
 local PLAYER = { name = "Testchar", level = 24, class = "WARRIOR", player = true, health = 1000, max = 1000, power = 40, powerMax = 100, powerType = 1, reaction = 5 }
 local function data(unit)
 	if unit == "vehicle" and not stub.vehicle then return nil end
@@ -66,8 +92,59 @@ local function unitFn(name, fn, default)
 	end
 end
 
+-- The client's heal prediction calculator (UnitGetDetailedHealPrediction),
+-- with the clamps the unit frames ask for: heals and heal absorbs netted,
+-- heals up to the missing health, shields up to what is still missing after
+-- them, heal absorbs up to the health. Amounts and "clamped" flags secret.
+Enum.UnitIncomingHealClampMode = { MissingHealth = 0, MaximumHealth = 1 }
+Enum.UnitDamageAbsorbClampMode = { MissingHealth = 0, MissingHealthWithoutIncomingHeals = 1, MaximumHealth = 2 }
+Enum.UnitHealAbsorbClampMode = { CurrentHealth = 0, MaximumHealth = 1 }
+Enum.UnitHealAbsorbMode = { ReducedByIncomingHeals = 0, Total = 1 }
+Enum.StatusBarInterpolation = { Immediate = 0, ExponentialEaseOut = 1 }
+local CALC = {}
+CALC.__index = CALC
+for _, n in ipairs({ "SetIncomingHealClampMode", "SetDamageAbsorbClampMode", "SetHealAbsorbClampMode", "SetHealAbsorbMode" }) do
+	CALC[n] = function(c, v) c[n] = v end
+end
+function CALC.GetIncomingHeals(c) return stub.secret(c.heals), stub.secret(c.heals), stub.secret(0), stub.secret(c.healsOver) end
+function CALC.GetDamageAbsorbs(c) return stub.secret(c.absorbs), stub.secret(c.absorbsOver) end
+function CALC.GetHealAbsorbs(c) return stub.secret(c.healAbsorbs), stub.secret(c.healAbsorbsOver) end
+function CreateUnitHealPredictionCalculator() return setmetatable({}, CALC) end
+function UnitGetDetailedHealPrediction(unit, _, c)
+	local d = data(unit) or {}
+	local hp, max = d.health or 0, d.max or 1
+	local heals, ha = d.heals or 0, d.healAbsorbs or 0
+	heals, ha = math.max(0, heals - ha), math.max(0, ha - heals)
+	local missing = max - hp
+	c.heals, c.healsOver = math.min(heals, missing), heals > missing
+	c.healAbsorbs, c.healAbsorbsOver = math.min(ha, hp), ha > hp
+	local room = math.max(0, missing - c.heals)
+	c.absorbs, c.absorbsOver = math.min(d.absorbs or 0, room), (d.absorbs or 0) > room
+end
+
+-- Region:SetAlphaFromBoolean takes a secret boolean from addon code.
+function M.SetAlphaFromBoolean(self, b, yes, no)
+	self.alphaFromBoolean = true
+	self:SetAlpha(stub.reveal(b) and (yes or 1) or (no or 0))
+end
+
+-- The player's cast for the power cost: stub.casting = { spellID }, the
+-- costs in stub.spellCosts[spellID] = { { type, cost } }.
+function UnitCastingInfo(unit) -- over stub_character.lua's; stub_castbars.lua (loaded later) has its own
+	if unit == "player" and stub.casting then return "Spell", nil, nil, 0, 1, false, "cast", false, stub.casting.spellID end
+end
+C_Spell = rawget(_G, "C_Spell") or {}
+C_Spell.GetSpellPowerCost = rawget(C_Spell, "GetSpellPowerCost") or function(id) return stub.spellCosts and stub.spellCosts[id] end
+
+-- The client's class colours (fill the ones the shared stub lacks).
+RAID_CLASS_COLORS = rawget(_G, "RAID_CLASS_COLORS") or {}
+for k, c in pairs({ DEATHKNIGHT = { 0.77, 0.12, 0.23 }, DRUID = { 1, 0.49, 0.04 }, HUNTER = { 0.67, 0.83, 0.45 }, MAGE = { 0.25, 0.78, 0.92 },
+	PALADIN = { 0.96, 0.55, 0.73 }, PRIEST = { 1, 1, 1 }, ROGUE = { 1, 0.96, 0.41 }, SHAMAN = { 0, 0.44, 0.87 }, WARLOCK = { 0.53, 0.53, 0.93 },
+	WARRIOR = { 0.78, 0.61, 0.43 } }) do
+	if not RAID_CLASS_COLORS[k] then RAID_CLASS_COLORS[k] = { r = c[1], g = c[2], b = c[3] } end
+end
 local POWER = { [0] = "MANA", [1] = "RAGE", [3] = "ENERGY" }
-local CLASSES = { WARRIOR = "Warrior", MAGE = "Mage", PRIEST = "Priest", ROGUE = "Rogue", DRUID = "Druid", HUNTER = "Hunter" }
+local CLASSES = { WARRIOR = "Warrior", MAGE = "Mage", PRIEST = "Priest", ROGUE = "Rogue", DRUID = "Druid", HUNTER = "Hunter", PALADIN = "Paladin", WARLOCK = "Warlock", DEATHKNIGHT = "Death Knight", SHAMAN = "Shaman" }
 
 unitFn("UnitExists", function() return true end)
 local unitExists = UnitExists
@@ -87,10 +164,24 @@ unitFn("UnitEffectiveLevel", function(d) return d.level or 1 end)
 -- A unit the stub does not know: its level, as the client answers (a scene's own UnitLevel).
 local effectiveLevel = UnitEffectiveLevel
 function UnitEffectiveLevel(unit) local v = effectiveLevel(unit) if v == nil then return UnitLevel(unit) end return v end
+-- Stock's level colours (Constants.lua) and its relative difficulty (DifficultyUtil
+-- GetRelativeDifficultyColor, trivial range 8) as the enum: 0 trivial .. 4 impossible.
+QuestDifficultyColors = rawget(_G, "QuestDifficultyColors") or {
+	impossible = { r = 1, g = 0.1, b = 0.1 }, verydifficult = { r = 1, g = 0.5, b = 0.25 },
+	difficult = { r = 1, g = 0.82, b = 0 }, standard = { r = 0.25, g = 0.75, b = 0.25 }, trivial = { r = 0.5, g = 0.5, b = 0.5 } }
+local DIFF = { [0] = "trivial", "standard", "difficult", "verydifficult", "impossible" }
+C_PlayerInfo = rawget(_G, "C_PlayerInfo") or {}
+function C_PlayerInfo.GetContentDifficultyCreatureForPlayer(unit)
+	local diff = UnitEffectiveLevel(unit) - UnitEffectiveLevel("player")
+	return diff >= 5 and 4 or diff >= 3 and 3 or diff >= -4 and 2 or -diff <= 8 and 1 or 0
+end
+function GetDifficultyColor(d) return QuestDifficultyColors[DIFF[d] or "difficult"] end
+function UnitCanAttack(_, unit) local d = data(unit) return d ~= nil and d.reaction ~= nil and d.reaction <= 4 end
 unitFn("UnitClass", function(d) if not d.class then return nil end return CLASSES[d.class], d.class end)
 unitFn("UnitIsPlayer", function(d) return d.player == true end, false)
 unitFn("UnitReaction", function(d) return d.reaction end)
 unitFn("UnitClassification", function(d) return d.classification or "normal" end, "normal")
+unitFn("UnitGroupRolesAssigned", function(d) return d.role or "NONE" end, "NONE")
 unitFn("UnitIsDead", function(d) return d.dead == true end, false)
 unitFn("UnitIsGhost", function(d) return d.ghost == true end, false)
 unitFn("UnitIsDeadOrGhost", function(d) return d.dead == true or d.ghost == true end, false)
@@ -165,6 +256,16 @@ function CreateFrame(kind, name, parent, template, ...)
 	return f
 end
 
+
+-- The game's group role icons (the roleicon-tiny-* atlases): a colour stands
+-- in for each (tank blue, healer green, damage red).
+local ROLE_ATLAS = { ["roleicon-tiny-tank"] = { 0.25, 0.5, 0.95 }, ["roleicon-tiny-healer"] = { 0.3, 0.8, 0.35 }, ["roleicon-tiny-dps"] = { 0.9, 0.25, 0.25 } }
+local setAtlas = M.SetAtlas
+function M.SetAtlas(self, atlas, ...)
+	local c = ROLE_ATLAS[atlas]
+	if c then self:SetColorTexture(c[1], c[2], c[3], 1) end
+	return setAtlas(self, atlas, ...)
+end
 
 -- A status bar filled from its right end (SetReverseFill), as the preview draws it.
 function M.SetReverseFill(self, v) self.reverseFill = v and true or nil end

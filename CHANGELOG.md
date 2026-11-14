@@ -5,7 +5,13 @@
 - Chat: calmer look: a soft ground and no outline at rest; the full ground, hairline and side buttons fade in on mouse-over (tabs, edit box and side strip included); the edit box's footer only while typing; tabs as plain labels with an accent underline, lit when hovered; the social button sits in the side strip and opens Polestar's Social window; voice, social and whisper icons in Polestar's icon colour.
 - Chat: copy your chat as plain text (side strip button or a tab's menu); chat windows keep their last lines across /reload and logout.
 - Fix the Talents window saying talents open at level 10 on a second spec just bought: it waits for the game to make the spec's talents, then shows its tree with every point to spend.
-- Unit frames: the player, target, target of target, focus, focus's target, pet, party and boss frames in Polestar's look, after EllesmereUI's: flat bars in your theme's colours (class colours with Polestar's "Class colour" on), a square 3D portrait, heals and absorbs, threat on the edge. Move and size them in the game's Edit Mode as before, where they stand in when there is no party, pet or boss; the game's auras, cast bars, icons, combo points, pet happiness and party pets stay. /pui unitframes for their settings.
+- Unit frames: Polestar's own player, target, focus, target of target, pet, party and boss frames (slim bars, level chip, square 3D portraits), placed and sized with Edit Mode.
+- Unit frames: hovering a frame shows its health (and power) value with the game's default Status Text setting (None), as the stock frames do.
+- Unit frames: a soft threat glow round frames that hold threat.
+- Unit frames: the pet frame has the player's slim look at a smaller size and no longer jumps to the screen's top left.
+- Unit frames: incoming heals and shields show clearly; heal absorbs darken the bar; health and power glide to new values ("Smooth bars"); the player's power bar shows what the spell being cast will cost; Polestar's star constellation on the player bar ("Sparkle").
+- Unit frames: health fills in the header band's blue by default (class colour with Class colour on); the level chip takes the game's difficulty colour; the power strip wears Polestar's colours.
+- Party frames: role icons, class colours and a thicker power strip.
 - Action bars: square buttons with a thin border, the key and count in Polestar's type, and an accent wash while pressed or on; every bar, the pet and stance bars and spell flyouts, with Edit Mode's bar settings untouched (/pui actionbars off gives the game's back).
 - Action bars: hotkeys and counts outlined; the range dot keeps the game's font.
 - Minimap: square, with a thin border in your accent and an N while it turns, in Polestar's look; Edit Mode's minimap settings still apply (/pui minimap off gives the game's back).
@@ -21,6 +27,7 @@
 - Fixed: the Character flyout's Put in bags and wearing an item do nothing while a spell waits for its item, instead of a blocked-action error.
 - Fixed: the Polestar button above the game's World Map now closes it and opens Polestar's map, instead of leaving the game's open until next time.
 - Fixed: hiding Polestar no longer hides Polestar: UI's windows and their dialogs; they replace the game's, so they stay.
+- Fixed: a flood of secret-value errors from the unit frames' segments in combat.
 
 ## 0.0.6
 

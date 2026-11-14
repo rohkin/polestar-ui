@@ -9,8 +9,8 @@ stub.unitWatch()
 local P, T, F = PolestarUIPlayerFrame, PolestarUITargetFrame, PolestarUIFocusFrame
 local function on(f, stock)
 	local _, _, _, x, y = f:GetPoint(1)
-	return x == stock.Selection:GetLeft() and y == stock.Selection:GetTop() and f:GetWidth() == stock.Selection:GetWidth()
-		and f:GetHeight() == stock.Selection:GetHeight() and f:GetScale() == stock:GetEffectiveScale() / UIParent:GetEffectiveScale()
+	return x == stock.Selection:GetLeft() and y == stock.Selection:GetTop() - (stock.Selection:GetHeight() - 40) / 2
+		and f:GetWidth() == stock.Selection:GetWidth() and f:GetHeight() == 40 and f:GetScale() == stock:GetEffectiveScale() / UIParent:GetEffectiveScale()
 end
 -- Edit Mode opens: the game's boxes show on the stock frames, which still stand where ours are.
 stub.enterEditMode()

@@ -33,7 +33,7 @@ local H = ns.HUD
 
 local M = { noun = "unit frames" }
 local KEY = "unitframes"
-local DEFAULTS = { ground = 0.6, portrait = true }
+local DEFAULTS = { ground = 0.6, portrait = true, powerText = false, sparkle = true, smooth = true }
 
 -- The body of a frame on TargetFrameTemplate (the target's, focus's and
 -- bosses'): where Edit Mode lays the target's and focus's Selection box
@@ -54,32 +54,37 @@ local function boss(i) return _G["Boss" .. i .. "TargetFrame"] end
 -- (system, fade, pet, party); what ours sits on (the system's Selection box,
 -- the frame itself, or its body) and, for a frame inside a stacking system,
 -- where it stands when the game has not placed it yet; when it shows (always,
--- the unit watch, a state driver); and its look: a portrait, a line with the
--- name (and level, rank), the health and power text, the portrait's side.
+-- the unit watch, a state driver); its height, centred in what it sits on,
+-- where it is slimmer; and its look: slim (the name and value on the health
+-- bar), a block (party), a target of target's bar, or a line with the name
+-- (and level, rank) over the bars; a portrait, the health and power text, the
+-- portrait's side.
 local SPECS = {
 	{ unit = "player", name = "PolestarUIPlayerFrame", stock = function() return PlayerFrame end, veil = "system", on = "selection",
-		show = "always", portrait = true, line = true, level = true, text = true, side = "LEFT", vehicle = "vehicle" },
+		show = "always", slim = true, height = 40, portrait = true, text = true, side = "LEFT", vehicle = "vehicle" },
 	{ unit = "target", name = "PolestarUITargetFrame", stock = function() return TargetFrame end, veil = "system", on = "selection",
-		show = "watch", portrait = true, line = true, level = true, rank = true, text = true, side = "RIGHT" },
+		show = "watch", slim = true, height = 40, portrait = true, level = true, rank = true, text = true, side = "RIGHT" },
 	{ unit = "focus", name = "PolestarUIFocusFrame", stock = function() return FocusFrame end, veil = "system", on = "selection",
-		show = "watch", portrait = true, line = true, level = true, rank = true, text = true, side = "RIGHT" },
+		show = "watch", slim = true, height = 40, portrait = true, level = true, rank = true, text = true, side = "RIGHT" },
 	-- The stock target of target hides with no unit, and while the target
 	-- is dead (TargetOfTargetMixin:Update).
 	{ unit = "targettarget", name = "PolestarUITargetToT", stock = function() return TargetFrameToT end, veil = "fade", on = "frame",
-		show = "[@targettarget,noexists][@target,dead] hide; show", tot = true, side = "LEFT" },
+		show = "[@targettarget,noexists][@target,dead] hide; show", tot = true, height = 20, side = "LEFT" },
 	{ unit = "focustarget", name = "PolestarUIFocusToT", stock = function() return FocusFrameToT end, veil = "fade", on = "frame",
-		show = "[@focustarget,noexists][@focus,dead] hide; show", tot = true, side = "LEFT" },
+		show = "[@focustarget,noexists][@focus,dead] hide; show", tot = true, height = 20, side = "LEFT" },
 	-- The pet frame shows the player while the player drives a vehicle, as
-	-- the stock one does (its clicks follow through toggleForVehicle).
+	-- the stock one does (its clicks follow through toggleForVehicle). Slim
+	-- as the player's, smaller as the stock pet frame is (its portrait 0.6 of the
+	-- player's): 24 tall, small text.
 	{ unit = "pet", name = "PolestarUIPetFrame", stock = function() return PetFrame end, veil = "pet", on = "selection", inset = PET_BODY,
-		show = "watch", portrait = true, line = true, text = true, compact = true, side = "LEFT", vehicle = "player" },
+		show = "watch", slim = true, height = 24, portrait = true, text = true, compact = true, side = "LEFT", vehicle = "player" },
 }
 for i = 1, 4 do
 	-- The game hides the party frames in a raid (ShouldShowPartyFrames) and
 	-- when Edit Mode's "Raid-Style Party Frames" is on (then the compact ones show).
 	SPECS[#SPECS + 1] = { unit = "party" .. i, name = "PolestarUIPartyFrame" .. i, stock = function() return member(i) end, veil = "party", on = "frame",
 		stack = { container = function() return PartyFrame end, index = i, height = 53, gap = function() return rawget(PartyFrame, "spacing") or 10 end },
-		show = "[group:raid] hide; [@party" .. i .. ",exists] show; hide", party = true, portrait = true, line = true, text = true, compact = true, side = "LEFT" }
+		show = "[group:raid] hide; [@party" .. i .. ",exists] show; hide", party = true, text = true, side = "LEFT" }
 end
 for i = 1, 5 do
 	-- The stock boss frames have no portrait (BossTargetFrameMixin:OnLoad).
@@ -117,23 +122,26 @@ end
 ---------------------------------------------------------------------------
 
 -- The health text as the game's own statusTextDisplay asks (NUMERIC, PERCENT,
--- BOTH, NONE), shown always with statusText on, else on mouse-over, as the
--- stock bars do (TextStatusBarMixin:UpdateTextString). Values go straight
--- from the client into SetFormattedText (they are secret).
+-- BOTH; NONE, the game's default, is the numbers), shown always with
+-- statusText on, else on mouse-over, as the stock bars do
+-- (TextStatusBarMixin:UpdateTextStringWithValues). Values go straight from
+-- the client into SetFormattedText (they are secret).
 local function healthText(f, unit)
 	local fs = f.healthText
 	if not fs then return end
 	if ns.Clean(UnitIsConnected(unit)) == false then return fs:SetFormattedText("%s", PLAYER_OFFLINE or "Offline") end
 	if ns.Clean(UnitIsGhost(unit)) then return fs:SetFormattedText("%s", GHOST or "Ghost") end
 	if ns.Clean(UnitIsDead(unit)) then return fs:SetFormattedText("%s", DEAD or "Dead") end
-	local mode = GetCVar("statusTextDisplay") or "NUMERIC"
-	local always = GetCVar("statusText") == "1"
-	if mode == "NONE" or not (always or f.psHover) then return fs:SetText("") end
 	local pct = UnitHealthPercent and CurveConstants and UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
-	if mode == "PERCENT" and pct then
+	-- A party block always shows its percent.
+	if f.spec.party and pct then return fs:SetFormattedText("%.0f%%", pct) end
+	local mode = GetCVar("statusTextDisplay")
+	if not (GetCVar("statusText") == "1" or f.psHover) then return fs:SetText("") end
+	-- The pet's narrow bar keeps its name: the percent, whatever the mode.
+	if (mode == "PERCENT" or f.spec.compact) and pct then
 		fs:SetFormattedText("%.0f%%", pct)
 	elseif mode == "BOTH" and pct then
-		fs:SetFormattedText("%.0f%%  %s", pct, AbbreviateNumbers(UnitHealth(unit)))
+		fs:SetFormattedText("%s || %.0f%%", AbbreviateNumbers(UnitHealth(unit)), pct)
 	else
 		fs:SetFormattedText("%s / %s", AbbreviateNumbers(UnitHealth(unit)), AbbreviateNumbers(UnitHealthMax(unit)))
 	end
@@ -141,19 +149,50 @@ end
 
 local function powerText(f, unit)
 	if not f.powerText then return end
-	local always = GetCVar("statusText") == "1"
-	if GetCVar("statusTextDisplay") == "NONE" or not (always or f.psHover) then return f.powerText:SetText("") end
+	if not opt("powerText") or not (GetCVar("statusText") == "1" or f.psHover) then return f.powerText:SetText("") end
 	f.powerText:SetFormattedText("%s", AbbreviateNumbers(UnitPower(unit)))
 end
 
 local RANKS = { worldboss = "Boss", rareelite = "Rare Elite", elite = "Elite", rare = "Rare" }
+-- On a slim bar the rank is a chip on the level ("25+", "25R", "25R+"), so the
+-- name keeps its room. A world boss's level is "??" (-1), the stock skull's
+-- convention: no letter of its own.
+local CHIPS = { rareelite = "R+", elite = "+", rare = "R" }
+
+-- The level's colour as stock's TargetFrameMixin:CheckLevel paints it: the
+-- difficulty colour on an attackable unit, gold on a friendly one, the skull's
+-- red (impossible) on "??". nil while secret or unknown: the neutral token.
+local function levelColor(unit, level)
+	if not level then return end
+	local c
+	if level < 1 then
+		c = QuestDifficultyColors and QuestDifficultyColors.impossible
+	elseif ns.Clean(UnitCanAttack("player", unit)) then
+		local d = C_PlayerInfo and C_PlayerInfo.GetContentDifficultyCreatureForPlayer and ns.Clean(C_PlayerInfo.GetContentDifficultyCreatureForPlayer(unit))
+		c = d and GetDifficultyColor and GetDifficultyColor(d)
+	elseif ns.Clean(UnitCanAttack("player", unit)) == false then
+		return 1, 0.82, 0
+	end
+	if c then return c.r, c.g, c.b end
+end
 
 local function nameLine(f, unit)
 	if f.levelText then
 		local level = ns.Clean(UnitEffectiveLevel and UnitEffectiveLevel(unit) or UnitLevel(unit))
+		local r, g, b = levelColor(unit, level)
+		if r then
+			W.Uncolor(f.levelText)
+			f.levelText:SetTextColor(r, g, b, 1)
+		else
+			W.Color(f.levelText, "textDim")
+		end
 		local lv = level and (level < 1 and "??" or tostring(level)) or ""
-		local rank = f.spec.rank and RANKS[ns.Clean(UnitClassification(unit)) or ""]
-		if rank then lv = lv .. " " .. rank end
+		local class = ns.Clean(UnitClassification(unit)) or ""
+		if f.spec.rank and f.spec.slim then
+			lv = lv .. (CHIPS[class] or "")
+		elseif f.spec.rank and RANKS[class] then
+			lv = lv .. " " .. RANKS[class]
+		end
 		f.levelText:SetFormattedText("%s", lv)
 	end
 	f.Name:SetFormattedText("%s", UnitName(unit) or "")
@@ -170,13 +209,13 @@ local function edge(f, unit)
 	if unit == "player" or unit == "vehicle" then
 		if f.spec.unit == "player" and ns.Clean(UnitAffectingCombat("player")) then
 			local r, g, b = Theme.Color("danger")
-			return H.PaintGround(f.Ground, a, r, g, b, 1)
+			return H.PaintGround(f.Ground, a, r, g, b, 1, true)
 		end
 	else
 		local status = ns.Clean(UnitThreatSituation("player", unit))
 		if status and status > 0 and GetThreatStatusColor then
 			local r, g, b = GetThreatStatusColor(status)
-			return H.PaintGround(f.Ground, a, r, g, b, 1)
+			return H.PaintGround(f.Ground, a, r, g, b, H.THREAT_ALPHA)
 		end
 	end
 	H.PaintGround(f.Ground, a)
@@ -193,55 +232,143 @@ local function stockAlpha(f)
 	return s:GetAlpha()
 end
 
-local function paint(f)
+-- Heal prediction as the client works it out (UnitGetDetailedHealPrediction):
+-- incoming heals up to the missing health, shields up to what is still
+-- missing after them, heal absorbs up to the health, each netted against
+-- the incoming heals as stock shows them; and whether the shields (heal
+-- absorbs) went past that (unused: no end glows). All secret: handed to
+-- the bars unread. A client without the calculator: the plain totals.
+local calc
+local function prediction(unit)
+	if not (CreateUnitHealPredictionCalculator and UnitGetDetailedHealPrediction) then
+		return UnitGetIncomingHeals(unit) or 0, UnitGetTotalAbsorbs(unit) or 0, false, UnitGetTotalHealAbsorbs(unit) or 0, false
+	end
+	if not calc then
+		calc = CreateUnitHealPredictionCalculator()
+		calc:SetIncomingHealClampMode(Enum.UnitIncomingHealClampMode.MissingHealth)
+		calc:SetDamageAbsorbClampMode(Enum.UnitDamageAbsorbClampMode.MissingHealth)
+		calc:SetHealAbsorbClampMode(Enum.UnitHealAbsorbClampMode.CurrentHealth)
+		calc:SetHealAbsorbMode(Enum.UnitHealAbsorbMode.ReducedByIncomingHeals)
+	end
+	UnitGetDetailedHealPrediction(unit, "player", calc)
+	local heals = calc:GetIncomingHeals()
+	local absorbs, over = calc:GetDamageAbsorbs()
+	local healAbsorbs, overHeal = calc:GetHealAbsorbs()
+	return heals, absorbs, over, healAbsorbs, overHeal
+end
+
+-- `snap`: another unit now (a new target): its bars jump, never slide.
+local ROLE_ICONS = { TANK = "roleicon-tiny-tank", HEALER = "roleicon-tiny-healer", DAMAGER = "roleicon-tiny-dps" }
+
+local function paint(f, snap)
 	if not f:IsVisible() then return end
 	local unit = shown(f)
 	if not ns.Clean(UnitExists(unit)) then return end
 	f:SetAlpha(stockAlpha(f))
+	local smooth = opt("smooth") and not snap and not f.spec.tot
 	local max = UnitHealthMax(unit)
-	H.SetBarColor(f.Health, H.UnitColor(unit))
+	-- A party member wears their class colour, whatever Polestar's "Class colour" says.
+	local r, g, b = H.UnitColor(unit, f.spec.party)
+	H.SetBarColor(f.Health, r, g, b)
 	f.Health:SetMinMaxValues(0, max)
-	f.Health:SetValue(UnitHealth(unit))
+	H.SetValue(f.Health, UnitHealth(unit), smooth)
+	if f.Health.psSpark then H.PaintSparkle(f.Health, opt("sparkle")) end
+	-- Incoming heals: the fill's own colour, lighter, continuing it.
+	local heals, absorbs, over, healAbsorbs, overHeal = prediction(unit)
+	f.Heal:SetStatusBarColor(r + (1 - r) * 0.45, g + (1 - g) * 0.45, b + (1 - b) * 0.45, 0.7)
 	f.Heal:SetMinMaxValues(0, max)
-	f.Heal:SetValue(UnitGetIncomingHeals(unit) or 0)
+	f.Heal:SetValue(heals)
 	f.Absorb:SetMinMaxValues(0, max)
-	f.Absorb:SetValue(UnitGetTotalAbsorbs(unit))
+	f.Absorb:SetValue(absorbs)
 	f.HealAbsorb:SetMinMaxValues(0, max)
-	f.HealAbsorb:SetValue(UnitGetTotalHealAbsorbs(unit))
+	f.HealAbsorb:SetValue(healAbsorbs)
 	H.SetBarColor(f.Power, H.PowerColor(unit))
-	f.Power:SetMinMaxValues(0, UnitPowerMax(unit))
-	f.Power:SetValue(UnitPower(unit))
+	H.SetTrack(f.Health, opt("ground"))
+	H.SetTrack(f.Power, opt("ground"))
+	f.Sep:SetVertexColor(Theme.Color("border"))
+	local powerMax = UnitPowerMax(unit)
+	f.Power:SetMinMaxValues(0, powerMax)
+	H.SetValue(f.Power, UnitPower(unit), smooth)
+	if f.cost then
+		-- The power the spell being cast will take (the player's own only).
+		f.cost:SetMinMaxValues(0, powerMax)
+		f.cost:SetValue(unit == "player" and f.psCost or 0)
+	end
+	if f.role then
+		-- The group role, in the game's own icon (PartyMemberFrameMixin:UpdateAssignedRoles);
+		-- none while it has none or the client keeps it secret.
+		local atlas = ROLE_ICONS[ns.Clean(UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit)) or ""]
+		if atlas then f.role:SetAtlas(atlas) end
+		f.role:SetShown(atlas ~= nil)
+	end
 	healthText(f, unit)
 	powerText(f, unit)
 	nameLine(f, unit)
 	edge(f, unit)
 	if f.portrait then
 		f.portrait:SetShown(opt("portrait"))
-		if opt("portrait") and f.psPortraitOf ~= UnitGUID(unit) then
-			f.psPortraitOf = UnitGUID(unit)
+		-- The model loads again only for another unit (its GUID; while that is
+		-- secret, false: then the events that change the unit clear it).
+		local guid = ns.Clean(UnitGUID(unit))
+		if opt("portrait") and (f.psPortraitOf == nil or (guid and guid ~= f.psPortraitOf)) then
+			f.psPortraitOf = guid or false
 			H.SetPortrait(f.portrait, unit)
 		end
 	end
 end
 
-local function paintAll()
-	for _, f in ipairs(frames) do
-		f.psPortraitOf = nil
-		paint(f)
-	end
+local function paintAll(snap)
+	for _, f in ipairs(frames) do paint(f, snap) end
 end
 
 ---------------------------------------------------------------------------
 -- Building
 ---------------------------------------------------------------------------
 
+-- What hangs off the fills, sized from the layout's own numbers: the bars'
+-- width and the health bar's height (their geometry is secret, rule 3).
+local function sized(f, w, healthH)
+	for _, s in ipairs({ f.Heal, f.Absorb, f.HealAbsorb, f.cost }) do s:SetWidth(w) end
+	if f.Health.psSpark then H.SizeSparkle(f.Health, w, healthH) end
+end
+
 -- Our frame's own layout, on the size it is given (the stock box): the
 -- portrait square on its side; beside it a line with the level, rank and
 -- name, then the health bar (its text at the far end) over the power bar. A
 -- target of target is only its name on the health bar.
+-- Slim (player, target, focus, pet), a block (party) and a target of target: 1 in
+-- (inside the hairline) the portrait square on its side, 1 apart from the
+-- health bar, which fills the rest over a power strip (4, a party's 6; none
+-- on a target of target) under a hairline.
+
 local function layout(f)
 	local w, h = f:GetWidth(), f:GetHeight()
 	if w <= 0 or h <= 0 then return end
+	local spec = f.spec
+	if spec.slim or spec.party or spec.tot then
+		local left = spec.side == "LEFT"
+		local port = (f.portrait and opt("portrait")) and h - 2 or 0
+		if f.portrait then
+			f.portrait:ClearAllPoints()
+			f.portrait:SetSize(port, port)
+			f.portrait:SetPoint(left and "TOPLEFT" or "TOPRIGHT", f, left and "TOPLEFT" or "TOPRIGHT", left and 1 or -1, -1)
+		end
+		local gap = port > 0 and port + 1 or 0
+		local x0, x1 = 1 + (left and gap or 0), 1 + (left and 0 or gap)
+		local powerH = spec.tot and 0 or spec.party and 6 or 4 -- a party's is easy to read at a glance
+		f.Health:ClearAllPoints()
+		f.Health:SetPoint("TOPLEFT", f, "TOPLEFT", x0, -1)
+		f.Health:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -x1, powerH > 0 and powerH + 2 or 1)
+		f.Power:ClearAllPoints()
+		f.Power:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", x0, 1)
+		f.Power:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -x1, 1)
+		f.Power:SetHeight(math.max(powerH, 1))
+		f.Power:SetShown(powerH > 0)
+		f.Sep:SetShown(powerH > 0)
+		sized(f, w - x0 - x1, h - 1 - (powerH > 0 and powerH + 2 or 1))
+		return
+	end
+	f.Sep:Hide()
 	local pad = 2
 	local inner = h - 2 * pad
 	local port = (f.portrait and opt("portrait")) and inner or 0
@@ -274,7 +401,7 @@ local function layout(f)
 	f.Power:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", x0, pad)
 	f.Power:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -x1, pad)
 	f.Power:SetHeight(powerH)
-	for _, s in ipairs({ f.Heal, f.Absorb, f.HealAbsorb }) do s:SetWidth(w - x0 - x1) end
+	sized(f, w - x0 - x1, h - 2 * pad - line - powerH - 1)
 end
 
 local function onEnter(self)
@@ -300,35 +427,66 @@ local function build(spec)
 	f.spec = spec
 	f:SetFrameStrata("LOW")
 	f:SetFrameLevel(100)
-	f:SetSize(spec.tot and 112 or 192, spec.tot and 40 or 66)
+	f:SetSize(spec.tot and 120 or 192, spec.height or 66)
 	f:RegisterForClicks("AnyUp")
 	f:SetAttribute("unit", spec.unit)
 	f:SetAttribute("*type1", "target")
 	f:SetAttribute("*type2", "togglemenu")
 	if spec.vehicle then f:SetAttribute("toggleForVehicle", true) end
 	f.Ground = H.Ground(f)
-	if spec.portrait then f.portrait = H.Portrait(f) end
+	if spec.portrait then f.portrait = H.Portrait(f, spec.slim) end
 	f.Health = H.Bar(f)
 	f.Health:SetClipsChildren(true) -- the heal and absorb segments end at the bar's ends
-	f.Heal = H.Segment(f.Health, "success", 0.45)
-	f.Absorb = H.Segment(f.Heal, "text", 0.35)
-	f.HealAbsorb = H.Segment(f.Health, "danger", 0.5, true)
+	if spec.unit == "player" then H.Sparkle(f.Health) end
+	f.Heal = H.Segment(f.Health) -- coloured as the fill (paint)
+	f.Absorb = H.Segment(f.Heal, "text", 0.55)
+	f.HealAbsorb = H.Segment(f.Health, "shade", 0.55, true) -- health that heals must fill first: the fill darkened
 	f.Power = H.Bar(f)
-	f.Name = H.Text(spec.line and f or f.Health, (spec.line and not spec.compact) and "label" or "small", "text")
-	f.Name:SetPoint("LEFT", f.Health, "LEFT", 4, 0)
-	f.Name:SetPoint("RIGHT", f.Health, "RIGHT", -4, 0)
-	if spec.level then f.levelText = H.Text(f, "small", "textDim") end
+	if spec.unit == "player" then
+		f.Power:SetClipsChildren(true) -- a cost past the power ends at the bar's start
+		f.cost = H.Segment(f.Power, "shade", 0.55, true) -- darkened: the power colours are light
+	end
+	-- The hairline between the health bar and the power strip.
+	f.Sep = f:CreateTexture(nil, "BORDER", nil, 7)
+	f.Sep:SetTexture(Theme.Media("white"))
+	f.Sep:SetPoint("TOPLEFT", f.Health, "BOTTOMLEFT", 0, 0)
+	f.Sep:SetPoint("BOTTOMRIGHT", f.Power, "TOPRIGHT", 0, 0)
+	local small = spec.compact or spec.party
+	local on = spec.line and f or f.Health
+	f.Name = H.Text(on, small and "small" or "label", "text")
+	if spec.level then f.levelText = H.Text(on, "small", "textDim") end
 	if spec.text then
-		f.healthText = H.Text(f.Health, spec.compact and "small" or "number", "text")
+		f.healthText = H.Text(f.Health, small and "small" or "number", spec.party and "textDim" or "text")
 		f.healthText:SetJustifyH("RIGHT")
-		f.healthText:SetPoint("RIGHT", f.Health, "RIGHT", spec.compact and -1 or -4, 0)
-		f.powerText = H.Text(f.Power, "small", "textDim")
-		f.powerText:SetPoint("CENTER", f.Power, "CENTER", 0, 0)
+		if spec.party then
+			f.healthText:SetPoint("BOTTOMRIGHT", f.Health, "BOTTOMRIGHT", -3, 3)
+		else
+			f.healthText:SetPoint("RIGHT", f.Health, "RIGHT", spec.compact and -2 or -4, 0)
+			-- Slim: on the health bar, as the strip has no room for it.
+			local p = spec.slim and f.Health or f.Power
+			f.powerText = H.Text(p, "small", "textDim")
+			f.powerText:SetPoint("CENTER", p, "CENTER", 0, 0)
+		end
+	end
+	if spec.party then
+		-- The role icon where the game's own is (12 units, 5 in from the top
+		-- right of the member frame); the name ends before it.
+		f.role = f.Health:CreateTexture(nil, "OVERLAY")
+		f.role:SetSize(12, 12)
+		f.role:SetPoint("TOPRIGHT", f, "TOPRIGHT", -5, -5)
+		f.role:Hide()
+		f.Name:SetPoint("TOPLEFT", f.Health, "TOPLEFT", 3, -3)
+		f.Name:SetPoint("RIGHT", f.role, "LEFT", -2, 0)
+	elseif not spec.line then
+		-- On the bar: the level (and rank) in front, the value at the far end.
+		if f.levelText then f.levelText:SetPoint("LEFT", f.Health, "LEFT", 4, 0) end
+		f.Name:SetPoint("LEFT", f.levelText or f.Health, f.levelText and "RIGHT" or "LEFT", 4, 0)
+		f.Name:SetPoint("RIGHT", f.healthText or f.Health, f.healthText and "LEFT" or "RIGHT", -4, 0)
 	end
 	f:HookScript("OnEnter", onEnter)
 	f:HookScript("OnLeave", onLeave)
 	f:HookScript("OnSizeChanged", layout)
-	f:HookScript("OnShow", function(self) self.psPortraitOf = nil; paint(self) end)
+	f:HookScript("OnShow", function(self) self.psPortraitOf = nil; paint(self, true) end)
 	layout(f)
 	frames[#frames + 1] = f
 	byUnit[spec.unit] = f
@@ -379,7 +537,13 @@ end
 -- units, and its effective scale; nil when there is nothing to read.
 local function rectOf(f)
 	local spec, stock = f.spec, f.spec.stock()
+	-- A stock frame with no points reads as at its parent's corner, not where
+	-- it shows: the pet frame before its first pet, and between its managed
+	-- container's ClearAllPoints and Layout (ManagedFrameContainerMixin:
+	-- UpdateFrame). Never read then: ours stay where they were.
+	local anchored = stock and stock:GetNumPoints() > 0
 	if spec.on == "selection" and stock then
+		if not anchored then return nil end
 		local r = rawget(stock, "Selection")
 		if r and r:GetLeft() and r:GetWidth() > 0 then return r:GetLeft(), r:GetTop(), r:GetWidth(), r:GetHeight(), r:GetEffectiveScale() end
 		if stock:GetLeft() then
@@ -390,7 +554,7 @@ local function rectOf(f)
 	end
 	-- A frame the game shows and lays out (a party member, a boss, a target
 	-- of target): its own rect while it has one.
-	if stock and stock:IsShown() and stock:GetLeft() then
+	if anchored and stock:IsShown() and stock:GetLeft() then
 		local l, t, w, h = stock:GetLeft(), stock:GetTop(), stock:GetWidth(), stock:GetHeight()
 		if spec.on == "body" then l, t, w, h = inset(l, t, w, h, BODY) end
 		lastRect[f] = { l, t, w, h, stock:GetEffectiveScale() }
@@ -410,7 +574,7 @@ local function rectOf(f)
 		if spec.on == "body" then l, t, w, h = inset(l, t, w, h, BODY) end
 		return l, t, w, h, c:GetEffectiveScale() * s
 	end
-	if stock and stock:GetLeft() then
+	if anchored and stock:GetLeft() then
 		return stock:GetLeft(), stock:GetTop(), stock:GetWidth(), stock:GetHeight(), stock:GetEffectiveScale()
 	end
 	return nil
@@ -425,6 +589,8 @@ local function place()
 	local base = UIParent:GetEffectiveScale()
 	for _, f in ipairs(frames) do
 		local l, t, w, h, s = rectOf(f)
+		local want = f.spec.height
+		if want and h and h > want then t, h = t - (h - want) / 2, want end
 		if l and w > 0 then
 			-- Ours hang off UIParent at the region's effective scale, so its
 			-- units are ours: the box's left and top are our offsets.
@@ -524,11 +690,54 @@ local UNIT_EVENTS = {
 local ALL_EVENTS = {
 	"PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
 	"PLAYER_ENTERING_WORLD", "EDIT_MODE_LAYOUTS_UPDATED", "UI_SCALE_CHANGED", "DISPLAY_SIZE_CHANGED", "CVAR_UPDATE",
-	"GROUP_ROSTER_UPDATE", "INSTANCE_ENCOUNTER_ENGAGE_UNIT",
+	"GROUP_ROSTER_UPDATE", "INSTANCE_ENCOUNTER_ENGAGE_UNIT", "PLAYER_ROLES_ASSIGNED",
 }
 
-local function onEvent(_, event, unit)
+-- The power cost of the player's cast, as the stock player frame predicts it
+-- (UnitFrameManaCostPredictionBars_Update): the spell's cost in the power the
+-- bar shows, from its start till it ends, kept while another cast still runs.
+-- The cost may be secret: handed to the bar unread. A power type the client
+-- keeps secret is taken to be the bar's.
+local CAST_END = { UNIT_SPELLCAST_STOP = true, UNIT_SPELLCAST_FAILED = true, UNIT_SPELLCAST_INTERRUPTED = true, UNIT_SPELLCAST_SUCCEEDED = true }
+local function castCost(event, spellID)
+	local f = byUnit.player
+	if not (f and f.cost) then return end
+	if event == "UNIT_SPELLCAST_START" then
+		local cost, power = 0, ns.Clean(UnitPowerType("player"))
+		for _, c in ipairs(C_Spell and C_Spell.GetSpellPowerCost and C_Spell.GetSpellPowerCost(spellID) or {}) do
+			local kind = ns.Clean(c.type)
+			if kind == nil or kind == power then
+				cost = c.cost
+				break
+			end
+		end
+		f.psCost = cost
+	elseif not (UnitCastingInfo and ns.Clean(select(9, UnitCastingInfo("player")))) then
+		f.psCost = nil
+	end
+	paint(f)
+end
+
+-- What brings another unit into a frame: its bars snap to it.
+local UNIT_CHANGE = { PLAYER_TARGET_CHANGED = true, PLAYER_FOCUS_CHANGED = true, GROUP_ROSTER_UPDATE = true, UNIT_PET = true,
+	UNIT_ENTERED_VEHICLE = true, UNIT_EXITED_VEHICLE = true, UNIT_TARGET = true, INSTANCE_ENCOUNTER_ENGAGE_UNIT = true }
+
+local function onEvent(_, event, unit, _, spellID)
 	if not ns.Enabled(KEY) then return end
+	if event == "UNIT_SPELLCAST_START" or CAST_END[event] then
+		if unit == "player" then castCost(event, spellID) end
+		return
+	end
+	local snap = UNIT_CHANGE[event]
+	if snap and event ~= "UNIT_TARGET" and event ~= "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
+		-- A unit may have changed under a secret GUID: its model again.
+		for _, f in ipairs(frames) do if f.psPortraitOf == false then f.psPortraitOf = nil end end
+	end
+	if unit == "player" and (event == "UNIT_PET" or event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") then
+		-- The pet frame the game shows (a pet summoned, a vehicle) is laid out
+		-- by the player's managed container: ours placed on it next frame.
+		C_Timer.After(0, function() if InCombatLockdown() then pending = true else place() end end)
+	end
 	if event == "PLAYER_REGEN_ENABLED" then
 		if pending then M.Apply() end
 		return paintAll()
@@ -546,13 +755,14 @@ local function onEvent(_, event, unit)
 		-- New party members get the game's frames from its pool: veiled too,
 		-- and placed on them.
 		if not InCombatLockdown() then M.Apply() else pending = true end
-		return paintAll()
-	elseif event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" or event == "PLAYER_REGEN_DISABLED"
+		return paintAll(snap)
+	end
+	if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" or event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_ROLES_ASSIGNED"
 		or event == "UNIT_THREAT_SITUATION_UPDATE" or event == "INSTANCE_ENCOUNTER_ENGAGE_UNIT"
 		or event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE" then
-		return paintAll()
+		return paintAll(snap)
 	end
-	if event == "UNIT_PET" and byUnit.pet then paint(byUnit.pet) end
+	if event == "UNIT_PET" and byUnit.pet then paint(byUnit.pet, true) end
 	for _, f in ipairs(frames) do
 		if shown(f) == unit then
 			if event == "UNIT_PORTRAIT_UPDATE" or event == "UNIT_MODEL_CHANGED" then f.psPortraitOf = nil end
@@ -560,8 +770,8 @@ local function onEvent(_, event, unit)
 		end
 	end
 	if event == "UNIT_TARGET" then
-		if unit == "target" and byUnit.targettarget then paint(byUnit.targettarget) end
-		if unit == "focus" and byUnit.focustarget then paint(byUnit.focustarget) end
+		if unit == "target" and byUnit.targettarget then paint(byUnit.targettarget, true) end
+		if unit == "focus" and byUnit.focustarget then paint(byUnit.focustarget, true) end
 	end
 end
 
@@ -589,6 +799,9 @@ function M.Enable()
 		driver = CreateFrame("Frame")
 		for _, e in ipairs(UNIT_EVENTS) do driver:RegisterEvent(e) end
 		for _, e in ipairs(ALL_EVENTS) do driver:RegisterEvent(e) end
+		for _, e in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_SUCCEEDED" }) do
+			driver:RegisterUnitEvent(e, "player")
+		end
 		driver:SetScript("OnEvent", onEvent)
 		driver:SetScript("OnUpdate", onUpdate)
 		EventRegistry:RegisterCallback("EditMode.Enter", function()
@@ -622,7 +835,7 @@ local function setOpt(k, v)
 end
 
 local function buildOptions()
-	local f = W.Shell(OPTIONS, { scalePath = "ui.menuScale", sidebar = 0, width = 520, height = 300 })
+	local f = W.Shell(OPTIONS, { scalePath = "ui.menuScale", sidebar = 0, width = 520, height = 360 })
 	ns.Plain(f)
 	ns.WindowMenu(f, KEY)
 	Polestar.CloseOnEscape(OPTIONS)
@@ -640,6 +853,12 @@ local function buildOptions()
 		{ get = function() return math.floor(opt("ground") * 100 + 0.5) end, set = function(v) setOpt("ground", v and v / 100) end }))
 	f.portrait = row(W.Toggle(body, "3D portraits", nil, "The unit's model in a square beside the bars.", nil,
 		{ get = function() return opt("portrait") end, set = function(v) setOpt("portrait", v) end }))
+	f.powerText = row(W.Toggle(body, "Power text", nil, "The unit's power as a number, shown as the game's Status Text options show the health.", nil,
+		{ get = function() return opt("powerText") end, set = function(v) setOpt("powerText", v) end }))
+	f.sparkle = row(W.Toggle(body, "Sparkle", nil, "Polestar's stars over the health bars, as over its windows' header band.", nil,
+		{ get = function() return opt("sparkle") end, set = function(v) setOpt("sparkle", v) end }))
+	f.smooth = row(W.Toggle(body, "Smooth bars", nil, "Health and power glide to a new value instead of jumping.", nil,
+		{ get = function() return opt("smooth") end, set = function(v) setOpt("smooth", v) end }))
 	W.ShellBody(f, y)
 	return f
 end
@@ -649,6 +868,9 @@ function M.Show()
 	page:Show()
 	if page.Ground.Refresh then page.Ground:Refresh() end
 	if page.portrait.Refresh then page.portrait:Refresh() end
+	for _, k in ipairs({ "powerText", "sparkle", "smooth" }) do
+		if page[k].Refresh then page[k]:Refresh() end
+	end
 end
 
 ns.Module(KEY, M)

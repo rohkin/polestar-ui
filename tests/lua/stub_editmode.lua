@@ -93,8 +93,13 @@ function stub.setCVar(cvar, value)
 	stub.fire("CVAR_UPDATE", cvar, value)
 end
 
--- Leaving Edit Mode after a change: the layout event, then EditMode.Exit.
+-- Leaving Edit Mode after a change: the layout event, then stub_unitframes.lua's
+-- exit (loaded first for every scene: its Selection boxes hidden, the pet,
+-- party and boss frames back, then EditMode.Exit), so the unit frames' Edit
+-- Mode handling runs in the minimap and action bar scenes too.
+local unitExit = stub.exitEditMode
 function stub.exitEditMode()
 	stub.fire("EDIT_MODE_LAYOUTS_UPDATED")
+	if unitExit then return unitExit() end
 	EventRegistry:TriggerEvent("EditMode.Exit")
 end
