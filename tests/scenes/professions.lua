@@ -1,7 +1,7 @@
 --@ title: Professions
 --@ roots: PolestarUIProfessions
 --@ stubs: stub_spellbook.lua, stub_professions.lua
--- The professions key opens ours and closes it, never the stock window; hovering a profession's spell puts the secure cast button over it; unlearning asks first; the professions on its section rail, the overview marked.
+-- The professions key opens ours and closes it, never the stock window; hovering a profession's spell puts the secure cast button over it; unlearning asks first; the professions on its slim rail of icons, the overview marked.
 stub.pressKey("K")
 assert(PolestarUIProfessions:IsShown() and not ProfessionsFrame:IsShown(), "key")
 stub.pressKey("K")

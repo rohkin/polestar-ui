@@ -135,7 +135,7 @@ the band's middle (the game's looks put the close button on the frame's
 corner).
 
 - **Size.** The smallest that fits the content at the compact grid: no
-  sidebar, a width that fits (Talents 780×650, Spellbook 720×600, Merchant 640×560, Trainer 560×560, Social 580×560, Bank 560×560, Macros 640×560, Mail 560×560, Gossip 520×400, Quest dialog 520×540, Character 700×540, Inspect 640×540, Guild 740×520), height
+  sidebar, a width that fits (Talents 780×650, Spellbook 720×600, Merchant 640×560, Trainer 560×560, Social 580×560, Bank 560×560, Macros 640×560, Mail 560×560, Gossip 520×400, Quest dialog 520×540, Character 700×540, Inspect 640×540, Guild 740×520, Professions and Crafting 792×600), height
   600 or so at most so it never covers the guide window at default scale.
 - **Page nav (no sidebar).** Where the stock window has **text tabs** (top or
   bottom: Talents, Spellbook, Character, Inspect, Social, Bank, Macros, Mail,

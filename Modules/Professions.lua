@@ -95,12 +95,13 @@ local function paintArt(c)
 	end
 end
 
--- The professions as sections of a section rail (Polestar's, W.ShellRail)
--- at the window's left edge: the overview (this window), then each
--- profession with a crafting window, the open one marked. Shared with
--- Crafting.lua; the window is made with `rail = true`. Their icons stay the
--- game's (the Two Families Rule). Casting a profession is protected: out of
--- combat a secure button of ours takes the hovered section's place
+-- The professions as the stock window's icon side-tabs: a slim rail of icons
+-- (ns.GameRail, slim) at the window's left edge, each label in its tooltip:
+-- the overview (this window), then each profession with a crafting window,
+-- the open one marked. Shared with Crafting.lua; the window is made with
+-- `rail = true`. Their icons stay the game's (the Two Families Rule).
+-- Casting a profession is protected: out of combat a secure button of ours
+-- takes the hovered icon's place
 -- (ns.Overlay). ns.ProfessionTabs(window, onOverview) -> paint(skill line of
 -- the open profession, or nil for the overview).
 local OVERVIEW_ICON = "Interface\\Icons\\INV_SideTab_Professions_c60"
@@ -121,7 +122,7 @@ local overTab = ns.Overlay("PolestarUIProfessionTab", {
 
 function ns.ProfessionTabs(win, onOverview)
 	return function(current)
-		local items = { { key = "overview", label = "Overview", tip = "All your professions", icon = OVERVIEW_ICON } }
+		local items = { { key = "overview", label = "Overview", icon = OVERVIEW_ICON } }
 		local slots = { GetProfessions() }
 		for k = 1, 5 do
 			local i = slots[k]
@@ -136,7 +137,7 @@ function ns.ProfessionTabs(win, onOverview)
 		local active = current or "overview"
 		ns.GameRail(win, items, active, function(key)
 			if key == "overview" and current ~= nil and onOverview then onOverview() end
-		end)
+		end, { slim = true })
 		for i, d in ipairs(items) do
 			local b = win.railButtons[i]
 			b.psName, b.psSpell, b.psActive = d.label, d.spell, d.key == active
@@ -149,7 +150,9 @@ function ns.ProfessionTabs(win, onOverview)
 end
 
 -- The Professions and crafting windows share one place: each opens where the
--- other is, or was last (kept across sessions). Both are the same size.
+-- other is, or was last (kept across sessions). Both are one size, so the
+-- swap never jumps: { width without the rail, height }.
+ns.ProfessionsSize = { 744, 600 }
 local linked = {}
 local function keepPlace(win)
 	local l, t = win:GetLeft(), win:GetTop()
@@ -270,10 +273,12 @@ end
 
 local function build()
 	-- No sidebar: one page, nothing to navigate; the band names the window.
-	-- The section rail holds the professions; Polestar's emblem stays off it.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, sidebar = 0, rail = true })
+	-- The slim rail holds the professions; Polestar's emblem stays off it.
+	local size = ns.ProfessionsSize
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = size[1] + W.SHELL.rail, height = size[2], sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "professions")
+	ns.Compact(f)
 	ns.Plain(f, f.psRail)
 	ns.LinkPlace(f)
 	f.psTabs = ns.ProfessionTabs(f)
@@ -298,7 +303,7 @@ local function refresh()
 	for g, group in ipairs(GROUPS) do
 		local head = f.psHeads[g]
 		head:ClearAllPoints()
-		head:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -y)
+		head:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -y)
 		head:SetWidth(f.BodyWidth)
 		y = y + head:GetHeight() + 4
 		local w = (f.BodyWidth - GAP * (group.perRow - 1)) / group.perRow
@@ -307,7 +312,7 @@ local function refresh()
 			cards[i] = c
 			local col, line = (k - 1) % group.perRow, math.floor((k - 1) / group.perRow)
 			c:ClearAllPoints()
-			c:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + col * (w + GAP), -(y + line * (group.height + 8)))
+			c:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad + col * (w + GAP), -(y + line * (group.height + 8)))
 			paintCard(c, list[i], w, group)
 		end
 		y = y + math.ceil(#group.slots / group.perRow) * (group.height + 8)

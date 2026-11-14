@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Professions and crafting: Professions and the crafting window move to the compact grid at one size (792×600, was 848×680) with a slim icon rail; crafting shows the profession and rank in the subtitle, the skill bar along the band and the tool and gear slots at the foot of the recipe list.
 - Guild: the Guild moves to the compact grid (740×520, was 808×600): a slim icon rail, with the roster search and filter on the tab row.
 - Inspect: the Inspect window moves to the compact grid (640×540, was 808×680) with Character, PvP and Guild as top tabs.
 - Character: the Character window moves to the compact grid (700×540, was 808×680) with its sections as top tabs wearing the stock icons, the player in the subtitle, and the drawer's band level with the header.

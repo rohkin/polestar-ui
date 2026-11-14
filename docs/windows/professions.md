@@ -5,11 +5,13 @@ micro buttons. So, as the Spellbook, ours opens from `TOGGLEPROFESSIONBOOK` and
 `ProfessionMicroButton` through `ns.Doors`, never touching the stock window;
 shift-click on the micro button opens the stock one. It closes when a
 profession opens (`TRADE_SKILL_SHOW`), as ours takes the crafting window.
-- **Shell:** 760×680 plus the section rail, no sidebar (`sidebar = 0`,
-  hidden): one page, nothing to navigate, so no subject block either; the band
-  names the window.
+- **Shell:** 744×600 plus the 48px slim rail (792×600; was 848×680), on the
+  compact grid (`ns.Compact`, the body laid out by `f.psPad`), no sidebar
+  (`sidebar = 0`, hidden): one page, nothing to navigate, so no subject block
+  either; the band names the window. The size is `ns.ProfessionsSize`, shared
+  with the crafting window so the two swap in place without a jump.
 - **Professions rail:** the crafting window's (`ns.ProfessionTabs`, below),
-  "Overview" marked; a profession's section opens its crafting window.
+  "Overview" marked; a profession's icon opens its crafting window.
 - **Main column:** title "Professions", subtitle "2 of 2 professions learnt."
   only (what a spell does is in its tooltip). The
   stock page's five slots as cards on the panel ground under two headings:

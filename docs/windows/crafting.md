@@ -11,23 +11,29 @@ the stock code knows (a recipe link) still open the stock window. Switching
 ours off (the window's menu, `/pui crafting off`) takes effect after /reload:
 routing `TRADE_SKILL_SHOW` back to the stock window from our code would open
 it from tainted code.
-- **Shell:** 760×680 with sidebar, near the stock window's width, plus the
-  section rail: the Professions window's size, and its place (`ns.LinkPlace`:
-  each opens where the other is or was last, kept in `PolestarUIDB.pos`), so
-  switching between them never moves the window.
+- **Shell:** 744×600 with the recipe list as its sidebar, plus the 48px slim
+  rail (792×600; was 848×680), on the compact grid (`ns.Compact`, the body
+  laid out by `f.psPad`): the Professions window's size (`ns.ProfessionsSize`),
+  and its place (`ns.LinkPlace`: each opens where the other is or was last,
+  kept in `PolestarUIDB.pos`), so switching between them never moves or
+  resizes the window. Polestar's lockup (emblem, wordmark, version line) is
+  parked off the sidebar: the sidebar is the recipe list.
 - **Professions rail** (`ns.ProfessionTabs`, shared with the Professions
-  window): the shell's section rail (`rail = true`, `W.ShellRail`), Polestar's
-  own way to switch sections. "Overview" first (the Professions window,
-  closing this one), then one section per profession with a crafting window,
-  in the stock order; the open one marked as the rail marks it. The icons are
-  the game's (24px, untinted), not glyphs; Polestar's emblem stays off the
-  rail. Casting a profession is protected: out of combat a secure button of
-  ours takes the hovered section's place (`ns.Overlay`), its click the
-  profession's spell; the open one casts nothing. In combat the sections only
-  show their tooltips.
-- **Subject block:** the profession's icon, name in Title, and its 2px skill
-  bar under it with the rank ("112/150") above the bar's right end.
-- **Sidebar:** the search (shell's own) and the filter, then the learnt recipes under their
+  window): the stock window's icon side-tabs as a slim rail of icons
+  (`ns.GameRail`, `slim`: 48px, icons only, from the band's line down), each
+  label in its tooltip. "Overview" first (the Professions window, closing
+  this one), then one icon per profession with a crafting window, in the
+  stock order; the open one marked as the rail marks it. The icons are the
+  game's (24px, untinted), not glyphs. Casting a profession is protected: out
+  of combat a secure button of ours takes the hovered icon's place
+  (`ns.Overlay`), its click the profession's spell; the open one casts
+  nothing. In combat the icons only show their tooltips.
+- **Band:** title "Professions"; the subtitle leads with the profession and
+  its rank, then the selected recipe's category ("Tailoring · 112/150 (+5) ·
+  Armor"). The profession's 2px skill bar runs along the band's foot, across
+  the body (no subject block).
+- **Sidebar:** the search and the filter head it, level with the band, then
+  from the band's line (level with the rail's first icon) the learnt recipes under their
   categories in the client's order, "Favorites" (the client's,
   `PROFESSIONS_CATEGORY_FAVORITE`, as the stock list groups them), "Can make
   now" (nothing missing, no cooldown) and "Recent" (the last 8 crafted here,
@@ -45,8 +51,8 @@ it from tainted code.
   reason a disabled recipe is disabled, or the chance of a skill-up by its
   difficulty ("High chance of a skill-up (+2)", in the difficulty colour),
   then what its clicks do.
-- **Filter:** it acts on the list, so it sits in the sidebar at the end of
-  the search row: a 30px square on the search field's well, the `sliders`
+- **Filter:** it acts on the list, so it sits at the end of the search row
+  over the list: a 30px square on the search field's well, the `sliders`
   glyph, in the accent while a filter hides recipes (on the band it read as
   filtering the selected recipe). Its menu drops under it, over the list.
   Its menu is the game's own filter menu, flat (Polestar's menu has no
@@ -57,8 +63,10 @@ it from tainted code.
   client keeps them (`C_TradeSkillUI.SetOnlyShow*`, `SetInventorySlotFilter`)
   and they act on its filtered recipe list, as in the stock window; the menu
   opens again after each pick.
-- **Main column:** title the profession, subtitle the selected recipe's
-  category ("<name>'s recipe: you cannot craft it." for another player's).
+- **Main column:** after the profession and rank, the subtitle says the
+  selected recipe's category ("<name>'s recipe: you cannot craft it." for
+  another player's; "No recipe you know matches." for a search or filter
+  that leaves none).
   One view, so no tab row (Orders later). In the "..." menu, first, the
   stock link button's items: "Link profession" puts the profession's
   link (`GetTradeSkillListLink`) in the chat line, or the macro being
@@ -82,8 +90,9 @@ it from tainted code.
 - **Tool and gear slots:** as the stock page (`ConfigureInventorySlots`):
   the slots the client lists for the profession (`GetProfessionSlots`,
   enabled by `C_PaperDollInfo.IsInventorySlotEnabled`; a slot name the client
-  lacks is skipped) as 28px item wells on the band's bottom row, ending
-  at the body's right edge: right to left the tool, then 12px on its gear, 4px apart. None
+  lacks is skipped) as 28px item wells at the foot of the recipe list, level
+  with the footer (the list ends above them, or at the window's foot without
+  any): left to right from the sidebar's edge the tool, then 12px on its gear, 4px apart. None
   show without slot data, or for another player's or the guild's recipes. A
   click picks the worn item up or puts one down, a modified click links it,
   the tooltip is the item's (the slot's name when empty); right-click uses it

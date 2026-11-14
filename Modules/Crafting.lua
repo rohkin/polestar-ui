@@ -335,7 +335,7 @@ local function paintNav(list)
 	for i = hi + 1, #heads do heads[i]:Hide() end
 	for i = ri + 1, #rows do rows[i]:Hide() end
 	f.NavScroll.Child:SetWidth((f.psSidebar or W.SHELL.sidebar) - 1)
-	W.SetScrollContent(f.NavScroll, y, W.ShellNavHeight(f))
+	W.SetScrollContent(f.NavScroll, y, f:GetHeight() - 2 - f.psNavTop - f.psNavFoot)
 end
 
 -- What the player holds of a reagent (an item, or a currency).
@@ -419,7 +419,7 @@ end
 local function paintPage(info)
 	local id = info.recipeID
 	local s = C_TradeSkillUI.GetRecipeSchematic(id, false)
-	local x, w, y = W.SHELL.pad, f.BodyWidth, 24
+	local x, w, y = f.psPad, f.BodyWidth, 24
 	local p = f.psProduct
 	local name, icon, q = s.name, s.icon, nil
 	if s.outputItemID then
@@ -465,7 +465,7 @@ local function paintPage(info)
 			slots[#slots + 1] = slot
 		end
 	end
-	local head = f.psHead
+	local head = f.psReagents
 	head:SetShown(#slots > 0)
 	head:ClearAllPoints()
 	head:SetPoint("TOPLEFT", f.Body, "TOPLEFT", x, -y)
@@ -538,7 +538,7 @@ end
 local function hidePage()
 	f.psProduct:Hide()
 	f.psDesc:Hide()
-	f.psHead:Hide()
+	f.psReagents:Hide()
 	f.psHead2:Hide()
 	f.psTarget:Hide()
 	f.psTrack:Hide()
@@ -636,8 +636,9 @@ end
 
 -- The profession's tool and gear slots, as the stock page's
 -- (ConfigureInventorySlots): each slot the client lists for the profession
--- (GetProfessionSlots) and has enabled, worn items in Polestar's wells on the
--- band's right end. A slot name the client lacks is skipped.
+-- (GetProfessionSlots) and has enabled, worn items in Polestar's wells at the
+-- foot of the recipe list, level with the footer. A slot name the client lacks
+-- is skipped.
 local GEAR_SLOTS = { "Prof0ToolSlot", "Prof0Gear0Slot", "Prof0Gear1Slot", "Prof1ToolSlot", "Prof1Gear0Slot", "Prof1Gear1Slot",
 	"CookingToolSlot", "CookingGear0Slot", "FishingToolSlot", "FishingGear0Slot", "FishingGear1Slot" }
 local GEAR = 28
@@ -679,7 +680,7 @@ local function gearSlot(name, id)
 	f.psGear = f.psGear or {}
 	local s = f.psGear[name]
 	if s then return s end
-	s = ns.ItemWell(f.Header, GEAR, "Button")
+	s = ns.ItemWell(f.Sidebar, GEAR, "Button")
 	s:SetID(id)
 	s.psLabel = _G[name:upper()] or name
 	W.Hover(s)
@@ -694,28 +695,32 @@ local function gearSlot(name, id)
 	return s
 end
 
--- Right to left from the body's right edge, as the stock row: the tool, then its gear,
--- 12px between a profession's tool and its gear.
+-- Left to right from the sidebar's edge, as the stock row: the tool, then its
+-- gear, 12px between a profession's tool and its gear. The recipe list ends
+-- above them (f.psNavFoot), or at the window's foot without any.
 local function paintGear(p)
 	for _, s in pairs(f.psGear or {}) do s:Hide() end
 	local T = C_TradeSkillUI
-	if viewing() or not (p.profession and T.GetProfessionSlots) then return end
+	local x, prev = W.SHELL.side, nil
 	local wanted = {}
-	for _, id in ipairs(T.GetProfessionSlots(p.profession) or {}) do wanted[id] = true end
-	local x, prev = -W.SHELL.pad, nil
+	if not viewing() and p.profession and T.GetProfessionSlots then
+		for _, id in ipairs(T.GetProfessionSlots(p.profession) or {}) do wanted[id] = true end
+	end
 	for _, name in ipairs(GEAR_SLOTS) do
 		local ok, id = pcall(C_PaperDollInfo.GetInventorySlotInfo, name)
 		if ok and id and wanted[id] and C_PaperDollInfo.IsInventorySlotEnabled(name) then
 			local s = gearSlot(name, id)
-			if prev then x = x - GEAR - (prev.psTool and 12 or 4) end
+			if prev then x = x + GEAR + (prev.psTool and 12 or 4) end
 			s.psTool = name:find("ToolSlot") ~= nil
 			s:ClearAllPoints()
-			s:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", x, 10)
+			s:SetPoint("LEFT", f.Sidebar, "BOTTOMLEFT", x, f.psFootH / 2)
 			ns.PaintItem(s, { icon = GetInventoryItemTexture("player", id), quality = GetInventoryItemQuality("player", id) })
 			s:Show()
 			prev = s
 		end
 	end
+	f.psNavFoot = prev and f.psFootH or 0
+	f.NavScroll:SetPoint("BOTTOMRIGHT", f.Sidebar, "BOTTOMRIGHT", -1, f.psNavFoot)
 end
 
 -- The first section holding the recipe, `key`'s if it is one of them.
@@ -736,11 +741,10 @@ function refresh()
 	local p = profession()
 	if not p then return end
 	f.psTabs(p.parentProfessionID or p.professionID)
-	f.psIcon:SetTexture(C_TradeSkillUI.GetTradeSkillTexture(p.professionID))
-	f.psName:SetText(p.parentProfessionName or p.professionName)
+	-- The profession and its rank lead the subtitle; its skill bar runs along the band's foot.
 	local rank, most, mod = p.skillLevel or 0, p.maxSkillLevel or 0, p.skillModifier or 0
-	f.psRank:SetText(mod > 0 and ("%d/%d (+%d)"):format(rank, most, mod) or ("%d/%d"):format(rank, most))
-	W.SetProgress(f.psBar, most > 0 and rank / most or 0, f.psBarW)
+	local lead = ("%s · %s · "):format(p.parentProfessionName or p.professionName,
+		mod > 0 and ("%d/%d (+%d)"):format(rank, most, mod) or ("%d/%d"):format(rank, most))
 	local list, byID = sections()
 	if not byID[sel] then
 		sel, selKey, qty = nil, nil, 1
@@ -750,21 +754,21 @@ function refresh()
 	end
 	selKey = sel and sectionOf(list, sel, selKey)
 	if query == "" then lastSel[p.professionID] = sel end
+	paintGear(p)
 	paintNav(list)
 	local info = sel and byID[sel]
 	local linked, who = C_TradeSkillUI.IsTradeSkillLinked()
 	if info then
-		W.ShellTitle(f, p.professionName, linked and who and ("%s's recipe: you cannot craft it."):format(who) or info.psCategory)
+		W.ShellTitle(f, "Professions", lead .. (linked and who and ("%s's recipe: you cannot craft it."):format(who) or info.psCategory))
 		W.ShellBody(f, paintPage(info))
 	else
 		hidePage()
-		W.ShellTitle(f, query ~= "" and "Search" or p.professionName,
-			(query ~= "" or filtering()) and "No recipe you know matches." or "You know no recipes yet: a trainer teaches them.")
+		W.ShellTitle(f, "Professions", lead .. ((query ~= "" or filtering()) and "No recipe you know matches." or "You know no recipes yet: a trainer teaches them."))
 		W.ShellBody(f, 0)
 	end
+	W.SetProgress(f.psBar, most > 0 and rank / most or 0, f.BodyWidth)
 	W.ShellWatermark(f, info == nil)
 	W.SetIconState(f.psFilter, filtering())
-	paintGear(p)
 	paintFooter(info)
 end
 
@@ -852,28 +856,25 @@ local function optionsItems()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760 + W.SHELL.rail, rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
+	-- The Professions window's size (ns.ProfessionsSize), so the two swap in place.
+	local size = ns.ProfessionsSize
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = size[1] + W.SHELL.rail, height = size[2], rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
 		query = (text or ""):lower()
 		levelFilter(query)
 		if f and f:IsShown() then refresh() end
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "crafting", optionsItems)
-	-- The subject block names the profession, in place of Polestar's lockup:
-	-- its name with the rank at the right end of its skill bar.
-	local SB, X = f.psSidebar or W.SHELL.sidebar, 24 + 36 + 12
-	f.psRank = W.Text(f.Sidebar, "number", "textDim")
-	f.psRank:SetPoint("BOTTOMRIGHT", f.Sidebar, "TOPLEFT", SB - 24, -47)
-	local b = ns.SubjectBlock(f)
-	b.line:Hide()
-	f.psIcon, f.psName = b.icon, b.name
-	f.psName:SetPoint("RIGHT", f.psRank, "LEFT", -8, 0)
-	f.psName:SetJustifyH("LEFT")
-	f.psName:SetWordWrap(false)
-	f.psBarW = SB - X - 24
-	f.psBar = W.ProgressLine(f.Sidebar, 2)
-	f.psBar:SetPoint("TOPLEFT", f.Sidebar, "TOPLEFT", X, -(47 + 8))
-	f.psBar:SetWidth(f.psBarW)
+	ns.Compact(f)
+	-- No lockup: the sidebar is the recipe list. Reparented, not hidden: the
+	-- shell re-shows its version line on every show.
+	local parked = CreateFrame("Frame", nil, f)
+	parked:Hide()
+	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(parked) end
+	-- The profession's skill bar along the band's foot, across the body.
+	f.psBar = W.ProgressLine(f.Header, 2)
+	f.psBar:SetPoint("BOTTOMLEFT", f.Header, "BOTTOMLEFT", f.psPad, 4)
+	f.psBar:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -f.psPad, 4)
 
 	-- The recipe page's parts; the reagent tiles are made as needed.
 	local p = CreateFrame("Button", nil, f.Body)
@@ -899,8 +900,8 @@ local function build()
 	f.psDesc = W.Text(f.Body, "default", "textDim")
 	f.psDesc:SetJustifyH("LEFT")
 	f.psDesc:SetWordWrap(true)
-	f.psHead = W.SectionHeader(f.Body)
-	W.SetSection(f.psHead, "Reagents")
+	f.psReagents = W.SectionHeader(f.Body)
+	W.SetSection(f.psReagents, "Reagents")
 	f.psHead2 = W.SectionHeader(f.Body)
 	W.SetSection(f.psHead2, "Item to enchant")
 	-- The enchant's item slot: a click lists the items it can go on, a
@@ -961,15 +962,22 @@ local function build()
 		set = function(n) qty = n; refresh() end,
 		max = function() return most end,
 	})
-	f.psStep:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
+	f.psStep:SetPoint("LEFT", f.Footer, "LEFT", f.psPad, 0)
 
-	-- The filter acts on the list: it sits at the end of the search row, its
-	-- glyph in the accent while a filter hides recipes.
-	local top = W.SHELL.header - 30
+	-- The search and filter head the recipe list, level with the band; the
+	-- filter's glyph in the accent while a filter hides recipes. The list
+	-- starts on the band's line, level with the rail's first icon.
+	local top = (f.psHead - 30) / 2
+	f.Search:ClearAllPoints()
+	f.Search:SetPoint("TOPLEFT", f.Sidebar, "TOPLEFT", W.SHELL.side, -top)
 	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
 	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", filterMenu, 14)
 	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
 	Theme.Skin(f.psFilter, "editbox")
+	f.psNavTop, f.psNavFoot = f.psHead, 0
+	f.NavScroll:ClearAllPoints()
+	f.NavScroll:SetPoint("TOPLEFT", f.Sidebar, "TOPLEFT", 0, -f.psNavTop)
+	f.NavScroll:SetPoint("BOTTOMRIGHT", f.Sidebar, "BOTTOMRIGHT", -1, 0)
 
 	W.ShellTabs(f, nil)
 	ns.LinkPlace(f)

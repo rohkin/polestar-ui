@@ -19,4 +19,4 @@ assert(n["Brown Linen Vest"] and n["Bolt of Linen Cloth"], "name search kept the
 search("10-15")
 n = names()
 assert(n["Brown Linen Vest"] and n["Linen Bag"] and not n["Soft-soled Linen Boots"], "10-15")
-assert(not names()["Bolt of Linen Cloth"] and f.Title:GetText() == "Tailoring", "a level search is not a search")
+assert(not names()["Bolt of Linen Cloth"] and not f.Subtitle:GetText():find("matches", 1, true), "a level search is not a search")
