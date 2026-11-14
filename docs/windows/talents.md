@@ -9,53 +9,51 @@ Forever's talents are the classic three trees on the client's trait engine
 (`C_Traits`, one tree, a node group per talent tree): changes are staged, then
 applied. Not protected, but refused in combat and while
 `C_ClassTalents.CanChangeTalents` says no; switching spec is a cast.
-- **Shell:** 1100×680 with sidebar: wider than the shell's 960, so three
-  four-column trees stand apart.
-- **Subject block:** the class icon (the class atlas, `GetClassAtlas`), the class in Title, "Level 60" in Small
-  textDim.
-- **Sidebar:** the shell's search ("Search talents"), then the stock tabs as
-  nav rows, Primary and Secondary (`DUAL_SPEC_PRIMARY`/`SECONDARY`): the
-  active spec's row with the dot, the other with its points spent as the
-  count. Until dual spec is learnt (`GetNumSpecGroups() > 1`) Secondary is
-  locked, as the stock tab: the lock glyph, receding (a count of 0), a click
-  does nothing, and its tooltip is the stock `TALENT_SPEC_LOCKED`. A spec
+- **Shell:** 780×650 on the compact grid (`ns.Compact`), no sidebar.
+- **Tabs:** the stock spec tabs on top (`ns.TopNav`), Primary and Secondary
+  (`DUAL_SPEC_PRIMARY`/`SECONDARY`): the active spec's tab with the dot,
+  the other with its points spent as the count. Until dual spec is learnt
+  (`GetNumSpecGroups() > 1`) Secondary is locked, as the stock tab: the lock
+  glyph, receding, a click does nothing, and its tooltip is the stock
+  `TALENT_SPEC_LOCKED`. The search ("Search talents") and its filter at the
+  tab row's right end. A spec
   just bought has no combat config (`GetCombatConfigIDForSpecGroup` nil)
   until the client makes it after the first switch (`TRAIT_CONFIG_CREATED`):
   the body says "Activate this spec to spend its points." (then "Loading this
   spec's talents…"), never the level-10 line, and refreshes when it is made.
 - **Search:** as the stock frame's, a talent matches on its name or its
   description; the others recede to 25%, and the subtitle counts the matches
-  ("7 talents match."). The stock search options on a filter at the end of
-  the search row (a 30px `sliders` square on the search field's well, as the
+  ("7 talents match."). The stock search options on a filter after the
+  search (a 30px `sliders` square on the search field's well, as the
   Spellbook's), lit while one is on, kept for the session as stock: "Hide
   passives" (`C_Spell.IsSpellPassive` talents never match) and "Show ranks"
   (each match's chip shows its ranks of the most, "2/3", widening to fit),
   then "Clear filters" while one is on.
-- **Main column:** title "Talents", subtitle the points left ("12 points to
-  spend.", "Every point is spent."), then "Your changes are not applied
+- **Main column:** title "Talents", subtitle the character first ("Level 24
+  Mage · "), then the points left ("12 points to spend.", "Every point is spent."), then "Your changes are not applied
   yet." while something is staged, and "Applying your talents…" while Apply
   runs. Viewing the spec that is not active, the
   subtitle says so ("Not your active spec.") and the footer's primary action
   is "Activate" (the stock `SetActiveSpecGroup`), the trees read-only.
 - **Art:** the class's talent art, as the stock frame shows it
   (`talent-background-<class>`, one atlas, a panel per tree), fills the main
-  column under the band at 85%, under a wash of Polestar's sky at 55%: full
+  column under the tab row at 85%, under a wash of Polestar's sky at 55%: full
   width, the middle band of its height (its aspect kept), so each panel sits
   behind its tree. Both fade to nothing over 160px at the column's left and
   right edges, and over 80px either side of each seam between the art's
   panels (at a third and two thirds), so no hard line shows between trees. A game texture, so a game thing (the Two Families Rule); the
   wash keeps it in Polestar's grounds and follows the theme.
-  Where it meets the band, a hairline (the border wash), full at the middle,
+  Where it meets the tab row, a hairline (the border wash), full at the middle,
   fading to nothing at the column's edges.
 - **Trees:** the three trees side by side, each a column a third of the main
-  column (the art's panels, between its seams): the tree's nodes on a 52px
+  column (the art's panels, between its seams): the tree's nodes on a grid 46px across and 56px down
   grid of at least four columns, centred in the column, under its heading,
   centred too: its icon (24px), its name in Heading and the points spent in
   Number textDim 8px after it, kept two digits wide so the heading does not
   move as points go in. The grid is read off the client's positions
   (`posX`, `posY`), which sit a few units off it: one cell is the smallest
   step between positions that is at least a quarter of the largest, and each
-  node rounds to the nearest cell. A node reads as the stock one: a 40px game
+  node rounds to the nearest cell. A node reads as the stock one: a 38px game
   icon on an inset well (`ns.ItemWell`, a button); partly learnt, its 1px border and rank in success;
   maxed, in the accent; open to a point, the hairline and no rank. Greyed as
   the stock button greys (`CalculateVisualState`): a talent keeps its colour

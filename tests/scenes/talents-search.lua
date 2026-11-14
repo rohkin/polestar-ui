@@ -5,7 +5,7 @@
 PolestarUI.Show("talents")
 local f = PolestarUITalents
 local sec
-for _, b in ipairs(f.navButtons) do if b.psKey == 2 and b:IsShown() then sec = b end end
+for _, b in ipairs(f.tabButtons) do if b.psKey == 2 and b:IsShown() then sec = b end end
 assert(sec, "no Secondary")
 sec:Click()
 assert(f.Title:GetText() == "Talents" and not f.Subtitle:GetText():find("active spec"), "locked spec opened")

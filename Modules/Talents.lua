@@ -7,7 +7,7 @@ local ADDON, ns = ...
 local W = Polestar.Widgets
 
 local NAME = "PolestarUITalents"
-local NODE, PITCH, HEAD_H = 40, 52, 48
+local NODE, PITCH, ROW, HEAD_H, TOP = 38, 46, 56, 40, 16 -- ROW: the vertical pitch, roomier than the columns
 
 local f, group = nil, nil -- group: the spec group shown (1 Primary, 2 Secondary)
 local query, found = "", 0 -- the sidebar search, and the talents it matched
@@ -359,7 +359,7 @@ local function paintTrees(config)
 	onHand = {}
 	local tree = treeOf(config)
 	for _, c in ipairs(tree and C_Traits.GetTreeCurrencyInfo(config, tree, false) or {}) do onHand[c.traitCurrencyID] = num(c.quantity) end
-	local colW = (f.BodyWidth + 2 * W.SHELL.pad) / math.max(#trees, 1)
+	local colW = (f.BodyWidth + 2 * f.psPad) / math.max(#trees, 1)
 	local at, ni, li, bottom = {}, 0, 0, 0
 	for i, t in ipairs(trees) do
 		local h = f.psHeads[i]
@@ -390,20 +390,20 @@ local function paintTrees(config)
 		h.Spent:SetText(t.spent or 0)
 		h:SetWidth(24 + 8 + h.Name:GetStringWidth() + 8 + reserve)
 		h:ClearAllPoints()
-		h:SetPoint("TOP", f.Body, "TOPLEFT", mid, -24)
+		h:SetPoint("TOP", f.Body, "TOPLEFT", mid, -TOP)
 		h:Show()
 		for _, n in ipairs(t.nodes) do
 			ni = ni + 1
 			local b = nodes[ni] or newNode(f.Body)
 			nodes[ni] = b
 			b:ClearAllPoints()
-			b:SetPoint("TOPLEFT", f.Body, "TOPLEFT", gx + n.col * PITCH, -(24 + HEAD_H + n.row * PITCH))
+			b:SetPoint("TOPLEFT", f.Body, "TOPLEFT", gx + n.col * PITCH, -(TOP + HEAD_H + n.row * ROW))
 			b:SetFrameLevel(f.Body:GetFrameLevel() + 2)
 			paintNode(b, config, n)
 			b.psTree = t.name -- the conditions name it ("Requires 10 points in Fire")
 			b:Show()
 			at[n.ID] = b
-			bottom = math.max(bottom, 24 + HEAD_H + n.row * PITCH + NODE)
+			bottom = math.max(bottom, TOP + HEAD_H + n.row * ROW + NODE)
 		end
 	end
 	for i = #trees + 1, #f.psHeads do f.psHeads[i]:Hide() end
@@ -432,7 +432,7 @@ local function paintTrees(config)
 	end
 	for i = li + 1, #lines do lines[i]:Hide() end
 	f.psEmpty:SetShown(#trees == 0)
-	return bottom + 24
+	return bottom + TOP
 end
 
 local optionsItems = { { text = "Game's talents: shift-click their micro button", disabled = true } }
@@ -448,8 +448,8 @@ local function paintArt()
 	local _, cls = UnitClass("player")
 	local info = C_Texture and C_Texture.GetAtlasInfo("talent-background-" .. cls:lower())
 	-- The main column under the band, from the shell's own sizes.
-	local w = f.BodyWidth + 2 * W.SHELL.pad
-	local h = f:GetHeight() - W.SHELL.header - (f.Footer:IsShown() and W.SHELL.footer or 0)
+	local w = f.BodyWidth + 2 * f.psPad
+	local h = f.psViewH
 	local on = info ~= nil and w > 2 * FEATHER + 4 * SEAM and h > 0
 	for i = 1, ART_PIECES do
 		f.psArt[i]:SetShown(on)
@@ -494,20 +494,16 @@ local function paintArt()
 end
 
 local function build()
-	-- Wider than the shell's 960: three four-column trees side by side.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 1100, searchPlaceholder = "Search talents", onSearch = function(text)
+	-- Three four-column trees side by side, on the compact grid.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 780, height = 650, searchPlaceholder = "Search talents", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then M.Show() end
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "talents", optionsItems)
-	-- The subject block names the window, in place of Polestar's lockup.
-	local b = ns.SubjectBlock(f)
-	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The stock search options, on a filter at the end of the search row (as
-	-- the Spellbook's), lit while one is on.
-	local top = W.SHELL.header - 30
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
+	ns.Compact(f)
+	-- The stock search options, on a filter after the search on the tab row
+	-- (as the Spellbook's), lit while one is on.
 	local function items()
 		local function flip(set)
 			return function()
@@ -526,11 +522,10 @@ local function build()
 		end
 		return list
 	end
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Search options", function(self)
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Search options", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		W.ShowMenu(self, items(), { minWidth = 200 })
 	end, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
 	Polestar.Theme.Skin(f.psFilter, "editbox")
 	f.psArt, f.psTint, f.psStripe = {}, {}, {}
 	for i = 1, 2 do
@@ -546,7 +541,7 @@ local function build()
 	W.Painter(f.psTint[1], function() paintArt() end)
 	f.psHeads = {}
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	-- The stock window's sounds: it never opens now to play them.
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_OPEN_WINDOW) end)
 	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_CLOSE_WINDOW) end)
@@ -555,38 +550,21 @@ end
 
 local function refresh()
 	if group > numGroups() then group = activeGroup() end
-	local _, cls = UnitClass("player")
-	f.psName:SetText((UnitClass("player")))
-	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
-	f.psClass:SetAtlas(GetClassAtlas(strlower(cls)))
-	-- The stock tabs as nav rows: the active spec with the dot, the other its points spent.
-	-- Secondary stays listed before dual spec is learnt: locked, receding
-	-- (count 0), its tooltip saying how to learn it, as the stock tab.
+	-- The stock spec tabs on top: the active spec with the dot, the other its
+	-- points spent. Secondary stays there before dual spec is learnt: locked,
+	-- receding, its tooltip saying how to learn it, as the stock tab.
 	local nav = {}
 	for g = 1, 2 do
 		local active, locked = g == activeGroup(), g > numGroups()
 		nav[g] = { key = g, label = g == 1 and (DUAL_SPEC_PRIMARY or "Primary") or (DUAL_SPEC_SECONDARY or "Secondary"),
-			icon = locked and "lock" or "star", dot = active or nil,
-			count = locked and 0 or (not active and spentIn(configOf(g))) or nil }
+			dot = active or nil, locked = locked or nil,
+			tip = locked and (TALENT_SPEC_LOCKED or "Learn Dual Talent Specialization from a class trainer.") or nil,
+			count = not (active or locked) and spentIn(configOf(g)) or nil }
 	end
-	W.ShellNav(f, nav, group, function(k)
-		if k > numGroups() then return end
+	ns.TopNav(f, nav, group, function(k)
 		group = k
 		M.Show()
 	end)
-	for _, b in ipairs(f.navButtons) do
-		if not b.psTalentTip then
-			b.psTalentTip = true
-			b:HookScript("OnEnter", function(self)
-				if self.psKey ~= 2 or numGroups() > 1 then return end
-				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-				GameTooltip:SetText(DUAL_SPEC_SECONDARY or "Secondary")
-				GameTooltip:AddLine(TALENT_SPEC_LOCKED or "Learn Dual Talent Specialization from a class trainer.", 1, 0.2, 0.2, true)
-				GameTooltip:Show()
-			end)
-			b:HookScript("OnLeave", W.HideTooltip)
-		end
-	end
 	local config = configOf(group)
 	local _, left = spentIn(config)
 	found = 0
@@ -613,9 +591,9 @@ local function refresh()
 		sub = left == 0 and "Every point is spent." or left == 1 and "1 point to spend." or ("%d points to spend."):format(left)
 		if staged then sub = sub .. " Your changes are not applied yet." end
 	end
-	W.ShellTitle(f, "Talents", sub)
+	-- The subject (the character) leads the subtitle.
+	W.ShellTitle(f, "Talents", ("Level %d %s · %s"):format(UnitLevel("player"), (UnitClass("player")), sub))
 	W.SetIconState(f.psFilter, hidePassives or showRanks)
-	W.ShellTabs(f, nil)
 	-- Apply and Undo always there, so the layout never moves; disabled as
 	-- Polestar disables (faded to 45%) while nothing is staged. On the spec
 	-- that is not active, Activate takes Apply's place, as the stock frame's

@@ -7,10 +7,10 @@ local f = PolestarUITalents
 local function item(t) for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and r.Text and r.Text:GetText() == t then return r end end end
 f.Search:SetText("i")
 stub.RunScript(f.Search, "OnTextChanged")
-local all = tonumber(f.Subtitle:GetText():match("%d+"))
+local all = tonumber(f.Subtitle:GetText():match("(%d+) talents? match"))
 f.psFilter:Click()
 item("Hide passives"):Click()
-local active = tonumber(f.Subtitle:GetText():match("%d+"))
+local active = tonumber(f.Subtitle:GetText():match("(%d+) talents? match"))
 assert(f.psFilter.psActive and active < all, ("passives not left out: %d of %d"):format(active, all))
 item("Hide passives"):Click()
 item("Show ranks"):Click()

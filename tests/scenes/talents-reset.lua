@@ -10,7 +10,7 @@ assert(r:IsShown() and r.Label:GetText() == "Reset" and r.psDanger and r:IsEnabl
 r:Click()
 assert(PolestarModal:IsShown() and sub():find("Every point is spent"), "reset without asking")
 PolestarModal.Box.Action:Click()
-assert(sub() == "15 points to spend. Your changes are not applied yet.", "not reset: " .. sub())
+assert(sub():find(" · 15 points to spend%. Your changes are not applied yet%.$"), "not reset: " .. sub())
 assert(f.footerButtons.right[1]:IsEnabled() and f.footerButtons.right[2]:IsEnabled(), "Apply or Undo off after a reset")
 assert(not r:IsEnabled(), "Reset on with no point spent")
 stub.RunScript(r, "OnEnter")
