@@ -278,6 +278,7 @@ hidden):
 | Action bars (`MainActionBar`, `MultiBar*`, pet, stance, possess) | high | built | [windows/actionbars.md](windows/actionbars.md) |
 | Player buffs and debuffs (`BuffFrame`, `DebuffFrame`) | medium | built, with the target's and focus's rows under our unit frames | [windows/auras.md](windows/auras.md) |
 | Cast bars: player, target, focus (`PlayerCastingBarFrame`, `TargetFrameSpellBar`, `FocusFrameSpellBar`) | high | built | [windows/castbars.md](windows/castbars.md) |
+| Personal Resource Display (`PersonalResourceDisplayFrame`) | medium | built | [windows/resource.md](windows/resource.md) |
 
 ## Components
 

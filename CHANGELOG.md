@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Personal Resource Display: the game's own bars in Polestar's look (flat fills, track, hairline, heal, absorb and cost segments as on our unit frames; class colour with Edit Mode's Show Class Color or Polestar's Class colour). Every Edit Mode setting stays the game's; /pui resource off gives the stock look back.
 - Fixed: the Character Skills page and its details no longer error when the game makes a skill's bonus (Defense's gear bonus) secret; they show the last bonus read instead.
 - World Map: the World Map moves to the compact grid: a bigger 900×600 map in a smaller window, Quests and Map Legend as top tabs, the map navigation on the tab row, and the stock Map Legend with pins that glow on hover.
 - Auction House: the Auction House moves to the compact grid (880×600, was 960×680) with Buy, Sell, Auctions and Bids as top tabs, the money, search and options on the tab row, and the auctioneer leading the subtitle.
