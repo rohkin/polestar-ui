@@ -10,7 +10,7 @@ local s = f.psSell
 assert(s:IsShown() and tostring(f.Title:GetText()) == "Sell" and tostring(s.Name:GetText()) == "No item", "the empty Sell page")
 assert(#f.footerButtons.right == 0 or not f.footerButtons.right[1]:IsShown(), "Post with no item")
 -- The band says what is on the well; the well's tooltip, how it takes an item.
-assert(f.Subtitle:GetText() == "No item chosen", "subtitle: " .. tostring(f.Subtitle:GetText()))
+assert(f.Subtitle:GetText() == "Auctioneer Beardo \194\183 No item chosen", "subtitle: " .. tostring(f.Subtitle:GetText()))
 stub.RunScript(s.Well, "OnEnter")
 assert(table.concat(GameTooltip.lines, "/"):find("Drop an item", 1, true), "no well hint")
 stub.RunScript(s.Well, "OnLeave")

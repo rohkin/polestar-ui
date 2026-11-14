@@ -14,7 +14,7 @@ stub.tokenShown = true
 stub.money = 50000000
 stub.interact(T.Auctioneer)
 nav("WoW Token"):Click()
-assert(tostring(f.Title:GetText()) == "WoW Token" and tostring(f.Subtitle:GetText()) == "Market price: 250g 0s 0c", "the market price")
+assert(tostring(f.Title:GetText()) == "WoW Token" and tostring(f.Subtitle:GetText()) == "Auctioneer Beardo \194\183 Market price: 250g 0s 0c", "the market price")
 local buy = f.footerButtons.right[1]
 assert(buy:IsEnabled(), "Buy not offered")
 buy:Click()

@@ -5,13 +5,17 @@ interaction manager (Auctioneer) and by `GameEvent`
 (`AUCTION_HOUSE_SHOW`/`CLOSED`): both are taken (`ns.Interaction`,
 `C_AuctionHouse.CloseAuctionHouse`); the stock addon is never loaded while
 ours is on.
-- **Shell:** 960×680 with sidebar. Subject block: the auctioneer's portrait
-  (`SetPortraitTexture(…, "npc")`, as the stock frame's `SetPortraitToUnit`),
-  "Auction House", the player's money. Tabs: Buy, Sell, Auctions, Bids (the
-  stock Auctions tab's two sub-tabs as tabs of their own). The band's
-  subtitle is a count: the results, how many of the item are in the bags,
-  the auctions and how many sold, an item's listings, the bids and how many
-  are outbid; what a click does is in each row's tooltip.
+- **Shell:** the compact grid (`ns.Compact`), 880×600 (was 960×680). The
+  sidebar (200) stays as the category column, content as Crafting's recipe
+  list: Polestar's lockup and version line parked, its rows from the top.
+  The pages are top tabs (`ns.TopNav`, the stock bottom text tabs, no
+  icons): Buy, Sell, Auctions, Bids (the stock Auctions tab's two sub-tabs as
+  tabs of their own). The tab row's right end: the player's money, the
+  search, the stock Search button, the search options. The auctioneer
+  (`UnitName("npc")`) leads the band's one-line subtitle, then a count: the
+  results, how many of the item are in the bags, the auctions and how many
+  sold, an item's listings, the bids and how many are outbid; what a click
+  does is in each row's tooltip.
 - **Lists:** every list is the stock table: a header row, the sortable
   columns a click away (the last clicked first, a second click turns it, two
   sorts at most, kept for the account per list as the stock
@@ -24,13 +28,13 @@ ours is on.
   (`RequestOwnedAuctionBidderInfo`). Ctrl-click dresses up, shift-click links
   in chat. Long lists ask for their next page within 30 rows of the end
   (`RequestMore*Results`).
-- **Buy:** the sidebar is the stock category tree, built as Camelot's
+- **Buy:** the category column is the stock category tree, built as Camelot's
   `Blizzard_AuctionData.lua` builds it (names from the client): a category
   picked opens its subcategories under it, a subcategory its own, indented;
   a click on one on the picked path closes it. Each searches with its item
   class filters. All, Favorites (dimmed with none), and the WoW Token where
   the client shows it (`C_WowTokenUI.ShouldDisplayInAuctionHouse`). The
-  shell's search sends on Enter; a link shift-clicked with no chat line open
+  tab row's search sends on Enter; a link shift-clicked with no chat line open
   fills it. The sliders button holds the stock search options: a level
   range, the client's filter groups (`GetFilterGroups`: usable, upgrades,
   the rarities), kept per character, the glyph lit while one is set, its
@@ -80,13 +84,13 @@ ours is on.
   the bag button's own `OnModifiedClick`.
 - **Auctions:** the player's auctions (`QueryOwnedAuctions`): bid (green
   once someone bid; Incoming when sold), buyout, time left; a click on an
-  active one cancels (`CancelAuction`, `W.Modal` naming the fee). The sidebar
+  active one cancels (`CancelAuction`, `W.Modal` naming the fee). The column
   is the stock summary list: all, then each item among them
   (`GetOwnedAuctionType`); an item picked shows all its listings, the
   player's own to cancel, others to buy. Refresh asks again.
 - **Bids:** the auctions the player bid on, asked for by the IDs kept per
   character as the stock `g_activeBidAuctionIDs` (`QueryBids`, also as the
-  window opens for the outbid marks); outbid ones in red. The sidebar lists
+  window opens for the outbid marks); outbid ones in red. The column lists
   each item bid on (`GetBidType`). `AUCTION_HOUSE_NEW_BID_RECEIVED` asks again.
 - **Left to the game's window:** selling a WoW Token: the stock post calls
   `C_WowTokenUI.StartTokenSell`, whose argument the client accepts only from
@@ -103,6 +107,7 @@ ours is on.
   `auction-categories`, `auction-filters`, `auction-favorites`,
   `auction-commodity`, `auction-item`, `auction-sell`, `auction-sell-list`,
   `auction-bags`, `auction-owned`, `auction-owned-item`, `auction-bids`,
-  `auction-links`, `auction-token`. They also check the band's counts,
+  `auction-links`, `auction-token`, `auction-game-looks` (Forever's looks:
+  the skin's tab row and pad, the tab row's parts, no lockup). They also check the band's counts,
   the one-line row, the filter count and Clear filters, Post's reason in its
   tooltip, the well's hint and no bag button while targeting.

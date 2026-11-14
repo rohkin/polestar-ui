@@ -1,7 +1,7 @@
 --@ title: Auction House
 --@ roots: PolestarUIAuction
 --@ stubs: stub_npc.lua, stub_auction.lua
--- The auctioneer opens ours, never the stock window, and the stock addon is never loaded: Forever's AUCTION_HOUSE_SHOW route is stopped and the interaction taken, and ours opens and closes on either route alone or both at once; the bags open with it; closing ours ends the auction house once, the game ending it closes ours without ending it again. The sidebar names the auction house with the player's money and lists the categories; Enter in the search browses (by text and category), each result a row with its lowest price and how many are up; a price over the player's money is red.
+-- The auctioneer opens ours, never the stock window, and the stock addon is never loaded: Forever's AUCTION_HOUSE_SHOW route is stopped and the interaction taken, and ours opens and closes on either route alone or both at once; the bags open with it; closing ours ends the auction house once, the game ending it closes ours without ending it again. On the compact grid (880x600): Buy, Sell, Auctions and Bids are top tabs, the player's money, the search and its options on the tab row, the auctioneer leading the subtitle, the categories a column beside the page; Enter in the search browses (by text and category), each result a row with its lowest price and how many are up; a price over the player's money is red.
 local T = Enum.PlayerInteractionType
 local ns = PolestarUI
 assert(ns.modules.auction.reloadOff, "switching off does not wait for /reload")
@@ -37,6 +37,7 @@ assert(not f:IsShown() and stub.npcClosed.CloseAuctionHouse == 1, "the game's en
 
 stub.interact(T.Auctioneer)
 assert(tostring(f.psMoney.psParts[1].text:GetText()) == "123", "the player's money")
+assert(f:GetWidth() == 880 and f:GetHeight() == 600 and f.psCompact and f.Sidebar:IsShown() and f.tabButtons[4]:IsShown() and f.psMoney:GetParent() == f.TabRow, "not the compact grid")
 local function rows()
 	local out = {}
 	for _, r in ipairs({ f.Body:GetChildren() }) do if r.psKey and r:IsShown() then out[#out + 1] = r end end
@@ -54,7 +55,7 @@ local r = rows()
 assert(#r == 2 and tostring(r[1].Name:GetText()) == "Linen Cloth" and tostring(r[1].Cells[1].Text:GetText()) == "350", "the cloth results")
 assert(tostring(r[2].Cells[2].Money.psParts[2].text:GetText()) == "4", "the lowest price")
 -- The band counts the results; a one-line row has its name in the row's middle.
-assert(f.Subtitle:GetText() == "2 results", "subtitle: " .. tostring(f.Subtitle:GetText()))
+assert(f.Subtitle:GetText() == "Auctioneer Beardo \194\183 2 results", "subtitle: " .. tostring(f.Subtitle:GetText()))
 assert(r[1].Line:GetText() == "" and select(3, r[1].Name:GetPoint(1)) == "RIGHT", "a one-line row not centred")
 
 -- A category narrows by its item classes; All lifts it.

@@ -133,7 +133,7 @@ local ERRORS = {
 }
 
 local AH -- C_AuctionHouse, set in Enable
-local f, money, subject
+local f, money
 local tab = "buy"
 local sel, searched = {}, nil -- the browse: the category path ({ top, sub, subsub } indexes); whether a search ran
 local view -- an item's listings: { key, info, n (commodity count) }
@@ -145,6 +145,12 @@ local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends t
 local paint, moreResults
 
 local coins = ns.Coins
+
+-- The band: the page's title; the auctioneer leads the subtitle.
+local function title(t, sub)
+	local who = ns.Clean(UnitName("npc")) or "Auction House"
+	W.ShellTitle(f, t, sub and (who .. " \194\183 " .. sub) or who)
+end
 
 -- The sorts each list asks the client for, two at most, the last clicked
 -- first, kept for the account as the stock g_auctionHouseSortsBySearchContext
@@ -684,11 +690,11 @@ local function header(top, name, cols, ctx, requery)
 		h.Arrow:ClearAllPoints()
 		h:SetWidth(math.ceil(h.Text:GetStringWidth()) + 14)
 		if c.left then
-			h:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + c.left, -top)
+			h:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad + c.left, -top)
 			h.Text:SetPoint("LEFT", h, "LEFT", 0, 0)
 			h.Arrow:SetPoint("LEFT", h.Text, "RIGHT", 4, 0)
 		else
-			h:SetPoint("TOPRIGHT", f.Body, "TOPLEFT", W.SHELL.pad + c.right, -top)
+			h:SetPoint("TOPRIGHT", f.Body, "TOPLEFT", f.psPad + c.right, -top)
 			h.Text:SetPoint("RIGHT", h, "RIGHT", 0, 0)
 			h.Arrow:SetPoint("RIGHT", h.Text, "LEFT", -4, 0)
 		end
@@ -708,7 +714,7 @@ end
 local function fill(k, top, o, cols)
 	local r = row(k)
 	r:ClearAllPoints()
-	r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(top + (k - 1) * ROW_H))
+	r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -(top + (k - 1) * ROW_H))
 	local info = AH.GetItemKeyInfo(o.key) or {}
 	ns.PaintItem(r.Well, { icon = info.iconFileID, quality = info.quality, desat = o.dim })
 	r.Name:SetText(o.name or info.itemName or "")
@@ -813,7 +819,7 @@ local function paintToken()
 	elseif not price then line = TOKEN_MARKET_PRICE_NOT_AVAILABLE or "The market price is not available."
 	elseif token.noneUntil then line = TOKEN_NONE_FOR_SALE or "None for sale; try again in a minute."
 	else line = ("Market price: %s"):format(coins(price)) end
-	W.ShellTitle(f, TOKEN_FILTER_LABEL or "WoW Token", line)
+	title(TOKEN_FILTER_LABEL or "WoW Token", line)
 	local why = (token.disabled or token.noneUntil) and line or price and GetMoney() < price and (ERR_NOT_ENOUGH_MONEY or "You don't have enough money.") or nil
 	ns.Footer(f, {}, { price and { label = BUYOUT or "Buy", onClick = buyToken, opts = { primary = true } } or nil })
 	if price then ns.SetEnabled(f.footerButtons.right[1], not why, why) end
@@ -853,7 +859,7 @@ end
 local function paintBrowse()
 	local favs = searched == "fav"
 	local list = searched and AH.GetBrowseResults() or {}
-	W.ShellTitle(f, favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
+	title(favs and (FAVORITES or "Favorites") or picked() and picked().name or "Browse",
 		searched and not browseFailed and many(#list, "%s result", "%s results") or nil)
 	ns.Footer(f, {}, {})
 	-- The column a category adds (required level, slots, skill), as the stock layout.
@@ -929,7 +935,7 @@ local function paintCommodity()
 	view.n = math.max(1, math.min(view.n, most))
 	local got, total = aggregate(id, view.n)
 	-- The stock refresh frame: how many are up, and the list asked for again.
-	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetCommoditySearchResultsQuantity(id))))
+	title(view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetCommoditySearchResultsQuantity(id))))
 	ns.Footer(f, viewFooter(),
 		{ got > 0 and { label = ("Buy %d (%s)"):format(got, coins(total)), onClick = buyCommodity, opts = { primary = true } } or nil })
 	-- More than the player has: off, as the stock buy button.
@@ -954,13 +960,13 @@ local function paintCommodity()
 end
 
 local function paintItem()
-	W.ShellTitle(f, view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetItemSearchResultsQuantity(view.key))))
+	title(view.info.itemName, (AUCTION_HOUSE_QUANTITY_AVAILABLE_FORMAT or "%s available"):format(count(AH.GetItemSearchResultsQuantity(view.key))))
 	ns.Footer(f, viewFooter(), {})
 	local S = Enum.AuctionHouseSortOrder
 	-- The stock item list: current bid, buyout, quantity, time left.
 	local cols = { { label = AUCTION_HOUSE_HEADER_CURRENT_BID or "Current Bid", sort = S.Bid, w = 150 },
 		{ label = AUCTION_HOUSE_HEADER_BUYOUT_PRICE or "Buyout", sort = S.Buyout, w = 150 },
-		{ label = "", w = 50 }, { label = TIME_LEFT or "Time Left", w = 110 } }
+		{ label = "", w = 50 }, { label = TIME_LEFT or "Time Left", w = 90 } }
 	local y = header(24, { label = AUCTION_HOUSE_HEADER_ITEM or "Item" }, cols, "item:buy", research)
 	local n = AH.GetNumItemSearchResults(view.key)
 	for i = 1, n do
@@ -1146,8 +1152,8 @@ local SELL_ROW, SELL_COL = 66, 300
 local function buildSell()
 	local s = CreateFrame("Frame", nil, f.Body)
 	s:SetPoint("TOPLEFT", f.Body, "TOPLEFT", 0, 0)
-	s:SetSize(f.BodyWidth + 2 * W.SHELL.pad, 1)
-	local x, x2 = W.SHELL.pad, W.SHELL.pad + SELL_COL
+	s:SetSize(f.BodyWidth + 2 * f.psPad, 1)
+	local x, x2 = f.psPad, f.psPad + SELL_COL
 	s.Well = ns.ItemWell(s, 56, "Button")
 	s.Well:SetPoint("TOPLEFT", s, "TOPLEFT", x, -24)
 	W.Hover(s.Well)
@@ -1168,7 +1174,7 @@ local function buildSell()
 	s.Line = W.Text(s, "small", "textDim")
 	s.Line:SetPoint("TOPLEFT", s.Well, "RIGHT", 12, -4)
 	for _, t in ipairs({ s.Name, s.Line }) do
-		t:SetPoint("RIGHT", s, "RIGHT", -W.SHELL.pad, 0)
+		t:SetPoint("RIGHT", s, "RIGHT", -f.psPad, 0)
 		t:SetJustifyH("LEFT")
 		t:SetWordWrap(false)
 	end
@@ -1228,7 +1234,7 @@ local function buildSell()
 	-- Why Post cannot go yet (the stock Post button's tooltip), or the multisell's progress.
 	s.Reason = W.Text(s, "small", "danger")
 	s.Reason:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -(y + 2))
-	s.Reason:SetPoint("RIGHT", s, "RIGHT", -W.SHELL.pad, 0)
+	s.Reason:SetPoint("RIGHT", s, "RIGHT", -f.psPad, 0)
 	s.Reason:SetJustifyH("LEFT")
 	s.psHeight = y + 24 + 16
 	return s
@@ -1300,7 +1306,7 @@ local function paintSell()
 	local two = item and not sell.buyoutOnly
 	s.BidCaption:SetShown(two)
 	s.Bid:SetShown(two)
-	local x2, y0, y1 = W.SHELL.pad + SELL_COL, s.psRows[1], s.psRows[2]
+	local x2, y0, y1 = f.psPad + SELL_COL, s.psRows[1], s.psRows[2]
 	for _, t in ipairs({ { s.BidCaption, s.Bid, y0 }, { s.PriceCaption, s.Price, two and y1 or y0 } }) do
 		t[1]:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -t[3])
 		t[2]:SetPoint("TOPLEFT", s, "TOPLEFT", x2, -(t[3] + 18))
@@ -1314,7 +1320,7 @@ local function paintSell()
 	local tip = not why and sell.from and sell.price == sell.from - SILVER and (AUCTION_HOUSE_UNDERCUT_TUTORIAL or "Undercutting by a silver is enough.")
 	s.Reason:SetText(sell.multi and (AUCTION_CREATING or "Creating auction %d of %d"):format(sell.multi[1], sell.multi[2]) or loc and (why or tip) or "")
 	W.Color(s.Reason, (sell.multi or tip) and "textDim" or "danger")
-	W.ShellTitle(f, "Sell", loc and ("%s in your bags"):format(count(AH.GetAvailablePostCount(loc))) or "No item chosen")
+	title("Sell", loc and ("%s in your bags"):format(count(AH.GetAvailablePostCount(loc))) or "No item chosen")
 	ns.Footer(f, { loc and not sell.multi and { label = "Clear", onClick = function() setItem(nil) end } or nil },
 		{ loc and { label = "Post", onClick = post, opts = { primary = true } } or nil })
 	local p = f.footerButtons.right[1]
@@ -1358,7 +1364,7 @@ local function paintOwned()
 		local o = AH.GetOwnedAuctionInfo(i)
 		if o and o.status == Enum.AuctionStatus.Sold then sold = sold + 1 end
 	end
-	W.ShellTitle(f, "Your auctions", many(n, "%s auction", "%s auctions") .. (sold > 0 and (" \194\183 %d sold"):format(sold) or ""))
+	title("Your auctions", many(n, "%s auction", "%s auctions") .. (sold > 0 and (" \194\183 %d sold"):format(sold) or ""))
 	-- The stock list's refresh button.
 	ns.Footer(f, { { label = REFRESH or "Refresh", onClick = function() AH.QueryOwnedAuctions(sorts("owned:auctions")) end, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
@@ -1395,7 +1401,7 @@ end
 local function paintOwnItem()
 	local info = AH.GetItemKeyInfo(own) or {}
 	local listed = info.isCommodity and AH.GetNumCommoditySearchResults(own.itemID) or AH.GetNumItemSearchResults(own)
-	W.ShellTitle(f, displayName(own, info) or "", many(listed, "%s listing", "%s listings"))
+	title(displayName(own, info) or "", many(listed, "%s listing", "%s listings"))
 	ns.Footer(f, { { label = REFRESH or "Refresh", onClick = queryOwn, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols, y, n
@@ -1435,7 +1441,7 @@ local function paintBids()
 		local b = AH.GetBidInfo(i)
 		if b and bidStatus(b) == "outbid" then lost = lost + 1 end
 	end
-	W.ShellTitle(f, AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", many(n, "%s bid", "%s bids") .. (lost > 0 and (" \194\183 %d outbid"):format(lost) or ""))
+	title(AUCTION_HOUSE_BIDS_SUB_TAB or "Bids", many(n, "%s bid", "%s bids") .. (lost > 0 and (" \194\183 %d outbid"):format(lost) or ""))
 	ns.Footer(f, { { label = REFRESH or "Refresh", onClick = queryBids, opts = { icon = "reload" } } }, {})
 	local S = Enum.AuctionHouseSortOrder
 	local cols = { { label = AUCTION_HOUSE_HEADER_BID_PRICE or "Bid", sort = S.Bid, w = 150 },
@@ -1459,35 +1465,58 @@ end
 local TABS = { { key = "buy", label = "Buy" }, { key = "sell", label = "Sell" }, { key = "auctions", label = "Auctions" },
 	{ key = "bids", label = AUCTION_HOUSE_BIDS_SUB_TAB or "Bids" } }
 
+local function selectTab(k)
+	tab, own = k, nil
+	if k == "auctions" then AH.QueryOwnedAuctions(sorts("owned:auctions")) end
+	if k == "bids" then queryBids() end
+	paint()
+end
+
+-- The category list (the sidebar's rows, W.ShellNav) from this far down the column.
+local NAV_TOP = 12
+
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 960, height = 680, searchPlaceholder = "Search items" })
+	-- The compact grid. The sidebar stays as the category column (content,
+	-- as Crafting's recipe list), its lockup gone; the pages are top tabs,
+	-- the money, search and options on the tab row.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 880, height = 600, sidebar = 200, searchPlaceholder = "Search" })
 	ns.Dock(f)
 	ns.WindowMenu(f, "auction")
-	local b = ns.SubjectBlock(f)
-	subject = b
-	b.name:SetText("Auction House")
-	money = ns.Money(f.Sidebar)
-	money:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -6)
-	f.psMoney = money
+	-- Reparented, not hidden: the shell re-shows its version line on every show.
+	local parked = CreateFrame("Frame", nil, f)
+	parked:Hide()
+	for _, r in ipairs({ f.Emblem, f.Emblem.Glow, f.Emblem.Hot, f.Wordmark, f.Tagline, f.Status, f.Stage }) do r:SetParent(parked) end
+	f.NavScroll:ClearAllPoints()
+	f.NavScroll:SetPoint("TOPLEFT", f.Sidebar, "TOPLEFT", 0, -NAV_TOP)
+	f.NavScroll:SetPoint("BOTTOMRIGHT", f.Sidebar, "BOTTOMRIGHT", -1, 0)
 	-- Enter searches: each query counts against the client's throttle, so not per keystroke.
 	f.Search:HookScript("OnEnterPressed", browse)
 	f.Scroll:HookScript("OnVerticalScroll", function() moreResults() end)
-	-- The search options at the end of the search row, lit while one is set.
-	local top = W.SHELL.header - 30
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 2 * (30 + 6)), -top)
+	-- The search options at the tab row's end, lit while one is set.
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Search options", filterMenu, 14)
+	Polestar.Theme.Skin(f.psFilter, "editbox")
 	-- The stock search bar's Search button: the same as Enter.
-	f.psSearchGo = W.IconButton(f.Sidebar, "search", 30, AUCTION_HOUSE_SEARCH_BUTTON or "Search", function()
+	f.psSearchGo = W.IconButton(f.TabRow, "search", 30, AUCTION_HOUSE_SEARCH_BUTTON or "Search", function()
 		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 		browse()
 	end, 14)
-	f.psSearchGo:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
 	Polestar.Theme.Skin(f.psSearchGo, "editbox")
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Search options", filterMenu, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
-	Polestar.Theme.Skin(f.psFilter, "editbox")
+	money = ns.Money(f.TabRow)
+	f.psMoney = money
+	-- ns.TopNav drops a shown sidebar (ns.Plain) on its first call: this one keeps it.
+	f.Sidebar:Hide()
+	ns.TopNav(f, TABS, tab, selectTab)
+	f.Sidebar:Show()
+	ns.Compact(f)
+	f.psFilter:ClearAllPoints()
+	f.psFilter:SetPoint("RIGHT", f.TabRow, "RIGHT", -f.psPad, 0)
+	f.psSearchGo:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0)
+	f.Search:ClearAllPoints()
+	f.Search:SetPoint("RIGHT", f.psSearchGo, "LEFT", -6, 0)
+	money:SetPoint("RIGHT", f.Search, "LEFT", -14, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	local strip = CreateFrame("Frame", nil, f.Body)
-	strip:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	strip:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	strip:SetSize(f.BodyWidth, 28)
 	strip.Stepper = ns.Stepper(strip, { get = function() return view.n end, set = function(n) view.n = n; paint() end,
 		max = function() return math.max(1, aggregate(view.info.itemID, math.huge)) end })
@@ -1611,12 +1640,9 @@ function moreResults()
 end
 
 function paint()
-	W.ShellTabs(f, TABS, tab, function(k)
-		tab, own = k, nil
-		if k == "auctions" then AH.QueryOwnedAuctions(sorts("owned:auctions")) end
-		if k == "bids" then queryBids() end
-		paint()
-	end)
+	ns.TopNav(f, TABS, tab, selectTab)
+	-- W.ShellNav sizes its rows' view to the shell's footer line; ours runs to the column's foot.
+	f.psNavTop = NAV_TOP - W.SHELL.footer
 	paintNav()
 	local on = filtered()
 	W.SetIconState(f.psFilter, on > 0)
@@ -1637,11 +1663,13 @@ function paint()
 	else n, top, empty = paintItem() end
 	for k = n + 1, #rows do rows[k]:Hide() end
 	f.psEmpty:ClearAllPoints()
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -top)
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -top)
 	f.psEmpty:SetText(empty or "")
 	W.Color(f.psEmpty, browseFailed and tab == "buy" and not view and "danger" or "textDim")
 	f.psEmpty:SetShown(n == 0 and empty ~= nil)
 	W.ShellBody(f, top + math.max(1, n) * ROW_H + 24)
+	-- The footer's relayout widens the search to the tab row's room; the money and Search button share it.
+	f.Search:SetWidth(math.max(100, math.min(200, f.BodyWidth + f.psPad - f.psTabsRight - 12 - 2 * 36 - money:GetWidth() - 14)))
 	f.psList = { n = n, top = top }
 	moreResults()
 end
@@ -1649,8 +1677,6 @@ end
 function M.Show()
 	tree = tree or buildTree()
 	if not f then build() end
-	-- The auctioneer's portrait, as the stock frame (SetPortraitToUnit("npc")).
-	SetPortraitTexture(subject.icon, "npc")
 	tab = "buy"
 	paint()
 	f:Show()

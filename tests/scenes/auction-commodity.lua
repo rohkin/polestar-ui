@@ -18,7 +18,7 @@ for _, r in ipairs({ f.Body:GetChildren() }) do if r.psKey and r:IsShown() then 
 table.sort(rows, function(a, b) return a:GetTop() > b:GetTop() end)
 assert(#rows == 3 and tostring(rows[3].Cells[2].Text:GetText()) == "50" and tostring(rows[3].Line:GetText()) == "2 sellers (20 yours)", "the price list")
 
-assert(tostring(f.Subtitle:GetText()) == "350 available", "how many are up")
+assert(tostring(f.Subtitle:GetText()) == "Auctioneer Beardo \194\183 350 available", "how many are up")
 -- A listing clicked: every unit up to its price.
 rows[2]:Click()
 assert(tostring(f.footerButtons.right[1].Label:GetText()):find("Buy 300 ", 1, true), "the listing's price not picked")

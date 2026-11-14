@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Auction House: the Auction House moves to the compact grid (880×600, was 960×680) with Buy, Sell, Auctions and Bids as top tabs, the money, search and options on the tab row, and the auctioneer leading the subtitle.
 - Legacy: Legacy moves to the compact grid (760×600, was 1088×720) with its sections on a slim icon rail, the trees as top tabs, the categories in a column of the page and the search and filter on the tab row.
 - Professions and crafting: Professions and the crafting window move to the compact grid at one size (792×600, was 848×680) with a slim icon rail; crafting shows the profession and rank in the subtitle, the skill bar along the band and the tool and gear slots at the foot of the recipe list.
 - Guild: the Guild moves to the compact grid (740×520, was 808×600): a slim icon rail, with the roster search and filter on the tab row.
