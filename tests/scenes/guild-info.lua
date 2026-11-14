@@ -7,7 +7,7 @@
 PolestarUI.Show("guild", "info")
 local f = PolestarUIGuild
 assert(stub.asked.roster and stub.asked.challenges, "info not asked for")
-assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members · 1 of 3 challenges done this week", "band: " .. tostring(f.Subtitle:GetText()))
+assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members" and f.psOnline:GetText() == "1 of 3 challenges done this week", "band: " .. tostring(f.psOnline:GetText()))
 local function line(text)
 	for _, r in ipairs({ f.psLines:GetChildren() }) do
 		if r:IsShown() and ((r.Head:IsShown() and r.Head.Text:GetText() == text) or (r.Text:IsShown() and r.Text:GetText() == text)) then return r end
@@ -30,4 +30,11 @@ stub.noOfficer = true
 PolestarUI.Show("guild")
 assert(not line("Message of the day").Edit:IsShown(), "member can edit")
 stub.noOfficer = false
+PolestarUI.Show("guild")
+-- No challenges: the row falls back to the online count, and the row stays.
+local n = GetNumGuildChallenges
+GetNumGuildChallenges = function() return 0 end
+PolestarUI.Show("guild")
+assert(f.psOnline:GetText() == "6 online" and f.TabRow:IsShown(), "no-challenges row")
+GetNumGuildChallenges = n
 PolestarUI.Show("guild")

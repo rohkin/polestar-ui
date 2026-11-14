@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Guild and Social: every Guild page keeps its tab row with the page's status text (online count fallback); the Social search stays put across tabs.
 - Damage meter: the session letter sits on an accent chip, the type label is larger, and bars use the theme accent or class colour toned for readable names.
 - Chat: tabs stay legible at rest with an accent underline and aligned labels, a faint outline at rest, and the edit box ringed like Polestar's inputs.
 - Damage meter: the game's own meter in the HUD's look, restyled in place (our ground at its Background Transparency, flat sky bars or class colours with its Show Class Color, Polestar's faces, our glyphs on its header buttons on one line, and our ground, radios, ticks, chevrons and hover in its menus); Edit Mode, the player's extra windows and the breakdown stay the game's. /pui damagemeter on|off.

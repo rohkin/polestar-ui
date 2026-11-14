@@ -587,7 +587,7 @@ end
 -- { bar = frac, text, right }.
 local function paintLines(list)
 	local p, y = f.psLines, 0
-	local top = TOP
+	local top = list[1] and list[1].section and 0 or TOP -- a leading heading carries its own space
 	p:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -top)
 	local w = f.BodyWidth
 	for i, e in ipairs(list) do
@@ -941,6 +941,8 @@ local function build()
 	f.psSearch:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0)
 	f.psSearch:SetWidth(200)
 	Theme.Skin(f.psSearch, "editbox")
+	f.psOnline = W.Text(f.TabRow, "default", "textMuted")
+	f.psOnline:SetPoint("LEFT", f.TabRow, "LEFT", f.psPad, 0)
 	local R = CreateFrame("Frame", nil, f.Body)
 	R:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -TOP)
 	R:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
@@ -986,11 +988,13 @@ local function refresh()
 		nav = { { key = "none", label = "Guild", icon = "Interface/Icons/achievement_guildperk_everybodysfriend" } }
 	end
 	ns.GameRail(f, nav, page, function(k) M.Show(k) end, { slim = true })
-	-- The tab row shows only where it holds the search and filter.
-	f.psKeepTabRow = page == "roster" or page == "news"
+	-- The tab row stays on every page (content starts at one y): the page's fact
+	-- (Roster: the online count) at its left, search and filter at its right.
+	f.psKeepTabRow = true
 	W.ShellTabs(f, nil)
+	f.psOnline:SetShown(inGuild)
 	f.psSearch:SetShown(page == "roster")
-	f.psFilter:SetShown(f.psKeepTabRow)
+	f.psFilter:SetShown(page == "roster" or page == "news")
 	local filtersOn = page == "roster" and (showOffline() or extra ~= nil)
 	if page == "news" then for _, v in ipairs({ GetGuildNewsFilters() }) do if not v then filtersOn = true end end end
 	W.SetIconState(f.psFilter, filtersOn)
@@ -1019,7 +1023,8 @@ local function refresh()
 	-- Character's name and level), then the page's own fact.
 	local function title(fact)
 		local line = ("%s · %s"):format(rank or "", count(#all, "member"))
-		W.ShellTitle(f, guild or "Guild", fact and line .. " · " .. fact or line)
+		W.ShellTitle(f, guild or "Guild", line)
+		f.psOnline:SetText(fact or ("%d online"):format(on))
 	end
 	local h
 	if page == "roster" then

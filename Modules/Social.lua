@@ -1166,9 +1166,9 @@ local function refresh()
 	W.SetIconState(f.psFilter, n > 0)
 	f.psFilter.psTip = n > 0 and ("Filter (%d on)"):format(n) or "Filter"
 	f.psFilter:SetShown(filtered)
-	-- Flush right of the tab row when the filter is off, else before the filter (as ns.TopNav sets it).
+	-- The search keeps the filter's slot on every tab, so it never moves.
 	f.Search:ClearAllPoints()
-	if filtered then f.Search:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0) else f.Search:SetPoint("RIGHT", f.TabRow, "RIGHT", -f.psPad, 0) end
+	f.Search:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0)
 	st.Label:SetText(BNConnected() and battleTag() or "Battle.net offline")
 	st:SetEnabled(BNConnected())
 	st.Arrow:SetShown(BNConnected())

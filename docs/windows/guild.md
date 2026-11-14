@@ -40,10 +40,10 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   stock Guild Info tab and have no tab icon of their own: note icons
   (`INV_Misc_Note_02`, `inv_misc_note_06`). Not in a guild: one Guild tab and
   a page saying so, and that Guild Finder is on the game's window.
-- **Band:** the guild's name (Display); under it, one line, "Officer · 9 members", then the page's
-  fact ("6 online", "3 news items", "2 perks · 3 rewards", "4 events", the
-  week's challenges).
-- **Tab row:** it holds no tabs; it shows only on the Roster and News (`psKeepTabRow`), with
+- **Band:** the guild's name (Display); under it, one line, "Officer · 9 members".
+- **Tab row:** it holds no tabs; it shows on every page (`psKeepTabRow`) so content starts at one y. At its left,
+  the page's fact (`f.psOnline`): "6 online" (Roster), "3 news items", "2 perks · 3 rewards", "4 events", the
+  week's challenges. On the Roster and News, at its right end,
   a search ("Search": name, zone,
   rank, note) and a Filter icon at its right end: Show offline members (the stock check box;
   CVar `communitiesShowOffline`) and the stock column dropdown's choices that

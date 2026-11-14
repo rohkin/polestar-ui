@@ -7,7 +7,7 @@
 PolestarUI.Show("guild", "benefits")
 local f = PolestarUIGuild
 assert(stub.asked.rewards, "rewards not asked for")
-assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members · 2 perks · 3 rewards", "band: " .. tostring(f.Subtitle:GetText()))
+assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members" and f.psOnline:GetText() == "2 perks · 3 rewards", "band: " .. tostring(f.psOnline:GetText()))
 local function line(pat)
 	for _, r in ipairs({ f.psLines:GetChildren() }) do
 		if r:IsShown() and r.Text:IsShown() and r.Text:GetText():find(pat, 1, true) then return r end

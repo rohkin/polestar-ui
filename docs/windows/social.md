@@ -35,7 +35,7 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   has them, stay on the game's window) come before "Use game window".
 - **Tab row:** the shell's search ("Search"; names and
   Battle.net character names) and, on Friends, a Filter icon button ending
-  the tab row as in Crafting (accent while a filter is on). Its menu is
+  the tab row as in Crafting (accent while a filter is on); the search never moves: it keeps the filter slot's place, filter shown or not. Its menu is
   the stock list's: Status (Online, Away, Busy, Offline, In Queue, Available
   For Queue), then the Interests and Roles tags this game type supports (no
   Delves on Forever), and Clear filters; a pick keeps it open; the tooltip

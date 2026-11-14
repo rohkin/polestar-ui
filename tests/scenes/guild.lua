@@ -27,7 +27,8 @@ stub.RunScript(o, "PostClick", "LeftButton")
 local f = PolestarUIGuild
 assert(f:IsShown() and not CommunitiesFrame.shown, "micro")
 assert(stub.asked.roster, "roster not asked for")
-assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members · 6 online", "band: " .. tostring(f.Subtitle:GetText()))
+assert(f.Title:GetText() == "The Night Watch" and f.Subtitle:GetText() == "Officer · 9 members", "band: " .. tostring(f.Subtitle:GetText()))
+assert(f.psOnline:GetText() == "6 online" and f.TabRow:IsShown(), "online count on the tab row")
 
 local function names()
 	local t = {}
