@@ -24,27 +24,28 @@ local W = Polestar.Widgets
 
 local NAME = "${NAME}"
 
--- The stock ${stock}'s tabs, in stock order, as a section rail (ns.GameRail).
+-- The stock ${stock}'s text tabs, in stock order, as top tabs (ns.TopNav).
+-- TODO: where stock has icon side-tabs instead, a slim rail: W.Shell with
+-- rail = true and sidebar = 0, ns.Plain(f, f.psRail), and in refresh
+-- ns.GameRail(f, PAGES, page, onSelect, { slim = true }) with each tab's stock icon.
 local PAGES = {
-	{ key = "main", label = "${Name}", icon = nil }, -- TODO: stock tab icon (grep .ref for ${stock}'s tabs)
+	{ key = "main", label = "${Name}" }, -- TODO: the stock tabs (grep .ref for ${stock}'s tabs)
 }
 
 local f, page
 local M = {}
 
 local function build()
-	-- No sidebar: the rail holds the pages, the main column as wide as beside a sidebar.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, sidebar = 0, rail = true })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 720, height = 560 })
 	ns.Dock(f)
-	ns.Plain(f, f.psRail) -- hides the 0-wide sidebar and its version line
 	ns.WindowMenu(f, "${key}")
+	ns.Compact(f) -- the compact grid: lay content out by f.psPad
 	Polestar.CloseOnEscape(NAME)
 end
 
 local function refresh()
-	ns.GameRail(f, PAGES, page, function(k) M.Show(k) end)
-	W.ShellTitle(f, "${Name}", "") -- TODO: the subject's name in the title, the page in the subtitle
-	W.ShellTabs(f, nil)
+	ns.TopNav(f, PAGES, page, function(k) M.Show(k) end)
+	W.ShellTitle(f, "${Name}", "") -- TODO: the subject (name, class, level, NPC) leads the subtitle
 	ns.Footer(f, {}, {})
 	W.ShellBody(f, 0)
 end

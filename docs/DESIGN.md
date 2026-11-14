@@ -26,8 +26,9 @@ Polestar: UI live through `Theme.OnChanged`. When Polestar's look changes, ours
 changes with it, and the preview goldens (`tests/golden`) show exactly how.
 
 **Key Characteristics** (in addition to Polestar's):
-- Every stock window becomes a `W.Shell`: the sidebar names the window and its
-  sections, the starlit band carries the page's title, tabs split a page.
+- Every stock window becomes a compact `W.Shell`: the starlit band carries
+  the page's title and its subject, the stock window's tabs are its tabs (or a
+  slim rail of their icons), no sidebar.
 - Game data keeps the game's meaning: item quality, recipe difficulty and
   reputation standing keep their client colours, lifted through `Theme.Legible`
   before they carry text, and raw only on a 1px border.
@@ -123,20 +124,33 @@ navigation), *high* (protected actions or secure headers).
 
 ## The Game Window Shell
 
-Every stock window becomes one `W.Shell(name, opts)`. The shell's grid is
-Polestar's: the band 0–112, the tab band 112–152, the hairline at 152, the 24 and
-32 edges, the 56px footer.
+Every stock window becomes one `W.Shell(name, opts)` on the **compact grid**
+(`ns.Compact`, Core.lua): the band 0–60 (the title in Display, its subtitle
+one line under it), the tab row 60–96 (36; the skin's when smaller), the
+hairline under it, the 44px footer, a 24 pad (the skin's less 8; content is
+laid out by `f.psPad`). Polestar's own grid (112 band, 40 tabs, 56 footer,
+32 pad) is for Polestar's windows; ours were too big on it. The band's art is
+cropped to 60, never stretched; the close button, "..." menu and scale sit on
+the band's middle (the game's looks put the close button on the frame's
+corner).
 
-- **Size.** The stock windows are small (Character is 631×484); ours keep the
-  shell's 960×680 only when a window has a sidebar of sections. A window with
-  only tabs uses `opts.plain` and a width that fits its content (see each entry),
-  height 600 at most so it never covers the guide window at default scale.
-- **Sidebar.** The window's identity, not Polestar's: in place of the lockup, a
-  **subject block** (the thing the window is about: the character, the
-  profession) at the band's line, then the window's sections as `W.ShellNav`
-  rows. The Polestar emblem stays in the rail of a hub only.
-- **Header.** The band holds the page title in Hero, a short status subtitle
-  in Note textDim; nothing else. The window's settings live in its "..."
+- **Size.** The smallest that fits the content at the compact grid: no
+  sidebar, a width that fits (Talents 780×650, Spellbook 720×600), height
+  600 or so at most so it never covers the guide window at default scale.
+- **Page nav (no sidebar).** Where the stock window has **text tabs** (top or
+  bottom: Talents, Spellbook, Character, Inspect, Social, Bank, Macros, Mail,
+  Merchant, Trainer), its pages are top tabs (`ns.TopNav`): `W.ShellTabs`
+  keeping each page's state (active, a count, a warning dot, locked with its
+  tooltip), with the stock tab's icon before the label where it has one; the
+  search (and its filter) moves to the tab row's right end. Where the stock
+  window has **icon side-tabs** (Guild, Professions and Crafting, Legacy), a
+  slim 48px rail of those icons only (`ns.GameRail(..., { slim = true })`),
+  each label in its tooltip, from the band's line down. A page's own views
+  are the tab row then.
+- **Header.** The band holds the page title, a short status subtitle in Note
+  textDim; nothing else. The subject (the character's level and class, the
+  NPC, the profession) leads the subtitle ("Level 24 Mage · 7 spells."),
+  never a sidebar block. The window's settings live in its "..."
   menu (`ns.WindowMenu(f, key, options)`), first, then a divider and "Use
   game window". The subtitle is a fact about the page now ("2 items need
   repair", "Watching Stormwind", "3 currencies", "4 of 9 friends online"),
@@ -144,11 +158,11 @@ Polestar's: the band 0–112, the tab band 112–152, the hairline at 152, the 2
   dragged in a way a newer player would not guess ends its tooltip with a
   hint in textMuted after a blank line (`ns.TooltipHint`), saying what it
   does now ("Shown on your experience bar. Click to stop.", "Drag an item
-  here to equip it."). Identity (the character, the profession, the NPC)
-  goes in the sidebar's subject block, not the band. Filters are a sliders
-  icon button beside the sidebar search (`W.IconButton(..., "sliders")` on
-  the editbox skin), its glyph lit while a filter is on.
-- **Tabs.** `W.ShellTabs` for the views of one page; one view is no tab row.
+  here to equip it."). Filters are a sliders icon button after the search
+  (`W.IconButton(..., "sliders")` on the editbox skin), its glyph lit while
+  a filter is on.
+- **Older windows** still on the sidebar shell (a subject block, nav rows,
+  Polestar's grid) move to the compact grid and the rule above one by one.
 - **Footer.** Only when a page has actions (Reset, Craft, Learn). Never "Close":
   the ✕ and Escape already close it.
 - **Opens where the stock window opened** (the stock UI panel's left slot), then

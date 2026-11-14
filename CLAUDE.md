@@ -43,7 +43,9 @@ Doors and secure parts
 Shell pieces
 - `ns.Plain(f, left?)`: a shell made with `sidebar = 0` loses its sidebar and Polestar's emblem; `f.Main` hangs off the window, `left` past its edge (a rail's width).
 - `ns.Footer(f, left, right)`: `W.ShellFooter` with every reused footer button back on at full alpha; use it, never `W.ShellFooter`, then grey your own with `ns.SetEnabled`.
-- `ns.GameRail(win, items, active, onSelect)`: `W.ShellRail` with each item's game icon (`icon`, 24px, untinted, cropped), then `ns.Plain` off the rail when the sidebar is hidden (Professions, Character).
+- `ns.Compact(f)` (after `ns.WindowMenu`): the compact grid: 60 band (Display title, one-line subtitle), 36 tabs (skin's if less), 44 footer, pad `f.psPad` (24; skin's pad less 8: lay content out by it, not `W.SHELL.pad`); band art re-cropped; post-hooks on `W.ShellTabs/ShellFooter/ShellBody` keep `f.BodyWidth`, `f.psViewH` and the tabs/footer on it.
+- `ns.TopNav(f, items, active, onSelect)`: page nav as top tabs, no sidebar (`ns.Plain`); items `{key, label, icon (game texture), count, dot, locked, tip}` (locked: receding, click ignored, `tip` in its tooltip); `f.Search` and `f.psFilter` (make it on `f.TabRow` before) at the tab row's right end; `active` nil marks none.
+- `ns.GameRail(win, items, active, onSelect, opts?)`: `W.ShellRail` with each item's game icon (`icon`, 24px, untinted, cropped), then `ns.Plain` off the rail when the sidebar is hidden (Professions, Character); `opts.slim`: a 48px icon-only rail, labels in tooltips.
 - `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
 - `ns.GameIcon(parent, layer)`: texture cropped of the client's icon border.
@@ -107,8 +109,8 @@ Module (`Modules/<Key>.lua`), `tests/lua/stub_<key>.lua`, `tests/scenes/<key>*.l
 
 ## Conventions
 - Commits: one imperative sentence, subject line only, one logical change each (e.g. "Add a window scaffold script ..."). No body, no attribution trailer.
-- Module skeleton (copy `Modules/Spellbook.lua`): `local ADDON, ns = ...; local W = Polestar.Widgets`; `build()` = `W.Shell(NAME, {scalePath = "ui.menuScale"})`, `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `Polestar.CloseOnEscape(NAME)`; `refresh()` = `W.ShellNav/Title/Tabs`, `ns.Footer`, `W.ShellBody`; `M.Show/Toggle`; `M.Enable()` calls `ns.Doors` and registers events; `M.stock()` returns the stock frame when shown; `ns.Module(key, M)`.
-- Page nav = the stock window's tabs: when stock has tabs (side or bottom), use `ns.GameRail` with each tab's stock icon (Character, Professions), not `W.ShellNav` with Polestar glyphs; the name/subject goes in the title and subtitle, not a sidebar block. Glyph nav only where stock has no tab icons.
+- Module skeleton (copy `Modules/Spellbook.lua`): `local ADDON, ns = ...; local W = Polestar.Widgets`; `build()` = `W.Shell(NAME, {scalePath = "ui.menuScale", width, height})`, `ns.Dock(f)`, `ns.WindowMenu(f, key)`, `ns.Compact(f)`, `Polestar.CloseOnEscape(NAME)`; `refresh()` = `ns.TopNav` (or the slim `ns.GameRail`), `W.ShellTitle`, `ns.Footer`, `W.ShellBody`; `M.Show/Toggle`; `M.Enable()` calls `ns.Doors` and registers events; `M.stock()` returns the stock frame when shown; `ns.Module(key, M)`.
+- Page nav = the stock window's tabs, on the compact grid (`ns.Compact`), no sidebar: stock text tabs (Talents, Spellbook, Character, Inspect, Social, Bank, Macros, Mail, Merchant, Trainer) are top tabs (`ns.TopNav`, the stock tab icon on a tab where it has one, search+filter on the tab row); stock icon side-tabs (Guild, Professions/Crafting, Legacy) are a slim rail (`ns.GameRail(..., { slim = true })`, labels in tooltips). The subject (name, class, level, NPC) leads the subtitle, never a sidebar block. No `W.ShellNav` sidebar in a new window.
 - Never touch the stock window (no show/hide/hook/anchor): the stock one is closed or never opened (CLIENT.md rules 1, 8, 10). Unit frames: the stock ones stay as Edit Mode's proxies, only veiled (rule 16).
 - Switching a module off that stopped stock routing (`reloadOff`) takes effect "after /reload"; say so in text and tests.
 - Feature-detect Polestar exports and ship without them until they exist, e.g. `if Polestar.MapCanvas and Polestar.MapCanvas.Add then ...` (WorldMap).
