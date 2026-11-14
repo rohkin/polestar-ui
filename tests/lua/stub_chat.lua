@@ -343,21 +343,59 @@ local function makeChat(id, name)
 	f.buttonFrame = b
 	FCF_SetButtonSide(f, "left")
 	f.editBox = makeEditBox(f)
-	f.lines = {}
-	-- ScrollingMessageFrame: the newest line at the bottom.
-	function f.AddMessage(self, text, r, g, b)
-		table.insert(stub.messages, tostring(text))
+	f.lines, f.history = {}, {}
+	-- ScrollingMessageFrame (Blizzard_SharedXML): its history buffer, oldest
+	-- first, each line with its extra data; GetMessageInfo(1) the oldest; at
+	-- most 128 lines (ChatFrameOverrides: SetMaxLines(128)). BackFillMessage
+	-- adds one at the old end while there is room. Drawn: the newest 7, the
+	-- newest at the bottom.
+	local function draw(self)
+		local n = #self.history
+		self.lines = {}
+		for i = n, 1, -1 do
+			local fs, k = self.history[i].fs, n - i + 1
+			self.lines[k] = fs
+			fs:ClearAllPoints()
+			fs:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 2, 4 + (k - 1) * 16)
+			fs:SetShown(k <= 7)
+		end
+	end
+	local function entry(self, text, r, g, b, ...)
 		local fs = self:CreateFontString(nil, "ARTWORK", ChatFontNormal)
 		fs:SetText(text)
 		fs:SetTextColor(r or 1, g or 1, b or 1)
 		fs:SetShadowOffset(1, -1)
 		fs:SetShadowColor(0, 0, 0, 1)
-		table.insert(self.lines, 1, fs)
-		for i, l in ipairs(self.lines) do
-			l:ClearAllPoints()
-			l:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 2, 4 + (i - 1) * 16)
-			l:SetShown(i <= 7)
+		return { fs = fs, text = text, r = r, g = g, b = b, extra = { n = select("#", ...), ... } }
+	end
+	function f.AddMessage(self, text, r, g, b, ...)
+		table.insert(stub.messages, tostring(text))
+		table.insert(self.history, entry(self, text, r, g, b, ...))
+		if #self.history > 128 then table.remove(self.history, 1).fs:Hide() end
+		draw(self)
+	end
+	function f.BackFillMessage(self, text, r, g, b, ...)
+		if #self.history >= 128 then return end
+		table.insert(self.history, 1, entry(self, text, r, g, b, ...))
+		draw(self)
+	end
+	function f.GetNumMessages(self) return #self.history end
+	function f.GetMaxLines() return 128 end
+	function f.GetMessageInfo(self, i)
+		local e = self.history[i]
+		if e then return e.text, e.r, e.g, e.b, unpack(e.extra, 1, e.extra.n) end
+	end
+	function f.RemoveMessagesByPredicate(self, pred)
+		for i = #self.history, 1, -1 do
+			local e = self.history[i]
+			if pred(e.text, e.r, e.g, e.b, unpack(e.extra, 1, e.extra.n)) then table.remove(self.history, i).fs:Hide() end
 		end
+		draw(self)
+	end
+	function f.Clear(self)
+		for _, e in ipairs(self.history) do e.fs:Hide() end
+		self.history = {}
+		draw(self)
 	end
 	-- The grip (the first window's is edit mode's, hidden), scroll to bottom (shown once scrolled up), the scroll bar.
 	f.ResizeButton = button(f:GetName() .. "ResizeButton", f, 16, 16, 0.7, 0.7, 0.7)
@@ -536,8 +574,11 @@ function stub.closeMenu()
 end
 function stub.openMenu(owner, tag, labels)
 	stub.closeMenu()
-	local root = { callbacks = {} }
+	-- The root's items a modifier adds (CreateButton, CreateDivider): in root.items, a button as { label, fn }.
+	local root = { callbacks = {}, items = {} }
 	function root.AddMenuAcquiredCallback(self, fn) table.insert(self.callbacks, fn) end
+	function root.CreateButton(self, label, fn) table.insert(self.items, { label, fn }) end
+	function root.CreateDivider(self) table.insert(self.items, "-") end
 	for _, fn in ipairs(modifiers[tag] or {}) do fn(owner, root) end
 	if not menu then
 		menu = CreateFrame("Frame", "StubMenu", UIParent)
@@ -564,7 +605,7 @@ function stub.openMenu(owner, tag, labels)
 		table.insert(attached, fs)
 	end
 	menu:Show()
-	return menu, bg
+	return menu, bg, root
 end
 
 -- Chat bubbles: the engine's frame (on the world) round a ChatBubbleTemplate,
@@ -599,8 +640,7 @@ end
 
 -- The chat as the scenes draw it: a few lines (the login lines cleared) and a whisper window's tab.
 function stub.chatSample()
-	for _, l in ipairs(ChatFrame1.lines) do l:Hide() end
-	ChatFrame1.lines = {}
+	ChatFrame1:Clear()
 	ChatFrame1:AddMessage("Welcome to World of Warcraft!", 1, 1, 0)
 	ChatFrame1:AddMessage("|cff40ff40[Guild] [Jegba]: you can turn in the box for 6.5k xp|r")
 	ChatFrame1:AddMessage("|cff40ff40[Guild] [Satory]: what does it do?|r")

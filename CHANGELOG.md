@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Chat: calmer look: a soft ground and no outline at rest; the full ground, hairline and side buttons fade in on mouse-over (tabs, edit box and side strip included); the edit box's footer only while typing; tabs as plain labels with an accent underline, lit when hovered; the social button sits in the side strip and opens Polestar's Social window; voice, social and whisper icons in Polestar's icon colour.
+- Chat: copy your chat as plain text (side strip button or a tab's menu); chat windows keep their last lines across /reload and logout.
 - Fix the Talents window saying talents open at level 10 on a second spec just bought: it waits for the game to make the spec's talents, then shows its tree with every point to spend.
 - Unit frames: the player, target, target of target, focus, focus's target, pet, party and boss frames in Polestar's look, after EllesmereUI's: flat bars in your theme's colours (class colours with Polestar's "Class colour" on), a square 3D portrait, heals and absorbs, threat on the edge. Move and size them in the game's Edit Mode as before, where they stand in when there is no party, pet or boss; the game's auras, cast bars, icons, combo points, pet happiness and party pets stay. /pui unitframes for their settings.
 - Action bars: square buttons with a thin border, the key and count in Polestar's type, and an accent wash while pressed or on; every bar, the pet and stance bars and spell flyouts, with Edit Mode's bar settings untouched (/pui actionbars off gives the game's back).

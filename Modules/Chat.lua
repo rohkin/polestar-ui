@@ -11,7 +11,8 @@
 -- frame (on the chat's menus, through the menu's own compositor). No
 -- key is written on a stock frame, nothing is moved, sized or reparented,
 -- and the messages' font stays the player's (the tabs take Polestar's face). Switched off, all of it is the game's again
--- at once.
+-- at once. Also ours: a copy window and the chat history across sessions
+-- ("Copy and history", below).
 
 local ADDON, ns = ...
 local Theme = Polestar.Theme
@@ -573,6 +574,237 @@ local function paintSocial(alpha)
 	end
 end
 
+-- Copy and history. Neither hooks a chat window nor writes a key on one
+-- (rule 15; ChatFrame1 is an Edit Mode system, rule 17): lines are read
+-- from the window's own buffer (GetNumMessages, GetMessageInfo), so every
+-- addon's AddMessage hook and message filter has already had its say, and
+-- put back with the frame's own BackFillMessage, the call addons write
+-- chat with (as AddMessage). A line the game keeps secret (rule 3: in
+-- combat, in instances) is never read: skipped in the history, a
+-- placeholder in the copy.
+local W = Polestar.Widgets
+local MARK, DIVIDER = "PolestarUIHistory", "PolestarUIHistoryDivider" -- a put-back line's extra data, after the game's three (id, access id, line id)
+-- A put-back line's colour, faded toward grey (a saturated colour stays
+-- readable, as a plain darkening did not): c * DIM + GREY, undone at save.
+local DIM, GREY = 0.6, 0.2
+-- Per window: the game's chat keeps 128 lines (SetMaxLines), all of them
+-- kept; a mod that raises that is cut to the newest 500 (some 75 KB a window).
+local CAP = 500
+local HIDDEN = "(hidden: the game keeps this line secret)"
+
+local function keeping() return not PolestarUICharDB.chatNoHistory end
+
+-- The permanent windows by index (a whisper window's index is not the
+-- same next session), not the combat log (ChatFrame2, IsCombatLog).
+local function windows()
+	local out = {}
+	for i = 1, NUM_CHAT_WINDOWS or 10 do
+		local f = _G["ChatFrame" .. i]
+		if i ~= 2 and f and f.GetNumMessages and f.BackFillMessage then out[i] = f end
+	end
+	return out
+end
+
+-- The 8th of a line's values: our mark on a put-back line.
+local function mark(...) return ns.Clean((select(8, ...))) end
+local function old(...)
+	local m = mark(...)
+	return m == MARK or m == DIVIDER
+end
+local function round(v) return math.floor(v * 1000 + 0.5) / 1000 end
+
+-- At logout (and /reload), each window's lines into PolestarUICharDB.chat
+-- (oldest first, { text, r, g, b }): a put-back line at its own colour
+-- again, the divider left out, so nothing is kept twice. A Battle.net
+-- name is a token good for one session only: its link made plain text,
+-- the name a placeholder.
+local function save()
+	if not ns.Enabled("chat") then return end
+	if not keeping() then
+		PolestarUICharDB.chat = nil
+		return
+	end
+	local out = { at = time() }
+	for i, f in pairs(windows()) do
+		local list, n = {}, f:GetNumMessages()
+		for j = math.max(1, n - CAP + 1), n do
+			local text, r, g, b = f:GetMessageInfo(j)
+			local m = mark(f:GetMessageInfo(j))
+			text = ns.Clean(text)
+			if type(text) == "string" and m ~= DIVIDER then
+				local function c(v)
+					v = ns.Clean(v) or 1
+					return round(m == MARK and (v - GREY) / DIM or v)
+				end
+				text = text:gsub("|HBNplayer.-|h(.-)|h", "%1"):gsub("|K.-|k", "Battle.net friend")
+				list[#list + 1] = { text, c(r), c(g), c(b) }
+			end
+		end
+		if #list > 0 then out[i] = list end
+	end
+	PolestarUICharDB.chat = out
+end
+
+-- At login, the last session's lines above this one's, dimmed, under a
+-- divider with the time they were saved.
+local function replay()
+	local h = PolestarUICharDB.chat
+	if not h or not keeping() then return end
+	local wins = windows()
+	local r, g, b = Theme.Color("textMuted")
+	for i, list in pairs(h) do
+		local f = type(i) == "number" and wins[i]
+		if f and #list > 0 then
+			f:BackFillMessage(("- previous session, %s -"):format(date("%d %b %H:%M", h.at or time())), r, g, b, nil, nil, nil, DIVIDER)
+			for j = #list, 1, -1 do
+				local l = list[j]
+				local function c(v) return (v or 1) * DIM + GREY end
+				f:BackFillMessage(l[1], c(l[2]), c(l[3]), c(l[4]), nil, nil, nil, MARK)
+			end
+		end
+	end
+end
+
+-- The copy window: a window's lines as plain text, colours, textures and
+-- links' codes stripped (an item stays "[Name]"), oldest first, scrolled to
+-- the newest. All of it selected as it opens (Ctrl+C); a drag selects a part.
+local COPY_W, COPY_H, PAD = 560, 440, 20
+local TOP, FOOT = 80, 52 -- the well's top and the footer's height
+local WELL_W, WELL_H = COPY_W - 2 * PAD, COPY_H - TOP - FOOT
+local copy
+
+local function plain(text)
+	return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|cn.-:", ""):gsub("|r", "")
+		:gsub("|H.-|h(.-)|h", "%1"):gsub("|T.-|t", ""):gsub("|A.-|a", ""):gsub("|K.-|k", "?"))
+end
+
+local function chatText(f)
+	local out, hidden = {}, 0
+	for i = 1, f:GetNumMessages() do
+		local text = ns.Clean((f:GetMessageInfo(i)))
+		if type(text) ~= "string" then
+			hidden = hidden + 1
+			text = HIDDEN
+		end
+		out[#out + 1] = plain(text)
+	end
+	return table.concat(out, "\n"), hidden
+end
+
+-- The last sessions' lines out of the saved history and out of the windows.
+local function clearHistory()
+	PolestarUICharDB.chat = nil
+	for _, f in pairs(windows()) do
+		if f.RemoveMessagesByPredicate then f:RemoveMessagesByPredicate(old) end
+	end
+	if copy and copy:IsShown() then M.Copy(copy.chat) end
+end
+
+local function buildCopy()
+	local f = CreateFrame("Frame", "PolestarUIChatCopy", UIParent)
+	f:SetSize(COPY_W, COPY_H)
+	f:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+	f:SetFrameStrata("DIALOG")
+	f:SetToplevel(true)
+	f:SetClampedToScreen(true)
+	f:EnableMouse(true)
+	f:SetMovable(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", f.StartMoving)
+	f:SetScript("OnDragStop", f.StopMovingOrSizing)
+	f:Hide()
+	Theme.Skin(f, "window")
+	f.Close = W.IconButton(f, "close", 28, "Close", function() f:Hide() end, 14)
+	f.Close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -10)
+	f.Title = W.Text(f, "heading", "text")
+	f.Title:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -18)
+	f.Title:SetPoint("RIGHT", f.Close, "LEFT", -8, 0)
+	f.Title:SetJustifyH("LEFT")
+	f.Title:SetWordWrap(false)
+	f.Hint = W.Text(f, "note", "textDim")
+	f.Hint:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -50)
+	f.Hint:SetWidth(WELL_W)
+	f.Hint:SetJustifyH("LEFT")
+	f.Hint:SetWordWrap(false)
+	-- The box scrolls in its well (as Polestar's report box, UI/Report.lua).
+	local well = CreateFrame("Frame", nil, f)
+	well:SetSize(WELL_W, WELL_H)
+	well:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -TOP)
+	f.Scroll = W.Scroll(well)
+	f.Scroll:SetAllPoints(well)
+	f.Box = W.ScrollChild(f.Scroll, W.CopyBox(f.Scroll, { lines = 2, well = well }))
+	Theme.Font(f.Box, "small")
+	f.Box:SetWidth(WELL_W)
+	f.Box:SetScript("OnMouseUp", nil) -- a click or drag selects what it covers, not all of it
+	f.Box:SetScript("OnEscapePressed", function() f:Hide() end)
+	-- The text in the box's font at its inner width: what its height is measured on.
+	f.Measure = W.Text(f, "small", "text")
+	f.Measure:SetWidth(WELL_W - 20)
+	f.Measure:SetJustifyH("LEFT")
+	f.Measure:SetWordWrap(true)
+	f.Measure:SetNonSpaceWrap(true)
+	f.Measure:Hide()
+	-- The history's switch and its clear button.
+	f.Keep = W.Switch(f, keeping, function(v) PolestarUICharDB.chatNoHistory = not v or nil end,
+		"Keep each chat window's last lines across /reload and logout, on this computer only (whispers too). Off, they are forgotten at logout.")
+	f.Keep:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PAD - 4, 14)
+	f.KeepLabel = W.Text(f, "label", "text")
+	f.KeepLabel:SetPoint("LEFT", f.Keep, "RIGHT", 6, 0)
+	f.KeepLabel:SetText("Keep chat across sessions")
+	f.Clear = W.Button(f, "Clear history", clearHistory)
+	f.Clear:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, 12)
+	Polestar.CloseOnEscape("PolestarUIChatCopy")
+	copy = f
+end
+
+-- The selected docked window, else the first.
+local function current()
+	local f = GENERAL_CHAT_DOCK and FCFDock_GetSelectedWindow and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
+	return f or _G.ChatFrame1
+end
+
+function M.Copy(f)
+	f = f or current()
+	if not f or not f.GetNumMessages then return end
+	if not copy then buildCopy() end
+	copy.chat = f
+	local tab = _G[f:GetName() .. "Tab"]
+	copy.Title:SetText("Copy chat: " .. (tab and tab.Text:GetText() or f:GetName()))
+	local text, hidden = chatText(f)
+	copy.Hint:SetText(hidden > 0 and ("%d line(s) the game keeps secret are left out. Ctrl+C copies the rest."):format(hidden)
+		or "All of it is selected: Ctrl+C copies it. Drag over a part to copy only that.")
+	W.SetCopyText(copy.Box, text)
+	copy.Measure:SetText(text)
+	local _, breaks = text:gsub("\n", "")
+	local h = math.floor(math.max(copy.Measure:GetStringHeight(), (breaks + 1) * 12) + 16 + 0.5)
+	copy.Box:SetHeight(h)
+	W.SetScrollContent(copy.Scroll, h, WELL_H)
+	W.ScrollTo(copy.Scroll, h - WELL_H)
+	copy.Keep:Refresh()
+	copy:Show()
+	copy:Raise()
+	W.SelectCopy(copy.Box)
+end
+
+-- The copy button in the side strip, above the social button (a voice
+-- button's size and spacing), faded with the strip; a click copies the
+-- selected docked window. Not secure: it only opens our window.
+local copyButton
+local function copyStrip()
+	local strip = _G.ChatFrameMenuButton
+	if not strip then return end
+	if not copyButton and ns.Enabled("chat") then
+		-- Named, for /fstack and the preview (W.IconButton makes it unnamed, on this frame).
+		copyButton = CreateFrame("Frame", "PolestarUIChatCopyButton", UIParent)
+		copyButton:SetSize(SOCIAL_H, SOCIAL_H)
+		copyButton:SetFrameStrata("MEDIUM")
+		copyButton:SetPoint("BOTTOM", social and social.f or strip, "TOP", 0, 2)
+		copyButton.Button = W.IconButton(copyButton, "compact", SOCIAL_H, "Copy chat text", function() M.Copy() end, SOCIAL_ICON)
+		copyButton.Button:SetAllPoints(copyButton)
+	end
+	if copyButton then copyButton:SetShown(ns.Enabled("chat") and strip:IsVisible()) end
+end
+
 function M.Apply()
 	for _, name in ipairs(CHAT_FRAMES) do
 		local f = _G[name]
@@ -591,6 +823,7 @@ function M.Apply()
 	strip()
 	for _, b in ipairs(SIDE) do iconButton(_G[b[1]], b[2], 14, false, true) end
 	socialButton()
+	copyStrip()
 	overflow()
 	if ns.Enabled("chat") then
 		bubbles()
@@ -627,6 +860,7 @@ function M.Enable()
 				local hot = f.hasBeenFaded or (e and (e:HasFocus() or (e:IsVisible() and e:IsMouseOver())))
 					or (f.isDocked and dockTab) or (tab and tab:IsVisible() and tab:IsMouseOver())
 					or (f == ChatFrame1 and social and social.hit:IsVisible() and social.hit:IsMouseOver())
+					or (f == ChatFrame1 and copyButton and copyButton:IsVisible() and copyButton.Button:IsMouseOver())
 				local w = hot and math.min(1, l.warm + elapsed / FADE_IN) or math.max(0, l.warm - elapsed / FADE_OUT)
 				l.warm = w
 				if w ~= l.paint or l.docked ~= f.isDocked then
@@ -667,6 +901,11 @@ function M.Enable()
 			end
 		end
 		if social then paintSocial(warmest) end
+		if copyButton then
+			copyButton:SetAlpha(warmest)
+			local show = _G.ChatFrameMenuButton:IsVisible()
+			if copyButton:IsShown() ~= show then copyButton:SetShown(show) end
+		end
 	end)
 	-- A new whisper window (a new frame the first time), a tab selected.
 	hooksecurefunc("FCF_OpenTemporaryWindow", function() if ns.Enabled("chat") then M.Apply() end end)
@@ -685,11 +924,20 @@ function M.Enable()
 	for _, tag in ipairs(MENUS) do
 		Menu.ModifyMenu(tag, function(_, root) root:AddMenuAcquiredCallback(menuLook) end)
 	end
+	-- The tab menu's "Copy chat text", under the game's items.
+	Menu.ModifyMenu("MENU_FCF_TAB", function(owner, root)
+		local f = ns.Enabled("chat") and owner and _G["ChatFrame" .. owner:GetID()]
+		if not f then return end
+		root:CreateDivider()
+		root:CreateButton("Copy chat text", function() M.Copy(f) end)
+	end)
+	Polestar.RegisterEvent("PLAYER_LOGOUT", save)
 	Polestar.RegisterEvent("ADDON_LOADED", function(_, name)
 		if name == "Blizzard_CombatLog" and ns.Enabled("chat") then strip() end
 	end)
 	Theme.OnChanged(function() if ns.Enabled("chat") then M.Apply() end end)
 	M.Apply()
+	replay()
 end
 
 ns.Module("chat", M)
