@@ -8,8 +8,9 @@ window in `CHAT_FRAMES` (the whisper windows as they open), its button frame,
 tab, edit box, scroll bar and buttons, minimised windows, the side buttons,
 the dock's overflow list, the combat log's filter strip, the chat's own
 menus and chat bubbles.
-- **Calm and warm:** at rest the chat is quiet: a soft ground, no outline,
-  no footer, the side strip's icons gone, the tabs the game's faded labels.
+- **Calm and warm:** at rest the chat is quiet: a soft ground, a faint
+  outline, no footer, the side strip's icons gone, the tabs' labels dimmed
+  but legible.
   It turns warm while the game fades it in (the mouse over it, read from
   the window's `hasBeenFaded`), while the mouse is on a tab (any docked tab
   warms the docked windows), on its shown edit box or on the social button,
@@ -26,7 +27,8 @@ menus and chat bubbles.
   or it covers them. Undocked windows have no header (their tab, MEDIUM
   strata, sits above them); with the strip on the right,
   6px of room left of the text. At rest the ground is 35% of Polestar's
-  (`REST`), warm all of it, with a 1px `border` hairline round it. The
+  (`REST`), warm all of it; its 1px `border` hairline likewise (35% at rest,
+  so the panel keeps its outline over the world, as the damage meter). The
   player's chat opacity no longer scales it. All of it our textures on the
   window, anchored to the stock grounds (window and button frame), whose
   pieces are hidden and grounds emptied: no stock frame is moved or sized.
@@ -36,22 +38,35 @@ menus and chat bubbles.
 - **Tabs:** plain text on that header: no box, no ground, the label in
   Polestar's face (`small`'s) at the game's size (the game sizes a tab to its
   text once), `textMuted`, the selected one `text` over a 2px accent
-  underline as wide as its label. A hovered tab: its label `text` at full
-  alpha (out of the tab's fade, `SetIgnoreParentAlpha`) on the hover wash,
-  which lies under the label (BACKGROUND, shown by our driver); in the
+  underline as wide as its label's text. A docked tab that is not static (a
+  window the player made, a whisper's) lies in the dock's scroll frame
+  (`FCFDock_UpdateTabs`), a few px above the dock's foot, stretched to 90
+  (`FCFDock_CalculateTabSize`) with its label centred: so every label is
+  left-justified in its text box (which starts at the tab's side padding on
+  every tab) and the label, wash and underline are moved by the tab's foot
+  to the dock's (measured by our driver; the tab itself is the dock's and
+  never moved). Switched off, the label's own anchor and justification are
+  back. Label and underline are out of the tab's
+  fade (`SetIgnoreParentAlpha`; the game's 0.2 left a label unreadable over
+  the world): ours fades them, 0.85 selected and 0.7 the others at rest
+  (`TAB_REST`), full with the window's warmth (the header's, docked) or
+  hovered, times the alpha above the tab (its parent's). A hovered tab: its
+  label `text` on the hover wash, which lies under the label (BACKGROUND, shown by our driver); in the
   HIGHLIGHT layer it drew over the label and washed it out. Which
   tab is selected is the dock's answer (undocked, or
   `FCFDock_GetSelectedWindow`), never the stock Active art, which shows on
   the combat log's tab until the dock first colours it. A tab the game
   colours (a whisper's) keeps its label colour; its conversation icon is
   desaturated and drawn in Polestar's `icon` colour. The tabs' own fade (0.4
-  selected, 0.2 others at rest; 1 and 0.6 on mouse-over) and the
-  new-message glow stay the game's, the glow in the accent.
+  selected, 0.2 others at rest; 1 and 0.6 on mouse-over; it still fades the
+  icon, hover wash and the alerting tab) and the new-message glow stay the
+  game's, the glow in the accent.
 - **Edit box:** only while typing, the window's footer, 24px under its
-  ground, in Polestar's input: the window's ground under the `inputBg` well,
-  the hairline carried round it, its top edge the accent at 50%. Not typing
+  ground, in Polestar's input as a focused `ns.TextField`: the window's
+  ground under the `inputBg` well, a 1px accent ring at 0.8. Not typing
   there is no footer, whether the game hides the box (classic chat style) or
-  leaves it shown at 0.35 (IM style, the default).
+  leaves it shown at 0.35 (IM style, the default). Its letter limit stays
+  the game's (`visibleBytes` 255); nothing of ours sets one.
 - **Combat log:** its filter strip's black band faded, a divider under it.
 - **Buttons:** the side buttons (chat menu, channels, voice, speech) and each
   window's minimise, resize and scroll-to-bottom buttons as Polestar's icon
@@ -127,7 +142,12 @@ menus and chat bubbles.
   logout) are not saved: the game writes saved variables only then.
 - **Clipping:** the message frame clips a line that sticks out at its top or
   bottom (a large chat font): half a line under the tabs, a cut descender at
-  the foot. That is the game's frame, not ours, and stays.
+  the foot. That is the game's frame, not ours, and stays: the lines are laid
+  from the bottom and clipped by the frame's own `FontStringContainer`
+  (`ScrollingMessageFrame.lua`), and the header's ground lies under the
+  window, so nothing of ours can cover the cut line without moving or
+  sizing the window (an Edit Mode system, rule 17), and a cover of ours
+  over the text would darken a band of the translucent ground.
 - **Scroll bar:** its track and thumb art faded; a 2px `textMuted` thumb,
   4px `iconHover` under the cursor; the steppers as chevrons.
 - **Minimised windows:** as a tab (panel ground, hairline, hover wash); the
@@ -143,8 +163,8 @@ menus and chat bubbles.
 - **Bubbles:** outside instances, chat bubbles in the tooltip look (the
   ground a touch more see-through, the hairline), border and tail faded. In
   instances the game forbids addons to touch them: they stay the game's.
-- **Not changed:** the messages' fonts and colours (the chat font size is the
-  player's); timestamps and channel names (the timestamp is the player's
+- **Not changed:** the messages' font, size and colours (the chat font size is
+  the player's; Polestar's face on the lines read poorly in game); timestamps and channel names (the timestamp is the player's
   `showTimestamps` format, uncoloured, and the channel prefix is built inside
   the message handler: neither can change without rewriting every addon's
   messages or the player's setting); the social (Quick Join) button (plate
@@ -152,6 +172,7 @@ menus and chat bubbles.
   (`StaticPopup`, shared with secure dialogs) and the chat settings window
   (`ChatConfigFrame`).
 - **Switch:** `/pui chat on|off`, live: off gives back every stock piece at
-  once, hides the copy button and its menu item, and leaves the saved history
+  once (the tabs' own fade too),
+  hides the copy button and its menu item, and leaves the saved history
   as it is (neither saved nor put back while off).
 

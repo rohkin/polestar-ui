@@ -154,14 +154,20 @@
 </g>
 <g transform="translate(1268 273)">
 <rect x="26" y="38" width="481" height="22" fill="rgb(24,29,45)" fill-opacity="0.11"/>
-<g transform="translate(75.85 52.6) scale(0.004883)" fill="rgb(247,248,253)" fill-opacity="0.4"><use href="#gInter-Mediumttf-141" x="0"/><use href="#gInter-Mediumttf-614" x="1531"/><use href="#gInter-Mediumttf-773" x="2734"/><use href="#gInter-Mediumttf-614" x="3966"/><use href="#gInter-Mediumttf-852" x="5169"/><use href="#gInter-Mediumttf-507" x="5961"/><use href="#gInter-Mediumttf-736" x="7124"/></g>
-<rect x="75.85" y="55" width="37.3" height="2" fill="rgb(230,186,102)" fill-opacity="0.4"/>
-<g transform="translate(145.96 52.6) scale(0.004883)" fill="rgb(155,162,185)" fill-opacity="0.2"><use href="#gInter-Mediumttf-73" x="0"/><use href="#gInter-Mediumttf-790" x="1502"/><use href="#gInter-Mediumttf-766" x="2739"/><use href="#gInter-Mediumttf-578" x="4558"/><use href="#gInter-Mediumttf-507" x="5824"/><use href="#gInter-Mediumttf-889" x="6987"/><use href="#gInter-Mediumttf-281" x="8230"/><use href="#gInter-Mediumttf-790" x="9388"/><use href="#gInter-Mediumttf-658" x="10625"/></g>
+<rect x="26" y="38" width="481" height="1" fill="rgb(255,255,255)" fill-opacity="0.04"/>
+<rect x="26" y="38" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.04"/>
+<rect x="506" y="38" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.04"/>
+<g transform="translate(75.85 52.6) scale(0.004883)" fill="rgb(247,248,253)" fill-opacity="0.34"><use href="#gInter-Mediumttf-141" x="0"/><use href="#gInter-Mediumttf-614" x="1531"/><use href="#gInter-Mediumttf-773" x="2734"/><use href="#gInter-Mediumttf-614" x="3966"/><use href="#gInter-Mediumttf-852" x="5169"/><use href="#gInter-Mediumttf-507" x="5961"/><use href="#gInter-Mediumttf-736" x="7124"/></g>
+<rect x="75.85" y="55" width="37.3" height="2" fill="rgb(230,186,102)" fill-opacity="0.29"/>
+<g transform="translate(145.96 52.6) scale(0.004883)" fill="rgb(155,162,185)" fill-opacity="0.14"><use href="#gInter-Mediumttf-73" x="0"/><use href="#gInter-Mediumttf-790" x="1502"/><use href="#gInter-Mediumttf-766" x="2739"/><use href="#gInter-Mediumttf-578" x="4558"/><use href="#gInter-Mediumttf-507" x="5824"/><use href="#gInter-Mediumttf-889" x="6987"/><use href="#gInter-Mediumttf-281" x="8230"/><use href="#gInter-Mediumttf-790" x="9388"/><use href="#gInter-Mediumttf-658" x="10625"/></g>
 <rect x="219" y="36" width="16" height="24" fill="rgb(31,26,20)" fill-opacity="0.85"/>
 <rect x="262" y="36" width="16" height="24" fill="rgb(31,26,20)" fill-opacity="0.85"/>
 <rect x="235" y="36" width="27" height="24" fill="rgb(31,26,20)" fill-opacity="0.85"/>
 <g transform="translate(234.44 52.6) scale(0.004883)" fill="rgb(255,209,0)" fill-opacity="1"><use href="#gInter-Mediumttf-411" x="0"/><use href="#gInter-Mediumttf-852" x="1337"/><use href="#gInter-Mediumttf-507" x="2129"/><use href="#gInter-Mediumttf-597" x="3292"/><use href="#gInter-Mediumttf-614" x="4558"/></g>
 <rect x="26" y="60" width="481" height="129" fill="rgb(24,29,45)" fill-opacity="0.11"/>
+<rect x="26" y="188" width="481" height="1" fill="rgb(255,255,255)" fill-opacity="0.04"/>
+<rect x="26" y="60" width="1" height="129" fill="rgb(255,255,255)" fill-opacity="0.04"/>
+<rect x="506" y="60" width="1" height="129" fill="rgb(255,255,255)" fill-opacity="0.04"/>
 <g transform="translate(65 178.04) scale(0.006836)" fill="rgb(0,0,0)" fill-opacity="1"><use href="#gInter-Mediumttf-507" x="0"/><use href="#gInter-Mediumttf-773" x="1709"/><use href="#gInter-Mediumttf-614" x="2941"/><use href="#gInter-Mediumttf-984" x="4144"/><use href="#gInter-Mediumttf-736" x="6388"/><use href="#gInter-Mediumttf-689" x="6904"/><use href="#gInter-Mediumttf-773" x="7420"/><use href="#gInter-Mediumttf-614" x="8652"/></g>
 <g transform="translate(64 177.04) scale(0.006836)" fill="rgb(255,255,255)" fill-opacity="1"><use href="#gInter-Mediumttf-507" x="0"/><use href="#gInter-Mediumttf-773" x="1709"/><use href="#gInter-Mediumttf-614" x="2941"/><use href="#gInter-Mediumttf-984" x="4144"/><use href="#gInter-Mediumttf-736" x="6388"/><use href="#gInter-Mediumttf-689" x="6904"/><use href="#gInter-Mediumttf-773" x="7420"/><use href="#gInter-Mediumttf-614" x="8652"/></g>
 </g>

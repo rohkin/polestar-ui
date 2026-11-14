@@ -9,9 +9,10 @@
 -- full ground and its hairline, the side icons back. The tabs', edit box's and buttons'
 -- art faded with SetAlpha; textures of ours added, kept in a weak table by
 -- frame (on the chat's menus, through the menu's own compositor). No
--- key is written on a stock frame, nothing is moved, sized or reparented,
--- and the messages' font stays the player's (the tabs take Polestar's face). Switched off, all of it is the game's again
--- at once. Also ours: a copy window and the chat history across sessions
+-- key is written on a stock frame, nothing is moved, sized or reparented.
+-- The tabs take Polestar's face; the messages and the edit box keep the
+-- game's chat font (Polestar's face there read poorly in game). Switched off, all
+-- of it is the game's again at once. Also ours: a copy window and the chat history across sessions
 -- ("Copy and history", below).
 
 local ADDON, ns = ...
@@ -79,8 +80,8 @@ local function place(f, l)
 end
 
 -- Polestar's window ground (bg at the Background opacity setting), not the
--- player's chat opacity: REST of it at rest, all of it while warm; the
--- hairline only while warm. The driver eases `l.warm` between 0 and 1.
+-- player's chat opacity, and its hairline: REST of them at rest, all of them
+-- while warm (the panel keeps a faint outline at rest). The driver eases `l.warm` between 0 and 1.
 local REST = 0.35
 local FADE_IN, FADE_OUT = 0.15, 1 -- seconds: the game's fade-in, a calmer fade-out
 
@@ -105,11 +106,12 @@ end
 -- A docked window's top edge is the header's foot: not drawn (the header's
 -- own edges carry the outline round both). The header's foot never is.
 local function paintWarm(l, w)
-	l.fill:SetAlpha(Theme.GroundAlpha() * (REST + (1 - REST) * w))
+	local k = REST + (1 - REST) * w
+	l.fill:SetAlpha(Theme.GroundAlpha() * k)
 	local r, g, b, a = Theme.Color("border")
 	for i, t in ipairs(l.edges) do
 		local open = i == 1 and l.win and l.win.isDocked or i == 2 and l.dock
-		t:SetVertexColor(r, g, b, open and 0 or (a or 1) * w)
+		t:SetVertexColor(r, g, b, open and 0 or (a or 1) * k)
 	end
 end
 
@@ -141,11 +143,14 @@ end
 -- its conversation icon is drawn flat in Polestar's icon colour. The tabs' own
 -- fade (0.4 selected, 0.2 others at rest) stays the game's. The new-message
 -- glow stays the game's, in the accent. FCFTab_UpdateColors writes the
--- label, glow and icon colours; its hook paints ours over them. Hovered
--- (the driver), a tab's label is `text` at full alpha, out of the tab's fade
--- (SetIgnoreParentAlpha), on the wash.
+-- label, glow and icon colours; its hook paints ours over them. The label and
+-- underline are out of the tab's fade (SetIgnoreParentAlpha: the game's 0.2
+-- left a label unreadable over the world); the driver fades them itself,
+-- legible at rest (TAB_REST), full while the chat is warm or the tab hovered.
+local TAB_REST = { [true] = 0.85, [false] = 0.7 } -- the selected tab, the others
 local function paintTab(t, l, selected)
 	local on = ns.Enabled("chat")
+	l.sel = selected
 	l.bar:SetShown(on and selected)
 	local c = t.selectedColorTable
 	local icon = t.conversationIcon
@@ -177,19 +182,34 @@ local function selectedTab(t)
 	return t.ActiveMiddle:IsShown()
 end
 
+-- A docked tab the dock lays out in its scroll frame (a window the player
+-- made, past the static General and Combat Log: FCFDock_UpdateTabs) sits a
+-- few px off the dock's foot and is stretched to 90 (FCFDock_CalculateTabSize)
+-- with its label centred in it: ours sits a little high, past a wider gap.
+-- So every label is left-justified (in its text box, which starts at the
+-- tab's side padding on each tab) and the label, wash and underline are
+-- moved by `dy`, the tab's foot to the dock's, so all sit on the header. The
+-- underline is as wide as the label's text. Repainted by the driver.
+local function placeTab(t, l, dy)
+	l.dy = dy
+	local a = l.at
+	t.Text:ClearAllPoints()
+	t.Text:SetPoint(a[1], a[2], a[3], a[4], a[5] + dy)
+	l.hover:ClearAllPoints()
+	l.hover:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, dy)
+	l.hover:SetPoint("TOPRIGHT", t, "TOPRIGHT", 0, HEADER - 32 + dy)
+end
+
 -- The label in Polestar's face at the game's size: the game sizes a tab to
 -- its text once, so a larger size would cut the name short.
 local function tab(t)
 	local l = look(t, function()
 		-- The hover wash under the label (BACKGROUND, shown by the driver): in
 		-- the HIGHLIGHT layer it drew over the label and washed it out.
-		local l = { tab = true, bar = tex(t, "ARTWORK"), hover = tex(t, "BACKGROUND"), font = { t.Text:GetFont() } }
-		-- The tab's visible band: its bottom HEADER px.
-		l.hover:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, 0)
-		l.hover:SetPoint("TOPRIGHT", t, "TOPRIGHT", 0, HEADER - 32)
-		-- The underline: under the label only, 3px off the band's foot.
+		local l = { tab = true, bar = tex(t, "ARTWORK"), hover = tex(t, "BACKGROUND"), font = { t.Text:GetFont() },
+			at = { t.Text:GetPoint(1) }, justify = t.Text:GetJustifyH() }
+		-- The underline: under the label's text only, 3px off the band's foot.
 		l.bar:SetPoint("LEFT", t.Text, "LEFT", 0, 0)
-		l.bar:SetPoint("RIGHT", t.Text, "RIGHT", 0, 0)
 		l.bar:SetPoint("BOTTOM", l.hover, "BOTTOM", 0, 3)
 		l.bar:SetHeight(2)
 		return l
@@ -199,17 +219,22 @@ local function tab(t)
 	for _, k in ipairs(TAB) do t[k]:SetAlpha(on and 0 or 1) end
 	l.bar:SetVertexColor(Theme.Accent())
 	l.hover:SetVertexColor(Theme.Wash("hover"))
-	l.over = nil -- the driver repaints the hover
+	l.over, l.alpha, l.barW = nil, nil, nil -- the driver repaints the hover, the fade and the underline's width
 	l.hover:Hide()
-	t.Text:SetIgnoreParentAlpha(false)
+	t.Text:SetIgnoreParentAlpha(on)
+	l.bar:SetIgnoreParentAlpha(true)
+	t.Text:SetAlpha(1)
+	t.Text:SetJustifyH(on and "LEFT" or l.justify or "CENTER")
+	placeTab(t, l, 0) -- the driver measures the offset
 	local f = l.font
 	Theme.SetFace(t.Text, on and (Theme.FontSpec("small")) or f[1], f[2], f[3] or "")
 	paintTab(t, l, selectedTab(t))
 end
 
 -- The edit box as the window's footer, in Polestar's input, only while
--- typing: the window's ground under the input well (inputBg), the window's
--- hairline carried round it, its top edge a faint accent. Not typing, no
+-- typing: the window's ground under the input well (inputBg), ringed as a
+-- focused ns.TextField is (the accent at 0.8); its text stays the game's chat
+-- font. Its letter limit stays the game's (255 visible). Not typing, no
 -- footer, whether the game hides the box (classic style) or leaves it shown
 -- at 0.35 (IM style, the default). The driver follows the focus.
 local FOOTER = 24 -- below the window's ground, the stock box's text centred in it
@@ -218,7 +243,6 @@ local function paintFocus(e, l)
 	l.fill:SetShown(l.focus)
 	l.well:SetShown(l.focus)
 	for _, t in ipairs(l.edges) do t:SetShown(l.focus) end
-	l.lit:SetShown(l.focus)
 end
 
 local function input(e, f)
@@ -229,9 +253,7 @@ local function input(e, f)
 		l.fill:SetPoint("TOPRIGHT", w.fill, "BOTTOMRIGHT", 0, 0)
 		l.fill:SetHeight(FOOTER)
 		l.well:SetAllPoints(l.fill)
-		local edges = hairline(e, l.fill)
-		l.lit = table.remove(edges, 1) -- the top edge, on the window's bottom one
-		l.edges = edges
+		l.edges = hairline(e, l.fill)
 		return l
 	end)
 	if not l then return end
@@ -244,10 +266,9 @@ local function input(e, f)
 	ns.PaintGround(l.fill, on)
 	l.well:SetVertexColor(Theme.Color("inputBg"))
 	l.well:SetShown(on)
-	paintLine(l.edges, on, Theme.Color("border"))
 	local r, g, b = Theme.Accent()
-	paintLine({ l.lit }, on, r, g, b, 0.5)
-	if on then paintFocus(e, l) else l.lit:Hide() end
+	paintLine(l.edges, on, r, g, b, 0.8)
+	if on then paintFocus(e, l) end
 end
 
 -- The combat log's filter strip (Blizzard_CombatLog, loaded on demand): its
@@ -889,14 +910,35 @@ function M.Enable()
 					l.mark:SetAlpha(a)
 				end
 			end
-			-- A hovered tab: the wash under its label, the label lit.
+			-- A hovered tab: the wash under its label, the label lit. Label and
+			-- underline faded by ours: legible at rest, full while warm (its
+			-- window's warmth, the header's when docked) or hovered, under any
+			-- fade above the tab (its parent's alpha).
 			if l.tab then
 				local over = f:IsVisible() and f:IsMouseOver() or false
 				if over ~= l.over then
 					l.over = over
 					l.hover:SetShown(over)
-					f.Text:SetIgnoreParentAlpha(over)
 					paintTab(f, l, selectedTab(f))
+				end
+				local win = _G["ChatFrame" .. f:GetID()]
+				local wl = win and looks[win.isDocked and _G.GeneralDockManager or win]
+				-- On the header: a docked tab's foot to the dock's.
+				local dock, bottom = _G.GeneralDockManager, f:GetBottom()
+				local dy = win and win.isDocked and bottom and dock:GetBottom() and math.floor((dock:GetBottom() - bottom) * 10 + 0.5) / 10 or 0
+				if dy ~= l.dy then placeTab(f, l, dy) end
+				local bw = f.Text:GetStringWidth()
+				if bw ~= l.barW then
+					l.barW = bw
+					l.bar:SetWidth(math.max(1, math.min(bw, f.Text:GetWidth() > 0 and f.Text:GetWidth() or bw)))
+				end
+				local rest = TAB_REST[l.sel and true or false]
+				local w = over and 1 or wl and wl.paint or 0
+				local a = (rest + (1 - rest) * w) * (f:GetParent():GetEffectiveAlpha() or 1)
+				if a ~= l.alpha then
+					l.alpha = a
+					f.Text:SetAlpha(a)
+					l.bar:SetAlpha(a)
 				end
 			end
 		end

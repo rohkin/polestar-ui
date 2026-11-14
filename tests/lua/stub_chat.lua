@@ -25,6 +25,8 @@ local AT = {
 	BottomTexture = { { "TOPLEFT", "BOTTOMLEFT", 0, -1 }, { "TOPRIGHT", "BOTTOMRIGHT", 0, -1 } },
 }
 
+local CHAT_FACE = "Fonts\\ARIALN.TTF" -- ChatFontNormal's face in the client
+
 local function bordered(f, l, t, r, b)
 	local name = f:GetName()
 	local bg = f:CreateTexture(name .. "Background", "BACKGROUND")
@@ -287,7 +289,10 @@ local function makeEditBox(f)
 			for _, t in ipairs({ l, r, m }) do t:Hide() end
 		end
 	end
+	-- The game's chat face (ChatFontNormal, Arial Narrow) on the box and its header.
+	e:SetFont(CHAT_FACE, 14, "")
 	e.header = e:CreateFontString(name .. "Header", "ARTWORK", ChatFontNormal)
+	e.header:SetFont(CHAT_FACE, 14, "")
 	e.header:SetPoint("LEFT", e, "LEFT", 15, 0)
 	e:Hide()
 	return e
@@ -344,6 +349,13 @@ local function makeChat(id, name)
 	FCF_SetButtonSide(f, "left")
 	f.editBox = makeEditBox(f)
 	f.lines, f.history = {}, {}
+	-- Its own font object (FontableFrameMixin, made custom by the game's
+	-- size, UPDATE_CHAT_WINDOWS): SetFont reaches every line, as the object does.
+	function f.SetFont(self, path, size, flags)
+		stub.Methods.SetFont(self, path, size, flags)
+		for _, e in ipairs(self.history) do e.fs:SetFont(path, size, flags) end
+	end
+	f:SetFont(CHAT_FACE, 14, "")
 	-- ScrollingMessageFrame (Blizzard_SharedXML): its history buffer, oldest
 	-- first, each line with its extra data; GetMessageInfo(1) the oldest; at
 	-- most 128 lines (ChatFrameOverrides: SetMaxLines(128)). BackFillMessage
@@ -362,6 +374,7 @@ local function makeChat(id, name)
 	end
 	local function entry(self, text, r, g, b, ...)
 		local fs = self:CreateFontString(nil, "ARTWORK", ChatFontNormal)
+		fs:SetFont(self:GetFont())
 		fs:SetText(text)
 		fs:SetTextColor(r or 1, g or 1, b or 1)
 		fs:SetShadowOffset(1, -1)
@@ -661,6 +674,21 @@ function stub.loadCombatLog()
 	stub.addonLoaded("Blizzard_CombatLog")
 end
 
+-- A docked tab that is not static (a whisper's, a window the player made),
+-- as FCFDock_UpdateTabs lays it: in the dock's scroll frame, which leaves it
+-- 2px above the static tabs' foot, 90 wide (FCFDock_CalculateTabSize's
+-- MAX_SIZE), its label's box the rest of that width (PanelTemplates_TabResize,
+-- 20 of side padding and the tab's sizePadding), the label centred in it.
+function stub.dockDynamic(t, after)
+	t:ClearAllPoints()
+	-- The first one 2px up off the static tab before it; the next ones in line with it.
+	t:SetPoint("BOTTOMLEFT", after, "BOTTOMRIGHT", 1, after.dynamic and 0 or 2)
+	t.dynamic = true
+	t.y = (t:GetParent():GetBottom() or 0) + 2 -- GetBottom as the client answers it (the stub lays nothing out)
+	t:SetWidth(90)
+	t.Text:SetWidth(90 - 20 - (t.sizePadding or 0))
+end
+
 -- A whisper in its own window: docked, not selected, the first time a new frame.
 local maxTemp = 11
 function FCF_OpenTemporaryWindow(chatType, chatTarget, source, select)
@@ -675,7 +703,8 @@ function FCF_OpenTemporaryWindow(chatType, chatTarget, source, select)
 	t.conversationIcon:SetPoint("RIGHT", t.Text, "LEFT", -2, 0)
 	iconTexture(t.conversationIcon, 1, 1, 1)
 	t.conversationIcon.iconDisplayInfo = { allowColorOverride = true }
-	t:SetWidth(t:GetWidth() + 14)
+	t.sizePadding = 10
+	stub.dockDynamic(t, tabs[#tabs - 1])
 	FCFTab_UpdateColors(t, false)
 	fade(ChatFrame1.hasBeenFaded)
 	if not select then f:Hide() end
