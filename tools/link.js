@@ -1,13 +1,16 @@
 'use strict';
-// link / unlink: a directory junction <AddOns>\Polestar_UI -> this repo, so the game loads the working copy.
+// link / unlink [shots]: a directory junction <AddOns>\Polestar_UI -> this repo, so the game loads the working copy;
+// with `shots`, <AddOns>\Polestar_UI_Shots -> tools/shots/Polestar_UI_Shots (the dev screenshot addon).
 // AddOns: $WOW_FOREVER_ADDONS (as Polestar's tools), else the first _forever_ client found on a local drive.
 // Never deletes or overwrites a real folder; unlink removes only a junction or symlink.
 
 const fs = require('node:fs');
 const path = require('node:path');
 
-const NAME = 'Polestar_UI';
-const REPO = path.resolve(__dirname, '..');
+const TARGETS = {
+	main: ['Polestar_UI', path.resolve(__dirname, '..')],
+	shots: ['Polestar_UI_Shots', path.resolve(__dirname, 'shots', 'Polestar_UI_Shots')],
+};
 const isDir = (p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } };
 
 // shortcut: fixed install roots per drive, add a root here when a client lives elsewhere.
@@ -22,8 +25,9 @@ function findAddons(env) {
 	return null;
 }
 
-function run(cmd, env = process.env) {
-	if (cmd !== 'link' && cmd !== 'unlink') { console.error('usage: node tools/link.js link|unlink'); return 2; }
+function run(cmd, which = 'main', env = process.env) {
+	if ((cmd !== 'link' && cmd !== 'unlink') || !TARGETS[which]) { console.error('usage: node tools/link.js link|unlink [shots]'); return 2; }
+	const [NAME, REPO] = TARGETS[which];
 	const addons = findAddons(env);
 	if (!addons) {
 		console.error('No WoW Forever AddOns folder found. Set it, then open a new terminal:\n  setx WOW_FOREVER_ADDONS "<WoW>\_forever_\Interface\AddOns"');
@@ -52,4 +56,5 @@ function run(cmd, env = process.env) {
 	return 0;
 }
 
-process.exitCode = run(process.argv[2]);
+if (require.main === module) process.exitCode = run(process.argv[2], process.argv[3]);
+module.exports = { findAddons };

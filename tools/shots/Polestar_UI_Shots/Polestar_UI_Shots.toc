@@ -1,0 +1,7 @@
+## Interface: 16001
+## Title: Polestar: UI Shots
+## Notes: Dev tool: /puishots screenshots every Polestar: UI window. Not shipped.
+## Dependencies: Polestar_UI
+## SavedVariables: PolestarUIShotsDB
+
+Shots.lua

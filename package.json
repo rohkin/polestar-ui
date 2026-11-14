@@ -6,6 +6,10 @@
     "test": "node --test --test-reporter=dot \"tests/*.test.js\"",
     "preview": "node tools/preview.js",
     "link": "node tools/link.js link",
-    "unlink": "node tools/link.js unlink"
+    "unlink": "node tools/link.js unlink",
+    "link:shots": "node tools/link.js link shots",
+    "unlink:shots": "node tools/link.js unlink shots",
+    "shots": "node tools/shots.js",
+    "shots:watch": "node tools/shots.js --watch"
   }
 }
