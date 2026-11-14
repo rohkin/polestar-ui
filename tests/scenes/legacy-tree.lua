@@ -1,13 +1,13 @@
 --@ title: Legacy: Tree, Adventure
 --@ roots: PolestarUILegacy
 --@ stubs: stub_legacy.lua
--- The tree: Adventure picked in the sidebar; a click stages a rank (Undo takes it back), Apply waits for the client; a talent behind another says so in its tooltip; the search; with no point left every unlearnt talent greys, as the stock buttons.
+-- The tree: Adventure picked on the top tabs; a click stages a rank (Undo takes it back), Apply waits for the client; a talent behind another says so in its tooltip; the search; with no point left every unlearnt talent greys, as the stock buttons.
 PolestarUI.Show("legacy", "tree")
 local f = PolestarUILegacy
 local v = f.psPages.tree
-local function row(n) for _, r in ipairs({ f.NavScroll.Child:GetChildren() }) do if r:IsShown() and r.psIdx and r.Label:GetText() == n then return r end end end
+local function row(n) for _, t in ipairs(f.tabButtons) do if t:IsShown() and t.Label:GetText() == n then return t end end end
 local function node(n) for _, b in ipairs({ v.Grid:GetChildren() }) do if b:IsShown() and b.psName == n then return b end end end
-assert(row("Professions") and row("Progression"), "trees")
+assert(row("Professions") and row("Progression") and not f.psFilter:IsShown() and f.Search:GetParent() == f.TabRow, "trees as tabs, the search on the tab row")
 row("Adventure"):Click()
 assert(v.Name:GetText() == "Adventure", "not Adventure")
 assert(node("Swift Traveller").Rank:GetText() == "3/5", "ranks")

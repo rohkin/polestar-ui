@@ -10,8 +10,9 @@ local NAME = "PolestarUILegacy"
 local FACTION = LC.LEGACY_REWARD_TRACK_FACTION_ID or 2802
 local POINTS = LC.LEGACY_POINTS_TRAIT_CURRENCY_ID or 4225
 local ROW_H, ICON, BAR_H, CRIT_H = 56, 36, 64, 24
--- The sections, on a section rail as the professions are, with the stock
--- window's tab icons (the Two Families Rule: they are the game's).
+local SIDE, CATW = 12, 192 -- the category list's inset, and its column's width
+-- The sections, on a slim icon rail (ns.GameRail, as the professions are), with
+-- the stock window's tab icons (the Two Families Rule: they are the game's).
 -- What each page is for lives in its rail tooltip; the subtitle is a status line.
 local SECTIONS = {
 	{ key = "track", label = "Rewards", tip = "Reward Track", icon = "Interface/Icons/UI_Chat",
@@ -22,7 +23,10 @@ local SECTIONS = {
 		about = "Spend legacy points on talents. Your changes wait until you apply them." },
 }
 local f, section = nil, "track"
+local nav -- the category list's scroll area (Challenges), on the main column's left
 local M = {}
+-- The width of the page shown: Challenges give the category list its column.
+local function cw() return f.BodyWidth - (section == "challenges" and CATW or 0) end
 -- The Challenges page: the open category, the stock filters (completed and
 -- incomplete challenges shown), the search, and the challenge unfolded to
 -- its objectives.
@@ -135,7 +139,6 @@ end
 -- the legacy points it needs.
 local function buildTrack(body, width)
 	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", W.SHELL.pad, 0)
 	v:SetWidth(width)
 	v.Next = W.Text(v, "body", "text")
 	v.Next:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -8)
@@ -278,7 +281,7 @@ local unfolded, heads, cats = {}, {}, {}
 
 local function catRow(list, i, group)
 	if list[i] then return list[i] end
-	local r = CreateFrame("Button", nil, f.NavScroll.Child)
+	local r = CreateFrame("Button", nil, nav.Child)
 	W.Hover(r)
 	r.Sel = r:CreateTexture(nil, "BACKGROUND")
 	r.Sel:SetTexture("Interface\\Buttons\\WHITE8X8")
@@ -290,19 +293,19 @@ local function catRow(list, i, group)
 	r.Bar:SetPoint("BOTTOMLEFT")
 	r.Bar:SetWidth(2)
 	r.Count = W.Text(r, "number", "textMuted")
-	r.Count:SetPoint("RIGHT", r, "RIGHT", -W.SHELL.side, 0)
+	r.Count:SetPoint("RIGHT", r, "RIGHT", -SIDE, 0)
 	-- The stock list's "new" mark: a challenge earned here not yet seen; a
 	-- fixed slot left of the count's (three digits wide), never moving with it.
 	r.Dot = W.Fill(r, "accent", "ARTWORK", 0)
 	r.Dot:ClearAllPoints()
 	r.Dot:SetSize(6, 6)
-	r.Dot:SetPoint("RIGHT", r, "RIGHT", -(W.SHELL.side + 24 + 8), 0)
+	r.Dot:SetPoint("RIGHT", r, "RIGHT", -(SIDE + 24 + 8), 0)
 	r.Chevron = W.Tex(r, "ARTWORK", "chevron-right", "textMuted")
 	r.Chevron:SetSize(12, 12)
-	r.Chevron:SetPoint("LEFT", r, "LEFT", W.SHELL.side, 0)
+	r.Chevron:SetPoint("LEFT", r, "LEFT", SIDE, 0)
 	-- Group rows in the label face, their categories in body text under them.
 	r.Label = W.Text(r, group and "label" or "body", group and "textDim" or "text")
-	r.Label:SetPoint("LEFT", r, "LEFT", W.SHELL.side + 20, 0)
+	r.Label:SetPoint("LEFT", r, "LEFT", SIDE + 20, 0)
 	r.Label:SetPoint("RIGHT", r.Dot, "LEFT", -8, 0)
 	r.Label:SetJustifyH("LEFT")
 	r.Label:SetWordWrap(false)
@@ -326,8 +329,8 @@ local function paintCat(r, c, y, h, group)
 	r.psCat, r.psGroup = c, group
 	local on = c.id == chal.cat
 	r:ClearAllPoints()
-	r:SetPoint("TOPLEFT", f.NavScroll.Child, "TOPLEFT", 0, -y)
-	r:SetPoint("TOPRIGHT", f.NavScroll.Child, "TOPRIGHT", 0, -y)
+	r:SetPoint("TOPLEFT", nav.Child, "TOPLEFT", 0, -y)
+	r:SetPoint("TOPRIGHT", nav.Child, "TOPRIGHT", 0, -y)
 	r:SetHeight(h)
 	r.Chevron:SetShown(group)
 	r.Label:SetText(c.name or "")
@@ -363,7 +366,7 @@ local function paintCategories(tops)
 			if depth == 0 then kind = group end
 			paintCat(r, c, y, h, kind)
 			-- Each level starts at its parent's label; a chevron goes before its label.
-			local x = W.SHELL.side + 20 * depth
+			local x = SIDE + 20 * depth
 			r.Chevron:SetPoint("LEFT", r, "LEFT", x, 0)
 			r.Label:SetPoint("LEFT", r, "LEFT", (group or depth == 0) and x + 20 or x, 0)
 			y = y + h
@@ -377,8 +380,8 @@ local function paintCategories(tops)
 	walk(tops, 0)
 	for i = hi + 1, #heads do heads[i]:Hide() end
 	for i = ci + 1, #cats do cats[i]:Hide() end
-	f.NavScroll.Child:SetWidth((f.psSidebar or W.SHELL.sidebar) - 1)
-	W.SetScrollContent(f.NavScroll, y, W.ShellNavHeight(f))
+	nav.Child:SetWidth(CATW - 1)
+	return y
 end
 
 -- The stock card's clicks (AchievementTemplateMixin:ProcessClick):
@@ -517,7 +520,7 @@ local function paintChallengeRow(r, d, y, first)
 	r.Icon:SetDesaturated(not d.done)
 	r.Name:SetText(d.name or "")
 	-- A set width: the client measures a wrapped string only once it has one.
-	r.Desc:SetWidth(f.BodyWidth - 64 - 96)
+	r.Desc:SetWidth(cw() - 64 - 96)
 	r.Desc:SetText(d.desc or "")
 	W.Color(r.Name, d.done and "text" or "textDim")
 	r.Points:SetText(d.points > 0 and ("+%d"):format(d.points) or "")
@@ -529,7 +532,7 @@ local function paintChallengeRow(r, d, y, first)
 	W.Color(r.Date, tracked and "accent" or "textMuted")
 	local h = math.max(ROW_H + 4, 12 + 20 + 6 + r.Desc:GetStringHeight() + 12)
 	if chal.open == d.id then
-		h = h + paintCrits(r, d.id, h, f.BodyWidth - 64 - 16) + 8
+		h = h + paintCrits(r, d.id, h, cw() - 64 - 16) + 8
 	else
 		for _, c in ipairs(r.crits) do c:Hide() end
 	end
@@ -539,7 +542,6 @@ end
 
 local function buildChallenges(body, width)
 	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", W.SHELL.pad, 0)
 	v:SetWidth(width)
 	v.Panel = W.RowPanel(v)
 	v.Panel:SetPoint("TOPLEFT", v, "TOPLEFT", 0, -16)
@@ -607,7 +609,7 @@ local TREES = {
 local NODE, PITCH, TREE_HEAD = 40, 64, 72
 -- The tree shown, its search, and a commit under way (no changes until it ends).
 local tree = { idx = 1, query = "", committing = false }
-local treeNodes, treeLines, treeRows = {}, {}, {}
+local treeNodes, treeLines = {}, {}
 
 local num = ns.Num
 
@@ -785,7 +787,6 @@ end
 
 local function buildTreePage(body, width)
 	local v = CreateFrame("Frame", nil, body)
-	v:SetPoint("TOPLEFT", body, "TOPLEFT", W.SHELL.pad, 0)
 	v:SetWidth(width)
 	-- The tree's heading: its art in a well, its name, the points in it.
 	v.Well, v.Art = ns.ItemWell(v, 48)
@@ -868,61 +869,6 @@ local function paintTreePage(v)
 	return h + 24, config, c, found
 end
 
--- The trees in the sidebar under the search, each with its art and the
--- points spent in it; the open one marked.
-local TREE_ROW = 44
-local function treeRow(i)
-	if treeRows[i] then return treeRows[i] end
-	local r = CreateFrame("Button", nil, f.NavScroll.Child)
-	r:SetHeight(TREE_ROW)
-	W.Hover(r)
-	r.Sel = r:CreateTexture(nil, "BACKGROUND")
-	r.Sel:SetTexture("Interface/Buttons/WHITE8X8")
-	r.Sel:SetAllPoints(r)
-	W.Painter(r.Sel, function(t) t:SetVertexColor(Theme.Wash("selected")) end)
-	r.Bar = W.Fill(r, "accent", "ARTWORK", 0)
-	r.Bar:ClearAllPoints()
-	r.Bar:SetPoint("TOPLEFT")
-	r.Bar:SetPoint("BOTTOMLEFT")
-	r.Bar:SetWidth(2)
-	r.Art = r:CreateTexture(nil, "ARTWORK")
-	r.Art:SetSize(28, 28)
-	r.Art:SetPoint("LEFT", r, "LEFT", W.SHELL.side, 0)
-	r.Count = W.Text(r, "number", "textMuted")
-	r.Count:SetPoint("RIGHT", r, "RIGHT", -W.SHELL.side, 0)
-	r.Label = W.Text(r, "body", "text")
-	r.Label:SetPoint("LEFT", r.Art, "RIGHT", 12, 0)
-	r.Label:SetJustifyH("LEFT")
-	r:SetScript("OnClick", function(self)
-		tree.idx = self.psIdx
-		PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
-		refresh()
-	end)
-	treeRows[i] = r
-	return r
-end
-
-local function paintTreeNav()
-	for i, t in ipairs(TREES) do
-		local r = treeRow(i)
-		r.psIdx = i
-		local on = i == tree.idx
-		r:ClearAllPoints()
-		r:SetPoint("TOPLEFT", f.NavScroll.Child, "TOPLEFT", 0, -(i - 1) * TREE_ROW)
-		r:SetPoint("TOPRIGHT", f.NavScroll.Child, "TOPRIGHT", 0, -(i - 1) * TREE_ROW)
-		r.Art:SetAtlas(t.atlas)
-		r.Label:SetText(t.name)
-		W.Color(r.Label, on and "text" or "navRest")
-		local c = currencyOf(configOf(t), t)
-		r.Count:SetText(c and num(c.spent) > 0 and num(c.spent) or "")
-		r.Sel:SetShown(on)
-		r.Bar:SetShown(on)
-		r:Show()
-	end
-	f.NavScroll.Child:SetWidth((f.psSidebar or W.SHELL.sidebar) - 1)
-	W.SetScrollContent(f.NavScroll, #TREES * TREE_ROW, W.ShellNavHeight(f))
-end
-
 -- Apply commits the staged points (C_Traits.CommitConfig, as the stock
 -- Apply): changes wait until TRAIT_CONFIG_UPDATED or CONFIG_COMMIT_FAILED, or
 -- six seconds at most, as the stock frame's backup timer.
@@ -959,7 +905,9 @@ end
 
 local function build()
 	-- One search box, for the page shown: the challenges, or the tree's talents.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", rail = true, searchPlaceholder = "Search", onSearch = function(text)
+	-- No sidebar: the sections are a slim icon rail, the trees top tabs and the
+	-- categories a column of the Challenges page.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 560, sidebar = 0, rail = true, searchPlaceholder = "Search", onSearch = function(text)
 		text = text or ""
 		if section == "tree" then
 			if tree.query == text:lower() then return end
@@ -974,64 +922,51 @@ local function build()
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "legacy")
-	-- The subject block names the window, in place of Polestar's lockup.
-	local b = ns.SubjectBlock(f)
-	-- The Legacy emblem heads the rail, where Polestar's stands in its own,
-	-- centred on the title's line.
+	ns.Plain(f, f.psRail)
+	ns.Compact(f)
+	-- The Legacy emblem heads the rail, where Polestar's stands in its own.
 	f.psEmblem = f.Rail:CreateTexture(nil, "ARTWORK")
-	f.psEmblem:SetSize(40, 40)
-	f.psEmblem:SetPoint("CENTER", f.Rail, "TOP", 0, -47)
+	f.psEmblem:SetSize(32, 32)
 	f.psEmblem:SetAtlas("Legacy-up-c60")
-	-- An atlas, not an icon: its own crop.
-	f.psIcon = b.icon
-	f.psIcon:SetTexCoord(0, 1, 0, 1)
-	f.psIcon:SetAtlas("Legacy-up-c60")
-	f.psName, f.psLine = b.name, b.line
-	f.psName:SetText(LEGACY_BUTTON or "Legacy")
-	-- The filter acts on the list: at the end of the search row, as the
-	-- crafting window's.
-	local top = W.SHELL.header - 30
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", filterMenu, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
+	-- The filter acts on the list: after the search, on the tab row.
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", filterMenu, 14)
 	Theme.Skin(f.psFilter, "editbox")
+	ns.TopNav(f, {}, nil, function() end) -- the search and filter onto the tab row
+	nav = W.Scroll(f.Main)
+	f.psNav = nav
+	nav:SetPoint("TOPLEFT", f.Scroll, "TOPLEFT", 0, 0)
+	nav:SetPoint("BOTTOMLEFT", f.Scroll, "BOTTOMLEFT", 0, 0)
+	nav:SetWidth(CATW)
+	nav:SetFrameLevel(f.Scroll:GetFrameLevel() + 5)
+	nav.Rule = W.Fill(nav, "border", "OVERLAY", 0)
+	nav.Rule:ClearAllPoints()
+	nav.Rule:SetPoint("TOPRIGHT")
+	nav.Rule:SetPoint("BOTTOMRIGHT")
+	nav.Rule:SetWidth(1)
 	f.psPages = { track = buildTrack(f.Body, f.BodyWidth), challenges = buildChallenges(f.Body, f.BodyWidth), tree = buildTreePage(f.Body, f.BodyWidth) }
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN) end)
 	f:HookScript("OnHide", function() PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE) end)
 	Polestar.CloseOnEscape(NAME)
 end
 
--- The sidebar (the search, and the categories or the trees) on Challenges
--- and the tree; the reward track takes its width. The main column hangs off the rail's edge
--- then, never off the hidden sidebar (docs/CLIENT.md, rule 12).
-local function sidebar(on)
-	f.Sidebar:SetShown(on)
-	f.Main:ClearAllPoints()
-	if on then
-		f.Main:SetPoint("TOPLEFT", f.Sidebar, "TOPRIGHT", 0, 0)
-	else
-		f.Main:SetPoint("TOPLEFT", f, "TOPLEFT", 1 + f.psRail, -1)
-	end
-	f.Main:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
-	f.BodyWidth = f:GetWidth() - f.psRail - (on and f.psSidebar or 0) - 2 - W.SHELL.pad * 2
-	f.psPages[section]:SetWidth(f.BodyWidth)
-end
-
+-- The slim rail of sections, each label and what the page is for in its tooltip.
 local function paintRail()
-	W.ShellRail(f, SECTIONS, nil, section, function(key) M.Show(key) end)
+	ns.GameRail(f, SECTIONS, section, function(key) M.Show(key) end, { slim = true })
 	for i, d in ipairs(SECTIONS) do
 		local b = f.railButtons[i]
 		b.psTip, b.psTipLines = d.tip or d.label, { d.about }
-		-- A game icon, not a glyph (ns.GameIcon) over the rail's own, which
-		-- stays, unseen, as the label's anchor.
-		b.Icon:SetSize(24, 24)
-		b.Icon:SetAlpha(0)
-		if not b.psGameIcon then
-			b.psGameIcon = ns.GameIcon(b)
-			b.psGameIcon:SetAllPoints(b.Icon)
-		end
-		b.psGameIcon:SetTexture(d.icon)
 	end
+	f.psEmblem:ClearAllPoints()
+	f.psEmblem:SetPoint("CENTER", f.Rail, "TOP", 0, -f.psHead / 2)
+end
+
+-- The pages sit right of the category list on Challenges, else at the pad.
+local function placePages()
+	for key, v in pairs(f.psPages) do
+		v:ClearAllPoints()
+		v:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad + (key == "challenges" and CATW or 0), 0)
+	end
+	f.psPages[section]:SetWidth(cw())
 end
 
 -- The status line of the track and the challenges: "3 of 65 legacy points earned".
@@ -1041,19 +976,35 @@ end
 
 function refresh()
 	local pts = points()
-	f.psLine:SetText(("%d Legacy %s"):format(pts, pts == 1 and "Point" or "Points"))
 	local onChallenges, onTree = section == "challenges", section == "tree"
 	paintRail()
-	sidebar(onChallenges or onTree)
-	-- The search row: the filter on Challenges only; each page keeps its own search.
-	local top = W.SHELL.header - 30
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + (onChallenges and 30 + 6 or 0)), -top)
+	-- The tab row holds the search (and the filter on Challenges) on those
+	-- pages, and on the tree its trees with the points spent in each.
+	f.psKeepTabRow = section ~= "track"
+	if onTree then
+		local items = {}
+		for i, t in ipairs(TREES) do
+			local c = currencyOf(configOf(t), t)
+			items[i] = { key = i, label = t.name, count = c and num(c.spent) or nil }
+		end
+		ns.TopNav(f, items, tree.idx, function(k)
+			tree.idx = k
+			PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+			refresh()
+		end)
+	else
+		ns.TopNav(f, {}, nil, function() end)
+	end
+	f.Search:ClearAllPoints()
+	f.Search:SetPoint("RIGHT", onChallenges and f.psFilter or f.TabRow, onChallenges and "LEFT" or "RIGHT", onChallenges and -6 or -f.psPad, 0)
 	f.psFilter:SetShown(onChallenges)
+	nav:SetShown(onChallenges)
 	local want = onTree and tree.query or chal.query
 	if (f.Search:GetText() or ""):lower() ~= want:lower() then f.Search:SetText(want) end
 	for _, r in ipairs(heads) do if not onChallenges then r:Hide() end end
 	for _, r in ipairs(cats) do if not onChallenges then r:Hide() end end
-	for _, r in ipairs(treeRows) do r:SetShown(onTree) end
+	local navH = 0
+	placePages() -- before the pages paint: their width
 	local foot = {}
 	local h = 40
 	for key, v in pairs(f.psPages) do v:SetShown(key == section) end
@@ -1080,21 +1031,19 @@ function refresh()
 			end
 		end
 		if chal.cat and LegacyChallengeViewedUtil then LegacyChallengeViewedUtil.MarkCategoryViewed(chal.cat) end
-		paintCategories(tops)
+		navH = paintCategories(tops)
 		W.ShellTitle(f, chal.cat and GetCategoryInfo(chal.cat) or "Challenges", earned(pts))
-		W.ShellTabs(f, nil)
 		-- The glyph in the accent while a filter hides challenges.
 		local on = (chal.showDone and 0 or 1) + (chal.showTodo and 0 or 1)
 		W.SetIconState(f.psFilter, on > 0)
 		f.psFilter.psTip = on > 0 and ("Filter (%d on)"):format(on) or "Filter"
 		h = paintChallenges(f.psPages.challenges, chal.cat and challenges(chal.cat, found) or {})
 	else
-		W.ShellTabs(f, nil)
 		if section == "track" then
+			W.ShellTabs(f, nil)
 			W.ShellTitle(f, "Reward Track", earned(pts))
 			h = paintTrack(f.psPages.track)
 		else
-			paintTreeNav()
 			local found, config, c
 			h, config, c, found = paintTreePage(f.psPages.tree)
 			local left = c and num(c.quantity) or 0
@@ -1129,6 +1078,8 @@ function refresh()
 		-- A disabled one says why in its tooltip.
 		b.psTip = not d.on and d.why or nil
 	end
+	placePages()
+	if onChallenges then W.SetScrollContent(nav, navH, f.psViewH) end
 	W.ShellBody(f, h)
 end
 
