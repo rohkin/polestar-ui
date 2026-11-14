@@ -1,7 +1,7 @@
 --@ title: Bank
 --@ roots: PolestarUIBank
 --@ stubs: stub_npc.lua, stub_bank.lua
--- The banker opens ours, never the stock window, with the bags; closing ours ends the bank once, the game ending it closes ours without ending it again. Forever's bank holds bags: the sidebar lists the Bank and the Warband bank; the grid shows every bought bag's slots with counts, quality borders and quest marks, the subtitle how many are free; the search dims what does not match. Above the grid, the bank's bag slots: a bag in one shows its tooltip and lights its slots below, a click picks it up or puts one in, a slot not bought is faded, its tooltip names the next one's cost (as the label above does) and a click buys it. Hovering a slot puts the secure overlay over it (right-click is the game's "item" action on that bag and slot, none on an empty slot), none in combat; a left-click picks up, a shift-click splits the stack on a stepper. Clean up sorts the bank, asking first until told not to.
+-- The banker opens ours, never the stock window, with the bags; closing ours ends the bank once, the game ending it closes ours without ending it again. Forever's bank holds bags: the top tabs are the Bank and the Warband bank; the grid shows every bought bag's slots with counts, quality borders and quest marks, the subtitle how many are free; the search dims what does not match. Above the grid, the bank's bag slots: a bag in one shows its tooltip and lights its slots below, a click picks it up or puts one in, a slot not bought is faded, its tooltip names the next one's cost (as the label above does) and a click buys it. Hovering a slot puts the secure overlay over it (right-click is the game's "item" action on that bag and slot, none on an empty slot), none in combat; a left-click picks up, a shift-click splits the stack on a stepper. Clean up sorts the bank, asking first until told not to.
 local T = Enum.PlayerInteractionType
 local f = PolestarUIBank
 assert(PolestarUI.modules.bank.reloadOff, "switching off does not wait for /reload")
@@ -25,10 +25,10 @@ stub.bankViewable = { [0] = true, [2] = true }
 
 stub.interact(T.Banker)
 local labels = {}
-for _, b in ipairs(f.navButtons) do if b:IsShown() then labels[#labels + 1] = b.Label:GetText() end end
-assert(table.concat(labels, ",") == "Bank,Warband bank", "nav: " .. table.concat(labels, ","))
-assert(f.Title:GetText() == "Bank" and tostring(f.Subtitle:GetText()) == "35 of 42 slots free.", "the bank, its free slots")
-assert(f.psSubject.icon:GetTexture() == 132355 and f.psSubject.name:GetText() == "Bank", "the banker's portrait")
+for _, b in ipairs(f.tabButtons) do if b:IsShown() then labels[#labels + 1] = b.Label:GetText() end end
+assert(table.concat(labels, ",") == "Bank,Warband bank", "tabs: " .. table.concat(labels, ","))
+assert(f.Title:GetText() == "Bank" and tostring(f.Subtitle:GetText()) == "Thrall · 35 of 42 free.", "the bank, its free slots")
+assert(not f.Sidebar:IsShown() and f.psCompact and f.psPad > 0, "the compact grid")
 local wells = { f.psGrid:GetChildren() }
 assert(#wells == 42 and wells[42]:IsShown() and f.psGrid:GetHeight() == 4 * 40 - 4, "both bags' 42 slots, 11 to a row")
 assert(tostring(wells[5].psCount:GetText()) == "20" and wells[6].Icon.desaturated, "count, locked")

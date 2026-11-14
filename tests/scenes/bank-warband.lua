@@ -7,8 +7,8 @@ stub.bankViewable = { [2] = true }
 stub.interact(T.AccountBanker)
 local f = PolestarUIBank
 assert(f:IsShown() and f.Title:GetText() == "Warband bank", "Warband bank not shown")
-assert(f.navButtons[1].Label:GetText() == "Warband bank" and not (f.navButtons[2] and f.navButtons[2]:IsShown()), "the Bank listed at a Warband banker")
-assert(tostring(f.Subtitle:GetText()) == "26 of 28 slots free. Holds 500g 0s 0c.", "subtitle: " .. tostring(f.Subtitle:GetText()))
+assert(not (f.tabButtons[1] and f.tabButtons[1]:IsShown()), "tabs shown for the one bank (a lone page has none)")
+assert(tostring(f.Subtitle:GetText()) == "Thrall · 26 of 28 free. Holds 500g 0s 0c.", "subtitle: " .. tostring(f.Subtitle:GetText()))
 local fb = {}
 for _, side in ipairs({ "left", "right" }) do
 	for _, b in ipairs(f.footerButtons[side]) do if b:IsShown() then fb[#fb + 1] = b end end

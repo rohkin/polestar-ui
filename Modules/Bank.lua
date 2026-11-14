@@ -13,6 +13,7 @@ local Theme = Polestar.Theme
 local NAME = "PolestarUIBank"
 local CHAR, ACCT -- Enum.BankType's, read as the window is built
 local COLS = 11
+local TOP = 48 -- the first row (bag slots label, money) is above
 
 local f, grid, strip, money
 local shown -- the shown bank type (bags), or the shown tab's container ID (tabs)
@@ -274,26 +275,25 @@ end
 
 local function build()
 	CHAR, ACCT = Enum.BankType.Character, Enum.BankType.Account
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, searchPlaceholder = "Search the bank",
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, searchPlaceholder = "Search the bank",
 		onSearch = function(text) C_Container.SetItemSearch(text or "") end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "bank")
-	-- The banker's portrait, as the stock frame's (SetPortraitToUnit), and "Bank".
-	local b = ns.SubjectBlock(f)
-	f.psSubject = b
-	b.name:SetText(BANK or "Bank")
-	money = ns.Money(f.Sidebar)
-	money:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -6)
+	ns.Plain(f) -- before the grid: BodyWidth is the compact one
+	ns.Compact(f)
+	-- The player's money, at the first row's right end.
+	money = ns.Money(f.Body)
+	money:SetPoint("TOPRIGHT", f.Body, "TOPRIGHT", -f.psPad, -22)
 	f.psStripLabel = W.Text(f.Body, "small", "textDim")
-	f.psStripLabel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psStripLabel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	f.psStripLabel:SetText("Bag slots")
 	strip = ns.ItemGrid(f.Body, COLS, 36, 4)
-	strip:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -42)
+	strip:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -42)
 	f.psStrip = strip
 	grid = ns.ItemGrid(f.Body, COLS, 36, 4)
 	f.psGrid = grid
 	f.psNote = W.Text(f.Body, "default", "textDim")
-	f.psNote:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psNote:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -TOP)
 	f.psNote:SetWidth(f.BodyWidth)
 	f.psNote:SetWordWrap(true)
 	f.psNote:SetJustifyH("LEFT")
@@ -306,55 +306,42 @@ local function build()
 	Polestar.CloseOnEscape(NAME)
 end
 
--- The sidebar: in a bank of bags, one row per bank; with tabs, each bank's
--- tabs under its heading and "Buy a tab" while one can be bought.
+-- The top tabs: in a bank of bags, one per bank; with tabs, each bank's tabs
+-- (named by the bank when both show) and "Buy a tab" while one can be bought.
 local function navigation()
 	local NAMES = { [CHAR] = "Bank", [ACCT] = "Warband bank" }
+	local both = C_Bank.CanViewBank(CHAR) and C_Bank.CanViewBank(ACCT)
 	-- The stock page tabs' icons (BankPageTabTemplate's iconTexture1, accountBankIconTexture1).
 	local ICONS = { [CHAR] = "Interface\\Icons\\INV_SideTab_Bank_c60", [ACCT] = "Interface\\Icons\\UI_Warbands" }
 	local nav, cur, curType, curLabel = {}, nil, nil, nil
 	for _, t in ipairs({ CHAR, ACCT }) do
 		if C_Bank.CanViewBank(t) then
 			if bagMode() then
-				nav[#nav + 1] = { key = "t" .. t, label = NAMES[t], psIcon = ICONS[t] }
+				nav[#nav + 1] = { key = "t" .. t, label = NAMES[t], icon = ICONS[t] }
 				if "t" .. t == shown or not cur then cur, curType, curLabel = "t" .. t, t, NAMES[t] end
 			else
-				nav[#nav + 1] = { heading = true, label = t == CHAR and "Character" or "Warband" }
+				local bank = t == CHAR and "Character" or "Warband"
 				for i, d in ipairs(C_Bank.FetchPurchasedBankTabData(t) or {}) do
 					local label = (d.name or "") ~= "" and d.name or ("Tab %d"):format(i)
-					nav[#nav + 1] = { key = d.ID, label = label, psIcon = d.icon }
+					nav[#nav + 1] = { key = d.ID, label = both and (bank .. " " .. label) or label, icon = d.icon }
 					if d.ID == shown or not cur then cur, curType, curLabel = d.ID, t, label end
 				end
-				if C_Bank.CanPurchaseBankTab(t) then nav[#nav + 1] = { key = "buy" .. t, label = "Buy a tab", icon = "plus" } end
+				if C_Bank.CanPurchaseBankTab(t) then nav[#nav + 1] = { key = "buy" .. t, label = both and (bank .. ": buy a tab") or "Buy a tab" } end
 			end
 		end
 	end
 	shown = cur
-	W.ShellNav(f, nav, shown or false, function(k)
+	ns.TopNav(f, nav, shown or false, function(k)
 		if type(k) == "string" and k:sub(1, 3) == "buy" then return buy(tonumber(k:sub(4))) end
 		shown = k
 		paint()
 	end)
-	-- The banks' and tabs' own icons on their rows, in their colours.
-	for i, item in ipairs(nav) do
-		local icon = f.navButtons[i].Icon
-		if item.psIcon then
-			W.Uncolor(icon)
-			icon:SetTexture(item.psIcon)
-			icon:SetVertexColor(1, 1, 1)
-			icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-		else
-			icon:SetTexCoord(0, 1, 0, 1)
-		end
-	end
 	return curType, curLabel
 end
 
 function paint()
 	local t, label = navigation()
-	SetPortraitTexture(f.psSubject.icon, "npc")
 	ns.SetMoney(money, GetMoney())
-	W.ShellTabs(f, nil)
 	local bags = bagMode()
 	local locked = t and C_Bank.FetchBankLockedReason(t)
 	local data = t and not locked and C_Bank.FetchPurchasedBankTabData(t) or {}
@@ -367,7 +354,7 @@ function paint()
 	end
 	local byNum = {}
 	for i, d in ipairs(data) do byNum[i] = d end
-	local y = 24
+	local y = TOP
 	local stripN = bags and t and not locked and #data > 0 and paintBags(t, byNum) or 0
 	if stripN == 0 then strip.Layout(0) end
 	strip:SetShown(stripN > 0)
@@ -391,14 +378,16 @@ function paint()
 		end
 	end
 	grid:ClearAllPoints()
-	grid:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -y)
+	grid:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -y)
 	-- Nothing to show: why (locked), or what buying the first slot gives.
 	local first = t and not locked and #data == 0 and C_Bank.CanPurchaseBankTab(t) and C_Bank.FetchNextPurchasableBankTabData(t)
 	f.psNote:SetShown(locked ~= nil or first ~= nil)
 	f.psNote:SetText(locked and lockedText(locked) or first and first.purchasePromptBody or "")
-	local sub = total > 0 and ("%d of %d slots free."):format(free, total) or label and "Nothing here yet." or "No bank to show."
+	local banker = ns.Clean(UnitName("npc"))
+	local sub = total > 0 and ("%d of %d free."):format(free, total) or label and "Nothing here yet." or "No bank to show."
 	if t and C_Bank.DoesBankTypeSupportMoneyTransfer(t) then sub = sub .. " Holds " .. ns.Coins(C_Bank.FetchDepositedMoney(t)) .. "." end
-	W.ShellTitle(f, label or "Bank", sub)
+	-- The banker leads the subtitle.
+	W.ShellTitle(f, label or "Bank", banker and (banker .. " · " .. sub) or sub)
 	-- The footer: buy a bag slot, clean up, the money moves, deposit all.
 	local left, right, gates = {}, {}, {}
 	if t and not locked then
@@ -424,7 +413,7 @@ function paint()
 		local g = gates[i]
 		ns.SetEnabled(b, not g or g[1], g and g[2])
 	end
-	W.ShellBody(f, math.max(y + grid:GetHeight(), f.psNote:IsShown() and 24 + f.psNote:GetStringHeight() or 0) + 24)
+	W.ShellBody(f, math.max(y + grid:GetHeight(), f.psNote:IsShown() and TOP + f.psNote:GetStringHeight() or 0) + 24)
 	-- The hovered slot's item may have moved: its secure action follows.
 	local over = PolestarUIBankSlot
 	if over and over:IsShown() and not InCombatLockdown() then overlay(over.psTarget) end

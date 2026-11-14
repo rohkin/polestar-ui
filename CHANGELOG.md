@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Bank: the bank window moves to the compact grid (560×560, no sidebar): its banks are top tabs, the search sits on the tab row and the banker's name in the subtitle; a new scene shows the game's looks.
 - Spellbook: the search field's placeholder reads "Search" instead of "Search spells".
 - Social: the Social window moves to the compact grid (580×560, no sidebar): its pages are top tabs, the search sits on the tab row and the Battle.net status in the footer; a new scene shows the game's looks.
 - Trainer: the trainer window moves to the compact grid (560×560, no sidebar): its categories are top tabs, with the search and filter at the tab row's right end; a new scene shows the game's looks.

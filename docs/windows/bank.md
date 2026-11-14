@@ -5,12 +5,13 @@ Camelot's `BankFrame.lua` over the mainline `BankFrameTemplates`: a bank of
 bags (`C_Bank.ShouldUsePlayerBagsInBank`). The Bank and the Warband bank each
 have bought bags (`C_Bank.FetchPurchasedBankTabData`, the first the bank
 itself) and bag slots to put more in.
-- **Shell:** 760×600 with sidebar. Subject block: the banker's portrait (the
-  stock `SetPortraitToUnit("npc")`), "Bank", the player's money.
-- **Sidebar:** a row per viewable bank, "Bank" and "Warband bank" (the stock
-  page tabs' icons). A client that reports tabs instead lists each bank's tabs
-  under its heading, with "Buy a tab" (the mainline layout).
-- **Main column:** title the bank's name; subtitle the free slots, and what
+- **Shell:** 560×560 on the compact grid (`ns.Compact`), no sidebar. The
+  player's money sits at the right end of the first body row.
+- **Tabs:** a top tab per viewable bank, "Bank" and "Warband bank" (the stock
+  page tabs' icons; a lone bank shows no tab). A client that reports tabs
+  instead lists each bank's tabs ("Character Gear"; the bank's name only when
+  both show), with "buy a tab" tabs (the mainline layout).
+- **Main column:** title the bank's name; subtitle the banker ("Thrall · 35 of 42 free."), and what
   the Warband bank holds. "Bag slots": a strip of the bank's bag slots past
   its first (`FetchMaxNumBankTabs`): a bag in one shows its tooltip
   (`SetBagItem` on `Characterbanktab`/`Accountbanktab`) and lights its slots
@@ -20,7 +21,7 @@ itself) and bag slots to put more in.
   cost too, as the stock "Cost:" beside Purchase). Then an Item Grid of every
   bought bag's slots (36px wells, 4px apart; the stock pages of 88 are one
   scrolling grid): count, quality border, locked faded, quest marks and
-  cooldown sweep as `BankPanelItemButtonMixin:Refresh`; the sidebar search
+  cooldown sweep as `BankPanelItemButtonMixin:Refresh`; the search on the tab row
   (`C_Container.SetItemSearch`) dims what does not match. A bank with nothing bought says what buying gives,
   with Buy and its cost; a locked bank (`FetchBankLockedReason`) says why.
 - **Footer:** Clean up (`C_Container.SortBank`, asked first while

@@ -1,7 +1,7 @@
 --@ title: Bank: buying a bag slot
 --@ roots: PolestarUIBank, PolestarModal
 --@ stubs: stub_npc.lua, stub_bank.lua
--- A bag slot not bought yet buys the next: the game's prompt with its cost (red when the player cannot pay); Buy buys it, the strip gains the slot and the grid its slots, and the label's cost goes once no more can be bought. A bank with nothing bought yet (the Warband bank before its first) says what buying gives, with Buy and the cost in the footer. A client whose bank has tabs instead lists them under Character and Warband, with "Buy a tab" rows.
+-- A bag slot not bought yet buys the next: the game's prompt with its cost (red when the player cannot pay); Buy buys it, the strip gains the slot and the grid its slots, and the label's cost goes once no more can be bought. A bank with nothing bought yet (the Warband bank before its first) says what buying gives, with Buy and the cost in the footer. A client whose bank has tabs instead lists them as top tabs (named by their bank), with "buy a tab" tabs.
 local T = Enum.PlayerInteractionType
 stub.interact(T.Banker)
 local f = PolestarUIBank
@@ -22,7 +22,7 @@ assert(tostring(f.psStripLabel:GetText()) == "Bag slots", "a cost with nothing t
 
 -- The Warband bank before its first: what buying gives, and its cost (more than the player has).
 stub.bankTabs[2] = {}
-f.navButtons[2]:Click()
+f.tabButtons[2]:Click()
 assert(f.Title:GetText() == "Warband bank" and f.psNote:IsShown() and tostring(f.psNote:GetText()) == "Do you want to buy a new bank tab?", "no purchase prompt")
 assert(not f.psStrip:IsShown() and not button("Clean up") and not button("Deposit all"), "a bank with nothing bought offers its slots")
 button("Buy (1000g"):Click()
@@ -38,13 +38,13 @@ stub.bagMode = false
 stub.tabCost[0] = 250000
 stub.fire("BANK_TABS_CHANGED", 0)
 local labels = {}
-for _, nb in ipairs(f.navButtons) do if nb:IsShown() then labels[#labels + 1] = nb.Label:GetText() end end
-assert(table.concat(labels, ",") == "Character,Gear,Herbs,Tab 3,Buy a tab,Warband,Buy a tab", "nav: " .. table.concat(labels, ","))
-f.navButtons[3]:Click()
+for _, nb in ipairs(f.tabButtons) do if nb:IsShown() then labels[#labels + 1] = nb.Label:GetText() end end
+assert(table.concat(labels, ",") == "Character Gear,Character Herbs,Character Tab 3,Character: buy a tab,Warband: buy a tab", "tabs: " .. table.concat(labels, ","))
+f.tabButtons[2]:Click()
 assert(f.Title:GetText() == "Herbs" and #{ f.psGrid:GetChildren() } >= 14 and f.psGrid:GetHeight() == 2 * 40 - 4 and not f.psStrip:IsShown(), "a tab's own page")
-f.navButtons[5]:Click()
+f.tabButtons[4]:Click()
 assert(PolestarModal:IsShown() and f.Title:GetText() == "Herbs", "the buy row was selected")
 PolestarModal.Box.Cancel:Click()
 stub.bagMode = true
-f.navButtons[1]:Click()
+f.tabButtons[1]:Click()
 stub.fire("BANK_TABS_CHANGED", 0)
