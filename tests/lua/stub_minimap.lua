@@ -150,6 +150,11 @@ function Minimap.SetMaskTexture(self, asset)
 	stub.minimapMask = asset
 	mapMask:SetTexture(tostring(asset):find("WHITE8X8") and asset or DISC)
 end
+stub.blobRings = {}
+for _, k in ipairs({ "Quest", "Task", "Arch" }) do
+	stub.blobRings[k] = 1
+	Minimap["Set" .. k .. "BlobRingScalar"] = function(self, s) stub.blobRings[k] = s end
+end
 local playerCoords = CreateFrame("Frame", nil, container)
 container.PlayerCoords = playerCoords
 playerCoords:SetSize(90, 10)

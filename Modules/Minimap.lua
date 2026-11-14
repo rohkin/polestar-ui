@@ -80,6 +80,12 @@ local function mask()
 	if blocked then return end
 	local sq = shaped()
 	Minimap:SetMaskTexture(sq and SQUARE or ROUND)
+	-- The quest/task/dig-site blob rings are drawn on the round map's edge
+	-- circle: inside a square they show as a hatched circle. 1 is the client's default.
+	for _, k in ipairs({ "Quest", "Task", "Arch" }) do
+		local set = Minimap["Set" .. k .. "BlobRingScalar"]
+		if set then set(Minimap, sq and 0 or 1) end
+	end
 	local h = rawget(_G, "HybridMinimap")
 	if h and h.CircleMask then h.CircleMask:SetTexture(sq and SQUARE or HYBRID_ROUND, CLAMP, CLAMP) end
 end

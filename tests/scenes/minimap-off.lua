@@ -10,6 +10,7 @@ assert(bagnon:GetParent() == PolestarUIMinimapDock, "not docked when on again")
 PolestarUI.Switch("minimap", false)
 assert(stub.minimapMask == "ui-hud-minimap-frame-generic-mask", "not the game's mask when off")
 assert(GetMinimapShape() == "ROUND", "GetMinimapShape is not ROUND when off")
+assert(stub.blobRings.Quest == 1 and stub.blobRings.Task == 1 and stub.blobRings.Arch == 1, "the blob rings are not back when off")
 assert(MinimapCompassTexture:GetAlpha() == 1 and MinimapCluster.DielFrame.Background:GetAlpha() == 1, "the ring is still faded")
 assert(MinimapCluster.ZoneTextButton.StateTexture:GetAlpha() == 1 and MinimapZoneText:GetFont() == font, "the header is not the game's")
 assert(MinimapZoneText:GetAlpha() == 1 and TimeManagerClockTicker:GetAlpha() == 1, "the stock zone text or clock is still faded")
@@ -24,6 +25,7 @@ assert(select(1, MinimapCluster:GetClampRectInsets()) == 0 and select(3, Minimap
 --@ roots: MinimapCluster, AddonCompartmentFrame, GameTimeFrame, TimeManagerClockButton
 --@ stubs: stub_minimap.lua, stub_minimapaddon.lua
 assert(GetMinimapShape() == "ROUND" and stub.minimapMask == "ui-hud-minimap-frame-generic-mask", "another addon's shape was taken")
+assert(stub.blobRings.Quest == 1, "the blob rings were changed under another addon's shape")
 assert(MinimapCompassTexture:GetAlpha() == 1 and LibDBIcon10_Bagnon:GetParent() == Minimap, "the ring or a button was taken from the other addon")
 assert(MinimapCluster.ZoneTextButton.StateTexture:GetAlpha() == 0, "the header is not restyled")
 assert(MinimapZoneText:GetAlpha() == 1, "the zone text is faded with no map text of ours")

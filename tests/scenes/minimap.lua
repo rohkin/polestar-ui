@@ -4,6 +4,7 @@
 -- The game's minimap restyled in place: square (the mask WHITE8X8), the round ring and the day/night ring faded, a 1px accent border; the zone name inside the map at its foot (between the bottom corners' icons) and the clock at its top (outlined HUD text), the stock zone text and clock faded; the addon buttons (two LibDBIcon ones, another addon's) gathered in a flyout of 18-unit cells, shut: only the addons icon in the map's bottom-right corner shows (opened in the panel beside it); the stock button on the backdrop and a map pin stay where they are. The mail indicator (with new mail) top-left, the calendar (today's day) top-right and the tracking button (its glyph) bottom-left as bare icons of ours in the map's corners, the game's faded where it puts them; the addon compartment faded with no stand-in, every region of it unseen after the game writes its count and hover again: the flyout is the one list of addons. In combat the zone name turns secret: the last one read stays. GetMinimapShape answers SQUARE. Fixed (not rotating): no N.
 assert(tostring(stub.minimapMask):find("WHITE8X8"), "not square: " .. tostring(stub.minimapMask))
 assert(GetMinimapShape() == "SQUARE", "GetMinimapShape is not SQUARE")
+assert(stub.blobRings.Quest == 0 and stub.blobRings.Task == 0 and stub.blobRings.Arch == 0, "a blob ring draws its circle inside the square")
 assert(MinimapCompassTexture:GetAlpha() == 0 and MinimapCompassTextureUnderlay:GetAlpha() == 0, "the ring shows")
 local dock = PolestarUIMinimapDock
 stub.newMail({ "Thrall", "Jaina" })
