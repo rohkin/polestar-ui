@@ -11,8 +11,10 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
   any addon, so it always shows first and its `QUEST_FINISHED` hides it; ours
   can get `QUEST_FINISHED` before it shows. So ours never shows, and closes on
   any repaint and one frame after it opens, once `GetTitleText()` is empty.
-- **Shell:** plain, 640×600. Band: the quest NPC's portrait and name
-  (`questnpc`, the quest book with none, as `QuestFrame_SetPortrait`). A
+- **Shell:** plain, 520×540 on the compact grid (`ns.Compact`): the 60 band,
+  the 44 footer, content by `f.psPad`. Band: the quest NPC's portrait in a
+  40px well and its name as the title (`questnpc`, the quest book with none,
+  as `QuestFrame_SetPortrait`; `ns.NpcPortrait`, Core.lua). A
   friendship NPC's standing heads the body (`ns.FriendshipBar`, Core.lua).
 - **3D portrait:** the giver's on an offer (`GetQuestPortraitGiver`), the
   turn-in's on the reward page (`GetQuestPortraitTurnIn`), in a flyout off
@@ -51,4 +53,4 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
 - **Polestar's chat line:** Polestar prints "Best reward: ..." when it could
   not mark the stock buttons (`Rewards.Mark` finds no `QuestInfoFrame`); with
   ours showing the marks the line is redundant, and is Polestar's to drop.
-- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events, portraits, the offer's origin, the tracker's pop-ups); scenes `questdialog`, `questdialog-greeting` (a long title wraps), `questdialog-progress`, `questdialog-reward` (Polestar's marks), `questdialog-portrait` (portraits, extras, write-in, offers elsewhere, auto-accept), each asserting `QuestFrame` never shows.
+- **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events, portraits, the offer's origin, the tracker's pop-ups); scenes `questdialog`, `questdialog-greeting` (a long title wraps), `questdialog-progress`, `questdialog-reward` (Polestar's marks), `questdialog-portrait` (portraits, extras, write-in, offers elsewhere, auto-accept), `questdialog-game-looks` (the skin's pad, the portrait in the 60 band), each asserting `QuestFrame` never shows.

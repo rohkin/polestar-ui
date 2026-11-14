@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Gossip and Quest dialog: Gossip (520×400, was 640×560) and the Quest dialog (520×540, was 640×600) move to the compact grid at one width, with the NPC's portrait and name in the slimmer band.
 - Mail: the mail window moves to the compact grid (560×560, was 760×600) with Inbox and Send Mail as top tabs.
 - Auras: fixed a flood of "Auras cannot be accessed when secret" errors from the target and focus aura rows; the game's auras show in combat, keystones and PvP, ours otherwise.
 - Unit frames: the stock pet frame's red attack pulse and threat flash no longer show through around the pet portrait.

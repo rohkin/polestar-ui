@@ -1,5 +1,5 @@
 -- The Gossip (docs/windows/gossip.md): the NPC's greeting, quests and options
--- in a plain Polestar shell. Ours is CustomGossipFrameManager's base handler,
+-- in a plain Polestar shell on the compact grid. Ours is CustomGossipFrameManager's base handler,
 -- so the stock GossipFrame never opens; custom handlers (the NPE guide) stay
 -- the game's. Off waits for /reload.
 
@@ -79,11 +79,11 @@ local function refresh()
 	-- A friendship NPC's standing heads the body, the greeting under it.
 	f.psFriend.Paint()
 	local y = 24 + (f.psFriend:IsShown() and 32 + 16 or 0)
-	f.psGreeting:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -y)
+	f.psGreeting:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -y)
 	f.psGreeting:SetWidth(w)
 	f.psGreeting:SetText(C_GossipInfo.GetText() or "")
 	y = y + math.ceil(f.psGreeting:GetStringHeight()) + 16
-	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -y)
+	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -y)
 	local ph = 0
 	for i, e in ipairs(list) do
 		local r = rows[i] or newRow(i)
@@ -108,21 +108,23 @@ local function refresh()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 560, sidebar = 0 })
+	-- The compact grid, as wide as the Quest dialog it hands on to.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 520, height = 400, sidebar = 0 })
 	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "gossip")
+	ns.Compact(f)
 	W.ShellTabs(f, nil)
 	ns.Footer(f, {}, {})
 	f.psPortrait = ns.NpcPortrait(f)
 	f.psFriend = ns.FriendshipBar(f.Body)
-	f.psFriend:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psFriend:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	f.psFriend:SetWidth(f.BodyWidth)
 	f.psGreeting = W.Text(f.Body, "body", "text")
 	f.psGreeting:SetWordWrap(true)
 	f.psRows = rows
 	f.psPanel = W.RowPanel(f.Body)
-	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	-- Keys 1-9 pick a row; every other key goes on to the game. Propagation
 	-- cannot change in combat, so keys are ours only when it can.
 	f:SetScript("OnKeyDown", function(self, key)

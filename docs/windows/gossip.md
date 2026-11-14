@@ -7,9 +7,11 @@ ours takes it, so the game calls ours for every gossip its custom handlers
 manager's `HideUIPanel` of ours does nothing from our code, CLIENT.md rule
 1). Off waits for `/reload`. Polestar's gossip automation runs on the
 events and is unaffected.
-- **Shell:** plain, 640×560, no tabs, no sidebar. Band: the NPC's portrait
-  (`SetPortraitTexture`, the quest book when there is no NPC, as the stock
-  `SetPortraitToUnit`) in a 48px well, the NPC's name beside it.
+- **Shell:** plain, 520×400 on the compact grid (`ns.Compact`), no tabs, no
+  sidebar, no footer; as wide as the Quest dialog it hands on to. Band (60):
+  the NPC's portrait (`SetPortraitTexture`, the quest book when there is no
+  NPC, as the stock `SetPortraitToUnit`) in a 40px well, the NPC's name as the
+  title beside it.
 - **Body:** a friendship NPC's standing first (`NPCFriendshipStatusBarMixin`:
   `C_GossipInfo.GetFriendshipReputation(0)`; its icon or the heart, the rank,
   a Skill Bar to the next rank, the stock tooltip's lines), then the greeting.
@@ -34,4 +36,4 @@ events and is unaffected.
   and the NPC's background art (texture kits) are the stock parchment's.
 - **Taint:** none protected; a gossip that opens another window (vendor,
   trainer) flows into that window's interaction.
-- **Tests:** `stub_gossip.lua` (`CustomGossipFrameManager` with the stock dispatch, `C_GossipInfo` with friendship); scenes `gossip` (the base handler is ours, the key hint in the row tooltip, the NPE guide kit still goes to its handler, `GOSSIP_CLOSED` closes ours, prefixes, portrait), `gossip-quests` (the stock order), `gossip-friend` (the friendship bar).
+- **Tests:** `stub_gossip.lua` (`CustomGossipFrameManager` with the stock dispatch, `C_GossipInfo` with friendship); scenes `gossip` (the base handler is ours, the key hint in the row tooltip, the NPE guide kit still goes to its handler, `GOSSIP_CLOSED` closes ours, prefixes, portrait), `gossip-quests` (the stock order), `gossip-friend` (the friendship bar), `gossip-game-looks` (the skin's pad, the portrait in the 60 band).

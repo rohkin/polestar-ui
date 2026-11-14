@@ -653,18 +653,21 @@ function ns.Stepper(parent, o)
 	return s
 end
 
--- The NPC's portrait at the band's left, the title beside it, as the stock
--- windows' (SetPortraitToUnit; the quest book when there is no unit). Shared
--- with the Quest dialog. Returns paint(unit).
+-- The NPC's portrait at the compact band's left (a 40px well, 10 from its
+-- top), the title and subtitle beside it, as the stock windows'
+-- (SetPortraitToUnit; the quest book when there is no unit). Shared by Gossip
+-- and the Quest dialog; call after ns.Compact. Returns paint(unit).
 function ns.NpcPortrait(f)
-	local W = Polestar.Widgets
-	local well, icon = ns.ItemWell(f.Header, 48)
-	well:SetPoint("TOPLEFT", f.Header, "TOPLEFT", W.SHELL.pad, -28)
-	f.Title:SetPoint("TOPLEFT", f.Header, "TOPLEFT", W.SHELL.pad + 48 + 16, -32)
+	local well, icon = ns.ItemWell(f.Header, 40)
+	well:SetPoint("TOPLEFT", f.Header, "TOPLEFT", f.psPad, -10)
+	-- The compact header re-anchors the title whenever its tools move: moved back after it.
+	local function place() f.Title:SetPoint("TOPLEFT", f.Header, "TOPLEFT", f.psPad + 40 + 12, -10) end
+	place()
+	local tools = rawget(f, "HeaderTools")
+	if tools then hooksecurefunc(tools, "Place", place) end
 	f.psPortraitIcon = icon
 	return function(unit)
 		if UnitExists(unit) then SetPortraitTexture(icon, unit) else icon:SetTexture("Interface\\QuestFrame\\UI-QuestLog-BookIcon") end
-		f.Subtitle:SetWidth(f.BodyWidth - 48 - 16)
 	end
 end
 

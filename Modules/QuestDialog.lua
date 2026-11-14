@@ -1,5 +1,5 @@
 -- The Quest dialog (docs/windows/questdialog.md): a quest giver's greeting,
--- offer, progress and reward pages in a plain Polestar shell. The stock
+-- offer, progress and reward pages in a plain Polestar shell on the compact grid. The stock
 -- QuestFrame's open events are unregistered on it (docs/CLIENT.md, rule 15's
 -- exception), so it never opens; ours answers them whoever led there (an NPC,
 -- the Gossip window, an item). Off waits for /reload.
@@ -110,7 +110,7 @@ end
 local function list(panel, pool, head, entries)
 	if #entries == 0 then return panel:Hide() end
 	c.text("heading", "text", head, 24)
-	panel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(c.y + 12))
+	panel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -(c.y + 12))
 	local ph = 0
 	for i, e in ipairs(entries) do
 		local r = pool[i]
@@ -273,7 +273,7 @@ function paint()
 	f.psDesc = nil
 	-- The NPC heads the band, its portrait beside it (QuestFrame_SetPortrait:
 	-- the quest's NPC, the quest book with none); a quest's title, too long for
-	-- a 640 band beside its tools, heads the body as on the World Map's details.
+	-- a 520 band beside its tools, heads the body as on the World Map's details.
 	W.ShellTitle(f, ns.Clean(UnitName("questnpc")) or "")
 	f.psPortraitPaint("questnpc")
 	-- A friendship NPC's standing heads the body (QuestFrame_OnShow).
@@ -323,21 +323,23 @@ function paint()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 600, sidebar = 0 })
+	-- The compact grid; BodyWidth and psPad are its own from here on.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 520, height = 540, sidebar = 0 })
 	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "questdialog")
-	c = ns.QuestRewards(f.Body, { x = W.SHELL.pad, width = f.BodyWidth, tip = tileTip, click = tileClick,
+	ns.Compact(f)
+	c = ns.QuestRewards(f.Body, { x = f.psPad, width = f.BodyWidth, tip = tileTip, click = tileClick,
 		selected = function(type, index) return page == "reward" and type == "choice" and index == choice end })
 	W.ShellTabs(f, nil)
 	f.psPortraitPaint = ns.NpcPortrait(f)
 	f.psFriend = ns.FriendshipBar(f.Body)
-	f.psFriend:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psFriend:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	f.psFriend:SetWidth(f.BodyWidth)
 	f.psPanel = W.RowPanel(f.Body)
-	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	f.psPanel2 = W.RowPanel(f.Body)
-	f.psPanel2:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psPanel2:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	local p = ns.Flyout(f, NAME .. "Portrait", 232)
 	p.Model = CreateFrame("ModelScene", nil, p, "PanningModelSceneMixinTemplate")
 	p.Model:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -16)
