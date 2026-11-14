@@ -31,24 +31,25 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   dungeon score), `C_GuildInfo.GuildRoster()` asked on show as the stock Info
   tab does. These read `SecretInChatMessagingLockdown`: a read that comes back
   secret keeps the last clean roster (rule 3).
-- **Shell:** no sidebar: the stock side tabs are an icon rail (`ns.GameRail`,
-  as Character and Professions), the main column as wide as beside a
-  sidebar, 600 tall. The rail wears the stock tabs' own icons in their order:
+- **Shell:** the compact grid (`ns.Compact`), no sidebar: the stock side tabs
+  are a slim 48 icon-only rail (`ns.GameRail`, `slim`; labels in tooltips),
+  740 wide and 520 tall (was 808 x 600), content laid out by `f.psPad`. The rail wears the stock tabs' own icons in their order:
   Roster (`achievement_guildperk_everybodysfriend`), Benefits
   (`achievement_guildperk_honorablemention`; only as the stock tab shows),
   Info (`inv_misc_scrollunrolled01`), then News and Log, which sit on the
   stock Guild Info tab and have no tab icon of their own: note icons
   (`INV_Misc_Note_02`, `inv_misc_note_06`). Not in a guild: one Guild tab and
   a page saying so, and that Guild Finder is on the game's window.
-- **Band:** the guild's name; under it "Officer · 9 members", then the page's
+- **Band:** the guild's name (Display); under it, one line, "Officer · 9 members", then the page's
   fact ("6 online", "3 news items", "2 perks · 3 rewards", "4 events", the
   week's challenges).
-- **Tools row:** atop the Roster, a search ("Search the roster": name, zone,
-  rank, note) and a Filter icon: Show offline members (the stock check box;
+- **Tab row:** it holds no tabs; it shows only on the Roster and News (`psKeepTabRow`), with
+  a search ("Search": name, zone,
+  rank, note) and a Filter icon at its right end: Show offline members (the stock check box;
   CVar `communitiesShowOffline`) and the stock column dropdown's choices that
   can show here (Professions where `C_TradeSkillUI.IsGuildTradeSkillsEnabled`,
   Dungeon score where `C_MythicPlus.IsMythicPlusActive`; Achievement points is
-  off on Camelot). Atop News, the Filter icon alone (the news filters).
+  off on Camelot). On News, the Filter icon alone (the news filters).
 - **Roster:** the stock columns, each header a sort button as stock
   (`SortByColumnIndex`: a second click reverses; ours sorts A to Z and low to
   high first, ties in the stock order; zone puts online members by zone, then
@@ -120,4 +121,4 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   log); scenes `guild` (key and micro overlay, sort, offline toggle, combat
   secret keeps the roster), `guild-member` (details, rank menu, notes,
   remove), `guild-info`, `guild-news`, `guild-benefits`, `guild-log`,
-  `guild-none` (not in a guild).
+  `guild-none` (not in a guild), `guild-game-looks` (the skin's sizes; search and filter on the tab row).

@@ -10,8 +10,8 @@ local Theme = Polestar.Theme
 local NAME = "PolestarUIGuild"
 local ROW_H, HEAD_H, GAP = 26, 28, 8
 local DETAIL_W = 300
--- The roster and news open under a row of their own tools (search, filter).
-local TOP = 8 + 30 + 12
+-- The roster's search and filter, the news filter, sit on the tab row.
+local TOP = 8
 
 local f, page, query = nil, "roster", ""
 local M = {}
@@ -106,12 +106,12 @@ end
 local COLS = {
 	{ key = "level", label = "Lvl", w = 36, value = function(m) return m.level or 0 end },
 	{ key = "class", label = "Class", w = 32, value = function(m) return select(2, classFile(m)) or "" end },
-	{ key = "name", label = "Name", w = 120, value = function(m) return (m.name or ""):lower() end },
+	{ key = "name", label = "Name", w = 100, value = function(m) return (m.name or ""):lower() end },
 	-- Online by zone, then offline by how recently they were on (the stock zone sort).
-	{ key = "zone", label = "Zone", w = 140, value = function(m)
+	{ key = "zone", label = "Zone", w = 150, value = function(m)
 		return online(m) and "0" .. (m.zone or ""):lower() or ("1%09d"):format(hoursAgo(m))
 	end },
-	{ key = "rank", label = "Rank", w = 100, value = function(m) return m.guildRankOrder or 99 end },
+	{ key = "rank", label = "Rank", w = 90, value = function(m) return m.guildRankOrder or 99 end },
 	{ key = "note", label = "Note", w = 0, value = function(m) return (m.memberNote or ""):lower() end },
 }
 local EXTRA = {
@@ -373,7 +373,7 @@ local function paintRoster()
 	f.psEmpty:SetText(query ~= "" and "No one matches." or "No one in your guild is online.")
 	f.psEmpty:SetShown(#list == 0)
 	f.psEmpty:ClearAllPoints()
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -(TOP + HEAD_H + 16))
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -(TOP + HEAD_H + 16))
 	paintVisible()
 	return TOP + HEAD_H + #list * ROW_H + 24
 end
@@ -587,8 +587,8 @@ end
 -- { bar = frac, text, right }.
 local function paintLines(list)
 	local p, y = f.psLines, 0
-	local top = page == "news" and TOP or 8
-	p:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -top)
+	local top = TOP
+	p:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -top)
 	local w = f.BodyWidth
 	for i, e in ipairs(list) do
 		local r = lines[i] or newLine(p)
@@ -920,42 +920,40 @@ local function filterItems()
 end
 
 local function build()
-	-- No sidebar: the stock window's tabs are an icon rail (ns.GameRail, as
-	-- Character and Professions), the main column as wide as beside a sidebar.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.width - W.SHELL.sidebar + W.SHELL.rail, height = 600, sidebar = 0, rail = true })
+	-- The compact grid, no sidebar: the stock window's tabs are a slim icon
+	-- rail (ns.GameRail); the roster's search and filter sit on the tab row.
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 690 + 2 + W.SHELL.rail, height = 520, sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "guild", optionsItems)
+	ns.Compact(f)
 	f.Search:Hide()
 	ns.Plain(f, f.psRail)
-	-- The roster's search and options, the news filters: a row atop the page.
-	f.psTools = CreateFrame("Frame", nil, f.Body)
-	f.psTools:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -8)
-	f.psTools:SetSize(300, 30)
-	f.psSearch = W.SearchBox(f.psTools, "Search the roster", function(text)
-		query = (text or ""):lower()
-		if f:IsShown() then M.Show() end
-	end)
-	f.psSearch:SetPoint("TOPLEFT", f.psTools, "TOPLEFT", 0, 0)
-	f.psSearch:SetWidth(240)
-	Theme.Skin(f.psSearch, "editbox")
-	f.psFilter = W.IconButton(f.psTools, "sliders", 30, "Filter", function(self)
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		W.ShowMenu(self, filterItems(), { minWidth = 200 })
 	end, 14)
+	f.psFilter:SetPoint("RIGHT", f.TabRow, "RIGHT", -f.psPad, 0)
 	Theme.Skin(f.psFilter, "editbox")
+	f.psSearch = W.SearchBox(f.TabRow, "Search", function(text)
+		query = (text or ""):lower()
+		if f:IsShown() then M.Show() end
+	end)
+	f.psSearch:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0)
+	f.psSearch:SetWidth(200)
+	Theme.Skin(f.psSearch, "editbox")
 	local R = CreateFrame("Frame", nil, f.Body)
-	R:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -TOP)
-	R:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	R:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -TOP)
+	R:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	R:SetHeight(1)
 	R.Rows = W.RowPanel(R)
 	R.Rows:SetPoint("TOPLEFT", R, "TOPLEFT", 0, -HEAD_H)
 	R.Rows:SetPoint("RIGHT", R, "RIGHT", 0, 0)
 	f.psRoster = R
 	f.psLines = CreateFrame("Frame", nil, f.Body)
-	f.psLines:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -8)
-	f.psLines:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psLines:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -8)
+	f.psLines:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
-	f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+	f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 	f.psEmpty:SetJustifyH("LEFT")
 	f.psEmpty:SetWordWrap(true)
 	-- Rows follow the scroll (only the seen ones are drawn).
@@ -987,12 +985,12 @@ local function refresh()
 	else
 		nav = { { key = "none", label = "Guild", icon = "Interface/Icons/achievement_guildperk_everybodysfriend" } }
 	end
-	ns.GameRail(f, nav, page, function(k) M.Show(k) end)
+	ns.GameRail(f, nav, page, function(k) M.Show(k) end, { slim = true })
+	-- The tab row shows only where it holds the search and filter.
+	f.psKeepTabRow = page == "roster" or page == "news"
 	W.ShellTabs(f, nil)
-	f.psTools:SetShown(page == "roster" or page == "news")
 	f.psSearch:SetShown(page == "roster")
-	f.psFilter:ClearAllPoints()
-	f.psFilter:SetPoint("TOPLEFT", f.psTools, "TOPLEFT", page == "roster" and 246 or 0, 0)
+	f.psFilter:SetShown(f.psKeepTabRow)
 	local filtersOn = page == "roster" and (showOffline() or extra ~= nil)
 	if page == "news" then for _, v in ipairs({ GetGuildNewsFilters() }) do if not v then filtersOn = true end end end
 	W.SetIconState(f.psFilter, filtersOn)
@@ -1031,8 +1029,8 @@ local function refresh()
 		W.ShellTitle(f, "Guild", "Not in a guild")
 		f.psEmpty:SetText("You are not in a guild. Guild Finder and communities are on the game's window: shift-click the guild button on the bar.")
 		f.psEmpty:ClearAllPoints()
-		f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
-		f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -W.SHELL.pad, 0)
+		f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
+		f.psEmpty:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
 		f.psEmpty:Show()
 		h = 80
 	else
