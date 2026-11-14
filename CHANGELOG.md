@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Trainer: the trainer window moves to the compact grid (560×560, no sidebar): its categories are top tabs, with the search and filter at the tab row's right end; a new scene shows the game's looks.
 - Merchant: the vendor window moves to the compact grid (640×560, no sidebar): Merchant, Buyback and the other pages as top tabs, with the money, search and filter on the same row; a new scene shows the game's looks.
 - Chat: calmer look: a soft ground and no outline at rest; the full ground, hairline and side buttons fade in on mouse-over (tabs, edit box and side strip included); the edit box's footer only while typing; tabs as plain labels with an accent underline, lit when hovered; the social button sits in the side strip and opens Polestar's Social window; voice, social and whisper icons in Polestar's icon colour.
 - Chat: copy your chat as plain text (side strip button or a tab's menu); chat windows keep their last lines across /reload and logout.

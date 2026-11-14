@@ -4,20 +4,20 @@ Demand-loaded; opened by the interaction manager (Trainer) and by Forever's
 `CloseTrainer`). Its show and hide also run `UpdateMicroButtons`: one more
 reason it is never opened. There is no Train All: Polestar removed its bulk
 spell purchase (`QoL.Trainer.Start`) on purpose.
-- **Shell:** 760×600 with sidebar. Subject block: the trainer's portrait
-  (`SetPortraitTexture` on a well; the pet's at a pet trainer), the name,
-  "Warrior trainer" ("Profession trainer", "Pet trainer"). Band subtitle: what can be learnt, and at a profession
-  trainer the rank (`GetTrainerTradeskillRankValues`, the stock status bar's
-  "Skill 75 (+5)/150").
-- **Sidebar:** the stock categories (`Blizzard_TrainerUI_Camelot`: by skill
-  line, sorted by name as the stock list) as nav rows with counts of what can
-  be learnt, when categorized; the sidebar search keeps to the services
-  whose name has it; the stock filter menu (`MENU_TRAINER_FILTER`) on the
-  sliders button at the end of the search row: available, unavailable, used,
-  Clear filters while one is off, and Categorize
-  (`C_Trainer.Get/SetCategorizeTrainerUI`; none at a pet trainer, which never
-  categorizes). The glyph is lit and its tooltip counts the types hidden
-  ("Filter (2 on)").
+- **Shell:** 560×560 on the compact grid (`ns.Compact`), no sidebar. Band
+  title: "Warrior trainer" ("Profession trainer", "Pet trainer", "Trainer"), or
+  the category chosen; subtitle: the trainer's name (the pet's at a pet
+  trainer) then what can be learnt, or at a profession trainer the rank
+  (`GetTrainerTradeskillRankValues`, the stock status bar's "Skill 75
+  (+5)/150") in its place; the portrait is gone. Tab row (`ns.TopNav`): the
+  stock categories (`Blizzard_TrainerUI_Camelot`: by skill line, sorted by
+  name as the stock list) as tabs after All, with counts of what can be
+  learnt, when categorized; at its right the search (keeps to the services
+  whose name has it) and the stock filter menu (`MENU_TRAINER_FILTER`) on the
+  sliders button: available, unavailable, used, Clear filters while one is
+  off, and Categorize (`C_Trainer.Get/SetCategorizeTrainerUI`; none at a pet
+  trainer, which never categorizes). The glyph is lit and its tooltip counts
+  the types hidden ("Filter (2 on)"). Many categories crowd the tabs.
 - **Main column:** a row per service (service-type headers skipped; the
   rows span the body, a one-line row's name in its middle), as
   `ClassTrainerFrame_InitServiceButton`: icon (desaturated when unavailable),

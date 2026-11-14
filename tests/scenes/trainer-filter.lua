@@ -5,9 +5,9 @@
 stub.interact(Enum.PlayerInteractionType.Trainer)
 local f = PolestarUITrainer
 local function shown() local n = 0; for _, r in ipairs(f.psRows) do if r:IsShown() then n = n + 1 end end; return n end
-f.navButtons[4]:Click()
+f.tabButtons[4]:Click()
 assert(f.Title:GetText() == "Protection" and shown() == 3, "category not shown")
-f.navButtons[1]:Click()
+f.tabButtons[1]:Click()
 assert(shown() == 8, "All not back")
 
 stub.RunScript(f.psFilter, "OnClick")
@@ -21,9 +21,9 @@ assert(item("Available").Check:IsShown() and not item("Used").Check:IsShown(), "
 
 -- Categorize off: no categories in the sidebar, the rows all under All.
 item("Categorize"):Click()
-assert(not stub.categorize and not f.navButtons[2]:IsShown() and shown() == 4, "categories still shown")
+assert(not stub.categorize and not f.tabButtons[2]:IsShown() and shown() == 4, "categories still shown")
 item("Categorize"):Click()
-assert(stub.categorize and f.navButtons[2]:IsShown(), "categories not back")
+assert(stub.categorize and f.tabButtons[2]:IsShown(), "categories not back")
 
 -- The sliders button counts the types it hides in its tooltip; Clear filters shows them all again.
 assert(f.psFilter.psTip == "Filter (2 on)", "filter tip: " .. tostring(f.psFilter.psTip))

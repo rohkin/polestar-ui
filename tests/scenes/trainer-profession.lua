@@ -17,9 +17,9 @@ local f = PolestarUITrainer
 local rows = f.psRows
 assert(f.Subtitle:GetText():find("Skill 75 (+5)/150", 1, true), "rank: " .. tostring(f.Subtitle:GetText()))
 assert(rows[1].Name:GetText() == "Journeyman Tailoring", "the next rank not first")
-f.navButtons[4]:Click()
+f.tabButtons[4]:Click()
 assert(rows[1].Name:GetText() == "Journeyman Tailoring" and rows[2].Name:GetText() == "Gray Woolen Shirt", "the next rank not in the category")
-f.navButtons[1]:Click()
+f.tabButtons[1]:Click()
 local train = f.footerButtons.right[1]
 stub.RunScript(rows[1], "OnClick")
 assert(not train:IsEnabled(), "Train on with no profession slot")

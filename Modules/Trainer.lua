@@ -11,10 +11,10 @@ local NAME = "PolestarUITrainer"
 local ROW_H, ICON = 48, 36
 local ALL = "all"
 
-local f, subject
+local f
 local rows = {}
 local cat, sel = ALL, nil -- the shown category; the selected service's index
-local query = "" -- the sidebar search, lowercased
+local query = "" -- the tab row search, lowercased
 local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local paint
 
@@ -196,29 +196,28 @@ local function filterMenu(anchor)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, searchPlaceholder = "Search", onSearch = function(text)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, searchPlaceholder = "Search", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then paint() end
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "trainer")
-	subject = ns.SubjectBlock(f)
-	local top = W.SHELL.header - 30
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", filterMenu, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
+	ns.Compact(f)
+	-- The stock filter menu's button ends the tab row, after the search.
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", filterMenu, 14)
 	Theme.Skin(f.psFilter, "editbox")
 	f.psEmpty = W.Text(f.Body, "body", "textMuted")
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	f.psEmpty:SetText("Nothing to show.")
 	f.psRows = rows
 	-- What the player has to spend, at the footer's left as the stock frame's
 	-- bottom: the money, or a pet's training points (with the stock tooltip).
 	ns.Footer(f, {}, { { label = "Train", onClick = train, opts = { primary = true } } })
 	f.psMoney = ns.Money(f.Footer)
-	f.psMoney:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
+	f.psMoney:SetPoint("LEFT", f.Footer, "LEFT", f.psPad, 0)
 	f.psPoints = CreateFrame("Frame", nil, f.Footer)
 	f.psPoints:SetSize(200, 20)
-	f.psPoints:SetPoint("LEFT", f.Footer, "LEFT", W.SHELL.pad, 0)
+	f.psPoints:SetPoint("LEFT", f.Footer, "LEFT", f.psPad, 0)
 	f.psPoints:EnableMouse(true)
 	f.psPoints.Text = W.Text(f.psPoints, "label", "text")
 	f.psPoints.Text:SetPoint("LEFT", f.psPoints, "LEFT", 0, 0)
@@ -235,9 +234,9 @@ end
 
 function paint()
 	local pet = petTrainer()
-	SetPortraitTexture(subject.icon, pet and "pet" or "npc")
-	subject.name:SetText(UnitName(pet and "pet" or "npc") or "")
-	subject.line:SetText(classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or pet and "Pet trainer" or "Trainer")
+	-- The trainer leads the subtitle; the title says what kind of trainer.
+	local who = UnitName(pet and "pet" or "npc") or ""
+	local kind = classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or pet and "Pet trainer" or "Trainer"
 
 	-- The services (headers skipped), by category (Camelot's skill lines) when
 	-- categorized, counting what can be learnt. A profession's next rank (the
@@ -267,9 +266,9 @@ function paint()
 	end
 	-- Categories by name, as the stock list sorts them.
 	table.sort(order)
-	local nav = { { key = ALL, label = "All", icon = "compact", count = open } }
+	local nav = { { key = ALL, label = "All", count = open } }
 	for _, c in ipairs(order) do nav[#nav + 1] = { key = c, label = c, count = cats[c] } end
-	W.ShellNav(f, nav, cat, function(k)
+	ns.TopNav(f, nav, cat, function(k)
 		cat = k
 		paint()
 	end)
@@ -289,15 +288,14 @@ function paint()
 	local status = open > 0 and ("%d to learn"):format(open) or "Nothing to learn now."
 	local rank, maxRank, mod = GetTrainerTradeskillRankValues()
 	if rank and rank > 0 then
-		status = status .. " · " .. ((mod or 0) > 0 and (TRADESKILL_RANK_WITH_MODIFIER or "Skill %d (+%d)/%d"):format(rank, mod, maxRank)
-			or (TRADESKILL_RANK or "Skill %d/%d"):format(rank, maxRank))
+		status = ((mod or 0) > 0 and (TRADESKILL_RANK_WITH_MODIFIER or "Skill %d (+%d)/%d"):format(rank, mod, maxRank)
+			or (TRADESKILL_RANK or "Skill %d/%d"):format(rank, maxRank)) -- the All tab has the count; the narrow band keeps the rank
 	end
-	W.ShellTitle(f, cat == ALL and "Trainer" or cat, status)
-	W.ShellTabs(f, nil)
+	W.ShellTitle(f, cat == ALL and kind or cat, who .. " · " .. status)
 	for n, i in ipairs(list) do
 		local r = rows[n] or newRow(n)
 		r:ClearAllPoints()
-		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad - 6, -(24 + (n - 1) * ROW_H))
+		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad - 6, -(24 + (n - 1) * ROW_H))
 		r:SetWidth(f.BodyWidth + 12)
 		paintRow(r, i)
 		r:Show()
