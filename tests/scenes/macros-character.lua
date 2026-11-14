@@ -5,7 +5,7 @@
 -- one is made for the character. A full tab greys New and says why.
 ShowMacroFrame()
 local f = PolestarUIMacros
-f.navButtons[2]:Click()
+f.tabButtons[2]:Click()
 assert(tostring(f.Title:GetText()) == "Testchar Specific Macros", "not on the character tab: " .. tostring(f.Title:GetText()))
 assert(f.psName:GetText() == "Bandage" and f.psKind:GetText() == "Character macro", "the first character macro")
 f.psIcon:Click()

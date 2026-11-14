@@ -8,7 +8,7 @@ local Theme = Polestar.Theme
 
 local NAME = "PolestarUIMacros"
 local ICON, CELL, CELL_H, GAP = 40, 56, 58, 8 -- the macro grid: a well, its name under it
-local GRID_ROWS, EDIT_H, LETTERS = 3, 132, 255
+local GRID_ROWS, EDIT_H, LETTERS = 2, 132, 255
 local PICK_W, PICK_ICON, PICK_GAP = 336, 36, 6 -- the icon picker
 local QUESTION = 134400 -- the "?" icon: the macro shows its spell's icon
 local LOCKED = "Macros cannot change in combat."
@@ -403,13 +403,12 @@ function M.Refresh(load)
 	local n, top = count(), cap()
 	if selected and selected > n then selected = n > 0 and n or nil; load = true end
 	if not selected and n > 0 then selected = 1; load = true end
-	f.psLine:SetText(("%d of %d used"):format(nA + nC, maxA + maxC))
-	W.ShellNav(f, {
-		{ key = "general", label = label("general"), icon = "layers", count = nA },
-		{ key = "character", label = label("character"), icon = "star", count = nC },
+	-- The stock tabs on top, each with its macros used of its slots.
+	ns.TopNav(f, {
+		{ key = "general", label = label("general"), count = ("%d/%d"):format(nA, maxA) },
+		{ key = "character", label = label("character"), count = ("%d/%d"):format(nC, maxC) },
 	}, tab, function(k) M.SetTab(k) end)
 	W.ShellTitle(f, label(tab), (n >= top and "Full: %d of %d macros." or "%d of %d macros."):format(n, top))
-	W.ShellTabs(f, nil)
 	ns.Footer(f, { { label = DELETE or "Delete", onClick = M.Delete } },
 		{ { label = NEW or "New", onClick = function() openPicker("new") end, opts = { primary = true } } })
 	local fight = InCombatLockdown()
@@ -481,16 +480,14 @@ local function editor(parent, w)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale" })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 560 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "macros")
 	f.Search:Hide() -- the stock window has none
-	local b = ns.SubjectBlock(f)
-	b.icon:SetTexture("Interface\\MacroFrame\\MacroFrame-Icon")
-	b.name:SetText(MACROS or "Macros")
-	f.psLine = b.line
+	ns.Plain(f) -- before the grid: BodyWidth is the compact one
+	ns.Compact(f)
 	local w = f.BodyWidth
-	local pad = W.SHELL.pad
+	local pad = f.psPad
 	-- The grid, in its own scroll: the body under it stays in place.
 	f.psCols = math.floor((w + GAP) / (CELL + GAP))
 	f.psGrid = W.Scroll(f.Content)

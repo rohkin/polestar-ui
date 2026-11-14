@@ -20,13 +20,13 @@ answers `MacroFrame` (its `CloseButton` serves the switch-back button).
   body)` and `DeleteMacro(i)` as the stock buttons call them; `CreateMacro`
   and `EditMacro` answer the macro's new index (macros sort by name).
   Redraw on `UPDATE_MACROS`.
-- **Shell:** 960×680 with sidebar. Subject block: the stock portrait
-  (`Interface\MacroFrame\MacroFrame-Icon`), "Macros", "12 of 150 used".
-- **Nav:** the stock tabs as two nav rows: General Macros (count) and
-  "<name> Specific Macros" (count), the stock labels (`GENERAL_MACROS`,
+- **Shell:** 640×560 on the compact grid (`ns.Compact`), no sidebar, no search
+  (the stock window has none).
+- **Nav:** the stock tabs as two top tabs (`ns.TopNav`): General Macros
+  ("11/120") and "<name> Specific Macros" ("2/30"), the stock labels (`GENERAL_MACROS`,
   `CHARACTER_SPECIFIC_MACROS`). Band: the page's label; subtitle "12 of 120
   macros." or "Full: 120 of 120 macros."
-- **Main column:** the stock icon grid (`MacroSelector`) at the top, in its
+- **Main column:** the stock icon grid (`MacroSelector`) at the top, two rows in its
   own scroll (each macro a well with its name under it, the selected one
   in the accent); only the macros themselves, not the stock window's empty
   disabled slots (the count says how many are left). Under it the selected
