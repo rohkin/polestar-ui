@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Restyle the Cooldown Viewer (essential, utility, tracked buff icons and bars) in place in the HUD's look: square icons with a gap, a hairline and a square sweep, Polestar's faces, and buff bars as flat sky (or class colour) fills; Edit Mode settings stay the game's (`/pui cooldowns`).
 - Fixed: a hatched circle inside the square minimap near area quests (the game's quest blob ring, drawn at the round map's edge).
 - Personal Resource Display: the game's own bars in Polestar's look (flat fills, track, hairline, heal, absorb and cost segments as on our unit frames; class colour with Edit Mode's Show Class Color or Polestar's Class colour). Every Edit Mode setting stays the game's; /pui resource off gives the stock look back.
 - Fixed: the Character Skills page and its details no longer error when the game makes a skill's bonus (Defense's gear bonus) secret; they show the last bonus read instead.

@@ -507,6 +507,18 @@ widget property, not a Lua key; Edit Mode only writes it
 the game's code with no taint, and the cluster's place, size and saved
 layout stay Edit Mode's. Nothing else on the cluster is relaxed.
 
+**Exception (the user's leave, approved), the cooldown viewers' square sweep:**
+from `Modules/CooldownViewer.lua` only, `Cooldown:SetSwipeTexture(...)` on
+the `Cooldown` child of the items in `EssentialCooldownViewer`,
+`UtilityCooldownViewer` and `BuffIconCooldownViewer` (Polestar_UI's `Media/cooldown-swipe-<size>`, white with a 2-texel clear margin, while
+our square icons show; given back as the templates' own
+`Interface\HUD\UI-HUD-CoolDownManager-Icon-Swipe` when switched off). The
+game's rounded sweep on our square icon would leave its corners uncovered.
+Why it is safe: the swipe texture is a widget property, not a Lua key; the
+game sets it only in the item templates' XML and never again (it writes
+`SetSwipeColor` and `SetDrawSwipe` on every refresh, and those stay its own);
+nothing on these items is protected. No other call on the items is relaxed.
+
 The one exception is rule 16's veil on the stock unit frames we replace
 (`PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, the party members,
 `Boss1TargetFrame`..`Boss5TargetFrame`): exactly the calls rule 16 lists
@@ -524,7 +536,9 @@ lets `SetClampRectInsets` through, every other system frame's does not) (the
 settings; `actionbars-combat` restyles a new flyout only after combat).
 The aura and cast bar stubs (`stub_auras.lua`, `stub_castbars.lua`) guard
 their frames, buttons and regions the same way (the `auras*` and
-`castbars*` scenes).
+`castbars*` scenes), and `stub_cooldowns.lua` the four cooldown viewers,
+their pooled items and regions (the sweep exception aside: `SetSwipeTexture`
+is not guarded; the counts' `GetText` is; the `cooldowns*` scenes).
 The stock unit frames are guarded by `tests/lua/stub_unitframes.lua`
 instead (rule 16), which lets through only the veil's calls.
 
