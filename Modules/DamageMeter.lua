@@ -13,7 +13,7 @@
 -- (whose alpha the game writes: Background Transparency) emptied and our HUD
 -- ground in its place at that alpha times the HUD's Background opacity, the
 -- texts in Polestar's faces, and on each row a track and a flat fill whose
--- edge hangs on the game's fill (no value read), sky or the class colour
+-- edge hangs on the game's fill (no value read), the accent or the class colour
 -- with the meter's own Show Class Color. Textures of ours are made on the
 -- stock frames (widget calls) and kept in weak tables.
 
@@ -86,16 +86,20 @@ local function dressRow(e, l)
 	end
 end
 
--- Sky, or with the meter's Show Class Color (the row's own flag) a player's
--- class colour. `classFilename` is never secret (DamageMeterDocumentation);
--- guarded all the same. A creature has none: sky.
+-- The accent, or with the meter's Show Class Color (the row's own flag) a
+-- player's class colour; either mixed FILL_MIX into the ground colour, so the
+-- white names read on a light one (the priest's white, a gold accent). Mixed,
+-- not faded: ours must stay opaque over the game's fill.
+-- `classFilename` is never secret (DamageMeterDocumentation); guarded all
+-- the same. A creature has none: the accent.
+local FILL_MIX = 0.55
 local function rowColor(e)
 	local file = ns.Clean(rawget(e, "classFilename"))
 	if ns.Clean(rawget(e, "isClassColorDesired")) and type(file) == "string" and file ~= "" then
 		local r, g, b = Theme.ClassColor(file)
 		if r then return r, g, b end
 	end
-	return Theme.Color("sky")
+	return Theme.Accent()
 end
 
 local function paintRow(e)
@@ -114,8 +118,9 @@ local function paintRow(e)
 	local c = l.color
 	if not (c and c[1] == r and c[2] == g and c[3] == b) then
 		l.color = { r, g, b }
-		l.fill:SetVertexColor(r, g, b, 1)
 		local br, bg, bb = Theme.Color("bg")
+		local k = FILL_MIX
+		l.fill:SetVertexColor(r * k + br * (1 - k), g * k + bg * (1 - k), b * k + bb * (1 - k), 1)
 		l.track:SetVertexColor(br, bg, bb, H.GroundAlpha())
 	end
 end
@@ -148,21 +153,28 @@ end
 local function texts(w, l)
 	if l.texts then return l.texts end
 	local session, kind = rawget(w, "SessionDropdown"), rawget(w, "DamageMeterTypeDropdown")
+	-- { font string, role, colour }: the type label as a window title, the
+	-- session letter as a chip's caption on our pill, the timer secondary.
 	l.texts = {
-		{ rawget(w, "SessionTimer"), "number" },
-		{ session and rawget(session, "SessionName"), "label" }, -- the session letter ("C", "O", a number)
-		{ kind and rawget(kind, "TypeName"), "label" },
-		{ rawget(l.c, "NotActive"), "label" },
+		{ rawget(w, "SessionTimer"), "number", "textDim" },
+		{ session and rawget(session, "SessionName"), "caption", "accent" }, -- the session letter ("C", "O", a number)
+		{ kind and rawget(kind, "TypeName"), "heading", "text", 1 }, -- +1: with the game's face (one weight) the heading reads only by size
+		{ rawget(l.c, "NotActive"), "label", "textMuted" },
 	}
 	l.faced, l.colors = {}, {}
 	return l.texts
 end
 
--- The header's texts in Polestar's faces and the `text` colour, as the rows'
--- (the game writes only their text; their colour is kept and put back when
--- off). Checked each frame, so a font set again by anyone is followed.
+-- The header's texts in Polestar's faces and theme colours (the game writes
+-- only their text; their colour is kept and put back when off). Font (face
+-- and size) and colour are checked each frame, so either set again by anyone
+-- is followed.
+local function faceKey(fs)
+	local path, size = fs:GetFont()
+	return tostring(path) .. ":" .. tostring(size)
+end
+
 local function faceTexts(w, l, force)
-	local tr, tg, tb = Theme.Color("text")
 	for _, t in ipairs(texts(w, l)) do
 		local fs, role = t[1], t[2]
 		if fs and not on then
@@ -170,11 +182,19 @@ local function faceTexts(w, l, force)
 			local c = l.colors[fs]
 			if c then fs:SetTextColor(c[1], c[2], c[3], c[4]) end
 			l.colors[fs], l.faced[fs] = nil, nil
-		elseif fs and (force or fs:GetFont() ~= l.faced[fs]) then
-			H.Face(fs, role, true)
-			l.faced[fs] = fs:GetFont()
-			l.colors[fs] = l.colors[fs] or { fs:GetTextColor() }
-			fs:SetTextColor(tr, tg, tb)
+		elseif fs then
+			if force or faceKey(fs) ~= l.faced[fs] then
+				H.Face(fs, role, true)
+				if t[4] then
+					local path, size, flags = fs:GetFont()
+					Theme.SetFace(fs, path, size + t[4], flags)
+				end
+				l.faced[fs] = faceKey(fs)
+				l.colors[fs] = l.colors[fs] or { fs:GetTextColor() }
+			end
+			local r, g, b = Theme.Color(t[3])
+			local cr, cg, cb = fs:GetTextColor()
+			if cr ~= r or cg ~= g or cb ~= b then fs:SetTextColor(r, g, b) end
 		end
 	end
 end
@@ -183,7 +203,8 @@ end
 -- faded (the game swaps it with SetAtlas on hover, press and open, which
 -- keeps the alpha), ours over it: a glyph in the `icon` token, a hover wash
 -- in a HIGHLIGHT layer (the client shows it on mouse-over: no script); the
--- session button only its letter, no box. `art(b)`: the regions faded.
+-- session button a Polestar chip: an accent pill under its letter, the wash
+-- a pill too. `art(b)`: the regions faded.
 -- One centre line: the visual centre of the game's texts (the type label's
 -- capitals 15.1 px, the session letter 14.5 px under the window's top at the
 -- user's 0.84 UI scale), measured in game; the template's anchors put the
@@ -195,13 +216,42 @@ local BUTTONS = {
 	{ key = "MinimizeButton", icon = "chevron-up", size = 12, dy = 1.4,
 		art = function(b) return { b:GetNormalTexture(), b:GetPushedTexture(), b:GetHighlightTexture() } end },
 	{ key = "SettingsDropdown", icon = "gear", size = 14, dy = 4.4, art = function(b) return { rawget(b, "Icon") } end },
-	{ key = "SessionDropdown", art = function(b) return { rawget(b, "Background"), rawget(b, "Arrow") } end },
+	{ key = "SessionDropdown", pill = true, nohover = true, art = function(b) return { rawget(b, "Background"), rawget(b, "Arrow") } end },
 	{ key = "DamageMeterTypeDropdown", icon = "chevron-down", size = 10, at = "Arrow", dy = 5.6, art = function(b) return { rawget(b, "Arrow") } end },
 	-- The resize handle (alpha 0 till the game fades it in on mouse-over): our grip in the container's corner, no wash.
 	{ key = "ResizeButton", parent = "MinimizeContainer", icon = "resize", size = 12, corner = true, nohover = true,
 		art = function(b) return { b:GetNormalTexture(), b:GetPushedTexture(), b:GetHighlightTexture() } end },
 }
 local buttons = setmetatable({}, { __mode = "k" }) -- stock button -> ours
+
+-- A capsule (W.Pill's shape) of textures on `b`, centred on it and PILL_PAD
+-- wider each side (the letter's box is 18 wide, 32 in long-name locales):
+-- textures, so nothing of the game's button is sized. The accent at
+-- PILL_ALPHA (a chip's 0.16 read as a dark disc over the game world).
+local PILL_H, PILL_PAD, PILL_ALPHA = 16, 2, 0.35
+local function pill(b, layer)
+	local l = b:CreateTexture(nil, layer)
+	l:SetTexture(Theme.Media("circle"))
+	l:SetTexCoord(0, 0.5, 0, 1)
+	l:SetSize(PILL_H / 2, PILL_H)
+	l:SetPoint("LEFT", b, "LEFT", -PILL_PAD, 0)
+	local r = b:CreateTexture(nil, layer)
+	r:SetTexture(Theme.Media("circle"))
+	r:SetTexCoord(0.5, 1, 0, 1)
+	r:SetSize(PILL_H / 2, PILL_H)
+	r:SetPoint("RIGHT", b, "RIGHT", PILL_PAD, 0)
+	local m = white(b, layer)
+	m:SetPoint("TOPLEFT", l, "TOPRIGHT", 0, 0)
+	m:SetPoint("BOTTOMRIGHT", r, "BOTTOMLEFT", 0, 0)
+	return { l, m, r }
+end
+
+local function paintPill(parts, shown, r, g, b, a)
+	for _, t in ipairs(parts) do
+		t:SetVertexColor(r, g, b, a)
+		t:SetShown(shown)
+	end
+end
 
 local function button(b, spec)
 	local l = buttons[b]
@@ -210,6 +260,9 @@ local function button(b, spec)
 	if not spec.nohover then
 		l.hover = white(b, "HIGHLIGHT")
 		l.hover:SetAllPoints(b)
+	end
+	if spec.pill then
+		l.pill, l.pillHover = pill(b, "ARTWORK"), pill(b, "HIGHLIGHT")
 	end
 	if spec.icon then
 		l.glyph = b:CreateTexture(nil, "ARTWORK", nil, 7)
@@ -229,6 +282,11 @@ local function dressButton(b, l)
 	if l.hover then
 		l.hover:SetVertexColor(Theme.Wash("hover"))
 		l.hover:SetShown(on)
+	end
+	if l.pill then
+		local r, g, b = Theme.Accent()
+		paintPill(l.pill, on, r, g, b, PILL_ALPHA)
+		paintPill(l.pillHover, on, r, g, b, 0.2)
 	end
 	l.icon = nil -- the minimize glyph's state, set again by the driver
 	if l.glyph then

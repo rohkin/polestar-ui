@@ -1,7 +1,7 @@
 --@ title: Damage meter: six sources, the player's row pinned
 --@ roots: DamageMeter
 --@ stubs: stub_damagemeter.lua
--- The game's own damage meter restyled in place: the header art faded, the window ground emptied and our HUD ground in its place (the meter's Background Transparency times the HUD's Background opacity), a hairline under the header strip, the texts in Polestar's faces; on each row a track and a flat sky fill whose edge hangs on the game's fill, the row's own background art faded, a hairline round the spec icon. Below the visible rows the game pins the player's row; it is dressed the same (no mark of its own, as stock).
+-- The game's own damage meter restyled in place: the header art faded, the window ground emptied and our HUD ground in its place (the meter's Background Transparency times the HUD's Background opacity), a hairline under the header strip, the texts in Polestar's faces (the type label as a title, the timer dim), the session letter on an accent pill (a Polestar chip); on each row a track and a flat fill in the accent (mixed 0.55 into the ground colour) whose edge hangs on the game's fill, the row's own background art faded, a hairline round the spec icon. Below the visible rows the game pins the player's row; it is dressed the same (no mark of its own, as stock).
 local T = Polestar.Theme
 stub.damage({
 	{ name = "Garrosh", class = "WARRIOR", amount = 412000 },
@@ -25,14 +25,16 @@ for _, r in ipairs({ c:GetRegions() }) do
 end
 local _, _, _, ga = ground:GetVertexColor()
 assert(ground and ground:IsShown() and math.abs(ga - 0.6 * 0.6) < 1e-6, "our ground's alpha: " .. tostring(ga))
--- A row: our fill (hung on the game's fill) in sky, the row's art faded, the texts in Polestar's faces.
+-- A row: our fill (hung on the game's fill) in the accent mixed 0.55 into the ground colour, the row's art faded, the texts in Polestar's faces.
 local e = c.ScrollBox.ScrollTarget:GetChildren()
 local sb = e.StatusBar
 local fill
 for _, r in ipairs({ sb:GetRegions() }) do if r.points[1] and r.points[1].rel == sb:GetStatusBarTexture() then fill = r end end
-local x, y, z = fill:GetVertexColor()
-local sr, sg, sbl = T.Color("sky")
-assert(fill:IsShown() and x == sr and y == sg and z == sbl, "the row's fill is not ours in sky")
+local x, y, z, fa = fill:GetVertexColor()
+local ar, ag, ab = T.Accent()
+local br, bg, bb = T.Color("bg")
+local function near(u, v) return math.abs(u - v) < 1e-6 end
+assert(fill:IsShown() and near(x, ar * 0.55 + br * 0.45) and near(y, ag * 0.55 + bg * 0.45) and near(z, ab * 0.55 + bb * 0.45) and fa == 1, "the row's fill is not ours in the accent")
 assert(sb.Background:GetAlpha() == 0 and sb.BackgroundEdge:GetAlpha() == 0, "the row's art shows")
 assert(sb.Name:GetFont() == (T.FontSpec("label")) and sb.Value:GetFont() == (T.FontSpec("number")), "the row's texts are not in Polestar's faces")
 -- The player's row, pinned below the visible ones, dressed alike.
@@ -60,17 +62,32 @@ local function glyph(b)
 end
 assert(glyph(min):IsShown() and tostring(glyph(min):GetTexture()):find("chevron%-up"), "the minimize glyph: " .. tostring(glyph(min):GetTexture()))
 assert(tostring(glyph(set):GetTexture()):find("gear") and tostring(glyph(kind):GetTexture()):find("chevron%-down"), "the settings or type glyph")
--- The session letter ("C") and the type label: Polestar's face and the text colour, as the rows'.
-local tr, tg, tb = T.Color("text")
-for _, fs in ipairs({ ses.SessionName, kind.TypeName }) do
-	local r, g, b = fs:GetTextColor()
-	assert(fs:GetFont() == (T.FontSpec("label")) and r == tr and g == tg and b == tb, "a header text is not in our face and colour")
+-- The type label a title (heading face, text colour), the session letter ("C") a chip's caption in the accent, the timer dim.
+for _, t in ipairs({ { kind.TypeName, "heading", "text" }, { ses.SessionName, "caption", "accent" }, { w.SessionTimer, "number", "textDim" } }) do
+	local r, g, b = t[1]:GetTextColor()
+	local tr, tg, tb = T.Color(t[3])
+	assert(t[1]:GetFont() == (T.FontSpec(t[2])) and r == tr and g == tg and b == tb, "a header text is not in our face and colour: " .. t[2])
 end
+-- The type label one size up (with the game's face, one weight, it reads as a title only by size).
+assert(select(2, kind.TypeName:GetFont()) == select(2, GameFontNormalMed1:GetFont()) + 1, "the type label is not one size up")
+-- The game setting the letter's colour again: ours again next frame.
+ses.SessionName:SetTextColor(1, 1, 1)
+stub.advance(0.1)
+assert(select(1, ses.SessionName:GetTextColor()) == (T.Color("accent")), "the session letter's colour was not put back")
 -- Something setting the letter's font again (a font object): ours again next frame.
 ses.SessionName:SetFontObject(GameFontNormalMed1)
 stub.advance(0.1)
-assert(ses.SessionName:GetFont() == (T.FontSpec("label")), "the session letter's face was not put back")
--- The session button: only its letter; every texture of the template (Background, Arrow) faded, no box of ours, only the hover wash.
+assert(ses.SessionName:GetFont() == (T.FontSpec("caption")), "the session letter's face was not put back")
+-- The session button: every texture of the template (Background, Arrow) faded; ours an accent pill (accent at 0.35) under the letter, the hover wash a pill too.
+local aa = 0.35
+local pills = 0
 for _, r in ipairs({ ses:GetRegions() }) do
-	assert(r.kind == "FontString" or r.layer == "HIGHLIGHT" or r:GetAlpha() == 0 or not r:IsShown(), "a box shows round the session letter")
+	if r.kind ~= "FontString" and r.layer == "ARTWORK" and r:IsShown() then
+		local x2, y2, z2, a2 = r:GetVertexColor()
+		assert(x2 == ar and y2 == ag and z2 == ab and a2 == aa, "a piece round the session letter is not the accent pill")
+		pills = pills + 1
+	else
+		assert(r.kind == "FontString" or r.layer == "HIGHLIGHT" or r:GetAlpha() == 0 or not r:IsShown(), "the game's box shows round the session letter")
+	end
 end
+assert(pills == 3, "the session pill: " .. pills .. " pieces")

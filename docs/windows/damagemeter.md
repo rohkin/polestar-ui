@@ -3,7 +3,8 @@
 The game's own damage meter (Blizzard_DamageMeter, loaded on Forever),
 restyled in place and never rebuilt (`Modules/DamageMeter.lua`), in the
 HUD's look: our HUD ground and hairline, no header band, flat bars in the
-theme's colours, Polestar's faces, outlined.
+theme's accent or class colours, Polestar's faces, outlined, the session
+letter on an accent chip.
 
 **Why restyled, not replaced.** `DamageMeter` is an Edit Mode system
 (`EditModeDamageMeterSystemTemplate`) and window 1 is anchored to it
@@ -31,10 +32,10 @@ faded again each frame). Our art is textures made on the stock frames
 |---|---|---|---|
 | `Header` (atlas) | faded; a hairline under the header strip | `SetAlpha(0)` (the game never writes its alpha) | HUD rule: no band |
 | `MinimizeContainer.Background` (alpha written by the game: Background Transparency) | emptied; our HUD ground (`H.Ground`) on the container at that alpha times the HUD's Background opacity (`H.GroundAlpha`) | `SetTexture(nil)` (given back with `SetAtlas("damagemeters-background")`); its `GetAlpha()` read each frame | rule 15's chat lesson: never faded, so its alpha stays live. On the container, as the game's: minimized, it hides with it and only the header's texts stay |
-| `SessionTimer`, `SessionName` (the session letter: "C", "O", a number), `TypeName`, `NotActive` | Polestar's faces (`number`, `label`), outlined, at the game's size, in the `text` colour as the rows' (the game's colour kept and put back when off) | `H.Face`, `SetTextColor`; each frame the font is checked against ours and set again if anything changed it | never read (the timer is secret-derived). Nothing in the source sets their font again (the session dropdown's template restyles its own `Text`, not `SessionName`); the check is a guard |
+| `SessionTimer`, `SessionName` (the session letter: "C", "O", a number), `TypeName`, `NotActive` | Polestar's faces, outlined, at the game's size, in theme colours: the type label a title (`heading`, `text`, one size up: with the game's face, a single weight, `heading` and `label` are the same font, so only size marks it), the timer `number` in `textDim`, the session letter a chip's caption (`caption`, `accent`) on our pill, `NotActive` `label` in `textMuted` (the game's colour kept and put back when off); face, size and colour checked each frame and set again if anything changed them | `H.Face`, `SetTextColor`; each frame the font is checked against ours and set again if anything changed it | never read (the timer is secret-derived). Nothing in the source sets their font again (the session dropdown's template restyles its own `Text`, not `SessionName`); the check is a guard |
 | `MinimizeButton` (normal, pushed, highlight atlases; `SetMinimized` swaps them) | faded; our `chevron-up` glyph (`chevron-down` while minimized, read from the container's `IsShown`), a hover wash | `SetAlpha(0)` on the three textures; ours on the button: a glyph (`ARTWORK` 7, `icon` token) and a `HIGHLIGHT`-layer wash, which the client shows on mouse-over (no script) | `SetAtlas` keeps the alpha, so faded once |
 | `SettingsDropdown` (its `Icon` atlas per state) | faded; our `gear` glyph, a hover wash | as above | |
-| `SessionDropdown` (`WowStyle2DropdownTemplate`: `Background` per state, the hover `Arrow`) | faded (its template has no other texture: `Text`, unused here, and a hidden `ResetButton`); only the letter, in our face and colour, and a hover wash: no box (the user's call; the box seen in game was our earlier plate) | as above | |
+| `SessionDropdown` (`WowStyle2DropdownTemplate`: `Background` per state, the hover `Arrow`) | faded (its template has no other texture: `Text`, unused here, and a hidden `ResetButton`); a Polestar chip in its place: an accent pill (the accent at 0.35: a chip's 0.16 read as a dark disc in game; 16 high, 2 wider each side than the 18-wide button, `W.Pill`'s shape in three textures on the button) under the letter, the hover a pill too (`HIGHLIGHT`, the accent at 0.2). The letter is the game's `GetDamageMeterSessionShortName`: "C" (Current), "O" (Overall) or a past fight's session number; never read | as above | |
 | `DamageMeterTypeDropdown` (`WowStyle1ArrowDropdownTemplate`: `Arrow` per state) | faded; our `chevron-down` glyph on the arrow's centre, a hover wash | as above | |
 | Their menus (Blizzard_Menu, tags `MENU_DAMAGE_METER_WINDOW_TRACKED_TYPE` with its category submenus, `MENU_DAMAGE_METER_SESSIONS`, `MENU_DAMAGE_METER_WINDOW_SETTINGS`) | the style's ground faded; Polestar's window ground (`Theme.GroundAlpha`) and a hairline | `Menu.ModifyMenu(tag)`, then the root's `AddMenuAcquiredCallback`; ours through the menu's own `AttachTexture`, freed (and the fade reset) when it closes (rule 15, as Chat.lua's menus) | the type and settings menus are MenuStyle1 (items 8 from the top, 15 from the foot: ours ends 7 above it); the session menu MenuStyle2 (even). A callback cannot be removed: switched off, it does nothing |
 | Their items: radios and checkboxes (`leftTexture1`, `leftTexture2` when selected), submenu arrows (`arrow`), the hover (`highlight`), dividers | radio: our `skin-ring` in `textMuted`, the `accent` `circle` dot when selected; checkbox: a muted box, the `accent` `check` when ticked; submenu: our `chevron-right` in `icon`; hover: our wash; divider: a `border` hairline | in the same `ModifyMenu` callback, `AddInitializer(itemLook)` on every element description (submenus too): it runs after the game's initializers built the item; the game's pieces faded (`SetAlpha(0)`), ours attached through the item's compositor (`item:AttachTexture()`); the highlight, whose alpha the game writes on enter (1, or 0.4 disabled), recoloured in place (`SetColorTexture` with the wash, `BLEND`) | on close the compositor sets every attachment to its defaults (`SetToDefaults`) and frees it, so a pooled item another menu gets is the game's. Only pieces the item's description says were made are touched (`IsRadio`, `IsCheckbox`, `CanOpenSubmenu`; a non-button item's one texture is its divider): a key left from an earlier use could name a texture now in another menu. The items' text stays the game's font |
@@ -47,11 +48,14 @@ faded again each frame). Our art is textures made on the stock frames
 | `LocalPlayerEntry` (the pinned player row) | dressed as any row | | decision 2: no mark of its own |
 | `SourceWindow` (the breakdown, HIGH strata) | its `Background` (a plain atlas) faded; our ground at 0.94; its spell rows dressed | `SetAlpha(0)` | |
 
-**Colours.** The fill is the header band's blue (`sky`); with the meter's
-own Show Class Color (each row's `isClassColorDesired`, written by the game),
-a player's class colour from the row's `classFilename` (NeverSecret in
+**Colours.** The fill is the theme's accent; with the meter's own Show
+Class Color (each row's `isClassColorDesired`, written by the game), a
+player's class colour from the row's `classFilename` (NeverSecret in
 `DamageMeterDocumentation.lua`; guarded with `ns.Clean` all the same). A
-creature has no class: sky. The game's ally and enemy tints are not kept.
+creature has no class: the accent. Either is mixed 0.55 into the scheme's
+`bg` (`FILL_MIX`), so the white names read on a light colour (the priest's
+white, a gold accent); mixed, not faded, as ours must stay opaque over the
+game's fill under it. The game's ally and enemy tints are not kept.
 
 **Edit Mode.** Window 1 hangs on the system: position, Frame Width and
 Height, Bar Height, Padding, Style (every style gets our flat bars on the
@@ -78,7 +82,7 @@ label 14.5, the minimize button 14.5, the settings button 16.5, the session
 button 13.5, the type arrow 17.5, the timer from 9 down (its centre follows
 the font). They stay where the game puts them (rule 17); our glyphs
 are offset onto the texts' visual centre by constants (`dy`) measured in game (the client draws the type arrow, settings and minimize buttons 2 to 2.6 units lower than the template maths and the preview): the gear +4.4, the type chevron +5.6, the minimize chevron +1.4. The preview therefore shows them about 2 units high. The session
-letter sits 1 above it; the timer about 1 below.
+letter (and its pill, centred on the button) sits 1 above it; the timer about 1 below.
 
 **An empty list (seen in the client).** One player's meter showed its header
 and a live timer but no rows, while `GetCombatSessionFromType(1, 0)` held a
@@ -113,4 +117,4 @@ that our ground on the container draws
 under the header's texts and buttons (the container is `useParentLevel`);
 the one-frame flash of a newly acquired row's art; the icon hairline at Bar
 Height under 24; the breakdown's ground; that a Bordered row's art (a frame
-round the bar, offset 6 and 7) is fully covered by fading it.
+round the bar, offset 6 and 7) is fully covered by fading it. The session pill: that it frames the letter (centred on the button, as the letter is) and a session number ("12") fits it; the fills' 0.55 mix on the in-game accent and class colours.
