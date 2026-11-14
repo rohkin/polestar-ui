@@ -8,12 +8,13 @@
 -- icon unmasked and cropped square, and textures of ours added: a ground, a
 -- 1px hairline, the hover wash, an accent wash while pressed or checked and
 -- an accent hairline while checked. The key, count and macro name in
--- Polestar's faces at the game's sizes and colours (the count is never read:
--- secret in combat). The equipped item's green border, the flash, the spell
--- alerts, cooldowns and the bar art (end caps, dividers: Edit Mode's Hide Bar
--- Art) stay the game's. What is ours is kept in weak tables; no key is written
--- on a stock frame. Buttons the game makes later (the spell flyout, the
--- zone ability, the override bar) are restyled out of combat.
+-- Polestar's faces at the game's sizes and colours, the key and count
+-- outlined (the count is never read: secret in combat). The equipped item's
+-- green border, the flash, the spell alerts, cooldowns and the bar art (end
+-- caps, dividers: Edit Mode's Hide Bar Art) stay the game's. What is ours is
+-- kept in weak tables; no key is written on a stock frame. Buttons the game
+-- makes later (the spell flyout, the zone ability, the override bar) are
+-- restyled out of combat.
 
 local ADDON, ns = ...
 local Theme = Polestar.Theme
@@ -30,7 +31,8 @@ local NAMED = {
 }
 -- ActionButtonTemplate's slot art (UpdateButtonArt shows one or the other).
 local SLOT = { "SlotArt", "SlotBackground" }
-local FONTS = { { "HotKey", "number" }, { "Count", "number" }, { "Name", "small" } }
+-- Each with its face and, on ours, its outline (the key and count legible over any icon).
+local FONTS = { { "HotKey", "number", "OUTLINE", true }, { "Count", "number", "OUTLINE" }, { "Name", "small" } }
 local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
 local CROP = 0.08 -- the icon's baked border, cropped as ns.GameIcon does
 
@@ -65,7 +67,7 @@ local function look(b)
 	end
 	for _, f in ipairs(FONTS) do
 		local fs = rawget(b, f[1])
-		if fs then l.fonts[#l.fonts + 1] = { fs = fs, role = f[2], stock = { fs:GetFont() } } end
+		if fs then l.fonts[#l.fonts + 1] = { fs = fs, role = f[2], flags = f[3], dot = f[4], stock = { fs:GetFont() } } end
 	end
 	looks[b] = l
 	return l
@@ -73,6 +75,22 @@ end
 
 -- Pressed (a click or its key) or checked (a stance, an auto-attack, a
 -- spell waiting for its target): the accent wash; checked, the accent hairline.
+-- The key's range dot (RANGE_INDICATOR, "●"; "•" in some locales), written
+-- in place of a missing binding: Fira Sans and Open Sans have no glyph for it
+-- (a box), so the dot keeps the game's face. The game compares this text too.
+local function dotted(fs)
+	local t = fs:GetText()
+	return RANGE_INDICATOR ~= nil and t ~= nil and not (issecretvalue and issecretvalue(t)) and t == RANGE_INDICATOR
+end
+
+local function setFace(f, shown)
+	local s = f.stock
+	if not s[1] then return end
+	f.isDot = f.dot and dotted(f.fs) or false
+	local ours = shown and not f.isDot
+	Theme.SetFace(f.fs, ours and (Theme.FontSpec(f.role)) or s[1], s[2], (shown and f.flags) or s[3] or "")
+end
+
 local function paintState(b, l)
 	local pushed = b:GetButtonState() == "PUSHED"
 	local checked = b.GetChecked and b:GetChecked() and true or false
@@ -110,10 +128,7 @@ local function paint(b, shown)
 		if shown then l.icon:SetTexCoord(CROP, 1 - CROP, CROP, 1 - CROP) else l.icon:SetTexCoord(0, 1, 0, 1) end
 	end
 	l.square = shown
-	for _, f in ipairs(l.fonts) do
-		local s = f.stock
-		if s[1] then Theme.SetFace(f.fs, shown and (Theme.FontSpec(f.role)) or s[1], s[2], s[3] or "") end
-	end
+	for _, f in ipairs(l.fonts) do setFace(f, shown) end
 	local r, g, bl = Theme.Color("bg")
 	l.fill:SetVertexColor(r, g, bl, Theme.GroundAlpha())
 	l.hover:SetVertexColor(Theme.Wash("hover"))
@@ -165,6 +180,10 @@ local function update(_, elapsed)
 			local pushed = b:GetButtonState() == "PUSHED"
 			local checked = b.GetChecked and b:GetChecked() and true or false
 			if pushed ~= l.pushed or checked ~= l.isChecked then paintState(b, l) end
+			-- The key turned into the range dot or back (no event says so).
+			for _, f in ipairs(l.fonts) do
+				if f.dot and dotted(f.fs) ~= f.isDot then setFace(f, true) end
+			end
 		end
 	end
 end

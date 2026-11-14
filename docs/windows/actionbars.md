@@ -31,8 +31,13 @@ stock frame and nothing is moved, sized, shown or hidden.
   says a key pressed a button, so a frame of ours reads `GetButtonState` and
   `GetChecked` of each shown button each frame and repaints on a change.
 - **Type:** the key (`HotKey`) and count (`Count`) in Polestar's `number`
-  face, the macro name (`Name`) in `small`'s, at the game's sizes, outlines
-  and colours (the key's grey, red out of range). The count is never read
+  face with `OUTLINE`, the macro name (`Name`) in `small`'s with the
+  game's flags, at the game's sizes and colours (the key's grey, red out of
+  range). The range dot the game writes in the key for an unbound action
+  (`RANGE_INDICATOR`, "●", "•" in some locales) stays in the game's face:
+  Fira Sans and Open Sans have no glyph for it (it drew as a box). A frame of
+  ours compares the key's text with it each frame, as the game does, and
+  swaps the face when it turns. The count is never read
   (secret in combat).
 - **Not changed:** the equipped item's green `Border` (its alpha is the
   game's: it writes it with the colour), the attack `Flash`, spell alerts and

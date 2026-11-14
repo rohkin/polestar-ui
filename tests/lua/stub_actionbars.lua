@@ -162,6 +162,9 @@ stance:SetPoint("BOTTOMLEFT", pet, "BOTTOMRIGHT", 16, 0)
 -- first stance on (checked); an equipped item (the game's green border).
 StanceButton1:SetChecked(true)
 ActionButton10.Count:SetText("20")
+-- The eleventh has no binding: the game writes its range dot (ActionButton.lua).
+RANGE_INDICATOR = "●"
+ActionButton11.HotKey:SetText(RANGE_INDICATOR)
 ActionButton9.Name:SetText("Heal")
 ActionButton8.Border:SetVertexColor(0, 1, 0, 0.5)
 ActionButton8.Border:Show()
