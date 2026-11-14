@@ -373,7 +373,8 @@ Out of combat, from our code, only:
 - `Hide()` on the two plain child frames that hold its art and bars:
   `PlayerFrameContainer` and `PlayerFrameContent.PlayerFrameContentMain`
   (the target's and focus's `TargetFrame...` alike). Its `Contextual` layer
-  (auras, leader, PvP, raid target, quest and threat icons) stays the game's;
+  (auras, leader, PvP, raid target, quest and threat icons) stays the game's
+  (but for the exception below);
 - the targets of target (`TargetFrameToT`, `FocusFrameToT`: no system, but
   children of one) faded with `SetAlpha(0)` and their mouse off;
 - the pet frame's and a party member's pieces, which the game only shows
@@ -384,6 +385,22 @@ Out of combat, from our code, only:
   member's `Portrait`, which the game re-alphas at low health, hidden.
   Happiness, the party's icons, auras and pets stay the game's. A boss frame
   is veiled as the target's.
+
+**Exception (the user's leave), the target's and focus's auras:** from
+`Modules/Auras.lua` only, out of combat, `SetAlpha(0)` (and `SetAlpha(1)` to
+give it back) on `TargetFrame`'s and `FocusFrame`'s
+`TargetFrameContent.TargetFrameContentContextual.Auras`, the client's secure
+aura container, and nothing else of it: no `Hide`, no mouse call, no anchor,
+no key, nothing on its buttons (they are out of addon code's reach). Why: a
+row of ours under our own target and focus frames shows those auras in the
+HUD's look (`C_UnitAuras`, every value handed over unread), and the game's
+container, which cannot be restyled, would show each a second time. Why it
+is safe: an alpha is a widget property, the game never writes or reads that
+container's alpha (`TargetFrame.lua`, `TargetFrameAuraContainer.lua`), its
+layout still runs (the stock cast bar hangs off its rows), and switched off
+(either module) the alpha is 1 again. A container that refuses the call
+(`pcall`) or is forbidden is left alone and ours does not show. The bosses'
+containers are not touched.
 
 Never `Hide`, `Show`, `SetShown`, `SetPoint`, `ClearAllPoints`, `SetScale`,
 `SetSize`, `SetParent`, `SetScript` or `UnregisterEvent` on the frame
@@ -405,7 +422,10 @@ system's alpha (Opacity). Placing a secure frame is protected (rule 4): in
 combat it waits for `PLAYER_REGEN_ENABLED`. Every other Edit Mode system
 frame (minimap, action bars) keeps rule 17.
 
-**Caught by:** `tests/lua/stub_unitframes.lua` errors on any of those calls
+**Caught by:** the stub's aura container (`psStockAuras`) errors on every
+guarded call but `SetAlpha` out of combat (the `auras-target` scene veils
+it, gives it back with either module off, and leaves it alone mid-fight).
+`tests/lua/stub_unitframes.lua` errors on any of those calls
 on a stock unit frame from addon code, and on any move, size, show or
 attribute change of a protected frame in combat; the `unitframes-editmode`
 scene drags and resizes the stock boxes and switches layouts, the
@@ -479,6 +499,8 @@ minimap clamp exception aside (`stub.hookAllowed`; the cluster's guard
 lets `SetClampRectInsets` through, every other system frame's does not) (the
 `minimap-editmode` and `actionbars-editmode` scenes change Edit Mode's
 settings; `actionbars-combat` restyles a new flyout only after combat).
+The aura stub (`stub_auras.lua`) guards its frames, buttons and regions
+the same way (the `auras*` scenes).
 The stock unit frames are guarded by `tests/lua/stub_unitframes.lua`
 instead (rule 16), which lets through only the veil's calls.
 

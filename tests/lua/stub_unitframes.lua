@@ -239,6 +239,11 @@ for name, kind in pairs(guarded) do
 				if self.psStockUnit and kind ~= "combat" then
 					error(name .. " on the stock " .. tostring(self.name) .. " from addon code (docs/CLIENT.md, rule 16)", 2)
 				end
+				-- The target's and focus's aura container: SetAlpha out of combat
+				-- is rule 16's one exception; nothing else, and not mid-fight.
+				if self.psStockAuras and (name ~= "SetAlpha" or InCombatLockdown()) then
+					error(name .. " on the stock aura container from addon code (docs/CLIENT.md, rule 16)", 2)
+				end
 				-- SetAlpha is protected only on the stock frames; ours fade freely.
 				if self.psProtected and InCombatLockdown() and kind ~= "stock" and not (name == "SetAlpha" and not self.psStockUnit) then
 					error(name .. " on protected " .. tostring(self.name) .. " in combat (ADDON_ACTION_BLOCKED, rule 4)", 2)
@@ -374,8 +379,24 @@ local function layered(f, prefix)
 	hp:SetPoint("TOPLEFT", main, "TOPLEFT", 85, -40)
 	hp:SetSize(125, 18)
 	content[prefix .. "FrameContentMain"] = main
-	content[prefix .. "FrameContentContextual"] = fill(create("Frame", nil, content), content)
+	local ctx = fill(create("Frame", nil, content), content)
+	content[prefix .. "FrameContentContextual"] = ctx
 	f[prefix .. "FrameContent"] = content
+	-- The target's and focus's auras (TargetFrameAuraContainerTemplate): the
+	-- client's secure container under the frame art; its buttons are out of
+	-- addon code's reach (two squares stand in for them).
+	if prefix == "Target" then
+		local a = create("Frame", nil, ctx)
+		a.width, a.height = 122, 21
+		a.points = { { point = "TOPLEFT", rel = f, relPoint = "BOTTOMLEFT", x = 25, y = 27 } }
+		for i = 1, 2 do
+			local t = art(a, 0.6, 0.2, 0.2)
+			t.width, t.height = 21, 21
+			t.points = { { point = "TOPLEFT", rel = a, relPoint = "TOPLEFT", x = (i - 1) * 24, y = 0 } }
+		end
+		a.psStockAuras = true
+		ctx.Auras = a
+	end
 end
 
 -- An Edit Mode system: its Selection box (shown in Edit Mode) inset as

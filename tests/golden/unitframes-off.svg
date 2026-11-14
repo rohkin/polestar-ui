@@ -11,5 +11,7 @@
 <rect x="328" y="28" width="232" height="100" fill="rgb(89,71,31)" fill-opacity="1"/>
 <rect x="113" y="68" width="125" height="18" fill="rgb(26,204,26)" fill-opacity="1"/>
 <rect x="413" y="68" width="125" height="18" fill="rgb(26,204,26)" fill-opacity="1"/>
+<rect x="353" y="101" width="21" height="21" fill="rgb(153,51,51)" fill-opacity="1"/>
+<rect x="377" y="101" width="21" height="21" fill="rgb(153,51,51)" fill-opacity="1"/>
 </g>
 </svg>

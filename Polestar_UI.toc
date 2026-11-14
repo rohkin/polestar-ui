@@ -37,5 +37,6 @@ Modules\HUD.lua
 Modules\UnitFrames.lua
 Modules\Minimap.lua
 Modules\ActionBars.lua
+Modules\Auras.lua
 Modules\Tooltips.lua
 Modules\Chat.lua

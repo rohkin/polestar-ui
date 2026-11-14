@@ -12,6 +12,8 @@
 - Unit frames: incoming heals and shields show clearly; heal absorbs darken the bar; health and power glide to new values ("Smooth bars"); the player's power bar shows what the spell being cast will cost; Polestar's star constellation on the player bar ("Sparkle").
 - Unit frames: health fills in the header band's blue by default (class colour with Class colour on); the level chip takes the game's difficulty colour; the power strip wears Polestar's colours.
 - Party frames: role icons, class colours and a thicker power strip.
+- Buffs and debuffs: square icons with a thin border in the debuff type's colour, time and stacks in Polestar's numbers; right-click, tooltips and Edit Mode work as before (/pui auras off).
+- Target and focus auras: a row of square icons under Polestar's target and focus frames, your own first and larger; the game's are hidden.
 - Action bars: square buttons with a thin border, the key and count in Polestar's type, and an accent wash while pressed or on; every bar, the pet and stance bars and spell flyouts, with Edit Mode's bar settings untouched (/pui actionbars off gives the game's back).
 - Action bars: hotkeys and counts outlined; the range dot keeps the game's font.
 - Minimap: square, with a thin border in your accent and an N while it turns, in Polestar's look; Edit Mode's minimap settings still apply (/pui minimap off gives the game's back).

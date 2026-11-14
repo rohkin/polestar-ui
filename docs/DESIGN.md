@@ -262,6 +262,7 @@ hidden):
 | Unit frames: player, target, target of target, focus, focus's target, pet, party, bosses (`PlayerFrame`, `TargetFrame`, `FocusFrame`, their `ToT`, `PetFrame`, `PartyFrame`, `BossTargetFrameContainer`) | high | building (phases 1-3; compact raid next) | [windows/unitframes.md](windows/unitframes.md) |
 | Minimap (`MinimapCluster`, `Minimap`) | high | built | [windows/minimap.md](windows/minimap.md) |
 | Action bars (`MainActionBar`, `MultiBar*`, pet, stance, possess) | high | built | [windows/actionbars.md](windows/actionbars.md) |
+| Player buffs and debuffs (`BuffFrame`, `DebuffFrame`) | medium | built, with the target's and focus's rows under our unit frames | [windows/auras.md](windows/auras.md) |
 
 ## Components
 
