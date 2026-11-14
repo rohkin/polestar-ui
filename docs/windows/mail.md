@@ -1,8 +1,10 @@
 #### Mail (`MailFrame`, `OpenMailFrame`) — Risk: low
 Opened by the interaction manager (MailInfo), taken as above
 (`ns.Interaction`, `CloseMail`).
-- **Shell:** plain, 760×600, no sidebar. Tabs: Inbox, Send (no Send for a
-  trial account, `GameLimitedMode_IsActive`).
+- **Shell:** the compact grid (`ns.Plain`, `ns.Compact`), 560×560 (was
+  760×600), no sidebar. Top tabs (`ns.TopNav`): Inbox, Send Mail (no Send Mail
+  for a trial account, `GameLimitedMode_IsActive`); stock has no tab icons.
+  The subtitle counts letters or attachments; the mailbox has no search.
 - **Inbox:** a row per letter (`GetInboxHeaderInfo`): the package or the
   sender's icon in a well (the first item's quality border), sender in Label,
   subject in Small (each one line, truncated); unread letters text and textDim, read ones textDim and
@@ -63,6 +65,6 @@ Opened by the interaction manager (MailInfo), taken as above
 - **Taint:** no protected calls.
 - **Tests:** `stub_mail.lua` (inbox headers, attachments, COD, invoices,
   waiting mail, the send lock, name completion in the client's order; its
-  attach fires `MAIL_SEND_INFO_UPDATE` as the client does); scenes `mail` (inbox, no emote, Open all, waiting mail,
+  attach fires `MAIL_SEND_INFO_UPDATE` as the client does); scenes `mail-game-looks` (the skin's compact sizes), `mail` (inbox, no emote, Open all, waiting mail,
   shift-click), `mail-open` (a letter with its copy, attachments and COD,
   Reply, Delete and Return), `mail-invoice`, `mail-send`.

@@ -411,7 +411,7 @@ end
 
 local function paintInbox()
 	local n = GetInboxNumItems()
-	local pad = W.SHELL.pad
+	local pad = f.psPad
 	for i = 1, n do
 		local package, stationery, sender, subject, money, price, days, _, read, _, _, _, gm, first, firstLink = GetInboxHeaderInfo(i)
 		local r = row(i)
@@ -673,8 +673,8 @@ end
 local function buildSend()
 	send = CreateFrame("Frame", nil, f.Body)
 	send:SetPoint("TOPLEFT", f.Body, "TOPLEFT", 0, 0)
-	send:SetSize(f.BodyWidth + 2 * W.SHELL.pad, 1)
-	local x, w = W.SHELL.pad, f.BodyWidth
+	send:SetSize(f.BodyWidth + 2 * f.psPad, 1)
+	local x, w = f.psPad, f.BodyWidth
 	local y = 24
 	caption(send, "To", x, y)
 	caption(send, "Subject", x + 236, y)
@@ -775,13 +775,14 @@ end
 ---------------------------------------------------------------------------
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 600, sidebar = 0 })
-	ns.Plain(f)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, sidebar = 0 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "mail")
+	ns.Plain(f) -- before the grid: BodyWidth is the compact one
+	ns.Compact(f)
 	f.psInbox = CreateFrame("Frame", nil, f.Body)
 	f.psInbox:SetPoint("TOPLEFT", f.Body, "TOPLEFT", 0, 0)
-	f.psInbox:SetSize(f.BodyWidth + 2 * W.SHELL.pad, 1)
+	f.psInbox:SetSize(f.BodyWidth + 2 * f.psPad, 1)
 	buildSend()
 	buildLetter()
 	-- As the stock show and hide: the inbox fetched, the guild roster asked
@@ -807,7 +808,7 @@ function paint()
 	-- Trial accounts cannot send mail: no Send page (MailMixin:UpdateTrialState).
 	local trial = GameLimitedMode_IsActive()
 	if trial then tab = "inbox" end
-	W.ShellTabs(f, { { key = "inbox", label = "Inbox" }, not trial and { key = "send", label = "Send" } or nil }, tab, function(k)
+	ns.TopNav(f, { { key = "inbox", label = INBOX or "Inbox" }, not trial and { key = "send", label = SEND_MAIL or "Send Mail" } or nil }, tab, function(k)
 		tab, replyTo = k, nil
 		paint()
 	end)
