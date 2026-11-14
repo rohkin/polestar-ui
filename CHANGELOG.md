@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed: Legacy reward text no longer shows a stray "|"; the unlearned profession card text matches the other cards; no trailing period in the Professions subtitle.
 - Guild and Social: every Guild page keeps its tab row with the page's status text (online count fallback); the Social search stays put across tabs.
 - Damage meter: the session letter sits on an accent chip, the type label is larger, and bars use the theme accent or class colour toned for readable names.
 - Chat: tabs stay legible at rest with an accent underline and aligned labels, a faint outline at rest, and the edit box ringed like Polestar's inputs.

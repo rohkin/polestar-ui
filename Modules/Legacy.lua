@@ -121,7 +121,7 @@ local function paintRewardRow(r, d, current, nextLevel)
 	r.Icon:SetTexture(icon)
 	r.Icon:SetDesaturated(not earned)
 	r.Name:SetText(name)
-	r.Desc:SetText(desc)
+	r.Desc:SetText((desc:gsub("|n", " "):gsub("%s+", " ")))
 	-- Over its description, or centred on the icon when there is none.
 	local two = desc ~= ""
 	r.Desc:SetShown(two)
