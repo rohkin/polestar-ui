@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- World Map: the World Map moves to the compact grid: a bigger 900×600 map in a smaller window, Quests and Map Legend as top tabs, the map navigation on the tab row, and the stock Map Legend with pins that glow on hover.
 - Auction House: the Auction House moves to the compact grid (880×600, was 960×680) with Buy, Sell, Auctions and Bids as top tabs, the money, search and options on the tab row, and the auctioneer leading the subtitle.
 - Legacy: Legacy moves to the compact grid (760×600, was 1088×720) with its sections on a slim icon rail, the trees as top tabs, the categories in a column of the page and the search and filter on the tab row.
 - Professions and crafting: Professions and the crafting window move to the compact grid at one size (792×600, was 848×680) with a slim icon rail; crafting shows the profession and rank in the subtitle, the skill bar along the band and the tool and gear slots at the foot of the recipe list.

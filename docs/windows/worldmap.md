@@ -9,24 +9,34 @@ rule 8). Ours is a second map, built as the game builds its zone map
 (`BattlefieldMapFrame`): the game's `MapCanvasFrameTemplate` with the stock
 map's data providers and pin layers, so its art, fog, pins, player arrow,
 zoom and click-to-open are the game's.
-- **Shell:** the sidebar's width plus a canvas of 852×568 (the map art's
-  shape) under the band; no tabs, no footer. Subject block: the map icon,
-  "World Map", the player's zone.
-- **Sidebar:** "Where you are", then the maps above the shown one (to go
-  back out), then its zones (continents and zones only, by name). A map of several floors (a map group) ends with a
-  section of them, in the client's order, the shown floor selected.
-  Between the zones and the floors, the dungeons and caves in it that the
-  stock nav bar's dropdown lists (`IsMapValidForNavBarDropdown`; a map of
-  floors once, by its first), with `icon-dungeon`.
-- **Header:** the shown map's name; the subtitle, a status line, names the
-  map it lies in. How to move around the map (click a zone, right-click out,
-  scroll to zoom) is the sidebar rows' tooltip hint.
-  A full-screen toggle at the band's bottom right, as the stock maximise
-  (remembered; out of the dock while full).
+- **Shell:** the compact grid (`ns.Compact`, no sidebar): a 60 band, the
+  36 tab row (the skin's when smaller), no footer, and a canvas of 900×600
+  (the map art's shape) under the tab row: 902×698 windowed, 1222 wide with
+  the side column (was 1094×682 with a 240 sidebar and an 852×568 map).
+- **Band:** "World Map"; the one-line subtitle names the shown map and the
+  map it lies in ("Elwynn Forest · Eastern Kingdoms"; a map with no parent,
+  its name alone).
+- **Tab row:** the side column's pages as top tabs (`ns.TopNav`; the stock
+  quest panel's Quests and Map Legend tabs): Quests with the log's count
+  over the most it holds ("5/25", danger past it), Map Legend where the
+  client has its data (`MapLegendData`). A tab opens the column on its page;
+  the shown page's tab shuts it (its tooltip says so), and no tab is lit while
+  it is shut. After the tabs, the map's nav (the old sidebar, as the stock
+  nav bar): a flag button, "Where you are" (its tooltip names the player's
+  zone), back to the player's map; then the shown map's name with a chevron,
+  opening the game's menu (scrolling where the client can): the maps above
+  it (to go back out), its zones (continents and zones only, by name), the
+  dungeons and caves in it that the stock nav bar's dropdown lists
+  (`IsMapValidForNavBarDropdown`; a map of floors once, by its first) and,
+  on a map of several floors (a map group), its floors in the client's
+  order, the shown one checked; dividers between them. How to move around
+  the map (click a zone, right-click out, scroll to zoom) is its tooltip
+  hint. At the row's right end the quest search (shown with the quest list
+  only) and the filter (always, so the filters work with the log shut).
 - **Map controls:** as the stock map's overlay frames, at the canvas's top
-  right (above the pins, unless a game rule turns them off): the filter
-  button (the quest log's menu and state, lit and counted as the log's, so
-  the filters work with the log shut), and under it the map pin
+  right (above the pins): the full-screen toggle (the stock maximise,
+  remembered; out of the dock while full), and under it, unless a game rule
+  turns it off, the map pin
   (`qol-target`; the stock pin button: while on, a click on the map sets the
   player's waypoint through the stock waypoint provider,
   `WaypointLocationToggleUpdate`; off again once a waypoint is set, on a new
@@ -40,15 +50,14 @@ zoom and click-to-open are the game's.
   with `coordsByTenths`; read ten times a second while the map shows.
 - **Zoom:** the canvas takes its zoom steps from the map art; where the art
   gives one (Forever's), ours adds 1.5×, 2.25× and 3×. Drag pans once zoomed.
-- **Quest Log:** a 320 flyout right of the canvas, under the band, on the
-  sidebar ground, opened by a "Quests" button left of the full-screen
-  toggle (remembered). Windowed, the window grows by its width; full screen,
-  the map gives it room. Its head: "Quests" and the log's count over the
-  most it holds. The log as the stock panel lists it: header rows (label
+- **Side column:** 320 wide right of the canvas, under the tab row, on the
+  sidebar ground, its page remembered (Quests, Map Legend or shut).
+  Windowed, the window grows by its width; full screen, the map gives it room.
+- **Quest Log:** the column's Quests page, the list from its top (its count,
+  search and filter are on the tab row). The log as the stock panel lists it: header rows (label
   face, chevron, count) fold through the client and redraw at once
   (CLIENT.md, rule 6); hidden quests, tasks and unfinished bounties stay
-  out; a campaign's header always shows (unless searching). The head's
-  count turns danger past the most the log holds. A quest row: "[level]
+  out; a campaign's header always shows (unless searching). A quest row: "[level]
   title" (with "[n]" before the title for party members on it, as the
   stock title) in Body in its difficulty colour
   (legible), what is left under it in Small textDim (the unfinished
@@ -68,10 +77,10 @@ zoom and click-to-open are the game's.
   (`MENU_QUEST_MAP_FRAME`). The focused quest carries the accent bar, the
   clicked one the selected wash. The row's tooltip is the stock one: the
   title, on hold or failed, the hand-in line or the objectives summary and
-  every objective (finished ones grey), then the hint. A search under the head
-  (the sidebar's search box) matches a quest's title or what is left of it;
-  searching, every match shows with its header open. At its right end, as
-  Social's, a filter button (`sliders`, editbox ground; its glyph in the
+  every objective (finished ones grey), then the hint. The search on
+  the tab row ("Search quests") matches a quest's title or what is left of it;
+  searching, every match shows with its header open. The filter after it, as
+  Social's (`sliders`, editbox ground; its glyph in the
   accent and its tooltip "Filter (n on)" while a filter is off its default)
   opens the stock map's filter menu as Forever builds it (the game's Menu,
   its `MENU_WORLD_MAP_TRACKING` tag, so other addons' entries join it, each
@@ -84,7 +93,17 @@ zoom and click-to-open are the game's.
   default, as the stock reset) while any is off. The row's level, colour and
   "what is left" line follow them; each change redraws the map and the list
   at once, and a change from the stock menus on `CVAR_UPDATE`.
-- **Quest details:** in the flyout's place, as the stock details page
+- **Map Legend:** the column's other page, as the stock `MapLegendFrame`:
+  each `MapLegendData` category (label, textDim) and its pin kinds from
+  `MapLegendPinDefinitions` two to a row (the stock atlas, on its background
+  atlas where it has one, and the name in Small); a kind the client lacks is
+  left out. Hover: the stock tooltip (name, then its line) and its pins on
+  our map glow (`EnumeratePinsByTemplate`, matched by the stock
+  `MapLegendButtonMixin.MetaDataMatches`, `ShowMapLegendGlow`), off on leave.
+  A pin hovered on the map does not light its legend row (the stock
+  `MapLegendPinOnEnter` callback is not taken: our code would run inside the
+  pin's own OnEnter).
+- **Quest details:** in the list's place (the search hidden while they show), as the stock details page
   (`QuestMapFrame_ShowQuestDetails`, QuestInfo's map templates; the quest
   selected through `C_QuestLog.SetSelectedQuest`, as the stock reads it).
   Its head: a chevron and "All quests" (label textDim), back to the list
@@ -98,7 +117,7 @@ zoom and click-to-open are the game's.
   experience reads "450 XP" and adds its share of the player's level under it,
   right-aligned in small textMuted, "35% of level 24", unless the game shows no XP bar), a
   skill, items, currencies and honor. A reward is a Reagent Tile at the
-  flyout's width, with the stock reward's tooltip
+  column's width, with the stock reward's tooltip
   (`GameTooltip:SetQuestLogItem`, `SetQuestLogCurrency`, `SetSpellByID`)
   and its modified click; one the player cannot use has a red icon. A
   footer at the bottom: Abandon (danger) at the left, Share (only when the

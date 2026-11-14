@@ -11,13 +11,13 @@ local function rows() local t = {} for _, r in ipairs({ q.Scroll.Child:GetChildr
 local function row(n) for _, r in ipairs(rows()) do if (r.psTitle or (r.Label and r.Label:GetText())) == n then return r end end end
 local function look(fr, s) for _, r in ipairs({ fr:GetRegions() }) do if r:IsShown() and r.GetText and r:GetText() and tostring(r:GetText()):find(s, 1, true) then return r end end for _, k in ipairs({ fr:GetChildren() }) do if k:IsShown() then local r = look(k, s) if r then return r end end end end
 local function has(s) return look(d.Scroll.Child, s) end
-q.Search:SetText("kobold")
-stub.RunScript(q.Search, "OnTextChanged")
+f.Search:SetText("kobold")
+stub.RunScript(f.Search, "OnTextChanged")
 row("Kobold Camp Cleanup"):Click()
-assert(d:IsShown() and not q.Scroll:IsShown() and not q.Search:IsShown(), "a click opens the details")
+assert(d:IsShown() and not q.Scroll:IsShown() and not f.Search:IsShown(), "a click opens the details")
 assert(c.mapID == 37 and c.events[#c.events][1] == "SetFocusedQuestID" and c.events[#c.events][2] == 7 and C_QuestLog.GetSelectedQuest() == 7, "map, focus, selected")
 d.Back:Click()
-assert(not d:IsShown() and q.Search:GetText() == "kobold" and #rows() == 2 and row("Kobold Camp Cleanup").Sel:IsShown(), "back to the list as it was")
+assert(not d:IsShown() and f.Search:GetText() == "kobold" and #rows() == 2 and row("Kobold Camp Cleanup").Sel:IsShown(), "back to the list as it was")
 row("Kobold Camp Cleanup"):Click()
 assert(d.Title:GetText() == "[2] Kobold Camp Cleanup", "title")
 assert(has("Marshal McBride") and has("cleansing"), "text")
@@ -69,8 +69,8 @@ assert(PolestarModal:IsShown() and not stub.abandoned and C_QuestLog.GetAbandonQ
 PolestarModal.Box.Cancel:Click()
 assert(not stub.abandoned and d:IsShown(), "cancel")
 d.Back:Click()
-q.Search:SetText("")
-stub.RunScript(q.Search, "OnTextChanged")
+f.Search:SetText("")
+stub.RunScript(f.Search, "OnTextChanged")
 row("A Threat Within"):Click()
 d.Abandon:Click()
 PolestarModal.Box.Action:Click()

@@ -1,7 +1,8 @@
 -- World Map (docs/DESIGN.md, "World Map"): the game's own map canvas
 -- (MapCanvasMixin with the stock world map's data providers, as the zone map
--- BattlefieldMapFrame builds it) in a Polestar shell; the sidebar walks the
--- map's parents and zones. The stock WorldMapFrame is never touched: its hide
+-- BattlefieldMapFrame builds it) in a compact Polestar shell: the side
+-- column's pages (quest log, map legend) as top tabs, the map's nav after
+-- them, no sidebar. The stock WorldMapFrame is never touched: its hide
 -- runs UpdateMicroButtons (docs/CLIENT.md, rule 8), and map addons draw on it,
 -- so it stays theirs and the game's, for every door we do not take.
 
@@ -10,7 +11,7 @@ local W = Polestar.Widgets
 
 local NAME = "PolestarUIWorldMap"
 -- The canvas keeps the shape of the map art (1002x668).
-local MAP_W, MAP_H = 852, 568
+local MAP_W, MAP_H = 900, 600
 local CONTINENT, ZONE, DUNGEON, MICRO = 2, 3, 4, 5 -- Enum.UIMapType
 local ZOOMS = { 1.5, 2.25, 3 }
 local QUEST_W = 320
@@ -92,17 +93,43 @@ local function buildCanvas()
 	end
 end
 
--- The quest log flyout, open or shut (remembered): the map ends at its left
--- edge, and the window grows by its width unless it fills the screen.
-local function setQuests(on)
-	PolestarUIDB.mapQuests = on or nil
-	f.psQuests:SetShown(on)
+-- The side column (the stock quest panel and its tabs): the quest log or the
+-- map legend, or shut (remembered). Its pages are the window's top tabs; a
+-- click on the shown page's tab shuts it. The map ends at its left edge, and
+-- the window grows by its width unless it fills the screen.
+local paintTabs -- below
+local function setPanel(page)
+	if page == true then page = "quests" end -- saved before the legend
+	if page == "legend" and not f.psLegend then page = "quests" end
+	PolestarUIDB.mapQuests = page
+	f.psPage = page
+	f.psQuests:SetShown(page == "quests")
+	if f.psLegend then f.psLegend:SetShown(page == "legend") end
+	local col = page == "legend" and f.psLegend or f.psQuests
 	canvas:ClearAllPoints()
 	canvas:SetPoint("TOPLEFT", f.Content, "TOPLEFT", 0, 0)
-	canvas:SetPoint("BOTTOMRIGHT", on and f.psQuests or f.Content, on and "BOTTOMLEFT" or "BOTTOMRIGHT", 0, 0)
-	if not f.psFull then f:SetSize(f.psSize[1] + (on and QUEST_W or 0), f.psSize[2]) end
-	W.Color(f.psQuestsButton.Label, on and "accent" or "text")
-	f.psQuestsButton.Arrow:SetTexture(Polestar.Theme.Media(on and "chevron-right" or "chevron-left"))
+	canvas:SetPoint("BOTTOMRIGHT", page and col or f.Content, page and "BOTTOMLEFT" or "BOTTOMRIGHT", 0, 0)
+	if not f.psFull then f:SetSize(f.psSize[1] + (page and QUEST_W or 0), f.psSize[2]) end
+	paintTabs()
+end
+
+-- The top tabs (the quest log's count on its own, in danger past the most
+-- it holds), the search (the quest list's, shown with it), the filter, and
+-- the map's nav after the tabs.
+function paintTabs()
+	local count, over = f.psQuests.Count()
+	local function tab(key, label)
+		return { key = key, label = label, count = key == "quests" and count or nil,
+			tip = f.psPage == key and "Click again to close it and give the map the room." or nil }
+	end
+	local items = { tab("quests", QUESTS_LABEL or "Quests") }
+	if f.psLegend then items[2] = tab("legend", MAP_LEGEND_FRAME_LABEL or "Map Legend") end
+	ns.TopNav(f, items, f.psPage, function(k) setPanel(f.psPage ~= k and k or nil) end)
+	W.Color(f.tabButtons[1].psNavCount, over and "danger" or "textMuted")
+	f.Search:SetShown(f.psPage == "quests" and not f.psQuests.Details:IsShown())
+	f.psNav:ClearAllPoints()
+	f.psNav:SetPoint("LEFT", f.tabButtons[#items], "RIGHT", 12, 0)
+	f.psQuests.PaintFilter(f.psFilter)
 end
 
 -- Full screen, as the stock map's maximise: the window fills the screen, out
@@ -116,12 +143,187 @@ local function setFull(on)
 		f:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", 0, 0)
 	else
 		f:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
-		setQuests(f.psQuests:IsShown()) -- its size again
+		setPanel(f.psPage) -- its size again
 	end
 	local b = f.psFullButton
 	b.psIconName, b.psTip = on and "compact" or "window", on and "Back to a window" or "Full screen"
 	b.Icon:SetTexture(Polestar.Theme.Media(Polestar.Theme.Icon(b.psIconName)))
 	ns.Relayout()
+end
+
+-- The map legend (the stock MapLegendFrame, where the client has its data):
+-- each category's pin kinds, two to a row, with the stock tooltip; hovering
+-- one lights its pins on our map, matched as the stock button matches them.
+local function legend()
+	local data, defs = MapLegendData, MapLegendPinDefinitions
+	if not (data and defs) then return nil end
+	local p = CreateFrame("Frame", nil, f.Main)
+	p:SetWidth(QUEST_W)
+	p:SetPoint("TOPRIGHT", f.Content, "TOPRIGHT", 0, 0)
+	p:SetPoint("BOTTOMRIGHT", f.Content, "BOTTOMRIGHT", 0, 0)
+	Polestar.Theme.Skin(p, "sidebar")
+	local rule = W.Divider(p, true)
+	rule:SetPoint("TOPLEFT", p, "TOPLEFT", 0, 0)
+	rule:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", 0, 0)
+	p.Scroll = W.Scroll(p)
+	p.Scroll:SetPoint("TOPLEFT", p, "TOPLEFT", 1, 0)
+	p.Scroll:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", 0, 0)
+	local child, X, ROW = p.Scroll.Child, W.SHELL.side, 28
+	child:SetWidth(QUEST_W - 1)
+	local colW = math.floor((QUEST_W - 1 - 2 * X) / 2)
+	local lit, match = {}, MapLegendButtonMixin and MapLegendButtonMixin.MetaDataMatches
+	local function enter(b)
+		local def = b.psDef
+		GameTooltip:SetOwner(b, "ANCHOR_BOTTOMRIGHT")
+		GameTooltip_SetTitle(GameTooltip, def.Name)
+		if def.Tooltip then GameTooltip_AddNormalLine(GameTooltip, def.Tooltip) end
+		GameTooltip:Show()
+		if not canvas.EnumeratePinsByTemplate then return end
+		for _, t in ipairs(def.TemplateNames or {}) do
+			for pin in canvas:EnumeratePinsByTemplate(t) do
+				if pin.ShowMapLegendGlow and (not match or match({ metaData = def.MetaData }, pin)) then
+					pin:ShowMapLegendGlow()
+					lit[#lit + 1] = pin
+				end
+			end
+		end
+	end
+	local function leave()
+		W.HideTooltip()
+		for i = #lit, 1, -1 do
+			lit[i]:HideMapLegendGlow()
+			lit[i] = nil
+		end
+	end
+	p.Rows = {}
+	local y = 16
+	for _, cat in ipairs(data) do
+		local head = W.Text(child, "label", "textDim")
+		head:SetPoint("TOPLEFT", child, "TOPLEFT", X, -y)
+		head:SetText(cat.CategoryTitle or "")
+		y = y + 24
+		local n = 0
+		for _, key in ipairs(cat.CategoryData or {}) do
+			local def = defs[key]
+			if def then
+				local b = CreateFrame("Button", nil, child)
+				b:SetSize(colW, ROW)
+				b:SetPoint("TOPLEFT", child, "TOPLEFT", X + (n % 2) * colW, -(y + math.floor(n / 2) * ROW))
+				W.Hover(b)
+				if def.BackgroundAtlas then
+					b.Back = b:CreateTexture(nil, "BORDER")
+					b.Back:SetAtlas(def.BackgroundAtlas)
+					b.Back:SetSize(22, 22)
+					b.Back:SetPoint("LEFT", b, "LEFT", 3, 0)
+				end
+				b.Icon = b:CreateTexture(nil, "ARTWORK")
+				b.Icon:SetAtlas(def.Atlas)
+				b.Icon:SetSize(20, 20)
+				b.Icon:SetPoint("LEFT", b, "LEFT", 4, 0)
+				b.Label = W.Text(b, "small", "text")
+				b.Label:SetPoint("LEFT", b.Icon, "RIGHT", 8, 0)
+				b.Label:SetPoint("RIGHT", b, "RIGHT", -4, 0)
+				b.Label:SetJustifyH("LEFT")
+				b.Label:SetWordWrap(false)
+				b.Label:SetText(def.Name or key)
+				b.psDef = def
+				b:SetScript("OnEnter", enter)
+				b:SetScript("OnLeave", leave)
+				p.Rows[#p.Rows + 1] = b
+				n = n + 1
+			end
+		end
+		y = y + math.ceil(n / 2) * ROW + 16
+	end
+	p:Hide()
+	p:SetScript("OnShow", function(self) W.SetScrollContent(self.Scroll, y, self:GetHeight()) end)
+	return p
+end
+
+-- Where to go, after the tabs (the old sidebar, as the stock nav bar): where
+-- you are, then the shown map's name opening a menu of the maps above it, its
+-- zones (continents and zones, by name), its dungeons and caves (as the stock
+-- nav bar's dropdown lists them; a map of floors once, by its first) and its
+-- floors (in the client's order, the shown one checked).
+local function mapMenu(owner)
+	local id = canvas:GetMapID()
+	local info = id and C_Map.GetMapInfo(id)
+	if not info then return end
+	local up, p = {}, info.parentMapID
+	while p and p > 0 do
+		local pi = C_Map.GetMapInfo(p)
+		if not pi then break end
+		table.insert(up, 1, pi)
+		p = pi.parentMapID
+	end
+	local zones, dungeons, seen = {}, {}, {}
+	for _, c in ipairs(C_Map.GetMapChildrenInfo(id, nil, false) or {}) do
+		if c.mapType == CONTINENT or c.mapType == ZONE then
+			zones[#zones + 1] = c
+		elseif (c.mapType == DUNGEON or c.mapType == MICRO) and C_Map.IsMapValidForNavBarDropdown(c.mapID) then
+			local g = C_Map.GetMapGroupID(c.mapID)
+			local first = g and (C_Map.GetMapGroupMembersInfo(g) or {})[1]
+			local key = first and first.mapID or c.mapID
+			if not seen[key] then
+				seen[key] = true
+				dungeons[#dungeons + 1] = C_Map.GetMapInfo(key) or c
+			end
+		end
+	end
+	local function byName(a, b) return a.name < b.name end
+	table.sort(zones, byName)
+	table.sort(dungeons, byName)
+	local group = C_Map.GetMapGroupID(id)
+	local floors = group and C_Map.GetMapGroupMembersInfo(group) or {}
+	local function go(k) canvas:SetMapID(k) end
+	MenuUtil.CreateContextMenu(owner, function(_, root)
+		if root.SetScrollMode then root:SetScrollMode(480) end
+		local any = false
+		local function section(list, radio)
+			if #list == 0 then return end
+			if any then root:CreateDivider() end
+			any = true
+			for _, m in ipairs(list) do
+				if radio then
+					root:CreateRadio(m.name, function() return canvas:GetMapID() == m.mapID end, function() go(m.mapID) end)
+				else
+					root:CreateButton(m.name, function() go(m.mapID) end)
+				end
+			end
+		end
+		section(up)
+		section(zones)
+		section(dungeons)
+		section(floors, true)
+	end)
+end
+
+local function mapNav()
+	local nav = CreateFrame("Frame", nil, f.TabRow)
+	nav:SetSize(30, 30)
+	f.psNav = nav
+	local here = W.IconButton(nav, "flag", 30, "Where you are", function() canvas:SetMapID(MapUtil.GetDisplayableMapForPlayer()) end, 14)
+	here:SetPoint("LEFT", nav, "LEFT", 0, 0)
+	f.psHere = here
+	local go = CreateFrame("Button", nil, nav)
+	go:SetHeight(30)
+	go:SetPoint("LEFT", here, "RIGHT", 4, 0)
+	W.Hover(go)
+	go.Label = W.Text(go, "label", "text")
+	go.Label:SetPoint("LEFT", go, "LEFT", 10, 0)
+	go.Arrow = W.Tex(go, "ARTWORK", "chevron-down", "textDim")
+	go.Arrow:SetSize(12, 12)
+	go.Arrow:SetPoint("RIGHT", go, "RIGHT", -10, 0)
+	go:SetScript("OnClick", mapMenu)
+	-- How to move around the map lives in its tooltip; the band's line is a fact.
+	go:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+		GameTooltip:SetText(self.Label:GetText() or "", 1, 1, 1)
+		ns.TooltipHint("Click for the maps above this one, its zones, dungeons and floors. On the map, click a zone to open it, right-click to go back out, and scroll to zoom.")
+		GameTooltip:Show()
+	end)
+	go:SetScript("OnLeave", W.HideTooltip)
+	f.psGo = go
 end
 
 -- A game rule that turns a stock map control off (C_GameRules), as the stock map checks.
@@ -131,10 +333,10 @@ local function ruled(name)
 end
 
 -- The stock map's controls over the canvas's top right (its overlay frames):
--- the filter menu (the quest log's, one filter state for both, so it works
--- with the log shut) and the map pin (WorldMapTrackingPinButtonMixin: while
--- on, a click on the map sets the player's waypoint, through the stock
--- waypoint provider). Above the pins, in the window's strata.
+-- full screen (the stock maximise, remembered) and under it the map pin
+-- (WorldMapTrackingPinButtonMixin: while on, a click on the map sets the
+-- player's waypoint, through the stock waypoint provider). Above the pins,
+-- in the window's strata. The filter is on the tab row.
 local function mapControls()
 	local y = -8
 	local function place(b)
@@ -143,11 +345,8 @@ local function mapControls()
 		Polestar.Theme.Skin(b, "editbox")
 		y = y - 30 - 6
 	end
-	if not ruled("WorldMapTrackingOptionsDisabled") then
-		f.psMapFilter = W.IconButton(f.Main, "sliders", 30, "Filter", function(self) f.psQuests.FilterMenu(self) end, 14)
-		place(f.psMapFilter)
-		f.psQuests.OnFilters = function() f.psQuests.PaintFilter(f.psMapFilter) end
-	end
+	f.psFullButton = W.IconButton(f.Main, "window", 30, "Full screen", function() setFull(not f.psFull) end, 14)
+	place(f.psFullButton)
 	if not ruled("WorldMapTrackingPinDisabled") then
 		local pin = W.IconButton(f.Main, "qol-target", 30, MAP_PIN or "Map Pin", function(self)
 			M.SetPinning(not self.psPinning)
@@ -229,16 +428,13 @@ function M.SetPinning(on)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = W.SHELL.sidebar + 2 + MAP_W, height = W.SHELL.header + 2 + MAP_H })
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 2 + MAP_W, height = 60 + 36 + 2 + MAP_H, searchPlaceholder = "Search quests",
+		onSearch = function(text) if f and f.psQuests then f.psQuests.SetQuery(text) end end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "map")
-	-- The subject block names the window, in place of Polestar's lockup.
-	f.Search:Hide()
-	local b = ns.SubjectBlock(f)
-	b.icon:SetTexture("Interface/Icons/INV_Misc_Map_01")
-	f.psName, f.psLine = b.name, b.line
-	f.psName:SetText("World Map")
-	W.ShellTabs(f, nil)
+	ns.Compact(f)
+	-- The canvas under the tab row keeps the map art's shape, whatever the skin's tab height.
+	f:SetSize(2 + MAP_W, f.psHead + f.psTabsH + 2 + MAP_H)
 	ns.Footer(f, {}, {})
 	-- No body here: its scroll area would take the mouse wheel from the map
 	-- and the quest log over it.
@@ -246,32 +442,24 @@ local function build()
 	buildCanvas()
 	hooksecurefunc(canvas, "OnMapChanged", function() M.Refresh() end)
 	f.psSize = { f:GetWidth(), f:GetHeight() }
-	f.psFullButton = W.IconButton(f.Header, "window", 28, "Full screen", function() setFull(not f.psFull) end, 14)
-	f.psFullButton:SetPoint("BOTTOMRIGHT", f.Header, "BOTTOMRIGHT", -12, 12)
-	-- The quest log's button: a label and its arrow.
-	local qb = CreateFrame("Button", nil, f.Header)
-	qb:SetSize(88, 24)
-	qb:SetPoint("RIGHT", f.psFullButton, "LEFT", -8, 0)
-	W.Hover(qb)
-	qb.Label = W.Text(qb, "small", "text")
-	qb.Label:SetPoint("LEFT", qb, "LEFT", 10, 0)
-	qb.Label:SetText("Quests")
-	qb.Arrow = W.Tex(qb, "ARTWORK", "chevron-left", "textDim")
-	qb.Arrow:SetSize(12, 12)
-	qb.Arrow:SetPoint("RIGHT", qb, "RIGHT", -10, 0)
-	qb:SetScript("OnClick", function() setQuests(not f.psQuests:IsShown()) end)
-	f.psQuestsButton = qb
 	f.psQuests = ns.QuestLog(f, canvas, QUEST_W)
 	f.psQuests:SetPoint("TOPRIGHT", f.Content, "TOPRIGHT", 0, 0)
 	f.psQuests:SetPoint("BOTTOMRIGHT", f.Content, "BOTTOMRIGHT", 0, 0)
+	-- Its details open or shut: the search follows the list.
+	f.psQuests.OnView = function() paintTabs() end
+	f.psLegend = legend()
+	-- The stock map's filter menu (the quest log's, one state for both), at
+	-- the tab row's end (ns.TopNav), lit while a filter is off its default.
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self) f.psQuests.FilterMenu(self) end, 14)
+	Polestar.Theme.Skin(f.psFilter, "editbox")
+	f.psQuests.OnFilters = function() f.psQuests.PaintFilter(f.psFilter) end
+	mapNav()
 	mapControls()
 	coords()
-	-- A new size: the band's sky cropped again, never stretched.
-	f:HookScript("OnSizeChanged", function(self, w)
-		self.Band:SetTexCoord(Polestar.Theme.BandCoords(w - W.SHELL.sidebar - 2, W.SHELL.header))
-	end)
-	setQuests(PolestarUIDB.mapQuests and true or false)
+	setPanel(PolestarUIDB.mapQuests)
 	if PolestarUIDB.mapFull then setFull(true) end
+	-- A new size (the side column, full screen): the tab row and band laid out again.
+	f:HookScript("OnSizeChanged", function() paintTabs() end)
 	-- As the stock map opens: on the player's map, zoomed out, with its sounds.
 	f:HookScript("OnShow", function()
 		canvas:Show()
@@ -287,77 +475,25 @@ local function build()
 	Polestar.CloseOnEscape(NAME)
 end
 
--- The sidebar: where the player is, the maps above this one, and the zones in it.
+-- The band: "World Map", then the shown map and the one it lies in; the
+-- nav's label, the tabs and the pin follow the shown map.
 function M.Refresh()
 	if not (f and f:IsShown()) then return end
 	local id = canvas:GetMapID()
 	local info = id and C_Map.GetMapInfo(id)
 	if not info then return end
-	local here = MapUtil.GetDisplayableMapForPlayer()
-	local items = { { key = here, label = "Where you are", icon = "flag" }, { separator = true } }
-	local up, p = {}, info.parentMapID
-	while p and p > 0 do
-		local pi = C_Map.GetMapInfo(p)
-		if not pi then break end
-		table.insert(up, 1, { key = pi.mapID, label = pi.name, icon = "chevron-left" })
-		p = pi.parentMapID
-	end
-	for _, item in ipairs(up) do items[#items + 1] = item end
-	local zones = {}
-	for _, c in ipairs(C_Map.GetMapChildrenInfo(id, nil, false) or {}) do
-		if c.mapType == CONTINENT or c.mapType == ZONE then zones[#zones + 1] = { key = c.mapID, label = c.name, icon = "icon-explore" } end
-	end
-	table.sort(zones, function(a, b) return a.label < b.label end)
-	if #up > 0 and #zones > 0 then items[#items + 1] = { separator = true } end
-	for _, item in ipairs(zones) do items[#items + 1] = item end
-	-- Its dungeons and caves, as the stock nav bar's dropdown lists them (a
-	-- cave has no entrance pin to click); a map of floors once, by its first.
-	local dungeons, seen = {}, {}
-	for _, c in ipairs(C_Map.GetMapChildrenInfo(id, nil, false) or {}) do
-		if (c.mapType == DUNGEON or c.mapType == MICRO) and C_Map.IsMapValidForNavBarDropdown(c.mapID) then
-			local g = C_Map.GetMapGroupID(c.mapID)
-			local first = g and (C_Map.GetMapGroupMembersInfo(g) or {})[1]
-			local key = first and first.mapID or c.mapID
-			if not seen[key] then
-				seen[key] = true
-				dungeons[#dungeons + 1] = { key = key, label = (C_Map.GetMapInfo(key) or c).name, icon = "icon-dungeon" }
-			end
-		end
-	end
-	table.sort(dungeons, function(a, b) return a.label < b.label end)
-	if #dungeons > 0 then items[#items + 1] = { separator = true } end
-	for _, item in ipairs(dungeons) do items[#items + 1] = item end
-	-- A map of several levels lists them, in the order the client gives, as the stock floor dropdown does.
-	local group = C_Map.GetMapGroupID(id)
-	local floors = group and C_Map.GetMapGroupMembersInfo(group)
-	if floors and #floors > 0 then
-		items[#items + 1] = { separator = true }
-		for _, fl in ipairs(floors) do items[#items + 1] = { key = fl.mapID, label = fl.name, icon = "layers" } end
-	end
-	W.ShellNav(f, items, id, function(k) canvas:SetMapID(k) end)
-	-- How to move around the map lives in the rows' tooltips; the title line is a fact.
-	for _, b in ipairs(f.navButtons) do
-		if not b.psMapTip then
-			b.psMapTip = true
-			b:HookScript("OnEnter", function(self)
-				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-				GameTooltip:SetText(self.Label:GetText() or "", 1, 1, 1)
-				ns.TooltipHint("Click to show this map. On the map, click a zone to open it, right-click to go back out, and scroll to zoom.")
-				GameTooltip:Show()
-			end)
-			b:HookScript("OnLeave", W.HideTooltip)
-		end
-	end
-	if f.psMapFilter then f.psQuests.PaintFilter(f.psMapFilter) end
+	local go = f.psGo
+	go.Label:SetText(info.name)
+	go:SetWidth(math.ceil(go.Label:GetStringWidth()) + 10 + 8 + 12 + 10)
+	f.psHere.psTip = ("Where you are: %s"):format(GetZoneText() or "")
+	paintTabs()
 	-- A new map: the pin turned off, enabled where the map takes one.
 	if f.psPin and f.psPinMap ~= id then
 		f.psPinMap = id
 		M.SetPinning(false)
 	end
-	f.psLine:SetText(GetZoneText() or "")
-	-- The status line: the map this one lies in.
 	local parent = info.parentMapID and info.parentMapID > 0 and C_Map.GetMapInfo(info.parentMapID)
-	W.ShellTitle(f, info.name, parent and parent.name or nil)
+	W.ShellTitle(f, "World Map", parent and (info.name .. " · " .. parent.name) or info.name)
 end
 
 function M.Show()
@@ -373,11 +509,11 @@ function M.Toggle()
 end
 
 function M.ToggleQuests()
-	if f and f:IsShown() and f.psQuests:IsShown() then
+	if f and f:IsShown() and f.psPage == "quests" then
 		f:Hide()
 	else
 		M.Show()
-		setQuests(true)
+		setPanel("quests")
 	end
 end
 
@@ -391,7 +527,7 @@ function M.Enable()
 	local function quests()
 		if not f then return end
 		f.psQuests.Paint()
-		if f.psMapFilter then f.psQuests.PaintFilter(f.psMapFilter) end
+		if f:IsShown() then paintTabs() end
 	end
 	Polestar.RegisterEvent("QUEST_LOG_UPDATE", quests)
 	Polestar.RegisterEvent("QUEST_WATCH_LIST_CHANGED", quests)

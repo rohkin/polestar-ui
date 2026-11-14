@@ -236,6 +236,7 @@ local function describe(m, list)
 		t.CreateTitle = function(self, text) self.items[#self.items + 1] = { title = text } end
 		t.CreateCheckbox = function(self, text, get, set) return self:add({ text = text, get = get, set = set }) end
 		t.CreateButton = function(self, text, fn) return self:add({ text = text, click = fn, button = true }) end
+		t.CreateRadio = function(self, text, get, set) return self:add({ text = text, get = get, set = set, radio = true }) end
 		t.CreateDivider = function(self) self.items[#self.items + 1] = { divider = true } end
 		t.add = function(self, x) self.items[#self.items + 1] = item(x); return self.items[#self.items] end
 		return t
@@ -267,3 +268,33 @@ function C_QuestLog.RemoveQuestWatch(id) stub.watched[id] = nil end
 C_SuperTrack = { GetSuperTrackedQuestID = function() return stub.superTracked or 0 end, SetSuperTrackedQuestID = function(id) stub.superTracked = id end }
 TRACK_QUEST, UNTRACK_QUEST, SUPER_TRACK_QUEST, STOP_SUPER_TRACK_QUEST = "Track Quest", "Untrack Quest", "Focus Quest", "Unfocus Quest"
 SHARE_QUEST, ABANDON_QUEST, QUEST_LOG_TRACK_ALL, QUEST_LOG_UNTRACK_ALL = "Share Quest", "Abandon Quest", "Track All", "Untrack All"
+
+-- The map legend's data (MapLegendFrameData, two of its categories) and the
+-- canvas's pins: a dungeon entrance and a raid's, which the legend's rows
+-- light by template and metadata (the stock button's match).
+MAP_LEGEND_FRAME_LABEL, QUESTS_LABEL = "Map Legend", "Quests"
+MapLegendPinDefinitions = {
+	TurnInQuest = { Atlas = "UI-QuestPoi-QuestBangTurnIn", Name = "Turn In", Tooltip = "A quest ready to turn in.", TemplateNames = { "QuestPinTemplate" }, BackgroundAtlas = "UI-QuestPoi-QuestNumber" },
+	LocalStoryQuest = { Atlas = "QuestNormal", Name = "Local Story", Tooltip = "A quest of this zone's story.", TemplateNames = { "QuestPinTemplate" } },
+	Dungeon = { Atlas = "Dungeon", Name = "Dungeon", Tooltip = "A dungeon's entrance.", TemplateNames = { "DungeonEntrancePinTemplate" }, MetaData = { isRaid = false } },
+	Raid = { Atlas = "Raid", Name = "Raid", Tooltip = "A raid's entrance.", TemplateNames = { "DungeonEntrancePinTemplate" }, MetaData = { isRaid = true } },
+	FlightMaster = { Atlas = "FlightPath", Name = "Flight Master", Tooltip = "Fly to places you know.", TemplateNames = { "FlightPointPinTemplate" } },
+}
+MapLegendData = {
+	{ CategoryTitle = "Quests", CategoryData = { "TurnInQuest", "LocalStoryQuest", "ImportantQuest" } },
+	{ CategoryTitle = "Activities", CategoryData = { "Dungeon", "Raid", "FlightMaster" } },
+}
+MapLegendButtonMixin = { MetaDataMatches = function(self, pin) return not self.metaData or self.metaData.isRaid == pin.isRaid end }
+local PINS = {}
+for _, raid in ipairs({ false, true }) do
+	PINS[#PINS + 1] = { pinTemplate = "DungeonEntrancePinTemplate", isRaid = raid,
+		ShowMapLegendGlow = function(self) self.glow = true end, HideMapLegendGlow = function(self) self.glow = false end }
+end
+stub.mapPins = PINS
+function Canvas:EnumeratePinsByTemplate(t)
+	local i = 0
+	return function()
+		repeat i = i + 1 until not PINS[i] or PINS[i].pinTemplate == t
+		return PINS[i]
+	end
+end

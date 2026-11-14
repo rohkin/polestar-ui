@@ -1,35 +1,47 @@
 --@ title: World Map
 --@ roots: PolestarUIWorldMap
 --@ stubs: stub_worldmap.lua
--- The map key opens ours, never the stock map, on the player's zone; the sidebar walks up to a continent, whose zones it lists (a zone's caves apart, as the stock dropdown lists them), and the canvas sits in the window's strata; a map art of one zoom step gets ours, and the window goes full screen and back.
+-- The map key opens ours, never the stock map, on the player's zone, on the compact grid (no sidebar, the map under the tab row); the nav after the tabs walks up to a continent, whose zones its menu lists (a zone's caves apart, as the stock dropdown lists them), and the canvas sits in the window's strata; a map art of one zoom step gets ours, and the window goes full screen and back.
 stub.pressKey("M")
 local f = PolestarUIWorldMap
 local c = PolestarUIWorldMapCanvas
 assert(f:IsShown() and not WorldMapFrame:IsShown(), "key")
 assert(c:IsShown() and c:GetFrameStrata() == f:GetFrameStrata(), "canvas under the window")
-assert(c.mapID == 37 and c.zoomedOut and f.Title:GetText() == "Elwynn Forest", "not the player map")
+assert(c.mapID == 37 and c.zoomedOut and f.Title:GetText() == "World Map" and f.Subtitle:GetText() == "Elwynn Forest · Eastern Kingdoms", "not the player map")
 assert(#c.providers > 0 and c.navigateOnClick, "canvas setup")
-local function row(n) for _, b in ipairs(f.navButtons) do if b:IsShown() and b.Label:GetText() == n then return b end end end
-assert(row("Azeroth") and row("Where you are"), "parents")
-row("Eastern Kingdoms"):Click()
-assert(c.mapID == 13 and f.Title:GetText() == "Eastern Kingdoms", "nav")
-assert(f.Subtitle:GetText() == "Azeroth", "status line: the parent map")
-stub.RunScript(row("Westfall"), "OnEnter")
-assert(GameTooltip:IsShown() and GameTooltip.lines[1] == "Westfall" and tostring(GameTooltip.lines[#GameTooltip.lines]):find("right-click to go back out", 1, true), "the hint in the row tooltip")
-stub.RunScript(row("Westfall"), "OnLeave")
+-- The compact grid: no sidebar, a 60 band, the canvas from the tab row's foot, 900 by 600.
+assert(not f.Sidebar:IsShown() and f.Header:GetHeight() == 60 and f.psPad == 24, "compact shell")
+assert(f:GetWidth() == 902 and f:GetHeight() == 60 + 36 + 2 + 600 and not f.Footer:IsShown(), "window size")
+assert(select(2, c:GetPoint(1)) == f.Content and select(2, c:GetPoint(2)) == f.Content and select(2, f.Content:GetPoint(1)) == f.TabRow and f.TabRow:GetHeight() == 36, "the map fills the body under the tab row")
+-- The nav after the tabs: where you are, and the shown map's menu.
+local go, here = f.psGo, f.psHere
+assert(f.psNav:GetParent() == f.TabRow and select(2, f.psNav:GetPoint(1)) == f.tabButtons[2] and go.Label:GetText() == "Elwynn Forest", "nav on the tab row")
+assert(here.psTip == "Where you are: Elwynn Forest", "where you are")
+local function menu() go:Click() return stub.menu end
+local function row(n) for _, x in ipairs(menu().items) do if x.text == n then return x end end end
+assert(row("Azeroth") and row("Eastern Kingdoms") and not row("Westfall"), "parents")
+row("Eastern Kingdoms").click()
+assert(c.mapID == 13 and go.Label:GetText() == "Eastern Kingdoms", "nav")
+assert(f.Subtitle:GetText() == "Eastern Kingdoms · Azeroth", "subtitle: the parent map")
+stub.RunScript(go, "OnEnter")
+assert(GameTooltip:IsShown() and GameTooltip.lines[1] == "Eastern Kingdoms" and tostring(GameTooltip.lines[#GameTooltip.lines]):find("right-click to go back out", 1, true), "the hint in the nav's tooltip")
+stub.RunScript(go, "OnLeave")
 assert(row("Duskwood") and row("Westfall") and row("Elwynn Forest") and not row("Kalimdor"), "zones")
+local list = menu().items
+assert(list[1].text == "Azeroth" and list[2].divider and list[3].text == "Duskwood", "parents, then zones by name")
 stub.caveListed = true
-row("Elwynn Forest"):Click()
-assert(row("Fargodeep Mine").Icon:GetTexture() == Polestar.Theme.Media("icon-dungeon") and not row("Fargodeep Mine, Lower"), "a cave as the stock dropdown lists it, its floors once")
+row("Elwynn Forest").click()
+assert(row("Fargodeep Mine") and not row("Fargodeep Mine, Lower"), "a cave as the stock dropdown lists it, its floors once")
 assert(not row("Upper Level"), "floors on an ungrouped map")
-row("Fargodeep Mine"):Click()
+row("Fargodeep Mine").click()
 assert(c.mapID == 1429, "cave row")
-c:SetMapID(1429)
-assert(row("Upper Level").Selected:IsShown() and not row("Lower Level").Selected:IsShown(), "active floor")
-row("Lower Level"):Click()
+assert(row("Upper Level").radio and row("Upper Level").get() and not row("Lower Level").get(), "active floor")
+row("Lower Level").set()
 assert(c.mapID == 1430, "floor click")
 c:SetMapID(52)
 assert(not row("The Deadmines"), "a dungeon the dropdown does not list")
+here:Click()
+assert(c.mapID == 37, "where you are")
 assert(not WorldMapFrame:IsShown(), "stock map")
 -- Coordinates at the canvas's bottom left, as the stock CVars say (none set: shown).
 c:SetMapID(37)
@@ -50,11 +62,12 @@ assert(co.Text:GetText() == "Player: 41, 65 (Elwynn Forest)", "off this map: the
 stub.cvars.worldMapShowPlayerCoords, stub.cvars.worldMapShowCursorCoords, stub.mapCursor = nil, nil, nil
 c:SetMapID(37)
 stub.advance(0.2)
--- The map's own controls at the canvas's top right: the filter (the log's
--- menu, the log shut) and the map pin.
-local mf, pin = f.psMapFilter, f.psPin
-assert(not f.psQuests:IsShown() and mf:IsShown() and select(2, mf:GetPoint(1)) == c and select(1, mf:GetPoint(1)) == "TOPRIGHT", "a filter on the map")
-assert(mf:GetFrameLevel() > c:GetFrameLevel() + 1000, "the controls above the pins")
+-- The filter at the tab row's end (the log's menu, the log shut), the
+-- search hidden with the log; full screen and the map pin on the canvas's top right.
+local mf, pin = f.psFilter, f.psPin
+assert(not f.psQuests:IsShown() and mf:IsShown() and mf:GetParent() == f.TabRow and select(1, mf:GetPoint(1)) == "RIGHT" and not f.Search:IsShown(), "the filter on the tab row")
+assert(select(2, f.psFullButton:GetPoint(1)) == c and select(1, f.psFullButton:GetPoint(1)) == "TOPRIGHT" and select(2, pin:GetPoint(1)) == c, "controls on the map")
+assert(pin:GetFrameLevel() > c:GetFrameLevel() + 1000, "the controls above the pins")
 mf:Click()
 assert(stub.menu.tag == "MENU_WORLD_MAP_TRACKING" and stub.menu.owner == mf, "the map's filter menu with the log shut")
 stub.menu.items[3].set()
@@ -75,7 +88,7 @@ pin:Click()
 c:SetMapID(947)
 assert(not pin.psPinning and not pin:IsEnabled() and pin.psTipLines[1][1]:find("can't", 1, true), "no pin on Azeroth")
 c:SetMapID(37)
-row("Eastern Kingdoms"):Click()
+row("Eastern Kingdoms").click()
 stub.pressKey("M")
 assert(not f:IsShown() and not c:IsShown(), "no toggle")
 stub.pressKey("M")
@@ -87,4 +100,4 @@ f.psFullButton:Click()
 assert(f.psFull and PolestarUIDB.mapFull and f:GetNumPoints() == 2 and select(2, f:GetPoint(1)) == UIParent, "full screen")
 f.psFullButton:Click()
 assert(not f.psFull and f:GetWidth() == w and f:GetHeight() == h, "back to a window")
-row("Eastern Kingdoms"):Click()
+row("Eastern Kingdoms").click()

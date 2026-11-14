@@ -1,7 +1,7 @@
 --@ title: World Map: Quest Log
 --@ roots: PolestarUIWorldMap
 --@ stubs: stub_worldmap.lua
--- The quest log key opens our map with its quest log, never the stock map: headers fold at once, hidden quests stay out, a quest shows its level, objectives and marks; hover lights its area, a click shows its map, shift-click tracks, chat links; the flyout is remembered and widens the window, searches titles and objectives, and the empty body leaves it the mouse wheel.
+-- The quest log key opens our map with its quest log, never the stock map: headers fold at once, hidden quests stay out, a quest shows its level, objectives and marks; hover lights its area, a click shows its map, shift-click tracks, chat links; the column is remembered and widens the window, its tab (with the log's count) shuts it, the search on the tab row matches titles and objectives, and the empty body leaves it the mouse wheel; the Map Legend tab shows the legend in its place, whose rows light their pins.
 stub.pressKey("L")
 local f = PolestarUIWorldMap
 local c = PolestarUIWorldMapCanvas
@@ -10,7 +10,9 @@ assert(f:IsShown() and q:IsShown() and not WorldMapFrame:IsShown(), "quest log k
 local function rows() local t = {} for _, r in ipairs({ q.Scroll.Child:GetChildren() }) do if r:IsShown() then t[#t + 1] = r end end return t end
 local function row(n) for _, r in ipairs(rows()) do if (r.psTitle or (r.Label and r.Label:GetText())) == n then return r end end end
 assert(#rows() == 5 and not row("Hidden") and not row("The Defias Brotherhood"), "rows: " .. #rows())
-assert(q.Count:GetText() == "5/25", "count " .. q.Count:GetText())
+local tab = f.tabButtons[1]
+assert(tab.Label:GetText() == "Quests" and tab.psNavCount:GetText() == "5/25", "count on the tab: " .. tostring(tab.psNavCount:GetText()))
+assert(f.Search:IsShown() and f.Search:GetParent() == f.TabRow, "the search on the tab row")
 local kobold, wolves = row("Kobold Camp Cleanup"), row("Wolves Across the Border")
 assert(kobold.Goals:GetText():find("4/10") and kobold.Tracked:IsShown() and kobold.Tracked:GetAtlas() == "questlog-icon-checkmark-yellow" and not kobold.Mark:IsShown(), "objectives, tracked")
 assert(wolves.Mark:IsShown() and wolves.Tracked:IsShown() and row("A Threat Within").Name:GetText() == "[1] A Threat Within", "done and tracked both show, level")
@@ -83,24 +85,24 @@ stub.pressKey("L")
 assert(not f:IsShown(), "L closes it")
 stub.pressKey("M")
 assert(q:IsShown(), "not remembered")
-f.psQuestsButton:Click()
-assert(not q:IsShown() and f:GetWidth() == w - 320 and not PolestarUIDB.mapQuests, "button")
+tab:Click()
+assert(not q:IsShown() and f:GetWidth() == w - 320 and not PolestarUIDB.mapQuests and not f.Search:IsShown(), "the tab shuts it")
 stub.pressKey("L")
 assert(q:IsShown() and f:GetWidth() == w, "L opens the log")
 assert(not f.Scroll:IsShown(), "the empty body takes the mouse wheel")
-q.Search:SetText("vermin")
-stub.RunScript(q.Search, "OnTextChanged")
+f.Search:SetText("vermin")
+stub.RunScript(f.Search, "OnTextChanged")
 assert(#rows() == 2 and row("Kobold Camp Cleanup"), "search by objective: " .. #rows())
-q.Search:SetText("defias")
-stub.RunScript(q.Search, "OnTextChanged")
+f.Search:SetText("defias")
+stub.RunScript(f.Search, "OnTextChanged")
 assert(row("The Defias Brotherhood"), "search")
-q.Search:SetText("zzz")
-stub.RunScript(q.Search, "OnTextChanged")
+f.Search:SetText("zzz")
+stub.RunScript(f.Search, "OnTextChanged")
 assert(#rows() == 0 and q.Empty:IsShown() and q.Empty:GetText() == "No quests match.", "no match")
-q.Search:SetText("")
-stub.RunScript(q.Search, "OnTextChanged")
-assert(select(1, q.Filter:GetPoint(1)) == "TOPRIGHT" and q.Filter.psTip == "Filter" and not q.Filter.psActive, "filter at the search row's end, unlit at its defaults")
-q.Filter:Click()
+f.Search:SetText("")
+stub.RunScript(f.Search, "OnTextChanged")
+assert(select(1, f.psFilter:GetPoint(1)) == "RIGHT" and select(2, f.Search:GetPoint(1)) == f.psFilter and f.psFilter.psTip == "Filter" and not f.psFilter.psActive, "filter at the search's end, unlit at its defaults")
+f.psFilter:Click()
 local m = stub.menu
 local it = m.items
 assert(m.tag == "MENU_WORLD_MAP_TRACKING" and #it == 8 and it[1].title and it[7].title, "filter menu: the stock tag, map filters, then the log ones")
@@ -109,12 +111,12 @@ assert(it[3].text == SHOW_QUEST_LEVELS and it[3].get() and it[4].get() and not i
 local n = c.refreshed or 0
 it[3].set()
 assert(stub.cvars.showQuestLevel == "0" and row("A Threat Within").Name:GetText() == "A Threat Within" and c.refreshed == n + 1, "levels off, redrawn at once")
-assert(q.Filter.psActive and q.Filter.psTip == "Filter (1 on)", "lit off its default")
-q.Filter:Click()
+assert(f.psFilter.psActive and f.psFilter.psTip == "Filter (1 on)", "lit off its default")
+f.psFilter:Click()
 local clear = stub.menu.items[#stub.menu.items]
 assert(clear.button and clear.text == "Clear filters", "clear filters entry")
 clear.click()
-assert(stub.cvars.showQuestLevel == "1" and not q.Filter.psActive and q.Filter.psTip == "Filter", "cleared back to the defaults")
+assert(stub.cvars.showQuestLevel == "1" and not f.psFilter.psActive and f.psFilter.psTip == "Filter", "cleared back to the defaults")
 assert(row("A Threat Within").Name:GetText() == "[1] A Threat Within", "levels on")
 local function hue() return table.concat({ row("The Defias Brotherhood").Name:GetTextColor() }, ",") end
 local red = hue()
@@ -137,5 +139,24 @@ assert(row("A Threat Within").Name:GetText() == "A Threat Within", "a change fro
 stub.cvars.showQuestLevel = "1"
 stub.fire("CVAR_UPDATE", "showQuestLevel")
 row("The Defias Brotherhood"):Click()
-assert(not q.Filter:IsShown(), "no filter on the details")
+assert(not f.Search:IsShown() and f.psFilter:IsShown(), "no search on the details; the map's filter stays")
 q.Details.Back:Click()
+assert(f.Search:IsShown(), "the search back with the list")
+-- The Map Legend tab: the legend in the log's place (remembered), its rows
+-- the client's pin kinds by category (one the client lacks left out); a hover
+-- gives the stock tooltip and lights its pins on our map.
+local lt = f.tabButtons[2]
+assert(lt.Label:GetText() == "Map Legend", "legend tab")
+lt:Click()
+local lg = f.psLegend
+assert(lg:IsShown() and not q:IsShown() and PolestarUIDB.mapQuests == "legend" and f:GetWidth() == w and not f.Search:IsShown(), "the legend in the log's place")
+assert(#lg.Rows == 5 and lg.Rows[1].Label:GetText() == "Turn In" and lg.Rows[1].Back and lg.Rows[3].Label:GetText() == "Dungeon", "legend rows: " .. #lg.Rows)
+stub.RunScript(lg.Rows[4], "OnEnter")
+assert(GameTooltip.lines[1] == "Raid" and stub.mapPins[2].glow and not stub.mapPins[1].glow, "a raid row lights the raid's pin only")
+stub.RunScript(lg.Rows[4], "OnLeave")
+assert(not stub.mapPins[2].glow, "lit off again")
+lt:Click()
+assert(not lg:IsShown() and not PolestarUIDB.mapQuests, "its tab shuts it")
+lt:Click()
+stub.pressKey("L")
+assert(f:IsShown() and q:IsShown() and not lg:IsShown(), "L over the legend opens the log")

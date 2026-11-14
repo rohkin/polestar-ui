@@ -3,13 +3,17 @@
 -- (QuestMapFrame's QuestLogQuests_Update) lists it: foldable headers, each
 -- quest with its level, its title in its difficulty colour and what is left
 -- of it (each as the map's filters say); a click opens its details in the
--- list's place.
--- ns.QuestLog(window, canvas, width) -> the panel; panel.Paint().
+-- list's place. Its search, filter and count live on the window's tab row.
+-- ns.QuestLog(window, canvas, width) -> the panel; panel.Paint(),
+-- panel.SetQuery(text), panel.Count() -> text, over the most it holds;
+-- panel.FilterMenu(owner), panel.PaintFilter(button); panel.OnView() and
+-- panel.OnFilters() are the window's, called as the details open or shut and
+-- a filter changes.
 
 local ADDON, ns = ...
 local W, Theme = Polestar.Widgets, Polestar.Theme
 
-local HEAD_H, HEAD, TOP, SLOT = 28, 44, 44 + 30 + 12, 14
+local HEAD_H, HEAD, SLOT = 28, 44, 14
 
 function ns.QuestLog(win, canvas, width)
 	local p = CreateFrame("Frame", nil, win.Main)
@@ -18,19 +22,19 @@ function ns.QuestLog(win, canvas, width)
 	local rule = W.Divider(p, true)
 	rule:SetPoint("TOPLEFT", p, "TOPLEFT", 0, 0)
 	rule:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", 0, 0)
-	p.Title = W.Text(p, "label", "textDim")
-	p.Title:SetPoint("LEFT", p, "TOPLEFT", W.SHELL.side, -HEAD / 2)
-	p.Title:SetText("Quests")
-	p.Count = W.Text(p, "number", "textMuted")
-	p.Count:SetPoint("RIGHT", p, "TOPRIGHT", -W.SHELL.side, -HEAD / 2)
-	-- The search, as the stock log's: a quest's title or what is left of it.
+	-- The search (the window's box), as the stock log's: a quest's title or what is left of it.
 	local query = ""
-	p.Search = W.SearchBox(p, "Search quests", function(text)
+	function p.SetQuery(text)
 		query = (text or ""):lower()
 		p.Paint()
-	end)
-	p.Search:SetPoint("TOPLEFT", p, "TOPLEFT", W.SHELL.side, -HEAD)
-	p.Search:SetPoint("TOPRIGHT", p, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -HEAD)
+	end
+	-- The log's count over the most it holds, and whether it is past it (the stock count turns red).
+	function p.Count()
+		local _, quests = C_QuestLog.GetNumQuestLogEntries()
+		quests = quests or 0
+		local max = C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()
+		return max and ("%d/%d"):format(quests, max) or quests, max and quests > max or false
+	end
 	-- The stock map's filter menu (WorldMapTrackingOptionsButtonMixin:SetupMenu,
 	-- the filters Forever's table holds), then the log's own as the stock menu
 	-- adds it when the two are one. The same CVars and tracking filter, so a
@@ -118,20 +122,14 @@ function ns.QuestLog(win, canvas, width)
 			end
 		end)
 	end
-	-- At the end of the search row, as Social's: lit while a filter is off its default.
-	p.Filter = W.IconButton(p, "sliders", 30, "Filter", function(self) p.FilterMenu(self) end, 14)
-	p.Filter:SetPoint("TOPRIGHT", p, "TOPRIGHT", -W.SHELL.side, -HEAD)
-	Theme.Skin(p.Filter, "editbox")
+	-- The window's filter button: lit while a filter is off its default.
 	function p.PaintFilter(b)
 		local n = p.FiltersOn()
 		W.SetIconState(b, n > 0)
 		b.psTip = n > 0 and ("Filter (%d on)"):format(n) or "Filter"
 	end
-	local line = W.Divider(p)
-	line:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -TOP)
-	line:SetPoint("TOPRIGHT", p, "TOPRIGHT", 0, -TOP)
 	p.Scroll = W.Scroll(p)
-	p.Scroll:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -(TOP + 1))
+	p.Scroll:SetPoint("TOPLEFT", p, "TOPLEFT", 1, 0)
 	p.Scroll:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", 0, 0)
 	p.Empty = W.Text(p.Scroll.Child, "default", "textDim")
 	p.Empty:SetPoint("TOPLEFT", p.Scroll.Child, "TOPLEFT", W.SHELL.side, -16)
@@ -426,10 +424,9 @@ function ns.QuestLog(win, canvas, width)
 				cur.quests[#cur.quests + 1] = info
 			end
 		end
-		local y, hi, ri, total = 0, 0, 0, 0
+		local y, hi, ri = 0, 0, 0
 		for _, g in ipairs(groups) do
 			local h = g.info
-			total = total + #g.quests
 			-- Searching, every match shows, its header open.
 			local folded = h and h.isCollapsed and query == ""
 			-- A campaign's header always shows, unless searching (as the stock list).
@@ -455,16 +452,10 @@ function ns.QuestLog(win, canvas, width)
 		end
 		for i = hi + 1, #heads do heads[i]:Hide() end
 		for i = ri + 1, #rows do rows[i]:Hide() end
-		p.PaintFilter(p.Filter)
-		local _, quests = C_QuestLog.GetNumQuestLogEntries()
-		local max = C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()
-		p.Count:SetText(max and ("%d/%d"):format(quests or total, max) or (quests or total))
-		-- Over the most it holds: in danger, as the stock count turns red.
-		W.Color(p.Count, max and (quests or total) > max and "danger" or "textMuted")
 		p.Empty:SetText(query ~= "" and "No quests match." or "Your quest log is empty.")
 		p.Empty:SetShown(hi == 0 and ri == 0)
 		p.Scroll.Child:SetWidth(width - 1)
-		W.SetScrollContent(p.Scroll, y + 8, p:GetHeight() - TOP - 1)
+		W.SetScrollContent(p.Scroll, y + 8, p:GetHeight())
 	end
 
 	-- The details (QuestMapFrame_ShowQuestDetails and QuestInfo's map
@@ -655,19 +646,20 @@ function ns.QuestLog(win, canvas, width)
 		d.Abandon.psTip = why
 	end
 
-	local listParts = { p.Title, p.Count, p.Filter, p.Search, line, p.Scroll }
 	function p.Open(id)
 		detail = id
-		for _, r in ipairs(listParts) do r:Hide() end
+		p.Scroll:Hide()
 		d:Show()
 		W.ScrollTo(d.Scroll, 0)
 		p.Paint()
+		if p.OnView then p.OnView() end
 	end
 	function p.Close()
 		detail = nil
 		d:Hide()
-		for _, r in ipairs(listParts) do r:Show() end
+		p.Scroll:Show()
 		p.Paint()
+		if p.OnView then p.OnView() end
 	end
 
 	p:SetScript("OnShow", p.Paint)
