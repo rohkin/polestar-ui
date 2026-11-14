@@ -4,16 +4,17 @@ Opened by its keys (`TOGGLESPELLBOOK`; `TOGGLEPETBOOK` at Pet) and
 (CLIENT.md, rule 8); shift-click on the micro button opens the stock one.
 Spell links and new-spell toasts stay the game's. Its talents tab is the
 Talents window's.
-- **Shell:** 960×680 with sidebar.
-- **Subject block:** the class icon (the class atlas, `GetClassAtlas`), the
-  class in Title, "Level 24" in Small textDim.
-- **Sidebar:** the shell's search ("Search spells", every category at once,
-  titled "Search" with the count) and, at the end of its row, the filter;
-  then the stock categories as nav rows: each shown skill line (General, the
-  class's), then Pet when the pet has a spellbook. Each wears the stock tab's
-  icon, not a glyph (the Two Families Rule, as the professions rail): 20px,
-  untinted, its border cropped; the class's skill line icon for General
-  (`GetClassSkillLineInfo`), the skill line's own, the pet's (`GetPetIcon`).
+- **Shell:** 720×600 on the compact grid (`ns.Compact`), no sidebar.
+- **Tabs:** the stock (Camelot) book's category tabs on top (`ns.TopNav`),
+  in its order: each shown skill line (General, the class's), then Pet when
+  the pet has a spellbook. The stock tabs are icons with the name in their
+  tooltip; ours wear the same icon (the Two Families Rule: 16px, untinted,
+  its border cropped; the class's skill line icon for General,
+  `GetClassSkillLineInfo`, the skill line's own, the pet's, `GetPetIcon`)
+  before the name. The stock book's Transmog tab (outfits) is not built: its
+  shift-click on the micro button opens it. The search ("Search spells",
+  every category at once, titled "Search" with the count, no tab lit) and
+  the filter at the tab row's right end.
 - **Filter:** a 30px square on the search field's well, the `sliders` glyph,
   as Crafting's; in the accent while a setting is off its default. Its menu
   is the stock book's settings menu, on the same CVars: "Hide passives"
@@ -23,7 +24,8 @@ Talents window's.
   search ignores them, as the stock book's does, so they are disabled while
   one runs. The menu opens again after each
   pick.
-- **Main column:** title the category, subtitle the count ("12 spells.").
+- **Main column:** title "Spellbook", subtitle the character, then the count
+  ("Level 24 Mage · 12 spells.").
   What a click does is in each row's tooltip. In the "..." menu, first: a disabled line saying the micro button's shift-click opens
   the game's spellbook (for what other addons add to it, as What's
   Training?'s tab) and, when that addon is loaded, "What's Training?" (its
@@ -45,9 +47,11 @@ Talents window's.
   (`AssistedCombatManager`'s action spell, which the stock book shows above
   its pages), it is the first row under General.
 - **Flyouts** (portals, for example): with "Use flyouts", as the stock book,
-  a flyout is one entry ("2 spells" under its name) and its loose spells are
+  a flyout is one entry ("2 spells" under its name: the ones known) and its loose spells are
   left out; a click lists its known spells (`GetFlyoutSlotInfo`, found in
-  the book) right after it, indented 24px, each a spell row of its own (cast,
+  the book with `FindSpellBookSlotForSpell(id, true, false)`: a flyout's spells
+  are hidden from the book, and by default the search returns the flyout
+  holding them instead) right after it, indented 24px, each a spell row of its own (cast,
   drag, link); a second click hides them. The flyout itself drags to a bar
   and links. Without "Use flyouts", its loose spells instead. A search looks
   at the loose spells. The count in the subtitle leaves an opened flyout's

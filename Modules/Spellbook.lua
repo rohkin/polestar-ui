@@ -5,7 +5,7 @@ local ADDON, ns = ...
 local W = Polestar.Widgets
 
 local NAME = "PolestarUISpellbook"
-local ROW_H, ICON, COL_GAP = 44, 36, 24
+local ROW_H, ICON, COL_GAP, TOP = 44, 36, 24, 16
 
 local f, section, query = nil, nil, ""
 local M = {}
@@ -22,44 +22,26 @@ local function autocast(s)
 	return clean(allowed) or false, clean(on) or false
 end
 
--- The categories: every shown skill line (General, the class's), then the
--- pet's, each with the stock tab's icon: the skill line's, the class's for
--- General, the pet's (`game`; the glyph stands in without one).
+-- The categories, as the stock (Camelot) book's tabs: every shown skill line
+-- (General, the class's), then the pet's, each with its tab's icon: the skill line's,
+-- the class's for General, the pet's (`game`; none for a pet without one).
 local function categories()
 	local list = {}
 	for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
 		local info = C_SpellBook.GetSpellBookSkillLineInfo(i)
 		if info and not info.shouldHide then
 			local class = i == 1 and C_SpellBook.GetClassSkillLineInfo and C_SpellBook.GetClassSkillLineInfo()
-			list[#list + 1] = { key = "line" .. i, label = info.name, icon = i == 1 and "compact" or "bolt",
+			list[#list + 1] = { key = "line" .. i, label = info.name,
 				game = class and class.iconID or info.iconID,
 				offset = info.itemIndexOffset, n = info.numSpellBookItems, bank = bank("Player") }
 		end
 	end
 	local pet = C_SpellBook.HasPetSpells()
 	if pet and pet > 0 and (not PetHasSpellbook or PetHasSpellbook()) then
-		list[#list + 1] = { key = "pet", label = PET or "Pet", icon = "star", game = GetPetIcon and GetPetIcon() or nil,
+		list[#list + 1] = { key = "pet", label = PET or "Pet", game = GetPetIcon and GetPetIcon() or nil,
 			offset = 0, n = pet, bank = bank("Pet") }
 	end
 	return list
-end
-
--- The nav rows wear the game's icons, not glyphs (the Two Families Rule, as
--- the professions rail): untinted, the client's border cropped.
-local function gameIcons(cats)
-	for i, c in ipairs(cats) do
-		local b = f.navButtons[i]
-		if b and c.game then
-			W.Uncolor(b.Icon)
-			b.Icon:SetVertexColor(1, 1, 1, 1)
-			b.Icon:SetTexture(c.game)
-			b.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-			b.Icon:SetSize(20, 20)
-		elseif b then
-			b.Icon:SetTexCoord(0, 1, 0, 1)
-			b.Icon:SetSize(16, 16)
-		end
-	end
 end
 
 local FLYOUT = Enum.SpellBookItemType.Flyout
@@ -67,14 +49,18 @@ local open = {} -- the flyouts opened, by flyout ID
 
 -- A flyout's spells the player knows, as entries of the book (each is a
 -- loose spell of the book too): GetFlyoutSlotInfo, as the stock flyout.
+-- A flyout's spell is hidden from the book: found only with includeHidden,
+-- and never as the flyout holding it (includeFlyouts is on by default, which
+-- listed the flyout itself once per spell).
 local function flyoutSpells(id)
 	local out = {}
 	local _, _, n = GetFlyoutInfo(id)
 	for i = 1, n or 0 do
 		local spellID, _, known = GetFlyoutSlotInfo(id, i)
-		local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(spellID)
-		local info = known and slot and C_SpellBook.GetSpellBookItemInfo(slot, bank)
-		if info then out[#out + 1] = { slot = slot, bank = bank, info = info, member = true } end
+		local slot, bank
+		if known then slot, bank = C_SpellBook.FindSpellBookSlotForSpell(spellID, true, false) end
+		local info = slot and C_SpellBook.GetSpellBookItemInfo(slot, bank)
+		if info and info.itemType ~= FLYOUT then out[#out + 1] = { slot = slot, bank = bank, info = info, member = true } end
 	end
 	return out
 end
@@ -119,7 +105,7 @@ local function detail(s)
 	end
 	if info.isPassive then return "Passive" end
 	if info.itemType == FLYOUT then
-		local _, _, n = GetFlyoutInfo(info.actionID)
+		local n = #flyoutSpells(info.actionID) -- the known ones, as its click lists them
 		return n == 1 and "1 spell" or ("%d spells"):format(n or 0)
 	end
 	local parts = {}
@@ -336,14 +322,14 @@ local function paintList(list)
 		r:ClearAllPoints()
 		-- A flyout's spells sit indented under it.
 		local indent = s.member and 24 or 0
-		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad + c * (col + COL_GAP) + indent, -(24 + (k - 1) * ROW_H))
+		r:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad + c * (col + COL_GAP) + indent, -(TOP + (k - 1) * ROW_H))
 		r:SetWidth(col - indent)
 		paintRow(r, s)
 		r:Show()
 	end
 	for i = #list + 1, #rows do rows[i]:Hide() end
 	f.psEmpty:SetShown(#list == 0)
-	return 24 + half * ROW_H
+	return 2 * TOP + half * ROW_H
 end
 
 -- The stock book shows the assisted combat spell above its pages
@@ -415,27 +401,22 @@ local function optionsItems(self)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", searchPlaceholder = "Search spells", onSearch = function(text)
+	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 720, height = 600, searchPlaceholder = "Search spells", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then M.Show() end
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "spellbook", optionsItems)
-	-- The subject block names the window, in place of Polestar's lockup.
-	local b = ns.SubjectBlock(f)
-	f.psClass, f.psName, f.psLine = b.icon, b.name, b.line
-	-- The stock book's settings act on the list: a filter at the end of the
-	-- search row, as Crafting's, its glyph in the accent while one is off its default.
-	local top = W.SHELL.header - 30
-	f.Search:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -(W.SHELL.side + 30 + 6), -top)
-	f.psFilter = W.IconButton(f.Sidebar, "sliders", 30, "Filter", function(self)
+	ns.Compact(f)
+	-- The stock book's settings act on the list: a filter after the search on
+	-- the tab row, as Crafting's, its glyph in the accent while one is off its default.
+	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		W.ShowMenu(self, (filterItems()), { minWidth = 200 })
 	end, 14)
-	f.psFilter:SetPoint("TOPRIGHT", f.Sidebar, "TOPRIGHT", -W.SHELL.side, -top)
 	Polestar.Theme.Skin(f.psFilter, "editbox")
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
-	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", W.SHELL.pad, -24)
+	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -TOP)
 	f.psEmpty:SetText("No spells here.")
 	-- The stock window's sounds: it never opens now to play them.
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.UI_CLASS_TALENT_OPEN_WINDOW) end)
@@ -448,27 +429,28 @@ local function refresh()
 	local found = false
 	for _, c in ipairs(cats) do if c.key == section then found = true end end
 	if not found then section = cats[1] and cats[1].key end
-	f.psName:SetText(UnitClass("player"))
-	f.psLine:SetText(("Level %d"):format(UnitLevel("player")))
-	f.psClass:SetAtlas(GetClassAtlas(strlower(select(2, UnitClass("player")))))
 	W.SetIconState(f.psFilter, select(2, filterItems()))
+	-- The stock book's category tabs on top, each with its icon (the Two
+	-- Families Rule): the class's for General, each skill line's, the pet's.
+	local tabs = {}
+	for i, c in ipairs(cats) do tabs[i] = { key = c.key, label = c.label, icon = c.game } end
+	-- The subject (the character) leads the subtitle.
+	local who = ("Level %d %s · "):format(UnitLevel("player"), (UnitClass("player")))
 	local list = {}
 	if query ~= "" then
 		for _, c in ipairs(cats) do spells(c, list, query) end
-		W.ShellNav(f, cats, nil, function(k) section = k; f.Search:SetText(""); M.Show() end)
-		W.ShellTitle(f, "Search", (#list == 1 and "1 spell" or #list .. " spells") .. " match.")
+		ns.TopNav(f, tabs, nil, function(k) section = k; f.Search:SetText(""); M.Show() end)
+		W.ShellTitle(f, "Search", who .. (#list == 1 and "1 spell" or #list .. " spells") .. " match.")
 	else
 		local cur
 		for _, c in ipairs(cats) do if c.key == section then cur = c end end
-		W.ShellNav(f, cats, section, function(k) section = k; M.Show() end)
+		ns.TopNav(f, tabs, section, function(k) section = k; M.Show() end)
 		if cur then spells(cur, assisted(cur, list)) end
 		-- An opened flyout's spells are not counted again.
 		local n = 0
 		for _, s in ipairs(list) do if not s.member then n = n + 1 end end
-		W.ShellTitle(f, cur and cur.label or "", n == 1 and "1 spell." or n .. " spells.")
+		W.ShellTitle(f, "Spellbook", who .. (n == 1 and "1 spell." or n .. " spells."))
 	end
-	gameIcons(cats)
-	W.ShellTabs(f, nil)
 	ns.Footer(f, {}, {})
 	W.ShellBody(f, paintList(list))
 end

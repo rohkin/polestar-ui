@@ -31,6 +31,8 @@
 - Fixed: the Polestar button above the game's World Map now closes it and opens Polestar's map, instead of leaving the game's open until next time.
 - Fixed: hiding Polestar no longer hides Polestar: UI's windows and their dialogs; they replace the game's, so they stay.
 - Fixed: a flood of secret-value errors from the unit frames' segments and from the target and focus cast bars in combat.
+- Talents and Spellbook are smaller (780×650 and 720×600): a slim header, the specs and spell categories as tabs along the top, and the search on the tab row.
+- Opening a flyout in the Spellbook (a warlock's Summon Demon) lists its spells, not the flyout again.
 
 ## 0.0.6
 

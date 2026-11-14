@@ -1,7 +1,7 @@
 --@ title: Spellbook: search
 --@ roots: PolestarUISpellbook
 --@ stubs: stub_spellbook.lua
--- The sidebar search looks through every category. Docked: at the stock left edge, beside a stock panel while it is open, closed for a newer one beside it that does not fit, and not draggable.
+-- The search on the tab row looks through every category. Docked: at the stock left edge, beside a stock panel while it is open, closed for a newer one beside it that does not fit, and not draggable.
 PolestarUI.Show("spellbook")
 local s = PolestarUISpellbook.Search
 s:SetText("fire")

@@ -17,7 +17,7 @@ stub.inCombat = false
 assert(not stub.blocked, "spell pickup blocked in combat")
 stub.RunScript(row, "OnDragStart")
 assert(stub.pickedSpell, "no spell pickup out of combat")
-assert(PolestarUISpellbook.psClass:GetAtlas() == "classicon-mage", "class icon not the class atlas")
+assert(PolestarUISpellbook.Subtitle:GetText():find("^Level 24 Mage · "), "no class and level in the subtitle: " .. PolestarUISpellbook.Subtitle:GetText())
 -- The assisted combat spell, where the client has one, comes first under General, as the stock book shows it above its pages.
 AssistedCombatManager = { HasActionSpell = function() return true end, GetActionSpellID = function() return 111 end }
 PolestarUI.Show("spellbook", "line1")

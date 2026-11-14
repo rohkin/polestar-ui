@@ -7,7 +7,7 @@ function GetClassAtlas(className) return ("classicon-%s"):format(className) end
 Enum.SpellBookSpellBank = { Player = 0, Pet = 1 }
 Enum.SpellBookItemType = { None = 0, Spell = 1, FutureSpell = 2, PetAction = 3, Flyout = 4 }
 
--- { name, rank, cost, cast ms, passive, type, low rank, -, loose flyout member }
+-- { name, rank, cost, cast ms, passive, type, low rank, -, loose flyout member: its flyout's slot, flyout ID }
 local BOOK = {
 	{ "Attack", "", 0, 0 },
 	{ "Shoot", "", 0, 1500 },
@@ -25,15 +25,22 @@ local BOOK = {
 	{ "Improved Fireball", "Rank 3", 0, 0, true },
 	{ "Pyroblast", "Rank 1", 125, 6000 },
 	-- A flyout (its two portals, each a loose spell of the book too).
-	{ "Portals", "", 0, 0, false, 4 },
-	{ "Portal: Stormwind", "", 850, 10000, false, 1, false, nil, true },
-	{ "Portal: Ironforge", "", 850, 10000, false, 1, false, nil, true },
+	{ "Portals", "", 0, 0, false, 4, false, nil, nil, 1 },
+	{ "Portal: Stormwind", "", 850, 10000, false, 1, false, nil, 16 },
+	{ "Portal: Ironforge", "", 850, 10000, false, 1, false, nil, 16 },
+	-- stub.warlock: Summon Demon, a flyout whose spells are hidden from the
+	-- book (found only with includeHidden); Succubus not learnt, not in the book.
+	{ "Summon Demon", "", 0, 0, false, 4, false, nil, nil, 2 },
+	{ "Summon Imp", "", 64, 10000, false, 1, false, nil, 19 },
+	{ "Summon Voidwalker", "", 120, 10000, false, 1, false, nil, 19 },
 }
+local FLYOUTS = { [1] = { "Portals", { 117, 118 } }, [2] = { "Summon Demon", { 120, 121, 199 } } }
 local LINES = { { "General", 0, 3 }, { "Arcane", 3, 6 }, { "Fire", 9, 9 } }
+local function lines() return stub.warlock and { LINES[1], LINES[2], LINES[3], { "Demonology", 18, 3 } } or LINES end
 C_SpellBook = {}
-function C_SpellBook.GetNumSpellBookSkillLines() return #LINES end
+function C_SpellBook.GetNumSpellBookSkillLines() return #lines() end
 function C_SpellBook.GetSpellBookSkillLineInfo(i)
-	local l = LINES[i]
+	local l = lines()[i]
 	return l and { name = l[1], iconID = 135900 + i, itemIndexOffset = l[2], numSpellBookItems = l[3], shouldHide = false }
 end
 -- The stock tabs' icons: the class's skill line for General, the pet's.
@@ -58,16 +65,32 @@ function C_SpellBook.GetSpellBookItemInfo(slot, bank)
 	local s = (bank == 1 and PET_BOOK or BOOK)[slot]
 	if not s then return end
 	local flyout = s[6] == 4
-	return { actionID = flyout and 1 or 100 + slot, spellID = not flyout and 100 + slot or nil, itemType = s[6] or 1, name = s[1], subName = s[2], iconID = 1,
+	return { actionID = flyout and s[10] or 100 + slot, spellID = not flyout and 100 + slot or nil, itemType = s[6] or 1, name = s[1], subName = s[2], iconID = 1,
 		isPassive = s[5] or false, isOffSpec = false }
 end
 function C_SpellBook.IsSpellBookItemLowRank(slot) return BOOK[slot] and BOOK[slot][7] or false end
 function C_SpellBook.IsSpellBookItemLooseFlyoutMember(slot, bank) return bank == 0 and BOOK[slot] and BOOK[slot][9] or false end
--- Flyout 1, the portals: the book's slots 17 and 18.
-function GetFlyoutInfo(id) if id == 1 then return "Portals", "Open a portal for your group.", 2, true end end
-function GetFlyoutSlotInfo(id, i) local slot = 16 + i; return 100 + slot, 100 + slot, true, BOOK[slot][1], 0 end
+-- Flyout 1, the portals (the book's slots 17 and 18); 2, Summon Demon.
+function GetFlyoutInfo(id) local f = FLYOUTS[id]; if f then return f[1], "", #f[2], true end end
+function GetFlyoutSlotInfo(id, i)
+	local spell = FLYOUTS[id][2][i]
+	local s = BOOK[spell - 100]
+	return spell, spell, s ~= nil, s and s[1] or "Summon Succubus", 0
+end
 function C_SpellBook.GetSpellBookItemLevelLearned(slot) return 26 end
-function C_SpellBook.FindSpellBookSlotForSpell(id) return id - 100, 0 end
+-- As the client: a flyout's spell is hidden from the book, so without
+-- includeHidden the search finds the flyout holding it (includeFlyouts, on
+-- by default), not the spell.
+function C_SpellBook.FindSpellBookSlotForSpell(id, includeHidden, includeFlyouts)
+	local slot = id - 100
+	local s = BOOK[slot]
+	if not s then return end
+	if s[9] and not includeHidden then
+		if includeFlyouts == false then return end
+		return s[9], 0
+	end
+	return slot, 0
+end
 function C_SpellBook.GetSpellBookItemLink(slot) return "|Hspell:" .. (100 + slot) .. "|h[" .. BOOK[slot][1] .. "]|h" end
 -- The client blocks a spell pickup from addon code in combat (ADDON_ACTION_BLOCKED).
 function C_SpellBook.PickupSpellBookItem(slot, bank)
@@ -78,11 +101,13 @@ function C_SpellBook.PickupSpellBookItem(slot, bank)
 	stub.pickedSpell = slot
 end
 C_Spell = C_Spell or {}
+-- A spell by ID; the warlock's slots (19 on) only for stub.warlock: the professions stub uses those IDs.
+local function spell(id) local slot = id - 100; if slot > 18 and not stub.warlock then return nil end return BOOK[slot] end
 function C_Spell.GetSpellPowerCost(id)
-	local s = BOOK[id - 100]
+	local s = spell(id)
 	return s and s[3] > 0 and { { name = "MANA", cost = s[3] } } or {}
 end
-function C_Spell.GetSpellInfo(id) local s = BOOK[id - 100]; return s and { castTime = s[4] } end
+function C_Spell.GetSpellInfo(id) local s = spell(id); return s and { castTime = s[4] } end
 MANA, PET = "Mana", "Pet"
 ChatFrameUtil = { InsertLink = function(link) stub.linked = link end }
 
