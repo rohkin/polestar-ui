@@ -56,6 +56,8 @@ assert(select(2, x(row("Mira").Client)) == select(2, x(row("Jon").Client)) and r
 -- second column, the same x on every row.
 assert(row("Aelric").Ground:IsShown() and not row("Friends 5/7").Ground:IsShown(), "cards, plain headings")
 assert(row("Aelric").Name:GetPoint(1) == "BOTTOMLEFT" and row("Aelric").Sub:GetPoint(1) == "TOPLEFT", "two-line row")
+-- Names and notes sit on a font family: the engine draws each script in its face, nothing reads the name.
+assert((row("Aelric").Name):GetFontObject() and (row("Aelric").Name):GetFontObject().members and (row("Aelric").Sub):GetFontObject() and (row("Aelric").Sub):GetFontObject().members, "friend name not on the font family")
 assert(row("Jon").Name:GetPoint(1) == "LEFT" and not row("Jon").Sub:IsShown() and row("Jon").Where:GetText() == "In the Battle.net app", "one-line row")
 assert(plain(row("Aelric").Sub:GetText()) == "Lvl 24 Paladin" and row("Aelric").Where:GetText() == "Elwynn Forest", "detail: " .. tostring(row("Aelric").Sub:GetText()))
 assert(row("Aelric").Sub:GetText():find("|c", 1, true), "class in colour")

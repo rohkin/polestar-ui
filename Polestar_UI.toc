@@ -6,6 +6,7 @@
 ## Category: Polestar
 ## Group: Polestar
 ## Dependencies: Polestar
+## OptionalDeps: Baganator
 ## IconTexture: Interface\AddOns\Polestar\Media\UI\logo
 ## SavedVariables: PolestarUIDB
 ## SavedVariablesPerCharacter: PolestarUICharDB
@@ -42,5 +43,12 @@ Modules\CastBars.lua
 Modules\CooldownViewer.lua
 Modules\ResourceDisplay.lua
 Modules\DamageMeter.lua
+Modules\Collections.lua
+Modules\GroupFinder.lua
+Modules\GroupFinderListing.lua
+Modules\GroupFinderBrowse.lua
+Modules\GroupFinderWho.lua
+Modules\Bags.lua
 Modules\Tooltips.lua
 Modules\Chat.lua
+Skins\Baganator.lua

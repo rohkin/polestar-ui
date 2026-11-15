@@ -20,15 +20,8 @@ local SECTIONS = {
 local f, section = nil, "PaperDollFrame"
 local M = {}
 
--- The player's name (UnitName, UnitPVPName) as last read out of combat: in
--- combat the client may hand our code a secret one, which tooltips and our
--- strings refuse (docs/CLIENT.md, rule 3). A nil is kept too.
-local known = {}
-local function playerText(fn)
-	local v = fn("player")
-	if not (issecretvalue and issecretvalue(v)) then known[fn] = v or false end
-	return known[fn] or nil
-end
+-- The player's name as last read out of combat (docs/CLIENT.md, rule 3).
+local playerText = ns.PlayerText
 
 ---------------------------------------------------------------------------
 -- Gear: the slot tiles (docs/DESIGN.md, "Slot Tile"), in the stock columns.
@@ -342,9 +335,7 @@ local function buildGear(body, width, pad)
 	local well = CreateFrame("Frame", nil, v)
 	well:SetPoint("TOPLEFT", v, "TOPLEFT", SLOT + 16, 0)
 	well:SetPoint("BOTTOMRIGHT", v, "TOPRIGHT", -(SLOT + 16), -colH)
-	local shade = W.Tex(well, "BACKGROUND", "glow")
-	shade:SetAllPoints(well)
-	W.Painter(shade, function(t) local r, g, b = Polestar.Theme.Color("shade"); t:SetVertexColor(r, g, b, 0.6) end)
+	ns.ModelShade(well)
 	-- The game's own character-sheet scene: its camera frames every race and
 	-- form, and the template turns, zooms and pans it. Our frame, their template.
 	local m = CreateFrame("ModelScene", nil, well, "PanningModelSceneMixinTemplate")

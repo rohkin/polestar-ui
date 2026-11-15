@@ -3,9 +3,10 @@
 WoW (Forever client) addon: replaces stock Blizzard windows with Polestar's kit (`Polestar.Widgets`, `Polestar.Theme`). Lua 5.1, tested in Node under a client stub. Depends on the Polestar addon.
 
 ## Layout
-- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, Guild, Macros, Inspect, HUD, UnitFrames, Minimap, ActionBars, Auras, CastBars, CooldownViewer, ResourceDisplay, DamageMeter, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
+- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, Guild, Macros, Inspect, HUD, UnitFrames, Minimap, ActionBars, Auras, CastBars, CooldownViewer, ResourceDisplay, DamageMeter, Collections, GroupFinder, GroupFinderListing, GroupFinderBrowse, GroupFinderWho, Bags, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
 - `docs/CLIENT.md`: client rules learnt from bugs (taint, secret values, secure buttons, doors). MANDATORY reading before any surface work; this file does not repeat them.
 - `docs/DESIGN.md`: shared sections (Replacement Contract, Shell, Components) plus the window index. Each window's entry: `docs/windows/<key>.md`.
+- `Skins/<Addon>.lua`: Polestar's look on another addon's frames (Baganator), loaded last, `## OptionalDeps`, a no-op without the addon; convention and the Baganator skin in `docs/skins.md`.
 - `.claude/skills/stock-to-polestar`: the process for a new window or reskin (produces a plan).
 - `.ref/wow-ui-source-forever`: stock Blizzard sources. Grep only.
 - Polestar itself: `../polestar` or `$POLESTAR_DIR` (`addon/`, shared stubs in `tests/lua/`).
@@ -35,11 +36,13 @@ Modules and state
 - `ns.WindowMenu(f, key, options?)`: the "..." menu left of Close: `options` (menu items, or `function(button)` returning them) first, a divider, then "Use game window"; sets `m.psFrame`, `f.psMenu`. A window has no other Options button.
 Docking
 - `ns.Dock(f)`: lays the window out as the stock panel manager does (the default); `ns.Docked()`, `ns.SetDocked(on)`, `ns.Relayout()`.
+- `ns.Float(f)`: a window that is no UI panel (Bags): never docked, first where the stock bags open, draggable, kept in `PolestarUIDB.pos[name]`.
 - `ns.DockFlyout(f, fly, overlap)`: a flyout outside a docked window's right edge counts in its width.
 - `ns.LinkPlace(win)` (Professions.lua): windows sharing a `psDockGroup` swap in place.
 Doors and secure parts
 - `ns.Doors(module, Name, {BINDING = fn}, microButton, onMicro)`: override-binding clicks plus a secure button over the micro button (shift-click = stock window).
 - `ns.Interaction(key, types, o)`: NPC window takes the interaction; `o = {frame, close, internal = {events}, bags, events = {show, hide}}` (events: fallback open/close on game events, once even if both fire); call from Enable; does nothing without the interaction manager (preview scenes without NPC stubs).
+- `ns.OpenBags(f)` / `ns.CloseBags(f)`: the bags an NPC window opens and closes with it (`o.bags`), `f` the opener: Polestar's Bags while on, else `OpenAllBags`/`CloseAllBags`.
 - `ns.Overlay(name, o)`: one secure button over a hovered target; `o = {enter, pickup, attrs, stale?, setup?}`; returns `place(t)`.
 Shell pieces
 - `ns.Plain(f, left?)`: a shell made with `sidebar = 0` loses its sidebar and Polestar's emblem; `f.Main` hangs off the window, `left` past its edge (a rail's width).
@@ -50,7 +53,7 @@ Shell pieces
 - `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
 - `ns.GameIcon(parent, layer)`: texture cropped of the client's icon border.
-- `ns.ItemWell(parent, size, kind?)`: inset icon well; returns `well, icon` (`well.Icon`).
+- `ns.ItemWell(parent, size, kind?, template?, name?)`: inset icon well; returns `well, icon` (`well.Icon`).
 - `ns.PaintItem(w, it)`: `it = {icon, quality, count, desat, unusable}` (nil empties); quality border from uncommon up.
 - `ns.ItemGrid(parent, cols, size, gap)`: frame; `grid.Layout(n)` shows n wells, returns them, fits height.
 - `ns.QualityRGB(q)`: item quality as r,g,b or nil.
@@ -67,15 +70,19 @@ Widgets
 - `ns.Stepper(parent, {get, set, max})`: -, count, +, Max; caller calls `s.Paint()` after its own changes.
 - `ns.ModalWith(spec, body)`: `W.Modal(spec)` with our frame (stepper, input) under its text. `ns.CloseModal(spec)`: closes Polestar's dialog while it still shows `spec` (a window's own dialog, from its OnHide).
 - `ns.TooltipHint(text)`: textMuted hint line ending the shown tooltip.
+- `ns.NameFont(fs)`: puts a string on the font family of its Polestar font (Latin Polestar's, Cyrillic/Hangul/Chinese the client's; the engine picks per glyph, no text read); follows every Polestar repaint (post-hook on `SetFont`); false without font families. `ns.NameText(fs, role, text)`: a player name through it, else the old scan. `ns.FontFamily(path, size, flags)`: the cached family.
 Restyle kit (art of ours on a stock frame, CLIENT.md rule 15; Tooltips, Chat)
 - `ns.FadeNine(holder, a)`: the NineSlice pieces keyed on `holder` at alpha `a`.
 - `ns.Hairlines(f, rel, make?)`: four hairline textures on `f` round `rel` (top, bottom, left, right; `make()` supplies them on a pooled menu); `ns.PaintHairlines(e, on, r, g, b, a)` shows, colours and sizes them to one pixel.
+- `ns.ModelShade(holder, layer?)`: the Model Well backdrop (Character, Collections): `glow` texture in `shade` at 60% over `holder`, no border.
 - `ns.PaintGround(fill, on, k?)`: `bg` at `Theme.GroundAlpha()` times `k` (0.85 = the tooltip look).
 HUD kit (`ns.HUD`, `Modules/HUD.lua`; takes secret values, follows every scheme and skin)
-- `H.Bar(parent)` (StatusBar on a progress track; `H.SetBarColor(b, r, g, b)`), `H.Segment(bar, token, alpha, back?)` (continues a fill, or eats into it from its end), `H.Text(parent, role, color)` (outlined; set values with SetFormattedText only), `H.Ground(f)`/`H.PaintGround(g, alpha, r?, g?, b?, a?)`, `H.Portrait(parent)`/`H.SetPortrait(p, unit)` (square 3D well).
+- `H.Bar(parent, trail?)` (StatusBar on a progress track; `trail`: a damage trail under the fill, `b.trail`; `H.SetBarColor(b, r, g, b)`), `H.SetTrail(b, v, snap, on, max)` (the value after a 0.4 s hold, then eased, drawn only past the value; `snap` sets it at once), `H.Segment(bar, token, alpha, back?)` (continues a fill, or eats into it from its end), `H.Text(parent, role, color)` (outlined; set values with SetFormattedText only), `H.Ground(f)`/`H.PaintGround(g, alpha, r?, g?, b?, a?)`, `H.Portrait(parent)`/`H.SetPortrait(p, unit)` (square 3D well).
 - `H.Face(fontString, role, on)` (a stock font string in Polestar's face, outlined, at the game's size; off gives it back), `H.GroundAlpha()` (the unit frames' Background opacity), `H.FillTexture()`.
 - `H.ClassColor(unit)` (nil while secret), `H.UnitColor(unit)` (theme accent, class colour with Polestar's "Class colour", danger/warning by reaction), `H.PowerColor(unit)`.
+- Frames of ours on UIParent take the stock equivalent's roleset (`SetRolesets`, out of combat, once; unit frames 'unitFrames').
 Values
+- `ns.PlayerText(fn)`: the player's name (`UnitName`, `UnitPVPName`) as last read out of combat.
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).
 Slash: `/pui` lists windows, `/pui <key> [on|off]`, `/pui dock on|off`.
 
@@ -87,14 +94,15 @@ Generic (Polestar `wow_stub.lua`, `stub_ui.lua`; `stub_client.lua`)
 - `stub.RunScript(frame, "OnTextChanged", ...)`: run a frame's script and hooks (type text, click: `stub.RunScript(btn, "OnClick")`).
 - `stub.inCombat = true`: `InCombatLockdown()` answers it. `stub.keys.shift = true`: `IsShiftKeyDown()`.
 - `geterrorhandler()` records into `stub.errors` (it does not raise); every scene ends with `stub.assertNoErrors()`, so an error Polestar catches (a module's Enable, any event handler) fails it (`tests/errors.test.js`).
-- `stub.cvars.<name> = "1"`; `stub.messages`: chat lines printed; `stub.frame(name)`; `stub.SECRET`: a secret value.
+- `stub.cvars.<name> = "1"`; `stub.messages`: chat lines printed; `stub.frame(name)`; `stub.SECRET`: a secret value; `stub.fontFamilies[name]`: families made (`fam.members`).
 - `stub.openMenu(owner, tag, labels)` / `stub.closeMenu()`, `stub.chatEvent`, `stub.activateChat`, `stub.makeChat`, `stub.chatBubble(name, text, x, y, forbidden)`, `stub.openOverflow()`, `stub.loadCombatLog()`, `stub.withShoppingTooltip()`: chat/tooltip scenes (`stub_chat.lua`, `wow_stub_local.lua`).
 Per window (set before `Show`, read after)
 - Crafting: `stub.openTradeSkill()` (TRADE_SKILL_SHOW then list update), `stub.enchanting = true`, results in `stub.crafted = {id, n}`, `stub.enchanted = {id, n, guid}`, `stub.closed`, `stub.unrouted[event]`.
 - NPC (`stub_npc.lua`): `stub.interact(type)`, `stub.endInteraction(type)`, `stub.npcClosed[CloseFn]` counts (`CloseMerchant`, `CloseTrainer`, `CloseMail`, `C_Bank.CloseBankFrame`), `stub.bagsOpen`/`stub.bagsOpener`, `stub.money`, `stub.bag`, `stub.unrouted[event]`.
 - Character: `stub.secretStats`, `stub.targeting`, `stub.cursorFits[slot]`. Spellbook: `stub.pet`, `stub.linked`. Talents: `stub.dual`, `stub.noPoints`, `stub.finishCommit()`.
 - Legacy: `stub.treePoints`, `stub.searched`, `stub.tracked`, `stub.modified`, `stub.finishLegacyCommit()`. World Map: `stub.watched`, `stub.abandoned`, `stub.shared`, `stub.inGroup`, `stub.xpMax`, `stub.maxLevel`, `stub.trivialOut`, `stub.caveListed`, `stub.chatOpen`. Professions: `stub.abandoned`.
-- Unit frames (`stub_unitframes.lua`, loaded for every scene): `stub.units[unit] = {name, level, class, player, reaction, classification, health, max, power, powerMax, powerType, heals, absorbs, healAbsorbs, dead, ghost, offline, tapped, threat}` (values come back as `stub.secret(v)`; `stub.reveal(v)`), `stub.unitWatch()` (re-runs the unit watch and state drivers), `stub.vehicle`, `stub.inRaid`, `stub.raidStyleParty`, `stub.updateParty()`, `stub.updateBosses()`; Edit Mode: `stub.enterEditMode()`, `stub.exitEditMode()`, `stub.moveSystem(frame, x, y, scale?)`, `stub.applyLayout({[frame] = {x, y, scale}})`, `stub.showPartyInEditMode`. Rule 16 calls on a stock unit frame and protected calls in combat error.
+- Bags (`stub_bags.lua`, after `stub_npc.lua`/`stub_auction.lua`): `stub.bags[bag][slot] = {icon, quality, count, locked, {quest, cooldown}}`, `stub.bagSlots`, `stub.newItems["bag:slot"]`, `stub.secretBags`, `stub.targeting`; results `stub.used` (UseContainerItem, errors with our code on the stack), `stub.picked`, `stub.sortedBags`, `stub.search`, `stub.stockShown[name]`, `stub.stockOpener()`; `stub.clickBackpack()` (shift: all bags), `stub.clickBagSlot(id)`, `stub.selectEnchant()` (opener `stub.dispatcher`). The slot template errors when our code writes a key its mixin reads, calls `SetBagID` or replaces one of its scripts, and takes left-ups only until `RegisterForClicks`.
+- Unit frames (`stub_unitframes.lua`, loaded for every scene): `stub.units[unit] = {name, level, class, player, reaction, classification, health, max, power, powerMax, powerType, heals, absorbs, healAbsorbs, dead, ghost, offline, tapped, threat}` (values come back as `stub.secret(v)`; `stub.reveal(v)`), `stub.unitWatch()` (re-runs the unit watch and state drivers), `stub.vehicle`, `stub.inRaid`, `stub.raidStyleParty`, `stub.updateParty()`, `stub.updateBosses()`; Edit Mode: `stub.enterEditMode()`, `stub.exitEditMode()`, `stub.moveSystem(frame, x, y, scale?)`, `stub.applyLayout({[frame] = {x, y, scale}})`, `stub.showPartyInEditMode`. Rule 16 calls on a stock unit frame and protected calls in combat error. `f:GetRolesetNames()` (`stub_client.lua`: `SetRolesets` records `f.rolesets` and errors in combat on a protected frame); `UnitPowerPercent`.
 Scene file: leading `--@ key: value` lines (`title`, `roots` = frames drawn, `stubs` = files in `tests/lua`, `saved` = saved-variable Lua); the rest is Lua run after login. `--@ panel` starts another panel (own roots/stubs/saved header). Asserts fail the scene.
 ```lua
 --@ title: Spellbook: search

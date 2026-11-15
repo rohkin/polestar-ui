@@ -33,7 +33,7 @@ local H = ns.HUD
 
 local M = { noun = "unit frames" }
 local KEY = "unitframes"
-local DEFAULTS = { ground = 0.6, portrait = true, powerText = false, sparkle = true, smooth = true }
+local DEFAULTS = { ground = 0.6, portrait = true, powerText = false, sparkle = true, smooth = true, trail = true }
 
 -- The body of a frame on TargetFrameTemplate (the target's, focus's and
 -- bosses'): where Edit Mode lays the target's and focus's Selection box
@@ -153,10 +153,22 @@ local function healthText(f, unit)
 	end
 end
 
+-- The power as the same statusTextDisplay asks: PERCENT and BOTH add the
+-- client's own percent (UnitPowerPercent on the 0-100 curve, secret-safe);
+-- otherwise the value.
 local function powerText(f, unit)
 	if not f.powerText then return end
 	if not opt("powerText") or not (GetCVar("statusText") == "1" or f.psHover) then return f.powerText:SetText("") end
-	f.powerText:SetFormattedText("%s", AbbreviateNumbers(UnitPower(unit)))
+	local mode = GetCVar("statusTextDisplay")
+	local pct = (mode == "PERCENT" or mode == "BOTH") and UnitPowerPercent and CurveConstants
+		and UnitPowerPercent(unit, nil, true, CurveConstants.ScaleTo100)
+	if pct and mode == "PERCENT" then
+		f.powerText:SetFormattedText("%.0f%%", pct)
+	elseif pct then
+		f.powerText:SetFormattedText("%s || %.0f%%", AbbreviateNumbers(UnitPower(unit)), pct)
+	else
+		f.powerText:SetFormattedText("%s", AbbreviateNumbers(UnitPower(unit)))
+	end
 end
 
 local RANKS = { worldboss = "Boss", rareelite = "Rare Elite", elite = "Elite", rare = "Rare" }
@@ -242,8 +254,8 @@ end
 -- incoming heals up to the missing health, shields up to what is still
 -- missing after them, heal absorbs up to the health, each netted against
 -- the incoming heals as stock shows them; and whether the shields (heal
--- absorbs) went past that (unused: no end glows). All secret: handed to
--- the bars unread. A client without the calculator: the plain totals.
+-- absorbs) went past that (the end glows). All secret: handed to the bars
+-- and glows unread. A client without the calculator: the plain totals.
 local calc
 local function prediction(unit)
 	if not (CreateUnitHealPredictionCalculator and UnitGetDetailedHealPrediction) then
@@ -263,6 +275,15 @@ local function prediction(unit)
 	return heals, absorbs, over, healAbsorbs, overHeal
 end
 
+-- Stock's end glows (UnitFrameHealPredictionBars_Update): shields past the
+-- missing health light the health bar's right end, heal absorbs past the
+-- health its left end. The flag is secret: SetAlphaFromBoolean takes it
+-- unread; a client without it shows none.
+local function glow(t, on, token)
+	t:SetVertexColor(Theme.Color(token))
+	if t.SetAlphaFromBoolean then t:SetAlphaFromBoolean(on, 1, 0) else t:SetAlpha(0) end
+end
+
 -- `snap`: another unit now (a new target): its bars jump, never slide.
 local ROLE_ICONS = { TANK = "roleicon-tiny-tank", HEALER = "roleicon-tiny-healer", DAMAGER = "roleicon-tiny-dps" }
 
@@ -277,7 +298,9 @@ local function paint(f, snap)
 	local r, g, b = H.UnitColor(unit, f.spec.party)
 	H.SetBarColor(f.Health, r, g, b)
 	f.Health:SetMinMaxValues(0, max)
-	H.SetValue(f.Health, UnitHealth(unit), smooth)
+	local health = UnitHealth(unit)
+	H.SetValue(f.Health, health, smooth)
+	H.SetTrail(f.Health, health, snap, opt("trail"), max)
 	if f.Health.psSpark then H.PaintSparkle(f.Health, opt("sparkle")) end
 	-- Incoming heals: the fill's own colour, lighter, continuing it.
 	local heals, absorbs, over, healAbsorbs, overHeal = prediction(unit)
@@ -288,6 +311,8 @@ local function paint(f, snap)
 	f.Absorb:SetValue(absorbs)
 	f.HealAbsorb:SetMinMaxValues(0, max)
 	f.HealAbsorb:SetValue(healAbsorbs)
+	glow(f.OverAbsorb, over, "text")
+	glow(f.OverHealAbsorb, overHeal, "danger")
 	H.SetBarColor(f.Power, H.PowerColor(unit))
 	H.SetTrack(f.Health, opt("ground"))
 	H.SetTrack(f.Power, opt("ground"))
@@ -441,12 +466,27 @@ local function build(spec)
 	if spec.vehicle then f:SetAttribute("toggleForVehicle", true) end
 	f.Ground = H.Ground(f)
 	if spec.portrait then f.portrait = H.Portrait(f, spec.slim) end
-	f.Health = H.Bar(f)
+	f.Health = H.Bar(f, true)
 	f.Health:SetClipsChildren(true) -- the heal and absorb segments end at the bar's ends
 	if spec.unit == "player" then H.Sparkle(f.Health) end
 	f.Heal = H.Segment(f.Health) -- coloured as the fill (paint)
 	f.Absorb = H.Segment(f.Heal, "text", 0.55)
 	f.HealAbsorb = H.Segment(f.Health, "shade", 0.55, true) -- health that heals must fill first: the fill darkened
+	-- The end glows (paint), over the segments: in Polestar's look a 2-unit
+	-- strip inside the bar's end, where stock's 16-unit glow overhangs it.
+	local glows = CreateFrame("Frame", nil, f.Health)
+	glows:SetAllPoints(f.Health)
+	glows:SetFrameLevel(f.Absorb:GetFrameLevel() + 1)
+	for _, g in ipairs({ { "OverAbsorb", "RIGHT" }, { "OverHealAbsorb", "LEFT" } }) do
+		local key, side = g[1], g[2]
+		local t = glows:CreateTexture(nil, "OVERLAY")
+		t:SetTexture(Theme.Media("white"))
+		t:SetWidth(2)
+		t:SetPoint("TOP" .. side, f.Health, "TOP" .. side, 0, 0)
+		t:SetPoint("BOTTOM" .. side, f.Health, "BOTTOM" .. side, 0, 0)
+		t:SetAlpha(0)
+		f[key] = t
+	end
 	f.Power = H.Bar(f)
 	if spec.unit == "player" then
 		f.Power:SetClipsChildren(true) -- a cost past the power ends at the bar's start
@@ -460,6 +500,7 @@ local function build(spec)
 	local small = spec.compact or spec.party
 	local on = spec.line and f or f.Health
 	f.Name = H.Text(on, small and "small" or "label", "text")
+	ns.NameFont(f.Name) -- a name in any script (Cyrillic, Hangul, Chinese), never read: it is secret in combat
 	if spec.level then f.levelText = H.Text(on, "small", "textDim") end
 	if spec.text then
 		f.healthText = H.Text(f.Health, small and "small" or "number", spec.party and "textDim" or "text")
@@ -546,6 +587,17 @@ local function veil(f, on)
 		local portrait = rawget(stock, "Portrait")
 		if portrait then portrait:SetShown(not on) end
 	end
+end
+
+-- The client's UI modes (a cutscene, a pet battle, a spectator view) hide
+-- frames by roleset (C_Roleset, Blizzard_UIModes): ours take the stock unit
+-- frames' "unitFrames" (PlayerFrame.xml, TargetFrame.xml, PartyFrame.xml), as
+-- oUF tags its own. Protected (rule 4): set out of combat, once; what hangs
+-- off ours (the aura rows) goes with them.
+local function roleset(f)
+	if f.psRoleset or not f.SetRolesets or InCombatLockdown() then return end
+	f:SetRolesets("unitFrames")
+	f.psRoleset = true
 end
 
 local function inset(l, t, w, h, i)
@@ -684,6 +736,7 @@ function M.Apply()
 	end
 	local on = ns.Enabled(KEY)
 	for _, f in ipairs(frames) do
+		roleset(f)
 		veil(f, on)
 		f.psPreview = nil
 		f:SetAttribute("unit", f.spec.unit)
@@ -878,6 +931,8 @@ local function buildOptions()
 		{ get = function() return opt("sparkle") end, set = function(v) setOpt("sparkle", v) end }))
 	f.smooth = row(W.Toggle(body, "Smooth bars", nil, "Health and power glide to a new value instead of jumping.", nil,
 		{ get = function() return opt("smooth") end, set = function(v) setOpt("smooth", v) end }))
+	f.trail = row(W.Toggle(body, "Damage trail", nil, "Health just lost stays red for a moment, then drains away.", nil,
+		{ get = function() return opt("trail") end, set = function(v) setOpt("trail", v) end }))
 	W.ShellBody(f, y)
 	return f
 end
@@ -887,7 +942,7 @@ function M.Show()
 	page:Show()
 	if page.Ground.Refresh then page.Ground:Refresh() end
 	if page.portrait.Refresh then page.portrait:Refresh() end
-	for _, k in ipairs({ "powerText", "sparkle", "smooth" }) do
+	for _, k in ipairs({ "powerText", "sparkle", "smooth", "trail" }) do
 		if page[k].Refresh then page[k]:Refresh() end
 	end
 end

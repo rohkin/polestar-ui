@@ -5,8 +5,9 @@ Camelot `FriendsFrame`: a Battle.net bar (status, BattleTag, its menu's
 Ignore List) and side tabs Friends, Recent Allies, Friend Requests and Raid
 (the user's screenshots), plus Quick Join and Recruit a Friend only where
 `C_SocialQueue.IsSystemEnabled` / `C_RecruitAFriend.IsSystemEnabled` (not
-seen on Forever). No Who tab (Who is `LFGVanilla`'s, `TOGGLEWHOTAB`) and no
-guild tab (`TOGGLEGUILDTAB` opens Communities): both stay the game's.
+seen on Forever). No Who tab (Who is `LFGVanilla`'s: `TOGGLEWHOTAB` opens our Group Finder's
+Who page, groupfinder.md) and no guild tab (`TOGGLEGUILDTAB` opens
+Communities: it stays the game's).
 `FriendsFrame`'s show and hide run `UpdateMicroButtons`, so it is never
 touched (CLIENT.md, rule 8): `TOGGLESOCIAL`, `TOGGLEFRIENDSTAB` and
 `TOGGLERAIDTAB` open ours through `ns.Doors` (keys only: Forever has no
@@ -131,6 +132,7 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   where the lock cannot be extended; "Groups" goes back),
   then "Ready check" (`DoReadyCheck`, leader or assistant; the stock raid
   manager's) and "Convert to party" (`AllowedToDoPartyConversion(false)`).
+- **Names:** a row's name and second line, and the raid roster's names, sit on a font family (`ns.NameFont`): Polestar's face for Latin, the client's for Cyrillic, Hangul and Chinese, picked per glyph without reading the text.
 - **Taint:** never `C_RecentAllies.TryRequestRecentAlliesData` (forbidden
   to addons: ADDON_ACTION_FORBIDDEN in game). The calls the API docs mark
   `HasRestrictions` (`C_FriendList.AddFriend`, `C_BattleNet.SearchFriends`

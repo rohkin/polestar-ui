@@ -135,7 +135,7 @@ the band's middle (the game's looks put the close button on the frame's
 corner).
 
 - **Size.** The smallest that fits the content at the compact grid: no
-  sidebar, a width that fits (Talents 780×650, Spellbook 720×600, Merchant 640×560, Trainer 560×560, Social 580×560, Bank 560×560, Macros 640×560, Mail 560×560, Gossip 520×400, Quest dialog 520×540, Character 700×540, Inspect 640×540, Guild 740×520, Professions and Crafting 792×600, Legacy 760×600, Auction House 880×600, World Map 900×600 map), height
+  sidebar, a width that fits (Talents 780×650, Spellbook 720×600, Merchant 640×560, Trainer 560×560, Social 580×560, Bank 560×560, Bags 484 wide (its grid) and as tall as its bags (600 at most), Macros 640×560, Mail 560×560, Gossip 520×400, Quest dialog 520×540, Character 700×540, Inspect 640×540, Guild 740×520, Professions and Crafting 792×600, Legacy 760×600, Collections 780×540, Group Finder 620×560, Auction House 880×600, World Map 900×600 map), height
   600 or so at most so it never covers the guide window at default scale.
 - **Page nav (no sidebar).** Where the stock window has **text tabs** (top or
   bottom: Talents, Spellbook, Character, Inspect, Social, Bank, Macros, Mail,
@@ -143,7 +143,7 @@ corner).
   keeping each page's state (active, a count, a warning dot, locked with its
   tooltip), with the stock tab's icon before the label where it has one; the
   search (and its filter) moves to the tab row's right end. Where the stock
-  window has **icon side-tabs** (Guild, Professions and Crafting, Legacy), a
+  window has **icon side-tabs** (Guild, Professions and Crafting, Legacy, Collections, Group Finder), a
   slim 48px rail of those icons only (`ns.GameRail(..., { slim = true })`),
   each label in its tooltip, from the band's line down. A page's own views
   are the tab row then.
@@ -209,6 +209,7 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 | Guild (`CommunitiesFrame`) | medium | built | [windows/guild.md](windows/guild.md) |
 | Merchant (`MerchantFrame`) | medium | built | [windows/merchant.md](windows/merchant.md) |
 | Bank (`BankFrame`) | medium | built | [windows/bank.md](windows/bank.md) |
+| Bags (`ContainerFrameCombinedBags`, `ContainerFrame1`..`N`) | high | building (stage 1: one grid, doors; sections, strip actions and marks planned) | [windows/bags.md](windows/bags.md) |
 | Mail (`MailFrame`, `OpenMailFrame`) | low | built | [windows/mail.md](windows/mail.md) |
 | Auction House (`AuctionHouseFrame`) | medium | built | [windows/auction.md](windows/auction.md) |
 | Trainer (`ClassTrainerFrame`) | medium | built | [windows/trainer.md](windows/trainer.md) |
@@ -220,6 +221,8 @@ Risk. Sizes are UI units at scale 1, on the shell grid.
 | Game menu (`GameMenuFrame`) | high | dropped | [windows/gamemenu.md](windows/gamemenu.md) |
 | Tooltips (`GameTooltip` and the stock tooltips) | low | built | [windows/tooltips.md](windows/tooltips.md) |
 | Chat (`ChatFrame1`..`ChatFrameN`, the whisper windows) | medium | built | [windows/chat.md](windows/chat.md) |
+| Collections (`CollectionsJournal`, Blizzard_Collections) | high | built | [windows/collections.md](windows/collections.md) |
+| Group Finder (`LFGParentFrame`, Blizzard_GroupFinder_VanillaStyle) | high | built | [windows/groupfinder.md](windows/groupfinder.md) |
 
 The World Map and Quest Log share one entry (`worldmap.md`, also the quest log's). Each
 new window gets its own file in `docs/windows/` and a row here.
@@ -239,7 +242,7 @@ hideFunc })`, the manager's own API, which replaces the stock entry), and
 where Forever also routes the open through `GameEvent` (`TRAINER_SHOW`,
 `AUCTION_HOUSE_SHOW`/`CLOSED`) that route is stopped
 (`GameEvent.UnregisterInternalEvent`). Ours opens the bags as the stock
-`OnShow` did (`OpenAllBags`), closes them as it hides, and ends the
+`OnShow` did (`ns.OpenBags`: Polestar's Bags while on, else `OpenAllBags`), closes them as it hides (`ns.CloseBags`), and ends the
 interaction when the player closes it (`C_PlayerInteractionManager.ClearInteraction`
 or the stock close call), never twice when the game ended it. Off waits for
 `/reload` (`reloadOff`): routed back from our code, the stock window would open

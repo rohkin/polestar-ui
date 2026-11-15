@@ -53,3 +53,17 @@ assert(not over:IsShown(), "over the bags after closing")
 stub.interact(T.Auctioneer)
 hover(axe)
 stub.RunScript(over, "PostClick", "RightButton")
+--@ panel
+--@ roots: PolestarUIAuction, PolestarUIBags
+--@ stubs: stub_npc.lua, stub_auction.lua, stub_bags.lua
+-- With Polestar's bags: the auction house opens ours (ns.OpenBags), and our slot, the stock template, fires the same EnterButton on hover, so the sell button lands on it. Shown last: Linen Cloth put on the Sell page from our bags.
+local T = Enum.PlayerInteractionType
+stub.interact(T.Auctioneer)
+local bags = PolestarUIBags
+assert(bags and bags:IsShown(), "the auction house did not open our bags")
+local linen = PolestarUIBagsItem1
+stub.RunScript(linen, "OnEnter")
+local over = PolestarUIAuctionBagSlot
+assert(over and over:IsShown() and over.psTarget == linen, "not over our slot")
+stub.RunScript(over, "PostClick", "RightButton")
+assert(tostring(PolestarUIAuction.psSell.Name:GetText()) == "Linen Cloth", "not put on the Sell page")

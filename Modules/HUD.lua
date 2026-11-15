@@ -33,16 +33,52 @@ H.FillTexture = fillTexture
 
 -- A bar on a track (the scheme's ground at H.SetTrack's alpha, else
 -- Polestar's progress wash): a StatusBar, so it takes the client's secret
--- health and power.
-function H.Bar(parent)
+-- health and power. With `trail`, a damage trail (b.trail, H.SetTrail) sits
+-- between the track and the fill: a second StatusBar under the bar, so the
+-- bar's fill covers it wherever both reach. It is drawn only past the bar's
+-- new value (t.psAim, an unseen bar set at once, which holds the track): while
+-- the fill eases up on a heal (Smooth bars) no red shows ahead of it.
+local function paintTrail(t)
+	local r, g, bl = Theme.Color("danger")
+	t:SetStatusBarColor(r, g, bl, t.psOn == false and 0 or 1)
+end
+
+function H.Bar(parent, trail)
+	local aim = trail and CreateFrame("StatusBar", nil, parent)
 	local b = CreateFrame("StatusBar", nil, parent)
 	b:SetMinMaxValues(0, 1)
 	b:SetValue(0)
-	b.Track = b:CreateTexture(nil, "BACKGROUND")
+	if aim then
+		local clip = CreateFrame("Frame", nil, aim)
+		local t = CreateFrame("StatusBar", nil, clip)
+		-- Levels set before the bar has children, so they stay above it.
+		local level = b:GetFrameLevel()
+		aim:SetFrameLevel(level)
+		clip:SetFrameLevel(level + 1)
+		t:SetFrameLevel(level + 1)
+		b:SetFrameLevel(level + 2)
+		for _, s in ipairs({ aim, t }) do
+			s:SetAllPoints(b)
+			s:SetMinMaxValues(0, 1)
+			s:SetValue(0)
+		end
+		aim:SetStatusBarTexture(WHITE)
+		aim:SetStatusBarColor(1, 1, 1, 0)
+		clip:SetPoint("TOPLEFT", aim:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+		clip:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
+		clip:SetClipsChildren(true)
+		t.psAim = aim
+		b.trail = t
+	end
+	b.Track = (aim or b):CreateTexture(nil, "BACKGROUND")
 	b.Track:SetTexture(WHITE)
 	b.Track:SetAllPoints(b)
 	W.Painter(b, function(bar)
 		bar:SetStatusBarTexture(fillTexture())
+		if bar.trail then
+			bar.trail:SetStatusBarTexture(fillTexture())
+			paintTrail(bar.trail)
+		end
 		if tracks[bar] then
 			local r, g, b = Theme.Color("bg")
 			bar.Track:SetVertexColor(r, g, b, tracks[bar])
@@ -98,6 +134,32 @@ function H.SetValue(b, v, smooth)
 	local ease = Enum and Enum.StatusBarInterpolation
 	if not ease then return b:SetValue(v) end
 	b:SetValue(v, smooth and ease.ExponentialEaseOut or ease.Immediate)
+end
+
+-- The damage trail: the bar's new value, given to b.trail after a hold and
+-- then eased (H.SetValue). On a loss the fill drops and the trail, still at
+-- the old value, shows the lost health in `danger` until it drains; on a gain
+-- the trail's end is below the new value, where it is clipped (t.psAim takes
+-- the value at once), so it catches up unseen even while the fill eases. So no
+-- value is compared (secret in combat, CLIENT.md rule 3): a secret is only kept
+-- and handed to SetValue later. `snap` (another unit) sets it at once; `on`
+-- false keeps it clear. `max`: the bar's maximum, given to both at once.
+local TRAIL_HOLD = 0.4
+
+function H.SetTrail(b, v, snap, on, max)
+	local t = b.trail
+	t:SetMinMaxValues(0, max)
+	t.psAim:SetMinMaxValues(0, max)
+	H.SetValue(t.psAim, v)
+	t.psValue = v
+	if t.psOn ~= on then t.psOn = on; paintTrail(t) end
+	if snap or not (C_Timer and C_Timer.After) then return H.SetValue(t, v) end
+	if t.psWait then return end -- the timer due takes the latest value
+	t.psWait = true
+	C_Timer.After(TRAIL_HOLD, function()
+		t.psWait = nil
+		H.SetValue(t, t.psValue, true)
+	end)
 end
 
 -- The sparkle: the constellation of Polestar's night-sky stars

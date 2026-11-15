@@ -84,8 +84,13 @@ words.
   in `textMuted`. Incoming heals continue the fill in its own colour, 45%
   toward white at 70%; shields (absorbs) after them in `text` at 55%; heal
   absorbs eat into the fill from its end in `shade` at 55% (the fill
-  darkened). There are no over-absorb end glows (no white gradient at a
-  bar's end).
+  darkened). End glows, as stock's (`OverAbsorbGlow`,
+  `OverHealAbsorbGlow`): shields past the missing health light a 2-unit
+  strip inside the health bar's right end in `text`, heal absorbs past the
+  health one inside its left end in `danger` (stock's 16-unit additive glow
+  overhangs the bar's end; ours stay inside it). The client's secret
+  "clamped" flags go straight into `SetAlphaFromBoolean`; a client without it
+  shows none.
 - Sparkle (the "Sparkle" setting, on): Polestar's night-sky stars
   (`Theme.Media("band-stars")`) on the player frame only: the whole constellation (band x 655-945, y 12-76) at the bar's right end, filling its full height, unstretched (cropped from its left if the bar is narrower), its left quarter a second texture fading to clear (`SetGradient`), static, in the `star` token with its alpha (Halo and Hearth have none on their band, so
   none here).
@@ -94,6 +99,20 @@ words.
   the client's own easing, which takes secrets); a new unit in a frame
   (target, focus, roster, pet, vehicle changes) and the targets of target
   snap. Everything hanging off a fill rides along.
+- Damage trail (the "Damage trail" setting, on): health just lost stays in
+  `danger` for a moment, then drains to the new value. A second StatusBar
+  (`bar.trail`, under the health bar) is given the same secret health 0.4 s
+  later and eased (`ExponentialEaseOut`; no interpolation: it jumps). It is
+  drawn only past the new health: a clip frame anchored to the fill edge of an
+  unseen bar (`trail.psAim`, holding the track) that takes the health at once,
+  one maximum for all three (`H.SetTrail(..., max)`). On a loss the fill drops
+  and the trail shows the lost chunk; on a gain its end is below the new
+  health, so no red shows ahead of a fill easing up (Smooth bars: before the
+  clip, a heal right after a hit showed a red sliver at the bar's right end
+  until the fill caught up). No value is compared or subtracted, so it
+  works in combat the same as out. A new unit in a frame snaps it. Stock's
+  `AnimatedHealthLossMixin` (player frame) does the maths on health, which
+  addon code cannot in combat.
 - Power cost (the player's frame): while the player casts, the spell's cost
   in the bar's power (`C_Spell.GetSpellPowerCost` on `UNIT_SPELLCAST_START`)
   eats into the power fill from its end in `shade` at 55% (darkened: the
@@ -140,11 +159,11 @@ stand in with the player too, and go back to their units as it closes.
 | Stock | Ours |
 |---|---|
 | Health and power bars, values | ours, from the client's secret values (StatusBar, SetFormattedText, AbbreviateNumbers, UnitHealthPercent) |
-| Status text: `statusText` (always or on mouse-over), `statusTextDisplay` (NUMERIC, PERCENT, BOTH, NONE) | the same CVars: NUMERIC "12.4K / 20.0K", PERCENT "62%", BOTH "12.4K \| 62%" (SetFormattedText, the pipe escaped); NONE (the game's default, with `statusText` 0) is NUMERIC on mouse-over, as stock; a party block always shows its percent. Power text follows them too, off by default (the "Power text" setting) |
+| Status text: `statusText` (always or on mouse-over), `statusTextDisplay` (NUMERIC, PERCENT, BOTH, NONE) | the same CVars: NUMERIC "12.4K / 20.0K", PERCENT "62%", BOTH "12.4K \| 62%" (SetFormattedText, the pipe escaped); NONE (the game's default, with `statusText` 0) is NUMERIC on mouse-over, as stock; a party block always shows its percent. Power text follows them too, off by default (the "Power text" setting): PERCENT "65%", BOTH "2600 | 65%"\| 65%" (`UnitPowerPercent` on `CurveConstants.ScaleTo100`, secret-safe), else the value |
 | Dead, Ghost, Offline | the health text says so; bar in textMuted |
 | Name, level, `??`, elite/rare/boss dragon | name, level, rank word; the stock skull also shows (Contextual layer) |
 | Portrait | square 3D model (2D game portrait while the unit is out of sight); the setting turns it off. The model loads only for another unit (its GUID; while that is secret, on the events that change the unit), its portrait camera set before `SetUnit` and again on `OnModelLoaded`, kept at alpha 0 until then (a quarter second at most), so the unframed model never shows |
-| Heal prediction, absorbs, heal absorbs | the client's calculator (`CreateUnitHealPredictionCalculator`, `UnitGetDetailedHealPrediction`): incoming heals up to the missing health, shields up to what is still missing after them, heal absorbs up to the health, netted against the heals (stock's maths, done by the client on secrets); no over-absorb end glow. Without the calculator: the plain totals |
+| Heal prediction, absorbs, heal absorbs | the client's calculator (`CreateUnitHealPredictionCalculator`, `UnitGetDetailedHealPrediction`): incoming heals up to the missing health, shields up to what is still missing after them, heal absorbs up to the health, netted against the heals (stock's maths, done by the client on secrets); the over-absorb and over-heal-absorb end glows from its clamped flags. Without the calculator: the plain totals |
 | Mana cost prediction (player) | the cast's cost eating into the power fill (above) |
 | Threat (glow), combat flash | the hairline's colour; the threat glow is gradient strips outside the frame |
 | Numeric threat, leader, guide, PvP/prestige, raid target, quest, pet battle, role, ready check, rest, group, play time, ping icons; the bosses' auras | the game's own, still drawn by the stock frame's Contextual layer where the stock puts them |
@@ -159,6 +178,7 @@ stand in with the player too, and go back to their units as it closes.
 | Party: shown in a group, not in a raid, not with Raid-Style Party Frames; offline, dead; out of phase or in another group (faded to 0.6); leader, guide, role, PvP, ready check, summon, phasing icons; auras; party pets | a state driver `[group:raid] hide; [@partyN,exists] show; hide`, standing down with Raid-Style Party Frames; the texts; the stock member's alpha copied; the game's icons, auras and party pets stay |
 | Boss: shown while the boss exists; level `??`, Boss rank; threat; cast bars | unit watch on `bossN`; the level line; the edge; the game's boss cast bars stay |
 | Edit Mode: position, layouts, Frame Size, Opacity | followed (above) |
+| UI modes (cutscene, pet battle, spectator: `C_Roleset`, Blizzard_UIModes) hide the `unitFrames` roleset | every frame of ours is tagged `unitFrames` (`SetRolesets`, as `PlayerFrame.xml`, `TargetFrame.xml`, `PartyFrame.xml` tag the stock ones; boss frames too, as oUF does): protected, so set once out of combat (`M.Apply`), never in combat. What hangs off ours (the aura rows) goes with them |
 
 **Gaps (to verify or build):** the stock target of target's debuff icons
 are faded with it (ours shows none); the target of target still shows when
@@ -167,14 +187,14 @@ pulse; the party pets keep the stock look; a boss with no power shows "0"
 under an empty power bar; range fading is none on the stock ones either.
 
 **Settings** (`/pui unitframes`, a small page of ours,
-`PolestarUIUnitFramesOptions`): Background opacity, 3D portraits, Power text (off), Sparkle, Smooth bars, saved in
+`PolestarUIUnitFramesOptions`): Background opacity, 3D portraits, Power text (off), Sparkle, Smooth bars, Damage trail, saved in
 `PolestarUIDB.unitframes`. Its "..." menu has "Use game window".
 
 **Switch:** `/pui unitframes on|off`, live (refused in combat): off hides ours,
 gives the stock frames their mouse, art and bars back at once.
 
-**HUD kit** (`Modules/HUD.lua`, `ns.HUD`): `H.Bar` (secret-safe StatusBar on
-a progress-wash track, or `bg` at an alpha with `H.SetTrack`; skin-aware fill), `H.Segment` (a bar continuing
+**HUD kit** (`Modules/HUD.lua`, `ns.HUD`): `H.Bar(parent, trail?)` (secret-safe StatusBar on
+a progress-wash track, with `trail` a damage trail under its fill fed by `H.SetTrail(b, v, snap, on, max)`, or `bg` at an alpha with `H.SetTrack`; skin-aware fill), `H.Segment` (a bar continuing
 another's fill, or eating into it from its end; without a token the caller colours it), `H.SetValue(b, v, smooth)`
 (the client's eased fill), `H.Sparkle`/`H.SizeSparkle`/`H.PaintSparkle`
 (Polestar's band stars over a bar), `H.Text` (outlined HUD text, SetFormattedText only),
@@ -194,7 +214,8 @@ another's fill, or eating into it from its end; without a token the caller colou
 **Unverified in the client:** the calculator's
 clamp modes and that its "clamped" flags are taken by `SetAlphaFromBoolean`
 in combat; the feel of `ExponentialEaseOut` (its time is the client's);
-whether the player's `spellID` on `UNIT_SPELLCAST_START` and the cost
+the damage trail's hold (0.4 s) and drain feel, and that a StatusBar a level
+under another draws under its fill; whether the player's `spellID` on `UNIT_SPELLCAST_START` and the cost
 table's `type` are clean in combat (a secret type is taken as the bar's);
 model framing per race in the square well
 (rule 5); that the model no longer rises into the well on a target change
@@ -225,7 +246,12 @@ frames (`stub.updateBosses`), and state drivers. `stub_editmode.lua` (minimap an
 `unitframes-group-editmode`, `unitframes-pet` (the pet stays on its box
 while the game unanchors its frame: dismissed, summoned, a vehicle),
 `unitframes-predict` (heals, a shield past the missing health, a heal
-absorb, smooth bars, the sparkle, a cast's power cost).
+absorb, smooth bars, the sparkle, a cast's power cost), `unitframes-trail`
+(the damage trail: a loss held then drained, a heal snapping past it, no red
+past the new health on a heal with and without Smooth bars, a maximum change in
+step, a new target snapping, the setting off), `unitframes-glows` (the end glows, the
+power percent, every frame's roleset, none set again in combat).
 The stub's heal calculator (`CreateUnitHealPredictionCalculator`), the
-eased `SetValue` (`bar.interpolation`), `SetAlphaFromBoolean`, and a cast
+eased `SetValue` (`bar.interpolation`), `SetAlphaFromBoolean`, `UnitPowerPercent`, `SetRolesets`/`GetRolesetNames`
+(`stub_client.lua`: refused in combat on a protected frame), and a cast
 (`stub.casting`, `stub.spellCosts`).

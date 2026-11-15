@@ -106,6 +106,7 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   "Guild control" for the guild master and officers (the stock button:
   `GuildControlUI_Show`, the game's rank window), "Invite member" (primary;
   `CanGuildInvite`; a name field, `C_GuildInfo.Invite`, as `ADD_GUILDMEMBER`).
+- **Names:** roster cells, the member flyout's name and notes, and the log and news lines sit on a font family (`ns.NameFont`): Polestar's face for Latin, the client's for Cyrillic, Hangul and Chinese, picked per glyph without reading the text.
 - **Taint:** the calls the API docs mark `HasRestrictions`
   (`C_GuildInfo.SetNote`, `RemoveFromGuild`, `SetGuildRankOrder`, `SetMOTD`,
   `SetInfoText`) run only from the player's click. `GuildControlUI` is the

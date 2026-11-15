@@ -27,9 +27,14 @@ function ns.Module(key, m)
 	return m
 end
 
+-- With no saved choice a module is on, unless the gamepad UI is, or the
+-- module says `defaultOff` (our Bags beside Baganator, Skins/Baganator.lua).
 function ns.Enabled(key)
 	local v = PolestarUIDB and PolestarUIDB.modules[key]
-	if v == nil then return not Polestar.GamepadUI() end
+	if v == nil then
+		local m = ns.modules[key]
+		return not Polestar.GamepadUI() and not (m and m.defaultOff)
+	end
 	return v
 end
 
@@ -373,9 +378,10 @@ function ns.GridCell(v)
 end
 
 -- An inset well holding a game icon, in the Polestar look: returns the well and
--- its icon (also well.Icon). `kind` is its frame type, "Frame" when not given.
-function ns.ItemWell(parent, size, kind)
-	local well = CreateFrame(kind or "Frame", nil, parent)
+-- its icon (also well.Icon). `kind` is its frame type, "Frame" when not given;
+-- `template` and `name`, a template it inherits and its global name.
+function ns.ItemWell(parent, size, kind, template, name)
+	local well = CreateFrame(kind or "Frame", name, parent, template)
 	well:SetSize(size, size)
 	Polestar.Theme.Skin(well, "inset")
 	Polestar.Theme.Border(well, Polestar.Theme.Wash("border"))
@@ -384,6 +390,97 @@ function ns.ItemWell(parent, size, kind)
 	icon:SetPoint("BOTTOMRIGHT", -1, 1)
 	well.Icon = icon
 	return well, icon
+end
+
+-- The player's name (UnitName, UnitPVPName: `fn`) as last read out of combat:
+-- in combat the client may hand our code a secret one, which tooltips and our
+-- strings refuse (docs/CLIENT.md, rule 3). A nil is kept too.
+local knownName = {}
+function ns.PlayerText(fn)
+	local v = fn("player")
+	if not (issecretvalue and issecretvalue(v)) then knownName[fn] = v or false end
+	return knownName[fn] or nil
+end
+
+-- Player-written text (names, notes) in any script, without reading it: a
+-- font family (CreateFontFamily) holds Polestar's face for Latin and the
+-- client's own faces for Cyrillic, Hangul and Chinese, and the engine picks
+-- one per glyph. Names are secret in combat and cannot be scanned
+-- (docs/CLIENT.md, rule 3). One family per face, size and flags, made once.
+local ALPHABETS = { "russian", "korean", "simplifiedchinese", "traditionalchinese" }
+local families, familyCount, clientFaces = {}, 0, nil
+function ns.FontFamily(path, size, flags)
+	if not (CreateFontFamily and GameFontNormal and GameFontNormal.GetFontObjectForAlphabet) or not path then return nil end
+	flags = flags or ""
+	local key = path .. "|" .. size .. "|" .. flags
+	if families[key] ~= nil then return families[key] or nil end
+	if not clientFaces then
+		clientFaces = {}
+		for _, a in ipairs(ALPHABETS) do
+			local ok, obj = pcall(GameFontNormal.GetFontObjectForAlphabet, GameFontNormal, a)
+			clientFaces[a] = ok and obj and obj:GetFont() or nil
+		end
+	end
+	local members = { { alphabet = "roman", file = path, height = size, flags = flags } }
+	for _, a in ipairs(ALPHABETS) do
+		members[#members + 1] = { alphabet = a, file = clientFaces[a] or path, height = size, flags = flags }
+	end
+	familyCount = familyCount + 1
+	local ok, fam = pcall(CreateFontFamily, "PolestarUIFamily" .. familyCount, members)
+	families[key] = ok and fam or false
+	return families[key] or nil
+end
+
+-- Puts the font string on the family of its Polestar font and keeps it there:
+-- every Polestar repaint (skin, font, text size, a CJK retext) ends in
+-- fs:SetFont, and a post-hook moves it onto that font's family. Colour,
+-- shadow and justification survive (SetFontObject would take the family's).
+-- -> true, or false when the client has no font families (fs unchanged).
+local named = setmetatable({}, { __mode = "k" })
+local function onFamily(fs, path, size, flags)
+	-- Polestar's own CJK font for a whole string (Theme.ScriptFont) is no Latin face: keep the family.
+	local T = Polestar.Theme
+	if path and (path == T.ScriptFont("\227\129\130") or path == T.ScriptFont("\234\176\128")) then path = nil end
+	local fam = path and ns.FontFamily(path, size, flags) or named[fs]
+	if not fam or fam == true then return end
+	named[fs] = fam
+	local r, g, b, a = fs:GetTextColor()
+	local sr, sg, sb, sa = fs:GetShadowColor()
+	local sx, sy = fs:GetShadowOffset()
+	local jh, jv = fs:GetJustifyH(), fs:GetJustifyV()
+	fs:SetFontObject(fam)
+	fs:SetTextColor(r, g, b, a)
+	if sr then fs:SetShadowColor(sr, sg, sb, sa) end
+	if sx then fs:SetShadowOffset(sx, sy) end
+	if jh then fs:SetJustifyH(jh) end
+	if jv then fs:SetJustifyV(jv) end
+end
+function ns.NameFont(fs)
+	if named[fs] then return true end
+	local path, size, flags = fs:GetFont()
+	if not ns.FontFamily(path, size, flags) then return false end
+	named[fs] = true
+	hooksecurefunc(fs, "SetFont", onFamily)
+	onFamily(fs, path, size, flags)
+	return true
+end
+
+-- A player name on a string made with W.Text in `role`: on the font family,
+-- else (no families) the old scan, which reads the text and so only runs on
+-- names that are never secret: a name past Latin-1 that Polestar's face may
+-- not draw takes the game's font object; CJK is Polestar's own.
+function ns.NameText(fs, role, text)
+	text = text or ""
+	if ns.NameFont(fs) then return fs:SetText(text) end
+	local Theme = Polestar.Theme
+	if text:find("[\196-\244]") and not Theme.ScriptFont(text) then
+		fs:SetFontObject(GameFontHighlight)
+		fs.psGameFace = true
+	elseif fs.psGameFace then
+		fs.psGameFace = nil
+		Theme.Font(fs, role)
+	end
+	fs:SetText(text)
 end
 
 -- The sidebar's head in a game window (docs/DESIGN.md, "Subject Block"), in
@@ -1031,6 +1128,15 @@ function ns.PaintGround(fill, on, k)
 	fill:SetShown(on)
 end
 
+-- The model well's backdrop (docs/DESIGN.md, "Model Well"): Polestar's glow
+-- texture in `shade` at 60%, fading out towards the edges, no border.
+function ns.ModelShade(holder, layer)
+	local shade = Polestar.Widgets.Tex(holder, layer or "BACKGROUND", "glow")
+	shade:SetAllPoints(holder)
+	Polestar.Widgets.Painter(shade, function(t) local r, g, b = Polestar.Theme.Color("shade"); t:SetVertexColor(r, g, b, 0.6) end)
+	return shade
+end
+
 -- One secure button of ours over the hovered target (a spell row, a gear
 -- slot), out of combat, for the clicks the game protects (docs/CLIENT.md,
 -- rule 4). It hangs off UIParent above the window's strata, and hides as the
@@ -1212,12 +1318,12 @@ function ns.Interaction(key, types, o)
 			if not hooked then
 				hooked = true
 				f:HookScript("OnHide", function(self)
-					if o.bags then CloseAllBags(self) end
+					if o.bags then ns.CloseBags(self) end
 					if not ended then o.close() end
 					ended = nil
 				end)
 			end
-			if o.bags then OpenAllBags(f) end
+			if o.bags then ns.OpenBags(f) end
 		end,
 		hideFunc = function()
 			ended = true
@@ -1231,6 +1337,22 @@ function ns.Interaction(key, types, o)
 		Polestar.RegisterEvent(o.events[1], function() if not shown() then info.showFunc() end end)
 		Polestar.RegisterEvent(o.events[2], function() if shown() then info.hideFunc() end end)
 	end
+end
+
+-- The bags an NPC window opens and closes with it (ns.Interaction's o.bags),
+-- `f` their opener as the stock FRAME_THAT_OPENED_BAGS: ours while the Bags
+-- module is on (Modules/Bags.lua), else the game's.
+local function ourBags()
+	local m = ns.modules.bags
+	return m and m.ready and ns.Enabled("bags") and m
+end
+function ns.OpenBags(f)
+	local m = ourBags()
+	if m then m.Open(f) else OpenAllBags(f) end
+end
+function ns.CloseBags(f)
+	local m = ourBags()
+	if m then m.Close(f) else CloseAllBags(f) end
 end
 
 -- Docking, the default (PolestarUIDB.free turns it off): our windows lay out
@@ -1328,6 +1450,29 @@ local function offLayer(f)
 	f:SetFrameStrata(strata)
 end
 hooksecurefunc(Polestar.Widgets, "Modal", function() if PolestarModal:GetParent() ~= UIParent then offLayer(PolestarModal) end end)
+
+-- A window that floats, as the stock bags (no UI panel, so never docked: it
+-- pushes no window aside and the dock never closes it): off Polestar's layer,
+-- first where the stock bags open (UpdateContainerFrameAnchors: the bottom
+-- right, clear of the right action bars), then draggable and kept where the
+-- player leaves it (PolestarUIDB.pos, by its name).
+function ns.Float(f)
+	offLayer(f)
+	local key = f:GetName()
+	local p = PolestarUIDB.pos[key]
+	f:ClearAllPoints()
+	if p then
+		f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", p[1], p[2])
+	else
+		f:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -(EditModeUtil:GetRightActionBarWidth() + 10), 85)
+	end
+	-- The shell's drag handles call f:StopMovingOrSizing().
+	local stop = f.StopMovingOrSizing
+	f.StopMovingOrSizing = function(self)
+		stop(self)
+		PolestarUIDB.pos[key] = { self:GetLeft(), self:GetTop() }
+	end
+end
 
 function ns.Dock(f)
 	offLayer(f)

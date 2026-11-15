@@ -153,6 +153,7 @@ function UnitExists(unit) local v = unitExists(unit) if v == nil then return Uni
 unitFn("UnitHealth", function(d) return stub.secret(d.health or 0) end, 0)
 unitFn("UnitHealthMax", function(d) return stub.secret(d.max or 1) end, 1)
 unitFn("UnitHealthPercent", function(d) return stub.secret((d.health or 0) / (d.max or 1) * 100) end)
+unitFn("UnitPowerPercent", function(d) local m = d.powerMax or 0 return stub.secret(m > 0 and (d.power or 0) / m * 100 or 0) end)
 unitFn("UnitPower", function(d) return stub.secret(d.power or 0) end, 0)
 unitFn("UnitPowerMax", function(d) return stub.secret(d.powerMax or 0) end, 0)
 unitFn("UnitPowerType", function(d) local k = d.powerType or 0 return k, POWER[k] end, 0)

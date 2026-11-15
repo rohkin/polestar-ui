@@ -50,6 +50,8 @@ end
 -- The stock order: presence (online, mobile, away, busy), then level, rank, name.
 assert(names() == "Aelric,Testchar,Gwendolyn,Dovaline,Brannoc,Corwyn", "stock order: " .. names())
 assert(row("Dovaline").Cells.zone:GetText() == "Mobile", "mobile zone")
+-- Roster names sit on a font family: the engine draws each script in its face, nothing reads the name.
+assert((row("Dovaline").Cells.name):GetFontObject() and (row("Dovaline").Cells.name):GetFontObject().members, "roster name not on the font family")
 head("Name"):Click()
 assert(names() == "Aelric,Brannoc,Corwyn,Dovaline,Gwendolyn,Testchar", "name sort: " .. names())
 head("Name"):Click()

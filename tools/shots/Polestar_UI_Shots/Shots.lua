@@ -33,6 +33,9 @@ local PLAN = {
 	{ "social", { "friends", "allies", "requests", "ignored", "raid" } },
 	{ "guild", { "roster", "benefits", "info", "news", "log" } },
 	{ "macros", { "general", "character" } },
+	{ "collections", { "mounts", "pets", "toys", "appearances" } },
+	{ "groupfinder", { "listing", "browse", "who" } },
+	{ "bags", { false } },
 }
 local NEEDS = { -- open only from an NPC, a target or an open trade skill
 	bank = "a banker", mail = "a mailbox", merchant = "a vendor", gossip = "an NPC", trainer = "a trainer",

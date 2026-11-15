@@ -79,3 +79,39 @@ function M.SetText(self, t)
 	setTextChanged(self, t)
 	if self.kind == "EditBox" and self.text ~= was then stub.RunScript(self, "OnTextChanged", false) end
 end
+
+-- Frame:SetRolesets (the UI modes' visibility tags, C_Roleset) is protected:
+-- a protected frame (stub_unitframes.lua's psProtected) refuses it in combat.
+-- GetRolesetNames answers the tags, "roleless" while none are set.
+function M.SetRolesets(self, s)
+	if self.psProtected and InCombatLockdown() then
+		error("SetRolesets on protected " .. tostring(self.name) .. " in combat (ADDON_ACTION_BLOCKED, rule 4)", 2)
+	end
+	self.rolesets = s
+end
+function M.GetRolesetNames(self)
+	local t = {}
+	for r in tostring(self.rolesets or "roleless"):gmatch("[^,%s]+") do t[#t + 1] = r end
+	return t
+end
+
+-- Font families: each alphabet's own face, picked by the engine per glyph.
+-- stub.fontFamilies[name] = the family (fam.members as given); a name used
+-- twice errors. The game fonts answer the client's faces per alphabet.
+stub.fontFamilies = {}
+local ALPHABET_FACES = { roman = STANDARD_TEXT_FONT, russian = "Fonts\\FRIZQT___CYR.TTF", korean = "Fonts\\2002.TTF",
+	simplifiedchinese = "Fonts\\ARKai_T.ttf", traditionalchinese = "Fonts\\bLEI00D.ttf" }
+function M.GetFontObjectForAlphabet(self, alphabet)
+	local _, size, flags = self:GetFont()
+	local o = CreateFont(nil)
+	o:SetFont(ALPHABET_FACES[alphabet] or STANDARD_TEXT_FONT, size, flags)
+	return o
+end
+function CreateFontFamily(name, members)
+	if stub.fontFamilies[name] then error("CreateFontFamily: font family '" .. name .. "' already exists", 2) end
+	local fam = CreateFont(name)
+	fam.members = members
+	for _, m in ipairs(members) do if m.alphabet == "roman" then fam:SetFont(m.file, m.height, m.flags) end end
+	stub.fontFamilies[name] = fam
+	return fam
+end

@@ -476,6 +476,7 @@ local function newRow(panel, i)
 	r.Sub = W.Text(r, "small", "textDim")
 	r.Where = W.Text(r, "small", "textDim")
 	for _, t in ipairs({ r.Name, r.Sub, r.Where }) do t:SetJustifyH("LEFT"); t:SetWordWrap(false) end
+	ns.NameFont(r.Name); ns.NameFont(r.Sub) -- names and notes in any script
 	-- Fixed slots at the right, so they line up down the list: the friend's
 	-- client icon (the game's own), then the invite button. A favorite's star
 	-- follows the name (the stock card's atlases).
@@ -741,6 +742,7 @@ local function raidGroup(i)
 		r.Name:SetPoint("LEFT", r, "LEFT", 24, 0)
 		r.Name:SetPoint("RIGHT", r.Role, "LEFT", -6, 0)
 		r.Name:SetJustifyH("LEFT")
+		ns.NameFont(r.Name)
 		r:SetScript("OnEnter", function(self) if self.psMember then overRaid(self) end end)
 		g.rows[k] = r
 		raidRows[#raidRows + 1] = r

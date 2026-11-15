@@ -60,6 +60,8 @@ combat:
 `pcall` is not enough: a stock function can succeed and leave secret values
 behind, and an error inside a secure hook escapes it.
 
+Text in other scripts: a font family (`ns.NameFont`), never a scan of the text.
+
 Geometry can be secret too (5,440 errors from `H.Segment`): a frame anchored
 to a StatusBar's fill texture moves with the bar's secret value, so in combat
 its `OnSizeChanged` and `GetWidth` give secret numbers. Never feed them to
@@ -86,7 +88,7 @@ while tainted" from Auras.lua). There is no addon path: show the game's
 auras then, and read none (`secret()` in Auras.lua).
 
 The player's own name (`UnitName("player")`, `UnitPVPName`) is secret in
-combat too: `GameTooltip:SetText` refuses it. Read it through `playerText`,
+combat too: `GameTooltip:SetText` refuses it. Read it through `ns.PlayerText`,
 which keeps the last name read out of combat.
 
 Defense's gear bonus (`UnitDefenseSkill`) was secret in a background read
@@ -356,7 +358,19 @@ only on those three frames and only for their own open events
 It is a widget call that writes no Lua value on the frame. Nothing else on
 these frames is touched: no hook, no hide, no key written.
 
-**Caught by:** the `tooltips` scene: another addon's hook adds its line, the
+**Exception (the user's leave), the Who list:** from
+`Modules/GroupFinderWho.lua` only, `LFGWhoListFrame:UnregisterEvent("WHO_LIST_UPDATE")`
+while the Group Finder module is on (at login, and on `ADDON_LOADED` of
+`Blizzard_GroupFinder_VanillaStyle` when the frame comes later), and
+`RegisterEvent("WHO_LIST_UPDATE")` again when it is switched off (live). The
+stock list's handler (`LFGWhoListMixin:UpdateWhoList`) shows `LFGParentFrame`
+on every Who result sent to the UI, so the game's window would open beside
+ours on each of our searches; ours opens on its Who page on that event
+instead (a long `/who` typed in chat too). Same kind of call as above, on that
+one frame and that one event only.
+
+**Caught by:** the `groupfinder-who-door` scene (the stub's Who list shows
+the game's window on the event; on, late load, off and on again). The `tooltips` scene: another addon's hook adds its line, the
 look holds through a style reset (embedded and back), and switched off, the
 stock art and fonts are back. The `chat` scene: a filtered message and
 another addon's `AddMessage` line show, a new whisper window is restyled,
@@ -541,6 +555,70 @@ their pooled items and regions (the sweep exception aside: `SetSwipeTexture`
 is not guarded; the counts' `GetText` is; the `cooldowns*` scenes).
 The stock unit frames are guarded by `tests/lua/stub_unitframes.lua`
 instead (rule 16), which lets through only the veil's calls.
+
+## 18. A stock item button template made by addon code: register its clicks, place it yourself
+
+**What happened (live check, Bags):** a button made from addon code with
+`CreateFrame("ItemButton", name, holder, "ContainerFrameItemButtonTemplate")`
+(holder `SetID(bag)`, button `SetID(slot)`) picked up on a left-click and
+showed its tooltip, but a right-click did nothing, in or out of combat, and
+nothing was blocked. The template's `OnLoad` registers
+`"LeftButtonUp", "RightButtonUp"`, yet that did not take on our button;
+after `b:RegisterForClicks("AnyUp")` from our code, right-click used the
+item out of combat and in combat with no `ADDON_ACTION_BLOCKED`. The
+template also anchors itself `BOTTOMRIGHT` of its parent (`<Anchors>` in
+`ContainerFrame.xml`): it sat under the micro menu.
+
+**Rule:** after making a stock item button from a template, call
+`RegisterForClicks` yourself, and `ClearAllPoints` before placing it. The
+click itself stays the template's: never `SetScript` one of its scripts,
+never write a key its mixin reads (`bagID` through `SetBagID`, `SplitStack`,
+...); extra behaviour by `HookScript` only (`makeWell` in Bags.lua).
+
+**Caught by:** `tests/lua/stub_bags.lua`: its template takes left-ups only
+until `RegisterForClicks`, starts on the `BOTTOMRIGHT` anchor, and errors on
+a mixin key written, `SetBagID` or a script replaced from our code; its
+`UseContainerItem` errors with our code on the stack. The `bags` scene
+right-clicks a slot and checks its one anchor.
+
+## 19. A stock frame the game keeps opening is parked under a hidden frame, never hidden
+
+**What happened:** the Bags hooks closed every stock bag frame the game
+opened with its own `Hide()`. Its `OnHide` then ran as ours
+(`ContainerFrameSettingsManager:MarkBagsShownDirty` writes a key), the next
+stock open read it, and the stock item buttons' `SetBagID` ran tainted: their
+in-combat use would be blocked, so switching Bags off had to wait for
+`/reload`.
+
+**Rule:** where the game's own code opens a stock frame ours replaces (the
+toggles, `OpenAllBags` from trade or an enchant, `CloseAllBags`), reparent
+that frame to a hidden frame of ours while ours is on, as a bag addon's
+"UI hider" does. The client runs a frame's `OnShow`/`OnHide` only when its
+visibility changes, so under a hidden parent the game's `Show()`/`Hide()`
+change only its shown flag: the stock code keeps its state (`IsBagOpen`
+says what it says), nothing of it shows, no script of it runs, and no Lua key
+is written from our code. Ours follows the game's calls with post-hooks.
+Constraints:
+- Reparent only a frame that is hidden (`not IsShown()`): moving a shown one
+  in or out changes its visibility and runs its script as ours. One shown
+  when ours switches on is parked once it closes.
+- Given back (switched off): `Hide()` it first while still parked (no script
+  runs), then its own parent: given back shown, it would show and run its
+  `OnShow` as ours.
+- Keep its strata and level across `SetParent` (as
+  `FrameUtil.SetParentMaintainRenderLayering`), and give the hidden frame
+  `SetAllPoints(UIParent)` if the stock code anchors to its parent's corner.
+- Not for an Edit Mode system frame (rule 17) or a protected frame, and not
+  for a window whose script must run (an NPC window whose `OnHide` ends the
+  interaction): those keep rules 8, 11 and 17.
+
+So the switch is live both ways (`park`/`unpark`, `M.Apply` in Bags.lua).
+
+**Caught by:** `tests/lua/stub_bags.lua`: its stock frames run `OnShow`/
+`OnHide` only on a visibility change (`SetParent` included) and report one
+run with Polestar: UI code on the stack. `bags-off` switches on with the
+stock bags open, off with them parked open, and on again;
+`bags-barclick` checks the bag bar's clicks never show a stock frame.
 
 ## Reading errors from the game
 
