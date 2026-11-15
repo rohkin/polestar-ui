@@ -10,10 +10,17 @@ Polestar: UI remakes the game's own windows in the look of [Polestar](https://ww
 - **Professions and Crafting**: a card per profession, and recipes with filters, reagents and Craft all.
 - **Legacy**: rewards, challenges and the legacy tree.
 - **World Map and Quest Log**: the game's map with a quest log beside it.
-- **Social**: friends, ignore list and raid.
-- **Bank, Mail, Auction House**: bank and Warband bank in one grid, the mailbox with Open all, the full auctioneer.
+- **Social, Guild, Macros, Inspect**: friends, ignore list and raid; the guild roster, news, perks and log; the macro editor; other players' gear.
+- **Group Finder**: list your group, browse listings and search Who.
+- **Collections**: mounts, toys, pets and appearances.
+- **Bags and Bank**: all your bags in one grid; the bank and Warband bank in one grid. A Polestar skin for Baganator too.
+- **Mail, Auction House**: the mailbox with Open all, the full auctioneer.
 - **Gossip, Quest dialog, Merchant, Trainer, Loot**: NPC and loot windows in the same look.
 - **Tooltips and Chat**: the game's own, restyled, with every line other addons add.
+
+## HUD
+
+The HUD in the same look, restyled or replaced: unit frames (with a damage trail), buffs and debuffs, cast bars, action bars, the minimap, the Cooldown Viewer, the Personal Resource Display and the damage meter. Everything stays positionable in Edit Mode.
 
 ## Switching back to the game's window
 
@@ -37,11 +44,14 @@ You can't switch while in combat. Crafting changes after `/reload`.
 
 ---
 
-*Note for the author, not page content: screenshots to add*
+*Note for the author, not page content: screenshots to add (files in screenshots/curseforge/)*
 
-- Character window: "Gear, stats and gear sets in one window"
-- Spellbook: "Every tab, with cooldowns and search"
-- Talents: "Trees on the class's art"
-- Crafting: "Recipes with Can make now and reagents"
-- World Map and Quest Log: "The map with the quest log beside it"
-- Chat and tooltips: "Chat and tooltips in Polestar's look"
+- character-gear.png: "Gear, stats and gear sets in one window"
+- spellbook-general.png: "Every tab, with cooldowns and search"
+- talents.png: "Trees on the class's art"
+- professions.png / tailoring.png: "Professions and recipes with Can make now and reagents"
+- world-map.png: "The map with the quest log beside it"
+- legacy-tree.png, guild-roster.png, social-friends.png
+- groupfinder-browse.png: "Group Finder"
+- collections-mounts.png, collections-appearances.png: "Collections"
+- hud.png: "Unit frames, action bars, minimap and more in Polestar's look"
