@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
 
 - Group Finder: a new Polestar window for the game's premade Group Finder, opened by its key, the Who key, the Group Finder button (shift-click: the game's window) and Who results. Listing (categories, activities with level ranges and lockouts, playstyle, voice chat, roles, Post and Update), Browse (sorted results with every member, whisper, invite, report) and Who (query, filters, invite, whisper). Unlisting and posting with a comment open the game's window. `/pui groupfinder on|off`.
 - Collections: a new Polestar window for the game's Collections: Mounts (favorites, faction marks, model, source and lore, Mount/Dismount, filters, search, drag to bars), Toy Box (favorites, cooldowns, use on click out of combat, filters), Pet Journal (favorites, cooldowns, model, Summon/Dismiss, drag to bars) and Appearances (items by slot and weapon type, sets with variants, favorites, source tooltips, class filter, search). `/pui collections on|off`.
