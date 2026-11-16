@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: Polestar: UI See
+## Notes: Dev tool: /puisee [note] marks a bug (state as text + a screenshot) for tools/see.js. Not shipped.
+## Dependencies: Polestar_UI
+## OptionalDeps: !BugGrabber
+## SavedVariables: PolestarUISeeDB
+
+See.lua

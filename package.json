@@ -10,6 +10,15 @@
     "link:shots": "node tools/link.js link shots",
     "unlink:shots": "node tools/link.js unlink shots",
     "shots": "node tools/shots.js",
-    "shots:watch": "node tools/shots.js --watch"
+    "shots:watch": "node tools/shots.js --watch",
+    "link:see": "node tools/link.js link see",
+    "unlink:see": "node tools/link.js unlink see",
+    "see": "node tools/see.js",
+    "see:watch": "node tools/see.js --watch",
+    "look": "node tools/look.js look",
+    "crop": "node tools/look.js crop",
+    "rec:start": "node tools/look.js rec",
+    "rec:stop": "node tools/look.js stop",
+    "rec:sheet": "node tools/look.js sheet"
   }
 }

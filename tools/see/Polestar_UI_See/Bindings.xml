@@ -1,0 +1,5 @@
+<Bindings>
+	<Binding name="POLESTARUISEE_MARK" category="ADDONS">
+		PolestarUISee_Mark()
+	</Binding>
+</Bindings>
