@@ -1043,7 +1043,7 @@ function M.Enable()
 		"GET_ITEM_INFO_RECEIVED", "SPELL_UPDATE_COOLDOWN", "TRACKED_RECIPE_UPDATE", "PLAYER_EQUIPMENT_CHANGED" }) do
 		Polestar.RegisterEvent(e, changed)
 	end
-	Theme.OnChanged(changed)
+	Theme.OnChanged(changed, true)
 end
 
 -- The stock window, for the button that switches back to ours (Core.lua).

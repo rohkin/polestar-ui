@@ -920,6 +920,8 @@ local function setOpt(k, v)
 	paintAll()
 end
 
+M.Option, M.SetOption = opt, setOpt
+
 local function buildOptions()
 	local f = W.Shell(OPTIONS, { scalePath = "ui.menuScale", sidebar = 0, width = 520, height = 360 })
 	ns.Plain(f)

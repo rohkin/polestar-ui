@@ -49,7 +49,12 @@
 <image x="34" y="566" width="688" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAcElEQVR4nO3NIQ6AMBBE0TWLBg8a0KAJtkE3WFJkExyinJ7Z9Aod10menS8i+kKCr7CUv0UjPCTRAhcEuAsL+VvUw0niLeDgIHEW2GAn2SywwEqyWGCECebCpvwt2sNA0lughY6ktYBCQ4Lvuro6+n7FdUbFFOJhrwAAAABJRU5ErkJggg=="/>
 <image x="12" y="38" width="22" height="528" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYklEQVR4nO3VIQ9AYBSF4Vs+mU5GJptqsqlGtGkCv94bFJtwgmT3bE996zFtISBGihwVGnQYMGHFbtpChAQZCtRo0WPEjA2HaXsEy5fgcgdP0+ZBD3pQmQc9+P/gJycl3+gFirVGxRzVHEUAAAAASUVORK5CYII="/>
 <image x="722" y="38" width="22" height="528" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYUlEQVR4nO3VIRNAUBBF4S0r08nIZKMa2aiGaEYT+PVOEF/Y8NrbO/PVU6+I6I0TGxZMGNChRokcKrbpgws7VswY0aNBhQKZ2KbvHzwCwdaDlnnQgx60zINJBKOfVNQb/QA6R0bF0SZRTwAAAABJRU5ErkJggg=="/>
-<rect x="28" y="28" width="700" height="540" fill="rgb(24,29,45)" fill-opacity="0.94"/>
+<rect x="27" y="27" width="702" height="1" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="27" y="568" width="702" height="1" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="27" y="28" width="1" height="540" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="728" y="28" width="1" height="540" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="28" y="28" width="700" height="540" fill="rgb(24,29,45)" fill-opacity="1"/>
+<rect x="29" y="29" width="698" height="1" fill="rgb(255,255,255)" fill-opacity="0.07"/>
 <rect x="28" y="28" width="700" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="28" y="567" width="700" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="28" y="29" width="1" height="538" fill="rgb(255,255,255)" fill-opacity="0.1"/>
@@ -83,7 +88,7 @@
 <rect x="528" y="123" width="99" height="2" fill="rgb(230,186,102)" fill-opacity="1"/>
 <rect x="534" y="57.5" width="64" height="3" fill="rgb(255,255,255)" fill-opacity="0.12"/>
 <rect x="534" y="57.5" width="27.43" height="3" fill="rgb(230,186,102)" fill-opacity="1"/>
-<image x="557.57" y="54.5" width="9" height="9" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA2klEQVR4nNWX3Q3DIAyEmYDdWIFZWIEVMgu7eAD3BaVGxRJFVE1awrUn3UsiuC/hz5i/Et+yE0dxEpM4V1N9Vt45M1PSoRWHGrIfNNU21nwj6cCfDB6BePOJ+PE790mO5oykwTYxXL2ZI+K5X947vgv3F4ar/avwMttpAUDJsCOAsCBcHUYAtBCA+nC3MFztWoAIAIgtQAIAJNT4q6kFyACA/FMA8CGAT0L4MsRuRIB58LwVVwD4YYQ9jisEriBpIHAlmYqRRamKkWW5ipEXExUjr2a9GHE5vVp3wPUyjgOUBtcAAAAASUVORK5CYII="/>
+<image x="557.57" y="54.5" width="9" height="9" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAd0lEQVR4nK2TYQrAIAiFO4ZX6SpdpbN4u91h+zOaghsybCtNeBDU+8zSZMV+nEAqpCriNaS/ECOSWkfYBdFGJm0f5lt8JluZR8waAhqAE+anHJ29OQUMKAFAYUANAOoSQLiE2COGv3FJIwnE38qvm/iGyQANjfMFdXMQZshqW1gAAAAASUVORK5CYII="/>
 <rect x="126.74" y="150.5" width="576.26" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
 <image x="35" y="150.5" width="12" height="12" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAYklEQVR4nO3WsQ2AMBBD0duGVehZia0or2MHSrZACo5EwQLEQflPcm1LKS4B4HdyPxZlCgcVb0pRLmWO1p7iYhuhwvU1gBGM6HbEGS1ZB1ifgPLxyqvs4Bh5z3GVzg8JgC/c1F0mEkNnNKYAAAAASUVORK5CYII=" clip-path="url(#p0c0)"/>
 <g clip-path="url(#p0c0)"><g transform="translate(54 162.18) scale(0.006348)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-73" x="0"/><use href="#gInter-Mediumttf-670" x="1502"/><use href="#gInter-Mediumttf-507" x="2734"/><use href="#gInter-Mediumttf-852" x="3897"/><use href="#gInter-Mediumttf-507" x="4689"/><use href="#gInter-Mediumttf-586" x="5852"/><use href="#gInter-Mediumttf-889" x="7034"/><use href="#gInter-Mediumttf-614" x="7731"/><use href="#gInter-Mediumttf-852" x="8934"/></g></g>

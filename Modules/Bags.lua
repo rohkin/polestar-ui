@@ -202,7 +202,7 @@ local function build()
 	local width = GRID_W + 2 * (W.SHELL.pad - 8) + 2
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = width, height = 400, searchPlaceholder = "Search the bags",
 		onSearch = function(text) C_Container.SetItemSearch(text or "") end })
-	ns.Float(f)
+	ns.Float(f, "Bags")
 	ns.WindowMenu(f, "bags", menu)
 	ns.Plain(f)
 	ns.Compact(f)

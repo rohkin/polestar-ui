@@ -135,10 +135,11 @@ end
 -- A bar's value; with `smooth` the client eases the fill to it
 -- (StatusBarInterpolation, which takes secrets), and whatever hangs off the
 -- fill (segments, the sparkle's mask) rides along.
+-- Under Reduce motion (ui.reduceMotion, read per call) it snaps, the trail too.
 function H.SetValue(b, v, smooth)
 	local ease = Enum and Enum.StatusBarInterpolation
 	if not ease then return b:SetValue(v) end
-	b:SetValue(v, smooth and ease.ExponentialEaseOut or ease.Immediate)
+	b:SetValue(v, smooth and not Theme.ReduceMotion() and ease.ExponentialEaseOut or ease.Immediate)
 end
 
 -- The damage trail: the bar's new value, given to b.trail after a hold and
@@ -158,7 +159,7 @@ function H.SetTrail(b, v, snap, on, max)
 	H.SetValue(t.psAim, v)
 	t.psValue = v
 	if t.psOn ~= on then t.psOn = on; paintTrail(t) end
-	if snap or not (C_Timer and C_Timer.After) then return H.SetValue(t, v) end
+	if snap or Theme.ReduceMotion() or not (C_Timer and C_Timer.After) then return H.SetValue(t, v) end
 	if t.psWait then return end -- the timer due takes the latest value
 	t.psWait = true
 	C_Timer.After(TRAIL_HOLD, function()

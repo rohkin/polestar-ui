@@ -72,6 +72,16 @@ function stub.pressKey(key)
 	end
 end
 
+-- stub.dragHeader(f, dx, dy): the left button held on a shell's header, the
+-- pointer moved (dx, dy physical px), let go: Polestar's ns.DragWindow path.
+function stub.dragHeader(f, dx, dy)
+	local x, y = stub.cursor[1], stub.cursor[2]
+	stub.RunScript(f.Header, "OnMouseDown", "LeftButton")
+	stub.cursor = { x + dx, y + dy }
+	stub.RunScript(f.Header, "OnMouseUp", "LeftButton")
+	stub.cursor = { x, y }
+end
+
 -- EditBox:SetText runs OnTextChanged (userInput false), as the client does.
 local setTextChanged = M.SetText
 function M.SetText(self, t)

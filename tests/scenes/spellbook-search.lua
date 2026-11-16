@@ -16,8 +16,8 @@ stub.RunScript(s, "OnEnterPressed")
 assert(not PolestarMenu:IsShown() and not s:IsShown() and s:GetText() == "fire" and w.psFilter.psActive, "Enter lost the search")
 local function left() return select(4, w:GetPoint(1)) end
 assert(left() == 16, "not docked: " .. tostring(left()))
-w:StartMoving()
-assert(not w.moving, "docked window drags")
+stub.dragHeader(w, 60, -40)
+assert(left() == 16, "docked window drags: " .. tostring(left()))
 local p = CreateFrame("Frame", "StockPanel", UIParent)
 p:SetSize(384, 400)
 p.x = 16

@@ -71,6 +71,13 @@ stub.fire("UNIT_HEALTH", "target")
 stub.advance(0.2)
 assert(v(P.Health.trail) == 1800 and v(T.Health.trail) == 5000, "both held")
 stub.assertNoErrors()
+-- Reduce motion (ui.reduceMotion): the fill and the trail snap, no hold, no ease.
+Polestar.Set("ui.reduceMotion", true)
+stub.units.player.health = 900
+stub.fire("UNIT_HEALTH", "player")
+assert(v(P.Health) == 900 and v(P.Health.trail) == 900, "reduce motion: the trail snaps at once")
+assert(P.Health.trail.interpolation ~= EASE.ExponentialEaseOut and P.Health.interpolation ~= EASE.ExponentialEaseOut, "reduce motion: no easing")
+Polestar.Set("ui.reduceMotion", false)
 --@ panel
 --@ roots: PolestarUIPlayerFrame
 --@ saved: PolestarUIDB = { modules = {}, unitframes = { trail = false } }
@@ -96,4 +103,3 @@ stub.fire("UNIT_HEALTH", "player")
 assert(H.interpolation == Enum.StatusBarInterpolation.Immediate and v(H) == 2000 and v(H.trail.psAim) == 2000 and v(H.trail) <= 2000, "no red past the fill")
 stub.advance(0.5)
 assert(v(H.trail) == 2000, "the trail ends with the fill")
-stub.assertNoErrors()

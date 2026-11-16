@@ -509,7 +509,7 @@ function M.Enable()
 	-- player opens them and as sources appear, and the game sets the rows'
 	-- art and the ground's alpha again on its own changes.
 	driver:SetScript("OnUpdate", update)
-	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end)
+	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end, true)
 	M.Apply()
 end
 

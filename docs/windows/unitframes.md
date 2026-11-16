@@ -94,6 +94,7 @@ words.
 - Sparkle (the "Sparkle" setting, on): Polestar's night-sky stars
   (`Theme.Media("band-stars")`) on the player frame only: the whole constellation (band x 655-945, y 12-76) at the bar's right end, filling its full height, unstretched (cropped from its left if the bar is narrower), its left quarter a second texture fading to clear (`SetGradient`), static, in the `star` token with its alpha (Halo and Hearth have none on their band, so
   none here).
+- Reduce motion (Polestar's `ui.reduceMotion`): bars snap, no glide, and the trail follows at once, no hold (`HUD.lua`).
 - Smooth bars (the "Smooth bars" setting, on): health and power glide to a
   new value (`SetValue(v, Enum.StatusBarInterpolation.ExponentialEaseOut)`,
   the client's own easing, which takes secrets); a new unit in a frame

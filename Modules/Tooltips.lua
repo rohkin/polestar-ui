@@ -50,10 +50,10 @@ local function look(tip)
 	return l
 end
 
--- The ground a touch more see-through than the windows' (the player's
--- Background opacity still scales it): 0.80 at the default 0.94.
+-- The ground Polestar's own tooltips use: solid, Theme.TIP_GROUND.
 local function paintGround(l, on)
-	ns.PaintGround(l.fill, on, 0.85)
+	l.fill:SetVertexColor(Theme.TIP_GROUND[1], Theme.TIP_GROUND[2], Theme.TIP_GROUND[3], 1)
+	l.fill:SetShown(on)
 	ns.PaintHairlines(l.edges, on, Theme.Color("border"))
 end
 

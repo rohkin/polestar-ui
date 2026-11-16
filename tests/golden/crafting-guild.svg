@@ -58,7 +58,12 @@
 <image x="34" y="626" width="780" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAcElEQVR4nO3NIQ6AMBBE0TWLBg8a0KAJtkE3WFJkExyinJ7Z9Aod10menS8i+kKCr7CUv0UjPCTRAhcEuAsL+VvUw0niLeDgIHEW2GAn2SywwEqyWGCECebCpvwt2sNA0lughY6ktYBCQ4Lvuro6+n7FdUbFFOJhrwAAAABJRU5ErkJggg=="/>
 <image x="12" y="38" width="22" height="588" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYklEQVR4nO3VIQ9AYBSF4Vs+mU5GJptqsqlGtGkCv94bFJtwgmT3bE996zFtISBGihwVGnQYMGHFbtpChAQZCtRo0WPEjA2HaXsEy5fgcgdP0+ZBD3pQmQc9+P/gJycl3+gFirVGxRzVHEUAAAAASUVORK5CYII="/>
 <image x="814" y="38" width="22" height="588" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYUlEQVR4nO3VIRNAUBBF4S0r08nIZKMa2aiGaEYT+PVOEF/Y8NrbO/PVU6+I6I0TGxZMGNChRokcKrbpgws7VswY0aNBhQKZ2KbvHzwCwdaDlnnQgx60zINJBKOfVNQb/QA6R0bF0SZRTwAAAABJRU5ErkJggg=="/>
-<rect x="28" y="28" width="792" height="600" fill="rgb(24,29,45)" fill-opacity="0.94"/>
+<rect x="27" y="27" width="794" height="1" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="27" y="628" width="794" height="1" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="27" y="28" width="1" height="600" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="820" y="28" width="1" height="600" fill="rgb(0,0,5)" fill-opacity="0.42"/>
+<rect x="28" y="28" width="792" height="600" fill="rgb(24,29,45)" fill-opacity="1"/>
+<rect x="29" y="29" width="790" height="1" fill="rgb(255,255,255)" fill-opacity="0.07"/>
 <rect x="28" y="28" width="792" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="28" y="627" width="792" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="28" y="29" width="1" height="598" fill="rgb(255,255,255)" fill-opacity="0.1"/>
@@ -109,7 +114,7 @@
 <g transform="translate(702.05 609.32) scale(0.005859)" fill="rgb(10,13,20)" fill-opacity="1"><use href="#gInter-Mediumttf-456" x="0"/><use href="#gInter-Mediumttf-689" x="1452"/><use href="#gInter-Mediumttf-614" x="1968"/><use href="#gInter-Mediumttf-984" x="3171"/><use href="#gInter-Mediumttf-586" x="5415"/><use href="#gInter-Mediumttf-852" x="6597"/><use href="#gInter-Mediumttf-507" x="7389"/><use href="#gInter-Mediumttf-647" x="8552"/><use href="#gInter-Mediumttf-889" x="9329"/><use href="#gInter-Mediumttf-614" x="10026"/><use href="#gInter-Mediumttf-852" x="11229"/><use href="#gInter-Mediumttf-871" x="12021"/></g>
 <rect x="626" y="57.5" width="64" height="3" fill="rgb(255,255,255)" fill-opacity="0.12"/>
 <rect x="626" y="57.5" width="27.43" height="3" fill="rgb(230,186,102)" fill-opacity="1"/>
-<image x="649.57" y="54.5" width="9" height="9" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA2klEQVR4nNWX3Q3DIAyEmYDdWIFZWIEVMgu7eAD3BaVGxRJFVE1awrUn3UsiuC/hz5i/Et+yE0dxEpM4V1N9Vt45M1PSoRWHGrIfNNU21nwj6cCfDB6BePOJ+PE790mO5oykwTYxXL2ZI+K5X947vgv3F4ar/avwMttpAUDJsCOAsCBcHUYAtBCA+nC3MFztWoAIAIgtQAIAJNT4q6kFyACA/FMA8CGAT0L4MsRuRIB58LwVVwD4YYQ9jisEriBpIHAlmYqRRamKkWW5ipEXExUjr2a9GHE5vVp3wPUyjgOUBtcAAAAASUVORK5CYII="/>
+<image x="649.57" y="54.5" width="9" height="9" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAd0lEQVR4nK2TYQrAIAiFO4ZX6SpdpbN4u91h+zOaghsybCtNeBDU+8zSZMV+nEAqpCriNaS/ECOSWkfYBdFGJm0f5lt8JluZR8waAhqAE+anHJ29OQUMKAFAYUANAOoSQLiE2COGv3FJIwnE38qvm/iGyQANjfMFdXMQZshqW1gAAAAASUVORK5CYII="/>
 <image x="101" y="99" width="12" height="12" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAgklEQVR4nO3PwQmAMAwF0GzjKr13pW7hzS2k87iFoCk0INJqsG3w8B/k5u//EgAA/N68rJFv5wuklL7NmUgt+AHPd1wuKDLhlvH0FYen/CeqEYXylJ2oBT/gNCMq5Y56eBsxtFzURpiUi8oIm3LxMGJ8uSiMsCsXecSWz7YcAAB6OgHn7PxTjbh2awAAAABJRU5ErkJggg==" clip-path="url(#p0c0)"/>
 <g clip-path="url(#p0c0)"><g transform="translate(285.61 110.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-1343" x="0"/></g></g>
 <g clip-path="url(#p0c0)"><g transform="translate(284.61 109.32) scale(0.005859)" fill="rgb(155,162,185)" fill-opacity="1"><use href="#gInter-Mediumttf-1343" x="0"/></g></g>
@@ -167,14 +172,14 @@
 <rect x="202.24" y="28" width="221.76" height="1" fill="url(#p0g1)" opacity="1"/>
 <rect x="424" y="28" width="221.76" height="1" fill="url(#p0g2)" opacity="1"/>
 <rect x="645.76" y="28" width="174.24" height="1" fill="url(#p0g3)" opacity="1"/>
-<rect x="615" y="535" width="180" height="60" fill="rgb(28,34,52)" fill-opacity="0.98"/>
+<rect x="615" y="535" width="180" height="60" fill="rgb(28,34,52)" fill-opacity="1"/>
 <rect x="615" y="535" width="180" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="615" y="594" width="180" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="615" y="536" width="1" height="58" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="794" y="536" width="1" height="58" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <g transform="translate(629 557.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.36"><use href="#gInter-Mediumttf-2" x="0"/><use href="#gInter-Mediumttf-614" x="1452"/><use href="#gInter-Mediumttf-736" x="2655"/><use href="#gInter-Mediumttf-852" x="3171"/><use href="#gInter-Mediumttf-689" x="3963"/><use href="#gInter-Mediumttf-586" x="4479"/></g>
 <g transform="translate(628 556.32) scale(0.005859)" fill="rgb(195,202,221)" fill-opacity="1"><use href="#gInter-Mediumttf-2" x="0"/><use href="#gInter-Mediumttf-614" x="1452"/><use href="#gInter-Mediumttf-736" x="2655"/><use href="#gInter-Mediumttf-852" x="3171"/><use href="#gInter-Mediumttf-689" x="3963"/><use href="#gInter-Mediumttf-586" x="4479"/></g>
-<g transform="translate(629 583.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.16"><use href="#gInter-Mediumttf-65" x="0"/><use href="#gInter-Mediumttf-852" x="1345"/><use href="#gInter-Mediumttf-507" x="2137"/><use href="#gInter-Mediumttf-773" x="3300"/><use href="#gInter-Mediumttf-773" x="4532"/><use href="#gInter-Mediumttf-790" x="5764"/><use href="#gInter-Mediumttf-586" x="7001"/></g>
-<g transform="translate(628 582.32) scale(0.005859)" fill="rgb(195,202,221)" fill-opacity="0.45"><use href="#gInter-Mediumttf-65" x="0"/><use href="#gInter-Mediumttf-852" x="1345"/><use href="#gInter-Mediumttf-507" x="2137"/><use href="#gInter-Mediumttf-773" x="3300"/><use href="#gInter-Mediumttf-773" x="4532"/><use href="#gInter-Mediumttf-790" x="5764"/><use href="#gInter-Mediumttf-586" x="7001"/></g>
+<g transform="translate(629 583.32) scale(0.005859)" fill="rgb(0,0,5)" fill-opacity="0.07"><use href="#gInter-Mediumttf-65" x="0"/><use href="#gInter-Mediumttf-852" x="1345"/><use href="#gInter-Mediumttf-507" x="2137"/><use href="#gInter-Mediumttf-773" x="3300"/><use href="#gInter-Mediumttf-773" x="4532"/><use href="#gInter-Mediumttf-790" x="5764"/><use href="#gInter-Mediumttf-586" x="7001"/></g>
+<g transform="translate(628 582.32) scale(0.005859)" fill="rgb(195,202,221)" fill-opacity="0.2"><use href="#gInter-Mediumttf-65" x="0"/><use href="#gInter-Mediumttf-852" x="1345"/><use href="#gInter-Mediumttf-507" x="2137"/><use href="#gInter-Mediumttf-773" x="3300"/><use href="#gInter-Mediumttf-773" x="4532"/><use href="#gInter-Mediumttf-790" x="5764"/><use href="#gInter-Mediumttf-586" x="7001"/></g>
 </g>
 </svg>

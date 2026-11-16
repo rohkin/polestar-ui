@@ -621,7 +621,7 @@ function M.Enable()
 			end)
 		end
 	end
-	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end)
+	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end, true)
 	M.Apply()
 end
 

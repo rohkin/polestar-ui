@@ -685,7 +685,7 @@ function M.Enable()
 		Menu.ModifyMenu(tag, function(_, root) root:AddMenuAcquiredCallback(menuLook) end)
 	end
 	if rawget(_G, "GameTimeFrame") then C_Timer.NewTicker(30, paintDay) end
-	Theme.OnChanged(function() if on() then M.Apply() end end)
+	Theme.OnChanged(function() if on() then M.Apply() end end, true)
 	M.Apply()
 end
 

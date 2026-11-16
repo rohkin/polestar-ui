@@ -11,6 +11,18 @@
 local ADDON, ns = ...
 PolestarUI = ns
 
+-- Polestar 0.4.0 or newer (its settings registry, frame movers, coin
+-- symbols); an older one gets a chat line at login and no module. Only a
+-- plain release number ("0.3.7") is checked: a dev or test build passes.
+local NEEDS = "Polestar: UI needs Polestar 0.4.0 or newer; update Polestar."
+function ns.PolestarTooOld(v)
+	local a, b, c = tostring(v):match("^(%d+)%.(%d+)%.(%d+)$")
+	if not a then return false end
+	a, b, c = tonumber(a), tonumber(b), tonumber(c)
+	return a * 1e6 + b * 1e3 + c < 4000
+end
+ns.tooOld = ns.PolestarTooOld(Polestar.version)
+
 ns.modules, ns.order = {}, {}
 
 -- A module: { Enable = fn (once, at login or when switched on), Show = fn(...),
@@ -47,6 +59,7 @@ function ns.Enabled(key)
 end
 
 function ns.Show(key, ...)
+	if ns.tooOld then return print(NEEDS) end
 	local m = ns.modules[key]
 	if m and m.Show then m.Show(...) end
 end
@@ -56,6 +69,7 @@ Polestar.OnLogin(function()
 	PolestarUIDB.modules = PolestarUIDB.modules or {}
 	PolestarUIDB.pos = PolestarUIDB.pos or {}
 	PolestarUICharDB = PolestarUICharDB or {}
+	if ns.tooOld then return print(NEEDS) end
 	local q = late
 	late = nil
 	for _, fn in ipairs(q) do fn() end
@@ -726,13 +740,15 @@ function ns.TextField(parent, w, letters)
 	return e
 end
 
--- Coins as plain text for a label or dialog line ("1g 2s 3c", units above
--- the largest left out), as Polestar's own Restock label writes them.
+-- Coins as plain text for a label or dialog line ("1,234g 2s 3c", units
+-- above the largest left out), in Polestar's coin symbols (the client's own,
+-- else its translated g s c) and the gold in thousands.
 function ns.Coins(c)
+	local G, S, C = Polestar.CoinSymbols()
 	local g, s = math.floor(c / 10000), math.floor(c / 100) % 100
-	if g > 0 then return ("%dg %ds %dc"):format(g, s, c % 100) end
-	if s > 0 then return ("%ds %dc"):format(s, c % 100) end
-	return ("%dc"):format(c % 100)
+	if g > 0 then return ("%s%s %d%s %d%s"):format(Polestar.Thousands(g), G, s, S, c % 100, C) end
+	if s > 0 then return ("%d%s %d%s"):format(s, S, c % 100, C) end
+	return ("%d%s"):format(c % 100, C)
 end
 
 -- A numeric editbox in the Polestar look; done(box) runs as it loses focus.
@@ -1525,30 +1541,56 @@ hooksecurefunc(Polestar.Widgets, "Modal", function() if PolestarModal:GetParent(
 -- pushes no window aside and the dock never closes it): off Polestar's layer,
 -- first where the stock bags open (UpdateContainerFrameAnchors: the bottom
 -- right, clear of the right action bars), then draggable and kept where the
--- player leaves it (PolestarUIDB.pos, by its name).
-function ns.Float(f)
+-- player leaves it (PolestarUIDB.pos, by its name). Polestar's Move frames
+-- (Polestar.Movers) places it too, through that same saved place; `label`
+-- names its box there.
+local function floatPoint(f)
+	local p = PolestarUIDB.pos[f:GetName()]
+	if p then return "TOPLEFT", "BOTTOMLEFT", p[1], p[2] end
+	return "BOTTOMRIGHT", "BOTTOMRIGHT", -(EditModeUtil:GetRightActionBarWidth() + 10), 85
+end
+local function floatPlace(f)
+	local point, rel, x, y = floatPoint(f)
+	f:ClearAllPoints()
+	f:SetPoint(point, UIParent, rel, x, y)
+end
+function ns.Float(f, label)
 	offLayer(f)
 	local key = f:GetName()
-	local p = PolestarUIDB.pos[key]
-	f:ClearAllPoints()
-	if p then
-		f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", p[1], p[2])
-	else
-		f:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -(EditModeUtil:GetRightActionBarWidth() + 10), 85)
-	end
-	-- The shell's drag handles call f:StopMovingOrSizing().
-	local stop = f.StopMovingOrSizing
-	f.StopMovingOrSizing = function(self)
-		stop(self)
-		PolestarUIDB.pos[key] = { self:GetLeft(), self:GetTop() }
-	end
+	floatPlace(f)
+	-- The shell drags it by its top-left off UIParent's bottom-left (Polestar's
+	-- ns.DragWindow, no StopMovingOrSizing, no onStop the shell hands out): that
+	-- point, set by a drag (or our own floatPlace), is the place kept.
+	hooksecurefunc(f, "SetPoint", function(self, point, rel, relPoint, x, y)
+		if point == "TOPLEFT" and rel == UIParent and relPoint == "BOTTOMLEFT" then PolestarUIDB.pos[key] = { x, y } end
+	end)
+	-- Movers speak UIParent's units; our place is in the window's (its Menu scale).
+	-- Absent only where Polestar's UI is not loaded (the preview loads Core and Theme).
+	local Movers = Polestar.Movers
+	if not Movers then return end
+	local function k() return f:GetEffectiveScale() / UIParent:GetEffectiveScale() end
+	Movers.Register({ key = key, label = label or key, frame = function() return f end,
+		anchor = function() return "TOPLEFT", "BOTTOMLEFT" end,
+		get = function()
+			local point, rel, x, y = floatPoint(f)
+			return point, rel, x * k(), y * k()
+		end,
+		set = function(_, _, x, y)
+			PolestarUIDB.pos[key] = { x / k(), y / k() }
+			floatPlace(f)
+		end,
+		reset = function()
+			PolestarUIDB.pos[key] = nil
+			floatPlace(f)
+		end })
 end
 
 function ns.Dock(f)
 	offLayer(f)
-	local startMoving = f.StartMoving
-	-- The shell's drag handles call f:StartMoving(); docked, the dock places it.
-	f.StartMoving = function(self) if not ns.Docked() and not self.psFull then startMoving(self) end end
+	-- Docked, the dock places it: the shell's drag (Polestar's ns.StartDrag)
+	-- moves only a frame that answers IsMovable.
+	local isMovable = f.IsMovable
+	f.IsMovable = function(self) return not ns.Docked() and not self.psFull and isMovable(self) end
 	-- Windows sharing one place (psDockGroup, ns.LinkPlace) swap in place: one
 	-- shown as its partner hides, the same moment, takes the partner's slot.
 	f:HookScript("OnShow", function(self)
@@ -1604,6 +1646,7 @@ local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
 -- combat: the doors' override bindings and secure buttons cannot change then.
 function ns.Switch(key, on)
 	local m = ns.modules[key]
+	if ns.tooOld then return print(NEEDS) end
 	if InCombatLockdown() then return say("windows cannot switch in combat; try again after it.") end
 	PolestarUIDB.modules[key] = on
 	if on and not m.psStarted then
@@ -1685,6 +1728,10 @@ function ns.WindowMenu(f, key, options)
 		if W.MenuShown(self) then return W.HideMenu() end
 		local items = {}
 		for _, it in ipairs(type(options) == "function" and options(self) or options or {}) do items[#items + 1] = it end
+		if ns.ShowSettings and Polestar.UI then -- Settings.lua: our page in Polestar's settings (no Polestar.UI: the preview)
+			items[#items + 1] = { text = "Settings\226\128\166", icon = "gear", onClick = function() ns.ShowSettings(key) end,
+				tip = "Polestar: UI's page in Polestar's settings." }
+		end
 		if #items > 0 then items[#items + 1] = { separator = true } end
 		local micro = gameMicro(key)
 		local item = { text = "Use game window", icon = "window", onClick = function() ns.Switch(key, false) end,

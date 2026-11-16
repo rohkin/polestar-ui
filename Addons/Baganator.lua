@@ -327,7 +327,7 @@ function M.Apply()
 end
 
 function M.Enable()
-	Theme.OnChanged(function() if ns.Enabled("baganator") then M.Apply() end end)
+	Theme.OnChanged(function() if ns.Enabled("baganator") then M.Apply() end end, true)
 	M.Apply()
 end
 

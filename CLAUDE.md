@@ -14,6 +14,7 @@ WoW (Forever client) addon: replaces stock Blizzard windows with Polestar's kit 
 
 ## Commands
 - `npm test`: every scene must render byte-identical to its golden, no text overflow.
+- Tests and previews run against `$POLESTAR_DIR` (now `../polestar-040` for Polestar 0.4.0); `Polestar_Looks` is loaded when present.
 - `npm run preview`: render all scenes into `tests/golden` (blesses them; run only for an intended change).
 - `node tools/preview.js <scene>...`: render only those scenes (blesses them).
 - `node tools/preview.js --check <scene>`: compare only, exit 1 on a mismatch; a failure writes `<scene>.actual.svg` (gitignored).
@@ -35,10 +36,10 @@ Modules and state
 - `ns.AfterLogin(fn)`: runs `fn` at PLAYER_LOGIN before modules enable (now if past); an `Addons/*` file wraps its body in it, to detect its addon late.
 - `ns.Enabled(key)`: module on (saved choice, else on unless gamepad UI). `ns.Show(key, ...)`: calls `m.Show`.
 - `ns.Switch(key, on)`: window Polestar's or the game's, live (not in combat); `reloadOff` modules wait for /reload.
-- `ns.WindowMenu(f, key, options?)`: the "..." menu left of Close: `options` (menu items, or `function(button)` returning them) first, a divider, then "Use game window"; sets `m.psFrame`, `f.psMenu`. A window has no other Options button.
+- `ns.WindowMenu(f, key, options?)`: the "..." menu left of Close: `options` (menu items, or `function(button)` returning them) first, "Settings…" (`ns.ShowSettings`, our page in Polestar's settings), a divider, then "Use game window"; sets `m.psFrame`, `f.psMenu`. A window has no other Options button.
 Docking
 - `ns.Dock(f)`: lays the window out as the stock panel manager does (the default); `ns.Docked()`, `ns.SetDocked(on)`, `ns.Relayout()`.
-- `ns.Float(f)`: a window that is no UI panel (Bags): never docked, first where the stock bags open, draggable, kept in `PolestarUIDB.pos[name]`.
+- `ns.Float(f, label?)`: a window that is no UI panel (Bags): never docked, first where the stock bags open, draggable, kept in `PolestarUIDB.pos[name]`; registered with Polestar's Move frames (`Polestar.Movers`, as `label`) through that same saved place.
 - `ns.DockFlyout(f, fly, overlap)`: a flyout outside a docked window's right edge counts in its width.
 - `ns.LinkPlace(win)` (Professions.lua): windows sharing a `psDockGroup` swap in place.
 Doors and secure parts
@@ -61,7 +62,7 @@ Widgets
 - `ns.ItemGrid(parent, cols, size, gap)`: frame; `grid.Layout(n)` shows n wells, returns them, fits height.
 - `ns.QualityRGB(q)`: item quality as r,g,b or nil.
 - `ns.SubjectBlock(f)`: sidebar head replacing Polestar's lockup; returns `{icon, name, line}`.
-- `ns.Coins(copper)`: coins as plain text ("1g 2s 3c") for labels and dialogs.
+- `ns.Coins(copper)`: coins as plain text ("1,234g 2s 3c", `Polestar.CoinSymbols`, `Polestar.Thousands`) for labels and dialogs.
 - `ns.Money(parent)` / `ns.SetMoney(m, copper, colorToken?)`: coin line as `GetMoneyString` writes it.
 - `ns.TextField(parent, w, letters?)`: one-line edit box (Enter and Escape leave it).
 - `ns.SetEnabled(button, on, why?)`: enable and fade to 45% as Polestar does; `why`, the reason a disabled one shows in its tooltip. A `W.Switch` too (through `W.SetDisabledWhen`; `why` is its tooltip while off).
@@ -88,6 +89,7 @@ HUD kit (`ns.HUD`, `Modules/HUD.lua`; takes secret values, follows every scheme 
 Values
 - `ns.PlayerText(fn)`: the player's name (`UnitName`, `UnitPVPName`) as last read out of combat.
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).
+- `Settings.lua` (`docs/settings.md`): our page in Polestar's settings (`Polestar.RegisterOptions`, key `polestarui`), every control get/set over PolestarUIDB; `ns.ShowSettings(key?)` opens it on that module's tab.
 Slash: `/pui` lists windows, `/pui <key> [on|off]`, `/pui dock on|off`.
 
 ## Test API (scene globals: `stub`, `PolestarUI`, `Polestar`, `assert`)
@@ -126,5 +128,5 @@ Module (`Modules/<Key>.lua`), `tests/lua/stub_<key>.lua`, `tests/scenes/<key>*.l
 - Page nav = the stock window's tabs, on the compact grid (`ns.Compact`), no sidebar: stock text tabs (Talents, Spellbook, Character, Inspect, Social, Bank, Macros, Mail, Merchant, Trainer) are top tabs (`ns.TopNav`, the stock tab icon on a tab where it has one, search+filter on the tab row); stock icon side-tabs (Guild, Professions/Crafting, Legacy) are a slim rail (`ns.GameRail(..., { slim = true })`, labels in tooltips). The subject (name, class, level, NPC) leads the subtitle, never a sidebar block. No `W.ShellNav` sidebar in a new window.
 - Never touch the stock window (no show/hide/hook/anchor): the stock one is closed or never opened (CLIENT.md rules 1, 8, 10). Unit frames: the stock ones stay as Edit Mode's proxies, only veiled (rule 16).
 - Switching a module off that stopped stock routing (`reloadOff`) takes effect "after /reload"; say so in text and tests.
-- Feature-detect Polestar exports and ship without them until they exist, e.g. `if Polestar.MapCanvas and Polestar.MapCanvas.Add then ...` (WorldMap).
+- Polestar 0.4.0 is the minimum (`ns.PolestarTooOld`: older, no module enables and one chat line says so); use its exports directly. Feature-detect only exports newer than 0.4.0 and ship without them until they exist, e.g. `if Polestar.MapCanvas and Polestar.MapCanvas.Add then ...` (WorldMap).
 - Intended visual change: run `npm run preview`, check `git diff --stat tests/golden`, commit goldens with the change.

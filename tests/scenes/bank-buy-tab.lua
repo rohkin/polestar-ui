@@ -25,7 +25,7 @@ stub.bankTabs[2] = {}
 f.tabButtons[2]:Click()
 assert(f.Title:GetText() == "Warband bank" and f.psNote:IsShown() and tostring(f.psNote:GetText()) == "Do you want to buy a new bank tab?", "no purchase prompt")
 assert(not f.psStrip:IsShown() and not button("Clean up") and not button("Deposit all"), "a bank with nothing bought offers its slots")
-button("Buy (1000g"):Click()
+button("Buy (1,000g"):Click()
 local cost
 for _, c in ipairs({ PolestarModal.Box:GetChildren() }) do if c:IsShown() and c.psParts then cost = c end end
 local r, g, b = cost.psParts[1].text:GetTextColor()

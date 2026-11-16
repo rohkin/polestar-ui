@@ -298,7 +298,7 @@ function M.Enable()
 	driver:RegisterEvent("UNIT_SPELLCAST_FAILED")
 	driver:SetScript("OnEvent", onEvent)
 	driver:SetScript("OnUpdate", update)
-	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end)
+	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end, true)
 	M.Apply()
 end
 

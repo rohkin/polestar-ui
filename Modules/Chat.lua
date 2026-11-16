@@ -977,7 +977,7 @@ function M.Enable()
 	Polestar.RegisterEvent("ADDON_LOADED", function(_, name)
 		if name == "Blizzard_CombatLog" and ns.Enabled("chat") then strip() end
 	end)
-	Theme.OnChanged(function() if ns.Enabled("chat") then M.Apply() end end)
+	Theme.OnChanged(function() if ns.Enabled("chat") then M.Apply() end end, true)
 	M.Apply()
 	replay()
 end

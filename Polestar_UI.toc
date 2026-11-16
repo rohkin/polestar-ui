@@ -55,3 +55,4 @@ Addons\Baganator.lua
 Addons\EllesmereUI.lua
 Addons\TalentsForever.lua
 Addons\WhatsTraining.lua
+Settings.lua

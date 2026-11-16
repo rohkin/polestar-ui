@@ -200,7 +200,7 @@ function M.Enable()
 	Polestar.RegisterEvent("ADDON_LOADED", function(_, name)
 		if name == "Blizzard_OverrideActionBar" or name == "Blizzard_ZoneAbility" then M.Apply() end
 	end)
-	Theme.OnChanged(function() if on() then M.Apply() end end)
+	Theme.OnChanged(function() if on() then M.Apply() end end, true)
 	M.Apply()
 end
 

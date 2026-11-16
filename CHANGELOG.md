@@ -2,12 +2,17 @@
 
 ## Unreleased
 
+- Settings: a Polestar: UI page in Polestar's settings (each window and HUD part on or off, docking, the unit frame options, chat history; reset restores our defaults), "Settings…" in every window's menu, the Bags in Polestar's Move frames, coins in Polestar's localized symbols with gold in thousands; Polestar 0.4.0 or newer is now required.
+- Polestar 0.4.0: live slider and colour ticks repaint only cheap parts (unit frames, auras, tooltip hairline); handlers that lay out take full changes alone; HUD bars and the damage trail snap under Reduce motion; tooltips use Polestar's solid tooltip ground.
 - Nameplates: the game's enemy and friendly nameplates in Polestar's look: flat health bars in the theme's colours (hostile, neutral, friendly, threat, tapped), an accent outline round your target, the cast bar as Polestar's cast bars draw it, square aura icons and Polestar's face; every nameplate option stays the game's, and friendly plates in dungeons and raids keep the game's look. Off by default beside Plater, Platynator, KuiNameplates, Threat Plates or EllesmereUI's or ElvUI's nameplates (`/pui nameplates on|off`).
 - Spellbook: with What's Training? loaded, a Training tab lists what your class trainer teaches now and later (available, missing requirements, coming soon, not yet available, pet abilities, missing talents) with level and cost, from its public API.
-- Spellbook, Talents, Auction House, Collections, Legacy, Merchant, Social, Trainer and World Map: the search moves into the filter dropdown at the tab row's end (focused as it opens, Enter keeps the search and closes it), leaving the tab row to the tabs; the filter button stays lit while a search runs. Merchant's filter is now Polestar's dropdown; the World Map's game filter menu opens from a row under the search.
+- Spellbook, Talents, Auction House, Collections, Legacy, Merchant, Social, Trainer and World Map: the search moves into the filter dropdown at the tab row's end (click the box to type, so movement keys never land in it; Enter keeps the search and closes it), leaving the tab row to the tabs; the filter button stays lit while a search runs. Merchant's filter is now Polestar's dropdown; the World Map's game filter menu opens from a row under the search.
 - Social: with EllesmereUI loaded, the friends list shows its friend groups (its order, colours and folded state, Favorites and the ungrouped friends as it shows them), each group head moves up or down, is renamed, recoloured or deleted (Favorites and Friends recolour), and a friend's right-click menu moves them to a new group, another group or Favorites, or out of their group, as EllesmereUI's own window does; every change writes EllesmereUI's own data.
 - Unit frames, auras and minimap: hovering an aura under the target or focus frame, the party, pet or target of target frames, or the minimap's edges no longer shows the game's hidden parts' tooltips beside ours; the minimap's zone name shows the zone tooltip.
 - Talents: with Talents Forever loaded, a footer button opens its planner and a pulsing gold edge marks your next planned talent point (following its "Show plan on the game's talents" setting).
+- Fixed: Bags search dims the items that don't match again.
+- Fixed: a dragged Bags window keeps its place, and docked windows stay docked when their header is dragged, with Polestar 0.4.0.
+- Fixed: posting or updating a Group Finder listing no longer triggers a blocked-action error; Browse picks your listing's activities and waits for Refresh.
 
 ## 0.1.0
 

@@ -165,7 +165,7 @@ function M.Enable()
 	-- Icon Size scales the items: the hairlines one pixel again.
 	EventRegistry:RegisterCallback("EditMode.Exit", M.Apply, M)
 	Polestar.RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", M.Apply)
-	Theme.OnChanged(function() if on() then M.Apply() end end)
+	Theme.OnChanged(function() if on() then M.Apply() end end, true)
 	M.Apply()
 end
 
