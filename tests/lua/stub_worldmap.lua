@@ -227,29 +227,75 @@ MINIMAP_TRACKING_TRIVIAL_QUESTS, CONTENT_TRACKING_MAP_TOGGLE = "Low-Level Quests
 WORLD_MAP_FILTER_TITLE_SHOW_MAP, WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG, QUEST_LOG_SHOW_OBJECTIVES = "Show on Map:", "Show in Quest Log:", "Quest Objectives"
 -- A context menu: its tag and entries, as the generator describes them; a
 -- checkbox keeps its tooltip (SetOnEnter), a button its click and state.
-local function describe(m, list)
+-- Each entry also answers the client's description API (Blizzard_Menu's
+-- MenuElementDescriptionProxyMixin) that ns.GameMenu reads: queued titles,
+-- dividers and spacers go in before the next entry, as the client's do, and
+-- Pick runs the responder and answers its MenuResponse (a checkbox's
+-- default, Refresh). Menu.PopulateDescription runs the generator, then what
+-- Menu.ModifyMenu registered under the root's tag.
+MenuResponse = { Open = 1, Refresh = 2, Close = 3, CloseAll = 4 }
+MenuInputContext = { None = 1, MouseButton = 2, MouseWheel = 3 }
+MenuVariants = { GetDefaultContextMenuMixin = function() return {} end }
+local function describe(m)
 	local function item(t)
 		t.SetOnEnter = function(self, fn) self.onEnter = fn end
-		t.SetOnLeave = function() end
+		t.SetOnLeave = function(self, fn) self.onLeave = fn end
+		t.GetOnEnter = function(self) return self.onEnter end
+		t.GetOnLeave = function(self) return self.onLeave end
 		t.SetEnabled = function(self, on) self.disabled = not on end
+		t.IsEnabled = function(self) return not self.disabled end
+		t.IsCheckbox = function(self) return self.get ~= nil and not self.radio end
+		t.IsRadio = function(self) return self.radio == true end
+		t.IsSelected = function(self) return self.get and self.get() or false end
+		t.HasResponder = function(self) return (self.set or self.click) ~= nil end
+		t.HasElements = function(self) return #self.items > 0 end
+		t.EnumerateElementDescriptions = function(self) return ipairs(self.items) end
+		t.SetResponse = function(self, r) self.response = r end
+		t.Pick = function(self, context)
+			assert(context, "Pick without an input context")
+			local r = (self.set or self.click)(self.data, { context = context }, nil)
+			return true, r or self.response or (self:IsCheckbox() and MenuResponse.Refresh or nil)
+		end
+		t.AddMenuAcquiredCallback = function() end
+		t.SetTag = function(self, tag, data) self.tag, self.contextData = tag, data end
+		t.GetTag = function(self) return self.tag, self.contextData end
 		t.items = {}
-		t.CreateTitle = function(self, text) self.items[#self.items + 1] = { title = text } end
+		t.add = function(self, x)
+			for _, q in ipairs(self.queued or {}) do self.items[#self.items + 1] = item(q) end
+			self.queued = nil
+			self.items[#self.items + 1] = item(x)
+			return self.items[#self.items]
+		end
+		t.queue = function(self, x) self.queued = self.queued or {}; self.queued[#self.queued + 1] = x end
+		t.CreateTitle = function(self, text) return self:add({ title = text }) end
 		t.CreateCheckbox = function(self, text, get, set) return self:add({ text = text, get = get, set = set }) end
 		t.CreateButton = function(self, text, fn) return self:add({ text = text, click = fn, button = true }) end
 		t.CreateRadio = function(self, text, get, set) return self:add({ text = text, get = get, set = set, radio = true }) end
-		t.CreateDivider = function(self) self.items[#self.items + 1] = { divider = true } end
-		t.add = function(self, x) self.items[#self.items + 1] = item(x); return self.items[#self.items] end
+		t.CreateDivider = function(self) return self:add({ divider = true }) end
+		t.CreateSpacer = function(self) return self:add({ spacer = true }) end
+		t.QueueTitle = function(self, text) self:queue({ title = text }) end
+		t.QueueDivider = function(self) self:queue({ divider = true }) end
+		t.QueueSpacer = function(self) self:queue({ spacer = true }) end
 		return t
 	end
 	return item(m)
 end
-MenuUtil = { CreateContextMenu = function(owner, gen)
-	local m = describe({ owner = owner })
-	m.SetTag = function(_, tag) m.tag = tag end
-	m.QueueSpacer, m.QueueDivider = function() end, function() end
-	gen(owner, m)
-	stub.menu = m
-end }
+local modifiers = {}
+Menu = Menu or {}
+function Menu.ModifyMenu(tag, fn) modifiers[tag] = modifiers[tag] or {}; table.insert(modifiers[tag], fn) end
+function Menu.PopulateDescription(gen, owner, root, ...)
+	gen(owner, root, ...)
+	for _, fn in ipairs(modifiers[root.tag or ""] or {}) do fn(owner, root, root.contextData) end
+end
+MenuUtil = {
+	CreateRootMenuDescription = function() return describe({}) end,
+	GetElementText = function(e) return e.text or e.title end,
+	CreateContextMenu = function(owner, gen)
+		local m = describe({ owner = owner })
+		Menu.PopulateDescription(gen, owner, m)
+		stub.menu = m
+	end,
+}
 -- The CVars' and tracking filter's defaults: as the preview draws.
 function GetCVarDefault(k) return ({ questPOI = "1", showQuestLevel = "1", showQuestDifficultyColor = "1", contentTrackingFilter = "1", showQuestObjectivesInLog = "1", questPOIWQ = "1", primaryProfessionsFilter = "1", secondaryProfessionsFilter = "1" })[k] or "0" end
 for _, k in ipairs({ "questPOIWQ", "primaryProfessionsFilter", "secondaryProfessionsFilter" }) do stub.cvars[k] = "1" end

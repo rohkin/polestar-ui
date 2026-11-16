@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- World Map: the map's filters (and what other addons add to them, such as Polestar's Nearby services and NPC services) are now part of the filter dropdown under the search, not a second game menu; a check keeps the dropdown open, a submenu opens in its place with Back.
+
 ## 0.2.0
 
 - Settings: a Polestar: UI page in Polestar's settings (each window and HUD part on or off, docking, the unit frame options, chat history; reset restores our defaults), "Settings…" in every window's menu, the Bags in Polestar's Move frames, coins in Polestar's localized symbols with gold in thousands; Polestar 0.4.0 or newer is now required.

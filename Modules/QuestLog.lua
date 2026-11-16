@@ -6,7 +6,7 @@
 -- list's place. Its search, filter and count live on the window's tab row.
 -- ns.QuestLog(window, canvas, width) -> the panel; panel.Paint(),
 -- panel.SetQuery(text), panel.Count() -> text, over the most it holds;
--- panel.FilterMenu(owner), panel.PaintFilter(button); panel.OnView() and
+-- panel.FilterMenu(owner, root) (a menu generator), panel.PaintFilter(button); panel.OnView() and
 -- panel.OnFilters() are the window's, called as the details open or shut and
 -- a filter changes.
 
@@ -40,7 +40,8 @@ function ns.QuestLog(win, canvas, width)
 	-- adds it when the two are one. The same CVars and tracking filter, so a
 	-- change shows in both maps; under the stock tag, so other addons' entries
 	-- (Menu.ModifyMenu) join ours. Each change redraws at once (rule 6). The
-	-- log's button and the map's open the same menu (p.FilterMenu).
+	-- window shows it in its own dropdown (ns.GameMenu reads it: p.FilterMenu
+	-- is the generator, run into the client's menu description).
 	local TRIVIAL = Enum.MinimapTrackingFilter and Enum.MinimapTrackingFilter.TrivialQuests
 	local function cvar(text, name, tip)
 		return { text = text, tip = tip, get = function() return GetCVarBool(name) end,
@@ -94,33 +95,31 @@ function ns.QuestLog(win, canvas, width)
 		end
 		return box
 	end
-	function p.FilterMenu(owner)
-		MenuUtil.CreateContextMenu(owner, function(_, root)
-			root:SetTag("MENU_WORLD_MAP_TRACKING")
-			root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_MAP)
-			local mapID = canvas:GetMapID()
-			if mapID and MapUtil.MapShouldShowWorldQuestFilters and MapUtil.MapShouldShowWorldQuestFilters(mapID) then
-				local sub = checkbox(root, WQ)
-				sub:CreateTitle(WORLD_MAP_FILTER_LABEL_WORLD_QUESTS_SUBMENU_TYPE)
-				local prof1, prof2, _, fish, cook, firstAid = GetProfessions()
-				if prof1 or prof2 then checkbox(sub, WQ_KINDS[1]) end
-				if fish or cook or firstAid then checkbox(sub, WQ_KINDS[2]) end
-			end
-			for _, x in ipairs(FILTERS) do checkbox(root, x) end
-			root:QueueSpacer()
-			root:QueueDivider()
-			root:QueueSpacer()
-			root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG)
-			checkbox(root, LOG_OBJECTIVES)
-			-- As the stock filter's reset: every filter back to its default.
-			if p.FiltersOn() > 0 then
-				root:CreateDivider()
-				root:CreateButton("Clear filters", function()
-					for _, x in ipairs(ALL) do if x.get() ~= x.default() then x.set(x.default()) end end
-					changed()
-				end)
-			end
-		end)
+	function p.FilterMenu(_, root)
+		root:SetTag("MENU_WORLD_MAP_TRACKING")
+		root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_MAP)
+		local mapID = canvas:GetMapID()
+		if mapID and MapUtil.MapShouldShowWorldQuestFilters and MapUtil.MapShouldShowWorldQuestFilters(mapID) then
+			local sub = checkbox(root, WQ)
+			sub:CreateTitle(WORLD_MAP_FILTER_LABEL_WORLD_QUESTS_SUBMENU_TYPE)
+			local prof1, prof2, _, fish, cook, firstAid = GetProfessions()
+			if prof1 or prof2 then checkbox(sub, WQ_KINDS[1]) end
+			if fish or cook or firstAid then checkbox(sub, WQ_KINDS[2]) end
+		end
+		for _, x in ipairs(FILTERS) do checkbox(root, x) end
+		root:QueueSpacer()
+		root:QueueDivider()
+		root:QueueSpacer()
+		root:CreateTitle(WORLD_MAP_FILTER_TITLE_SHOW_QUEST_LOG)
+		checkbox(root, LOG_OBJECTIVES)
+		-- As the stock filter's reset: every filter back to its default.
+		if p.FiltersOn() > 0 then
+			root:CreateDivider()
+			root:CreateButton("Clear filters", function()
+				for _, x in ipairs(ALL) do if x.get() ~= x.default() then x.set(x.default()) end end
+				changed()
+			end)
+		end
 	end
 	-- The window's filter button: lit while a filter is off its default.
 	function p.PaintFilter(b)

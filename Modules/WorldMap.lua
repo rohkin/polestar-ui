@@ -465,12 +465,14 @@ local function build()
 	f.psLegend = legend()
 	-- The stock map's filter menu (the quest log's, one state for both), at
 	-- the tab row's end (ns.TopNav), lit while a filter is off its default.
-	-- While the quest list shows, it opens our dropdown: the search, then a
-	-- row for the game's menu (MENU_WORLD_MAP_TRACKING, kept for the addons
-	-- that add to it); else the game's menu at once.
+	-- It opens our dropdown: the search while the quest list shows, then the
+	-- game's menu (MENU_WORLD_MAP_TRACKING, with what other addons add to it)
+	-- read into its rows (ns.GameMenu); a submenu in its place.
 	ns.SearchInFilter(f, function(self)
-		if not searchable() then return f.psQuests.FilterMenu(self) end
-		ns.FilterMenu(f, { { text = (MAP_FILTERS or "Map filters") .. "…", onClick = function() f.psQuests.FilterMenu(self) end } })
+		ns.GameMenu(self, f.psQuests.FilterMenu, function(items, depth)
+			if depth == 0 and searchable() then return ns.FilterMenu(f, items) end
+			return W.ShowMenu(self, items, { minWidth = 220 })
+		end)
 	end)
 	f.psQuests.OnFilters = paintFilter
 	mapNav()

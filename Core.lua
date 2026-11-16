@@ -259,6 +259,91 @@ function ns.FilterMenu(f, items, opts)
 	return menu
 end
 
+-- A game menu (Blizzard_Menu) as rows of Polestar's: `generator(owner, root)`
+-- run into a root description as MenuUtil.CreateContextMenu does
+-- (Menu.PopulateDescription), so what other addons add under its tag
+-- (Menu.ModifyMenu) comes too; nothing of the game's menu frames is shown.
+-- Titles are headings, dividers and spacers separators, checkboxes and radios
+-- checked rows, a submenu a "…" row that opens it in place, a "Back" row
+-- first (Polestar has one menu frame, no flyouts). A click picks the entry
+-- as the game's menu would (its responder, then its MenuResponse): Open and
+-- Refresh show the level again, regenerated so checks are read anew; Close
+-- goes up one level; nil and CloseAll leave it shut. `show(items, depth)`
+-- shows one level (ns.FilterMenu or W.ShowMenu) and returns the menu.
+function ns.GameMenu(owner, generator, show)
+	local path = {}
+	local open
+	local function hookRows(menu)
+		for _, row in ipairs(menu.rows) do
+			if not rawget(row, "psGameHooked") then
+				row.psGameHooked = true
+				-- The entry's own tooltip (its OnEnter), on our row.
+				row:HookScript("OnEnter", function(self)
+					local it = self.psItem
+					if it and it.psEnter then pcall(it.psEnter, self, it.psDesc) end
+				end)
+				row:HookScript("OnLeave", function(self)
+					local it = self.psItem
+					if it and it.psLeave then pcall(it.psLeave, self, it.psDesc) end
+				end)
+			end
+		end
+	end
+	local function rows(desc, depth)
+		local items, gap = {}, false
+		local function add(it)
+			if gap and #items > 0 then items[#items + 1] = { separator = true } end
+			gap = false
+			items[#items + 1] = it
+			return it
+		end
+		if depth > 0 then
+			add({ text = BACK or "Back", onClick = function() path[#path] = nil; open() end })
+			gap = true
+		end
+		for _, e in desc:EnumerateElementDescriptions() do
+			local text, kids, picks = MenuUtil.GetElementText(e), e:HasElements(), e:HasResponder()
+			if text == nil and not kids then
+				gap = true
+			else
+				local it = add({ text = text, disabled = not e:IsEnabled(), psDesc = e, psEnter = e:GetOnEnter(), psLeave = e:GetOnLeave() })
+				if picks then
+					it.checked = (e:IsCheckbox() or e:IsRadio()) and e:IsSelected() or nil
+					it.onClick = function()
+						local _, r = e:Pick(MenuInputContext.MouseButton, "LeftButton")
+						if r == MenuResponse.Close then path[#path] = nil end
+						if r == MenuResponse.Open or r == MenuResponse.Refresh or (r == MenuResponse.Close and depth > 0) then open() end
+					end
+				elseif not kids then
+					it.disabled = true -- a title
+				end
+				if kids then
+					local into = { text = (text or "") .. "…", disabled = it.disabled, onClick = function() path[#path + 1] = text; open() end }
+					if picks then add(into) else it.text, it.onClick = into.text, into.onClick end
+				end
+			end
+		end
+		return items
+	end
+	function open()
+		local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
+		Menu.PopulateDescription(generator, owner, root)
+		-- Down the path by text: the description is new each time.
+		local desc, depth = root, 0
+		for _, text in ipairs(path) do
+			local found
+			for _, e in desc:EnumerateElementDescriptions() do
+				if MenuUtil.GetElementText(e) == text and e:HasElements() then found = e break end
+			end
+			if not found then break end
+			desc, depth = found, depth + 1
+		end
+		for i = #path, depth + 1, -1 do path[i] = nil end
+		hookRows(show(rows(desc, depth), depth))
+	end
+	open()
+end
+
 -- Page nav as top tabs (docs/DESIGN.md, "The Game Window Shell"): the window
 -- has no sidebar (ns.Plain); its pages are W.ShellTabs, each keeping a nav
 -- row's state, and the search (f.Search, and f.psFilter when the window has

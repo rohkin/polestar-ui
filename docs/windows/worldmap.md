@@ -32,9 +32,9 @@ zoom and click-to-open are the game's.
   order, the shown one checked; dividers between them. How to move around
   the map (click a zone, right-click out, scroll to zoom) is its tooltip
   hint. At the row's right end the filter (always, so the filters work with
-  the log shut); while the quest list shows, it opens our dropdown
-  (`ns.SearchInFilter`): the quest search on top, then "Map filters…", which
-  opens the game's menu; else the game's menu at once.
+  the log shut), it opens our dropdown (`ns.SearchInFilter`): the quest
+  search on top while the quest list shows, then the map's filter menu in
+  its rows (below).
 - **Map controls:** as the stock map's overlay frames, at the canvas's top
   right (above the pins): the full-screen toggle (the stock maximise,
   remembered; out of the dock while full), and under it, unless a game rule
@@ -85,9 +85,19 @@ zoom and click-to-open are the game's.
   Social's (`sliders`, editbox ground; its glyph in the accent while a
   filter is off its default or a search runs, its tooltip "Search and filter
   (n on)" with the list shown)
-  opens the stock map's filter menu as Forever builds it (the game's Menu,
-  its `MENU_WORLD_MAP_TRACKING` tag, so other addons' entries join it, each
-  filter with the stock tooltip): the world quest submenu where the map has
+  opens the stock map's filter menu as Forever builds it, inside our
+  dropdown: the generator (`p.FilterMenu`) runs into the client's menu
+  description under the `MENU_WORLD_MAP_TRACKING` tag
+  (`Menu.PopulateDescription`, so other addons' `Menu.ModifyMenu` entries
+  join it, e.g. Polestar's "Nearby services" and "Polestar: NPC services"),
+  and `ns.GameMenu` reads its elements into Polestar's menu rows, the game's
+  menu never shown: titles as headings, dividers and spacers as one
+  separator, checkboxes and radios as checked rows (each entry's own
+  tooltip on hover), a submenu as a "…" row that opens it in place with
+  "Back" first (Polestar's menu is one frame, no flyouts). A click picks the
+  entry as the game's menu does (`Pick`: its responder, then its
+  `MenuResponse`): a checkbox (Refresh) keeps the dropdown open and reads
+  every check anew, Close goes up a level, a button closes it. The entries: the world quest submenu where the map has
   world quests, quest objectives on the map (`questPOI`), quest levels
   (`showQuestLevel`), difficulty colour (`showQuestDifficultyColor`),
   low-level quests (the trivial quests tracking filter) and tracked items

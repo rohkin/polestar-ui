@@ -68,12 +68,16 @@ local mf, pin = f.psFilter, f.psPin
 assert(not f.psQuests:IsShown() and mf:IsShown() and mf:GetParent() == f.TabRow and select(1, mf:GetPoint(1)) == "RIGHT" and not f.Search:IsShown(), "the filter on the tab row")
 assert(select(2, f.psFullButton:GetPoint(1)) == c and select(1, f.psFullButton:GetPoint(1)) == "TOPRIGHT" and select(2, pin:GetPoint(1)) == c, "controls on the map")
 assert(pin:GetFrameLevel() > c:GetFrameLevel() + 1000, "the controls above the pins")
+stub.menu = nil
 mf:Click()
-assert(stub.menu.tag == "MENU_WORLD_MAP_TRACKING" and stub.menu.owner == mf, "the map's filter menu with the log shut")
-stub.menu.items[3].set()
-assert(stub.cvars.showQuestLevel == "0" and mf.psActive and mf.psTip == "Filter (1 on)", "lit off its default")
-stub.menu.items[3].set()
+local mr = {}
+for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then mr[#mr + 1] = r end end
+assert(PolestarMenu:IsShown() and PolestarMenu.psOwner == mf and not stub.menu and mr[1].psItem.text == WORLD_MAP_FILTER_TITLE_SHOW_MAP, "the map's filters in our dropdown with the log shut")
+mr[3]:Click()
+assert(stub.cvars.showQuestLevel == "0" and mf.psActive and mf.psTip == "Filter (1 on)" and PolestarMenu:IsShown(), "lit off its default, the dropdown kept")
+mr[3]:Click()
 assert(not mf.psActive, "back to its default")
+Polestar.Widgets.HideMenu()
 stub.cvars.questPOI = "0"
 stub.fire("CVAR_UPDATE", "questPOI")
 assert(mf.psActive, "a change from the stock menu lights it")
