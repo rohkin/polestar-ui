@@ -285,11 +285,12 @@ local function post()
 		ok = lfg("CreateListing", { activityIDs = ids, newPlayerFriendly = npf(), generalPlaystyle = s.playstyle, voiceMode = s.voice })
 	end
 	s.dirty = false
-	-- Posted: to Browse, searching what was posted (LFGParentFrame_SearchActiveEntry).
-	-- Stock waits for the entry's event; the search needs this click, so it runs now.
+	-- Posted: to Browse on what was posted (LFGParentFrame_SearchActiveEntry), not
+	-- searched: the listing call spent this click's hardware event (Search would be
+	-- blocked), and stock's search from the entry event is no hardware event either.
 	if ok ~= false and G.SearchFor then
 		if SOUNDKIT and SOUNDKIT.PVP_ENTER_QUEUE then PlaySound(SOUNDKIT.PVP_ENTER_QUEUE) end
-		G.SearchFor(ids)
+		G.SearchFor(ids, true)
 		ns.Show("groupfinder", "browse")
 	else
 		G.Paint()

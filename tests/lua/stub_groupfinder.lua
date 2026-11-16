@@ -34,7 +34,7 @@ GROUP_FINDER, LFG_LIST_TAB_1, LFG_LIST_TAB_2, LFG_LIST_TAB_3, LFG_LIST_EDIT = "G
 
 ---------------------------------------------------------------------------
 -- The hardware guard: the client runs these only from a hardware event; from
--- anywhere else (OnShow, an event, a timer) the call is refused.
+-- anywhere else (OnShow, an event, a timer), or a second time in one, the call is refused.
 
 stub.hardware = false
 local function withHardware(fn, ...)
@@ -57,6 +57,7 @@ function stub.pressKey(...) return withHardware(pressKey, ...) end
 
 local function guard(name)
 	if not stub.hardware then error(name .. " needs a hardware event (a click or a key)", 3) end
+	stub.hardware = false -- one restricted call per hardware event (live: Search after CreateListing was blocked)
 end
 
 C_LFGList = C_LFGList or {}

@@ -1,7 +1,7 @@
 --@ title: Group Finder: Listing listed
 --@ roots: PolestarUIGroupFinder
 --@ stubs: stub_groupfinder.lua, stub_lfglisting.lua
--- Posting from the click lists the group (CreateListing with the activities, playstyle, voice mode and new player friendly; the client refuses it outside a click). Listed, the page shows the listing up: "Edit Listing" on the rail, Update greyed until something changes, no Categories. Update copies the listing into the client's creation fields before UpdateListing, so the comment the game's window gave it stays. Unlist is the game's window: a secure button of ours over it closes ours and clicks the micro button (RemoveListing is protected). Each post goes on to Browse, searching what was posted, from the same click (as stock's LFGParentFrame_SearchActiveEntry). Taken down there, what was chosen can be listed again.
+-- Posting from the click lists the group (CreateListing with the activities, playstyle, voice mode and new player friendly; the client refuses it outside a click). Listed, the page shows the listing up: "Edit Listing" on the rail, Update greyed until something changes, no Categories. Update copies the listing into the client's creation fields before UpdateListing, so the comment the game's window gave it stays. Unlist is the game's window: a secure button of ours over it closes ours and clicks the micro button (RemoveListing is protected). Each post goes on to Browse with what was posted picked (as stock's LFGParentFrame_SearchActiveEntry) but not searched: the listing call spends the click's hardware event, so the client would block a Search in it; Browse asks for Refresh, whose click searches. Taken down there, what was chosen can be listed again.
 PolestarUI.Show("groupfinder", "listing")
 local f = PolestarUIGroupFinder
 local function kids(fn)
@@ -29,7 +29,11 @@ local l = stub.listing
 assert(l and not l.update and #l.activityIDs == 2 and l.activityIDs[1] == 3 and l.activityIDs[2] == 4, "not listed")
 assert(l.generalPlaystyle == 3 and l.voiceMode == 1 and l.newPlayerFriendly == false, "listing fields")
 assert(stub.cvars.voiceProvider == "1", "voice provider not set")
-assert(PolestarUIDB.groupFinderPage == "browse" and stub.searched and stub.searched.category == 2 and #stub.searched.activityIDs == 2, "post: not on Browse searching the listing")
+assert(PolestarUIDB.groupFinderPage == "browse" and not stub.searched, "post: not on Browse, or searched in the spent click")
+assert(f.Subtitle:GetText():find("Listed", 1, true), "post: Browse not waiting for Refresh: " .. tostring(f.Subtitle:GetText()))
+local function refresh() for _, k in ipairs({ f.TabRow:GetChildren() }) do if k.psIconName == "reload" and k:IsShown() then return k end end end
+refresh():Click()
+assert(stub.searched and stub.searched.category == 2 and #stub.searched.activityIDs == 2, "Refresh did not search the listing")
 stub.fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 PolestarUI.Show("groupfinder", "listing")
 -- Listed (the client's event redraws the rail).
@@ -47,7 +51,9 @@ assert(post:IsEnabled(), "update greyed after a change")
 assert(stub.copied == 0, "copied before the click")
 post:Click()
 assert(stub.listing.update and #stub.listing.activityIDs == 3 and stub.copied == 1 and stub.copiedListing == l, "update did not copy first")
-assert(PolestarUIDB.groupFinderPage == "browse" and #stub.searched.activityIDs == 3, "update: not on Browse searching the listing")
+assert(PolestarUIDB.groupFinderPage == "browse" and #stub.searched.activityIDs == 2, "update: not on Browse, or searched in the spent click")
+refresh():Click()
+assert(#stub.searched.activityIDs == 3, "Refresh did not search the updated listing")
 stub.fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 PolestarUI.Show("groupfinder", "listing")
 assert(not post:IsEnabled(), "still dirty")

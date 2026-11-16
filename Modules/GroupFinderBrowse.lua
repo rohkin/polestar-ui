@@ -31,6 +31,7 @@ local f, panel, empty, catButton, actButton, optButton, refresh
 local rows, heads = {}, {}
 local category, chosen = 0, {} -- the category picked (0: none) and the activities ticked
 local searching, failed, selected, shown = false, false, nil, false
+local waiting = false -- picked for Refresh to search (after a Post: its click is spent)
 local collapsed = {}
 
 local function call(name, ...) if L[name] then return L[name](...) end end
@@ -98,7 +99,7 @@ local function doSearch()
 	if category == 0 or not L.Search then return end
 	local ids = #chosen > 0 and chosen or activities(category)
 	L.Search(category, 0, 0, nil, false, nil, ids)
-	searching, failed, selected = true, false, nil
+	searching, failed, selected, waiting = true, false, nil, false
 	token = token + 1
 	local mine = token
 	if C_Timer and C_Timer.After then
@@ -119,8 +120,10 @@ local function setCategory(id)
 end
 
 -- These activities picked, in the first one's category, and searched
--- (LFGBrowseMixin:SetSelectedSearchActivities, then the search).
-local function searchFor(ids)
+-- (LFGBrowseMixin:SetSelectedSearchActivities, then the search). `wait`: picked
+-- only, for Refresh: a hardware event allows one restricted call, so after
+-- Post's CreateListing/UpdateListing a Search in the same click is blocked.
+local function searchFor(ids, wait)
 	chosen = {}
 	for _, id in ipairs(ids or {}) do
 		local a = info(id)
@@ -129,7 +132,7 @@ local function searchFor(ids)
 			if a.categoryID == category then chosen[#chosen + 1] = id end
 		end
 	end
-	doSearch()
+	if wait then waiting, selected = true, nil else doSearch() end
 	G.Paint()
 end
 G.SearchFor = searchFor -- the Listing page's Post (as LFGParentFrame_SearchActiveEntry)
@@ -676,9 +679,9 @@ local function paint()
 		if not s or s.isDelisted then selected = nil end
 	end
 	local height
-	if searching or failed or (total or 0) == 0 then
+	if waiting or searching or failed or (total or 0) == 0 then
 		panel:Hide()
-		empty:SetText(searching and (SEARCHING or "Searching…") or failed and (LFG_LIST_SEARCH_FAILED or "The search failed. Try again.")
+		empty:SetText(waiting and "Listed. Click Refresh to see the groups for your listing." or searching and (SEARCHING or "Searching…") or failed and (LFG_LIST_SEARCH_FAILED or "The search failed. Try again.")
 			or category == 0 and "Pick a category to see its groups." or (LFG_LIST_NO_RESULTS_FOUND or "No groups found."))
 		empty:Show()
 	else
@@ -698,7 +701,7 @@ local function paint()
 		left[1] = { label = LFG_LIST_UNLIST or "Unlist", game = true, on = LFDMicroButton ~= nil, why = "No Group Finder button.",
 			tip = "Addons can't unlist a group: this opens the game's Group Finder, where its Unlist button is." }
 	end
-	local fact = searching and "Searching…" or failed and "Search failed" or (total or 0) > 0 and ("%d %s"):format(total, total == 1 and "listing" or "listings") or nil
+	local fact = waiting and "Listed" or searching and "Searching…" or failed and "Search failed" or (total or 0) > 0 and ("%d %s"):format(total, total == 1 and "listing" or "listings") or nil
 	return fact, right, left, height
 end
 

@@ -39,8 +39,9 @@ differs, "Built" wins. The live check results end the file.
   CVar) on the tab row; new player friendly drops to its own line when the
   role toggles reach it; Post
   / Update from the click only (`CopyActiveEntryInfoToCreationFields` first
-  on Update); after a post, Browse searching what was posted, from the same
-  click (stock's `LFGParentFrame_SearchActiveEntry`); the locked view for a
+  on Update); after a post, Browse with what was posted picked
+  (stock's `LFGParentFrame_SearchActiveEntry`), unsearched until Refresh: the
+  listing call spends the click's hardware event (CLIENT.md rule 4); the locked view for a
   member. Unlist, "Post with a comment…" and a mandatory-comment category go
   to the game's window.
 - **Browse** (`GroupFinderBrowse.lua`): category and activity pickers, the

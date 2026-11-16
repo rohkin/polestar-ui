@@ -122,6 +122,13 @@ clicks and drags back to the slot, and hide it on `PLAYER_REGEN_DISABLED`
 (`overSlot` in Character.lua). Give it a strata above the window's: in the same
 strata, a level higher, the game still handed the mouse to the slot under it.
 
+Calls restricted to a hardware event (`C_LFGList.Search`, `CreateListing`,
+`UpdateListing`, `UnitSetRole`, `SendWho`) run only inside a click or key, and
+one per event: Group Finder's Post called `CreateListing` then `Search` in the
+same click and the Search was blocked (`ADDON_ACTION_BLOCKED`). Make the second
+call wait for its own click (Post leaves Browse picked, for Refresh). Stock code
+may chain them from events: it is secure, we are not.
+
 **Caught by:** BugGrabber in game; the `spellbook` scene (the stub blocks a
 spell pickup in combat, and a row dragged mid-fight picks up nothing). The
 `character-enchant` scene checks the secure button lands on the hovered slot, with use only on
