@@ -38,7 +38,7 @@ assert(not stub.newItems["1:5"], "closing left it new")
 stub.pressKey("B")
 f.Search:SetText("x")
 assert(stub.search == "x", "search not the client's")
-stub.fire("INVENTORY_SEARCH_UPDATE")
+-- The template's SetAlpha fades only its own parts: the well itself must dim.
 assert(well(0, 1):GetAlpha() == 0.25, "a miss not dimmed")
 f:Hide()
 assert(stub.search == "", "search left on")

@@ -110,7 +110,8 @@ local function paintSlot(w)
 	local bag, slot = w.psBag, w.psSlot
 	local it = C_Container.GetContainerItemInfo(bag, slot)
 	ns.PaintItem(w, it and { icon = it.iconFileID, quality = ns.Clean(it.quality), count = ns.Num(it.stackCount), desat = ns.Clean(it.isLocked) })
-	w:SetAlpha(it and ns.Clean(it.isFiltered) and 0.25 or 1)
+	-- The frame's own SetAlpha: the template's (ItemButtonMixin) fades only its parts, none of them ours.
+	UIParent.SetAlpha(w, it and ns.Clean(it.isFiltered) and 0.25 or 1)
 	local q = it and C_Container.GetContainerItemQuestInfo(bag, slot)
 	w:UpdateQuestItem(q and q.isQuestItem, q and q.questID, q and q.isActive)
 	local start, duration, enable = C_Container.GetContainerItemCooldown(bag, slot)

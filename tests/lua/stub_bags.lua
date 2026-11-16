@@ -60,7 +60,10 @@ function C_Container.GetContainerItemCooldown(bag, slot)
 	return c[1], c[2], c[3]
 end
 function C_Container.GetContainerItemLink(bag, slot) return slotOf(bag, slot) and ("|Hitem:%d|h[Bag item]|h"):format(2000 + slot) or nil end
-function C_Container.SetItemSearch(text) stub.search = text end
+function C_Container.SetItemSearch(text)
+	stub.search = text
+	stub.fire("INVENTORY_SEARCH_UPDATE")
+end
 function C_Container.SortBags() stub.sortedBags = stub.sortedBags + 1 end
 function C_Container.ContainerIDToInventoryID(bag) return 30 + bag end
 function C_Container.PickupContainerItem(bag, slot) stub.picked = { bag, slot } end
@@ -304,6 +307,11 @@ function Mixin:UpdateQuestItem(isQuestItem, questID, isActive)
 		t:Hide()
 	end
 end
+-- ItemButtonMixin:SetAlpha (ItemButtonTemplate.lua): the template's own
+-- parts fade, never the button, so a well of ours stays as bright.
+function Mixin:SetAlpha(a)
+	for _, k in ipairs({ "icon", "IconBorder", "IconOverlay", "Stock", "Count" }) do self[k]:SetAlpha(a) end
+end
 local GUARDED = { bagID = true, SplitStack = true, hasStackSplit = true, containerFrame = true }
 local SCRIPTS = { OnClick = true, OnEnter = true, OnLeave = true, OnHide = true, OnDragStart = true, OnReceiveDrag = true, OnAttributeChanged = true, OnLoad = true }
 TEXTURE_ITEM_QUEST_BANG = TEXTURE_ITEM_QUEST_BANG or "Interface/ContainerFrame/UI-Icon-QuestBang"
@@ -323,7 +331,7 @@ function CreateFrame(kind, name, parent, template, ...)
 	b.IconQuestTexture = b:CreateTexture(name .. "IconQuestTexture", "OVERLAY", nil, 2)
 	b.IconQuestTexture:SetAllPoints(b)
 	b.IconQuestTexture:Hide()
-	for _, k in ipairs({ "NewItemTexture", "BattlepayItemTexture", "flash", "JunkIcon", "UpgradeIcon" }) do b[k] = b:CreateTexture(nil, "OVERLAY") end
+	for _, k in ipairs({ "NewItemTexture", "BattlepayItemTexture", "flash", "JunkIcon", "UpgradeIcon", "IconOverlay", "Stock", "Count" }) do b[k] = b:CreateTexture(nil, "OVERLAY") end
 	b.Cooldown = createFrame("Cooldown", name .. "Cooldown", b, "CooldownFrameTemplate")
 	b.Cooldown:SetAllPoints(b)
 	for s in pairs(SCRIPTS) do if Mixin[s] then b:SetScript(s, Mixin[s]) end end
