@@ -1,7 +1,9 @@
 -- Polestar: UI Shots (dev tool, not shipped): /puishots opens every Polestar: UI
 -- window and page in turn and takes a screenshot of each; /puishots <key> | hud.
--- Each shot is saved to PolestarUIShotsDB.shots as "time|label" (written on
--- /reload or logout); `npm run shots` copies the images into screenshots/game.
+-- Each shot is saved to PolestarUIShotsDB.shots as "time|label" at the moment it
+-- is taken ("time|label|failed" on SCREENSHOT_FAILED), shots at least 2 s of
+-- time() apart so each file stamp matches one entry (written on /reload or
+-- logout); `npm run shots` copies the images into screenshots/game.
 -- Only public module calls (m.Show, ns.Enabled, m.psFrame:Hide): no stock frame,
 -- no protected call, nothing hidden.
 
@@ -43,7 +45,7 @@ local NEEDS = { -- open only from an NPC, a target or an open trade skill
 	crafting = "an open trade skill",
 }
 
-local queue, i, waiting, oldFormat = {}, 0, nil, nil
+local queue, i, waiting, oldFormat, lastT = {}, 0, nil, nil, 0
 local ev = CreateFrame("Frame")
 
 local function say(msg) print("|cff88ccffPUI shots|r: " .. msg) end
@@ -92,6 +94,7 @@ local function finish(msg)
 	closeAll()
 	if oldFormat then pcall(SetCVar, "screenshotFormat", oldFormat); oldFormat = nil end
 	local n = #PolestarUIShotsDB.shots
+	if PolestarUIShotsDB.skipped ~= "" then say("skipped " .. PolestarUIShotsDB.skipped) end -- after the HUD shot, not in it
 	say(msg .. " " .. n .. " shots listed; click Reload or type /reload (or log out) to write the list, then run `npm run shots`.")
 	if n > 0 then offerReload(n) end
 end
@@ -104,15 +107,21 @@ local function step()
 	closeAll()
 	local ok, err = pcall(s.open)
 	if not ok then say(s.label .. " failed to open: " .. tostring(err)); return step() end
-	C_Timer.After(DELAY, function()
+	local function shoot()
 		if not queue[i] then return end
+		if time() < lastT + 2 then return C_Timer.After(0.1, shoot) end -- keep each shot in its own 2 s of file stamps
+		lastT = time()
+		local t = PolestarUIShotsDB.shots
+		s.entry = #t + 1
+		t[s.entry] = lastT .. "|" .. s.label -- at capture, even if the run stops before the event: the file exists
 		waiting = s
 		Screenshot()
 		local mine = i
 		C_Timer.After(TIMEOUT, function()
 			if waiting == s and i == mine then waiting = nil; say(s.label .. ": no screenshot event, moving on."); step() end
 		end)
-	end)
+	end
+	C_Timer.After(DELAY, shoot)
 end
 
 ev:SetScript("OnEvent", function(_, event)
@@ -120,10 +129,9 @@ ev:SetScript("OnEvent", function(_, event)
 	local s = waiting
 	if not s then return end
 	waiting = nil
-	if event == "SCREENSHOT_SUCCEEDED" then
+	if event == "SCREENSHOT_FAILED" then
 		local t = PolestarUIShotsDB.shots
-		t[#t + 1] = time() .. "|" .. s.label -- one string per shot: tools/shots.js reads it with a regex
-	else
+		t[s.entry] = t[s.entry] .. "|failed" -- no file: tools/shots.js skips it
 		say(s.label .. ": screenshot failed.")
 	end
 	step()
@@ -157,7 +165,7 @@ local function run(arg)
 	if waiting or queue[i] then return say("a run is going.") end
 	queue, i = {}, 0
 	local planned, skipped = {}, {}
-	local function skip(key, why) skipped[#skipped + 1] = key .. ": " .. why; say("skipped " .. key .. ": " .. why) end
+	local function skip(key, why) skipped[#skipped + 1] = key .. ": " .. why end
 	for _, p in ipairs(PLAN) do
 		planned[p[1]] = true
 		if arg == "" or arg == p[1] then
@@ -174,7 +182,7 @@ local function run(arg)
 		end
 	end
 	if arg == "" or arg == "hud" then add("hud", function() end) end -- closeAll ran: the plain HUD
-	if #queue == 0 then return say("nothing to shoot.") end
+	if #queue == 0 then return say("nothing to shoot" .. (#skipped > 0 and " (" .. table.concat(skipped, "; ") .. ")." or ".")) end
 
 	local T = Polestar.Theme
 	local w, h = GetPhysicalScreenSize()
@@ -183,6 +191,7 @@ local function run(arg)
 		info = ("res=%dx%d uiScale=%s useUiScale=%s effScale=%.3f scheme=%s skin=%s"):format(w, h, tostring(GetCVar("uiScale")),
 			tostring(GetCVar("useUiScale")), UIParent:GetEffectiveScale(), tostring(T.SchemeKey and T.SchemeKey()), tostring(T.SkinKey and T.SkinKey())),
 		skipped = table.concat(skipped, "; "),
+		stamp = "capture", -- entries carry the time() Screenshot() was called (older runs: the success event's)
 		shots = {},
 	}
 	local ok, cur = pcall(GetCVar, "screenshotFormat")

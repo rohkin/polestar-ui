@@ -2,8 +2,8 @@
 // shots [--root <_forever_ folder>] [--dry-run] [--watch]: copies the screenshots /puishots took (Polestar_UI_Shots
 // addon) into screenshots/game/<run>/<label>.<ext>, and the same into screenshots/game/latest/. The manifest is
 // PolestarUIShotsDB in WTF/Account/*/SavedVariables/Polestar_UI_Shots.lua (the newest), written on /reload or logout:
-// run = "<YYYYMMDD-HHMMSS>", shots = { "<time()>|<label>", ... }. Each entry takes the unused
-// WoWScrnShot_MMDDYY_HHMMSS file nearest its time. --watch polls the manifest and does each new run once
+// run = "<YYYYMMDD-HHMMSS>", shots = { "<time()>|<label>[|failed]", ... }. Each entry takes the
+// WoWScrnShot_MMDDYY_HHMMSS file stamped in its window (see pair). --watch polls the manifest and does each new run once
 // (done runs: screenshots/game/runs.json), printing one "SHOTS <n> files -> <folder>" line per run.
 
 const fs = require('node:fs');
@@ -12,7 +12,6 @@ const { findAddons } = require('./link.js');
 
 const OUT = path.resolve(__dirname, '..', 'screenshots', 'game');
 const STATE = path.join(OUT, 'runs.json');
-const SLACK = 10; // seconds between the shot's time() and the file's stamp
 const IMG = /\.(png|jpe?g|tga)$/i;
 const say = (s) => fs.writeSync(1, s + '\n'); // unbuffered: --watch is tailed
 
@@ -32,7 +31,7 @@ function processRun(root, sv, dry) {
 	const text = fs.readFileSync(sv, 'utf8');
 	const str = (k) => (text.match(new RegExp(`\\["${k}"\\]\\s*=\\s*"([^"]*)"`)) || [])[1];
 	const run = str('run') || 'run';
-	const entries = [...text.matchAll(/"(\d+)\|([^"]+)"/g)].map((m) => ({ t: Number(m[1]), label: m[2] }));
+	const entries = [...text.matchAll(/"(\d+)\|([^"|]+)(\|failed)?"/g)].map((m) => ({ t: Number(m[1]), label: m[2], failed: !!m[3] }));
 	if (!entries.length) return null;
 
 	const shotsDir = path.join(root, 'Screenshots');
@@ -51,20 +50,14 @@ function processRun(root, sv, dry) {
 		}
 		fs.writeFileSync(path.join(latest, 'run.txt'), `${run}\n${str('info') || ''}\n`);
 	}
-	// The file is stamped at capture, the entry at SCREENSHOT_SUCCEEDED (a second or so later), shots ~1.5 s apart:
-	// nearest-time can shift labels by one, so the run's files pair with the entries in order when the counts agree.
-	const t0 = entries[0].t, t1 = entries[entries.length - 1].t;
-	const span = files.filter((f) => f.t >= t0 - 5 && f.t <= t1 + 1).sort((a, b) => a.t - b.t || (a.name < b.name ? -1 : 1));
-	const inOrder = span.length === entries.length;
-	const used = new Set(), written = [];
-	for (const [k, e] of entries.entries()) {
-		let best = inOrder ? span[k] : null;
-		if (!inOrder) for (const f of files) {
-			const d = Math.abs(f.t - e.t);
-			if (!used.has(f.name) && d <= SLACK && (!best || d < Math.abs(best.t - e.t))) best = f;
-		}
-		if (!best) { say(`  missing: ${e.label} (no screenshot within ${SLACK}s)`); continue; }
-		used.add(best.name);
+	for (const e of entries) if (e.failed) say(`  failed in game: ${e.label}`);
+	const shots = entries.filter((e) => !e.failed);
+	const pick = pair(shots, files, str('stamp') === 'capture' ? [0, 1] : [-2, 0]);
+	const written = [];
+	for (const [k, e] of shots.entries()) {
+		const best = pick[k];
+		if (best === undefined) { say(`  missing: ${e.label} (no screenshot stamped in its window)`); continue; }
+		if (best === null) { say(`  ambiguous: ${e.label} (left unlabelled; a file is missing or extra next to it)`); continue; }
 		const dest = path.join(dir, `${e.label}.${best.ext}`);
 		if (!dry) {
 			fs.copyFileSync(path.join(shotsDir, best.name), dest);
@@ -72,9 +65,33 @@ function processRun(root, sv, dry) {
 		}
 		written.push(dest);
 	}
+	const used = new Set(pick.filter(Boolean).map((f) => f.name));
+	const t0 = shots.length && shots[0].t, t1 = shots.length && shots[shots.length - 1].t;
+	for (const f of files) if (!used.has(f.name) && f.t >= t0 - 2 && f.t <= t1 + 1) say(`  unlabelled: ${f.name} (no entry for it)`);
 	const skipped = str('skipped');
 	if (skipped) say(`  skipped in game: ${skipped}`);
 	return { run, info: str('info'), dir, written, missing: entries.length - written.length };
+}
+
+// Pairs entries (in order) with files (each file once, in order) whose stamp lies in [e.t + win[0], e.t + win[1]]:
+// "capture" manifests stamp the entry when Screenshot() is called, shots >= 2 s apart, so windows don't overlap;
+// older ones stamp it at the success event, up to 2 s after the file. Pairs the earliest and the latest valid
+// way; an entry both agree on is certain, else null (refused, never shifting the rest); undefined: no file at all.
+function pair(entries, files, win) {
+	const fs_ = [...files].sort((a, b) => a.t - b.t || (a.name < b.name ? -1 : 1));
+	const fits = (e, f) => f.t >= e.t + win[0] && f.t <= e.t + win[1];
+	const early = [], late = [];
+	for (let k = 0, j = 0; k < entries.length; k++) {
+		let m = j;
+		while (m < fs_.length && !fits(entries[k], fs_[m]) && fs_[m].t < entries[k].t + win[1]) m++;
+		if (m < fs_.length && fits(entries[k], fs_[m])) { early[k] = fs_[m]; j = m + 1; }
+	}
+	for (let k = entries.length - 1, j = fs_.length - 1; k >= 0; k--) {
+		let m = j;
+		while (m >= 0 && !fits(entries[k], fs_[m]) && fs_[m].t > entries[k].t + win[0]) m--;
+		if (m >= 0 && fits(entries[k], fs_[m])) { late[k] = fs_[m]; j = m - 1; }
+	}
+	return entries.map((_, k) => (!early[k] && !late[k] ? undefined : early[k] === late[k] ? early[k] : null));
 }
 
 function main(argv) {
