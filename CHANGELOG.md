@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - Settings: a Polestar: UI page in Polestar's settings (each window and HUD part on or off, docking, the unit frame options, chat history; reset restores our defaults), "Settings…" in every window's menu, the Bags in Polestar's Move frames, coins in Polestar's localized symbols with gold in thousands; Polestar 0.4.0 or newer is now required.
 - Polestar 0.4.0: live slider and colour ticks repaint only cheap parts (unit frames, auras, tooltip hairline); handlers that lay out take full changes alone; HUD bars and the damage trail snap under Reduce motion; tooltips use Polestar's solid tooltip ground.
