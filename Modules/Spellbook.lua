@@ -346,11 +346,11 @@ local function assisted(cat, out)
 	return out
 end
 
--- WhatsTraining shows its own window from the launcher it registers.
-local function whatsTraining()
-	local ldb = LibStub and LibStub("LibDataBroker-1.1", true)
-	return ldb and ldb:GetDataObjectByName("WhatsTrainingMinimap")
-end
+-- Extra top tabs after the book's, an Addons file's (Addons/WhatsTraining.lua):
+-- { key, label, icon, subtitle() (after the character), paint(f) -> body
+-- height, hide(), option(button) -> a "..." menu item or nil }.
+M.pages = {}
+local function pageOf(key) for _, p in ipairs(M.pages) do if p.key == key then return p end end end
 
 -- The stock book's settings (its CVars), as its settings menu: no ranks for
 -- Rogue and Warrior.
@@ -367,6 +367,8 @@ local function default(cvar) return C_CVar and C_CVar.GetCVarDefault and C_CVar.
 -- The filter menu: each setting, then "Clear filters" while one is off its
 -- default. A search ignores them, so they wait while one runs, as stock.
 -- -> items, whether one is off its default.
+local showFilter
+
 local function filterItems()
 	local items, any = {}, false
 	for _, s in ipairs(settings()) do
@@ -376,7 +378,7 @@ local function filterItems()
 		items[#items + 1] = { text = s[2], checked = GetCVarBool(cvar) ~= (s[3] or false), disabled = query ~= "", onClick = function()
 			SetCVar(cvar, GetCVarBool(cvar) and "0" or "1")
 			M.Show()
-			W.ShowMenu(f.psFilter, (filterItems()), { minWidth = 200 })
+			showFilter()
 		end }
 	end
 	if any then
@@ -389,32 +391,32 @@ local function filterItems()
 	return items, any
 end
 
+-- The filter's dropdown hosts the search at its top (ns.SearchInFilter).
+function showFilter() ns.FilterMenu(f, (filterItems())) end
+
 local function optionsItems(self)
 	local items = {
 		{ text = "Game's spellbook: shift-click its micro button", disabled = true },
 	}
-	local wt = whatsTraining()
-	if wt and wt.OnClick then
-		items[#items + 1] = { text = "What's Training?", onClick = function() wt.OnClick(self, "LeftButton") end }
-	end
+	for _, p in ipairs(M.pages) do items[#items + 1] = p.option and p.option(self) or nil end
 	return items
 end
 
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 720, height = 600, searchPlaceholder = "Search", onSearch = function(text)
+		local was = query ~= ""
 		query = (text or ""):lower()
 		if f:IsShown() then M.Show() end
+		-- The filters wait while a search runs: their rows follow it starting or ending.
+		if (query ~= "") ~= was and W.MenuShown(f.psFilter) then showFilter() end
 	end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "spellbook", optionsItems)
 	ns.Compact(f)
-	-- The stock book's settings act on the list: a filter after the search on
-	-- the tab row, as Crafting's, its glyph in the accent while one is off its default.
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self)
-		if W.MenuShown(self) then return W.HideMenu() end
-		W.ShowMenu(self, (filterItems()), { minWidth = 200 })
-	end, 14)
-	Polestar.Theme.Skin(f.psFilter, "editbox")
+	-- The stock book's settings act on the list: a filter at the tab row's end,
+	-- its dropdown holding the search too (the Training tab needs the row's
+	-- room), its glyph in the accent while a search runs or a setting is off its default.
+	ns.SearchInFilter(f, showFilter)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -TOP)
 	f.psEmpty:SetText("No spells here.")
@@ -428,16 +430,27 @@ local function refresh()
 	local cats = categories()
 	local found = false
 	for _, c in ipairs(cats) do if c.key == section then found = true end end
+	found = found or pageOf(section) ~= nil
 	if not found then section = cats[1] and cats[1].key end
-	W.SetIconState(f.psFilter, select(2, filterItems()))
+	W.SetIconState(f.psFilter, select(2, filterItems()) or query ~= "")
 	-- The stock book's category tabs on top, each with its icon (the Two
 	-- Families Rule): the class's for General, each skill line's, the pet's.
 	local tabs = {}
 	for i, c in ipairs(cats) do tabs[i] = { key = c.key, label = c.label, icon = c.game } end
+	for _, p in ipairs(M.pages) do tabs[#tabs + 1] = { key = p.key, label = p.label, icon = p.icon } end
 	-- The subject (the character) leads the subtitle.
 	local who = ("Level %d %s · "):format(UnitLevel("player"), (UnitClass("player")))
 	local list = {}
-	if query ~= "" then
+	for _, p in ipairs(M.pages) do p.hide() end
+	local page = query == "" and pageOf(section)
+	if page then
+		ns.TopNav(f, tabs, section, function(k) section = k; M.Show() end)
+		W.ShellTitle(f, page.label, who .. page.subtitle())
+		ns.Footer(f, {}, {})
+		for _, r in ipairs(rows) do r:Hide() end
+		W.ShellBody(f, page.paint(f))
+		return
+	elseif query ~= "" then
 		for _, c in ipairs(cats) do spells(c, list, query) end
 		ns.TopNav(f, tabs, nil, function(k) section = k; f.Search:SetText(""); M.Show() end)
 		W.ShellTitle(f, "Search", who .. (#list == 1 and "1 spell" or #list .. " spells") .. " match.")
@@ -461,6 +474,9 @@ function M.Show(key)
 	refresh()
 	f:Show()
 end
+
+-- Redraws the open book (an Addons page's data changed).
+function M.Refresh() if f and f:IsShown() then refresh() end end
 
 function M.Toggle(key)
 	if f and f:IsShown() and (key == nil or key == section) then f:Hide() else M.Show(key) end

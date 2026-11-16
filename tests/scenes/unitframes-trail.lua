@@ -30,6 +30,8 @@ assert(v(P.Health.trail) == 1800, "the trail catches up under the fill")
 local function clipped(bar)
 	local aim, clip = bar.trail.psAim, bar.trail:GetParent()
 	assert(clip.clips and clip.points[1].rel == aim:GetStatusBarTexture(), "the trail clipped at the new value's end")
+	-- No butted edge: the clip starts under the fill (which covers it), so no seam of track shows at a fractional scale.
+	assert(clip.points[1].x < 0 and bar:GetFrameLevel() > bar.trail:GetFrameLevel(), "the trail's clip reaches under the fill's end")
 	assert(aim.interpolation == EASE.Immediate, "the new value set at once")
 	local lo, hi = bar:GetMinMaxValues()
 	local tlo, thi = bar.trail:GetMinMaxValues()

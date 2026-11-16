@@ -544,12 +544,26 @@ end
 -- The stock frames (rule 16) and placement
 ---------------------------------------------------------------------------
 
+-- The faded bars (TextStatusBar, enableMouseMotion) still took the mouse,
+-- showing the game's unit tooltip over ours: their hover off while veiled.
+local function hover(bar, on)
+	if bar and bar.SetMouseMotionEnabled then bar:SetMouseMotionEnabled(not on) end
+end
+
 -- Veil (on) or give back (off) one stock frame. Out of combat only.
 local function veil(f, on)
 	local stock = f.spec.stock()
 	if not stock then return end
 	stock:EnableMouse(not on)
 	local kind = f.spec.veil
+	if kind == "fade" or kind == "party" then
+		local c = rawget(stock, "HealthBarContainer")
+		hover(c and rawget(c, "HealthBar") or rawget(stock, "HealthBar"), on)
+		hover(rawget(stock, "ManaBar"), on)
+	elseif kind == "pet" then
+		hover(rawget(_G, "PetFrameHealthBar"), on)
+		hover(rawget(_G, "PetFrameManaBar"), on)
+	end
 	if kind == "system" then
 		local c = rawget(stock, "PlayerFrameContainer") or rawget(stock, "TargetFrameContainer")
 		local content = rawget(stock, "PlayerFrameContent") or rawget(stock, "TargetFrameContent")

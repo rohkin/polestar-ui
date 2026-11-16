@@ -1,7 +1,7 @@
 --@ title: World Map: Quest Log
 --@ roots: PolestarUIWorldMap
 --@ stubs: stub_worldmap.lua
--- The quest log key opens our map with its quest log, never the stock map: headers fold at once, hidden quests stay out, a quest shows its level, objectives and marks; hover lights its area, a click shows its map, shift-click tracks, chat links; the column is remembered and widens the window, its tab (with the log's count) shuts it, the search on the tab row matches titles and objectives, and the empty body leaves it the mouse wheel; the Map Legend tab shows the legend in its place, whose rows light their pins.
+-- The quest log key opens our map with its quest log, never the stock map: headers fold at once, hidden quests stay out, a quest shows its level, objectives and marks; hover lights its area, a click shows its map, shift-click tracks, chat links; the column is remembered and widens the window, its tab (with the log's count) shuts it, the search (atop the filter's dropdown, its game menu one row down) matches titles and objectives, and the empty body leaves it the mouse wheel; the Map Legend tab shows the legend in its place, whose rows light their pins.
 stub.pressKey("L")
 local f = PolestarUIWorldMap
 local c = PolestarUIWorldMapCanvas
@@ -12,7 +12,7 @@ local function row(n) for _, r in ipairs(rows()) do if (r.psTitle or (r.Label an
 assert(#rows() == 5 and not row("Hidden") and not row("The Defias Brotherhood"), "rows: " .. #rows())
 local tab = f.tabButtons[1]
 assert(tab.Label:GetText() == "Quests" and tab.psNavCount:GetText() == "5/25", "count on the tab: " .. tostring(tab.psNavCount:GetText()))
-assert(f.Search:IsShown() and f.Search:GetParent() == f.TabRow, "the search on the tab row")
+assert(not f.Search:IsShown(), "the search on the tab row")
 local kobold, wolves = row("Kobold Camp Cleanup"), row("Wolves Across the Border")
 assert(kobold.Goals:GetText():find("4/10") and kobold.Tracked:IsShown() and kobold.Tracked:GetAtlas() == "questlog-icon-checkmark-yellow" and not kobold.Mark:IsShown(), "objectives, tracked")
 assert(wolves.Mark:IsShown() and wolves.Tracked:IsShown() and row("A Threat Within").Name:GetText() == "[1] A Threat Within", "done and tracked both show, level")
@@ -90,6 +90,8 @@ assert(not q:IsShown() and f:GetWidth() == w - 320 and not PolestarUIDB.mapQuest
 stub.pressKey("L")
 assert(q:IsShown() and f:GetWidth() == w, "L opens the log")
 assert(not f.Scroll:IsShown(), "the empty body takes the mouse wheel")
+f.psFilter:Click()
+assert(f.Search:IsShown() and f.Search:GetParent() == PolestarMenu, "the search not in the dropdown")
 f.Search:SetText("vermin")
 stub.RunScript(f.Search, "OnTextChanged")
 assert(#rows() == 2 and row("Kobold Camp Cleanup"), "search by objective: " .. #rows())
@@ -98,12 +100,18 @@ stub.RunScript(f.Search, "OnTextChanged")
 assert(row("The Defias Brotherhood"), "search")
 f.Search:SetText("zzz")
 stub.RunScript(f.Search, "OnTextChanged")
-assert(#rows() == 0 and q.Empty:IsShown() and q.Empty:GetText() == "No quests match.", "no match")
+assert(#rows() == 0 and q.Empty:IsShown() and q.Empty:GetText() == "No quests match." and f.psFilter.psActive, "no match, or the filter unlit")
 f.Search:SetText("")
 stub.RunScript(f.Search, "OnTextChanged")
-assert(select(1, f.psFilter:GetPoint(1)) == "RIGHT" and select(2, f.Search:GetPoint(1)) == f.psFilter and f.psFilter.psTip == "Filter" and not f.psFilter.psActive, "filter at the search's end, unlit at its defaults")
-f.psFilter:Click()
-local m = stub.menu
+stub.RunScript(f.Search, "OnEnterPressed")
+assert(select(1, f.psFilter:GetPoint(1)) == "RIGHT" and not PolestarMenu:IsShown() and f.psFilter.psTip == "Search and filter" and not f.psFilter.psActive, "filter at the tab row's end, unlit at its defaults")
+local function mapMenu()
+	f.psFilter:Click()
+	assert(PolestarMenu.rows[2]:IsShown() and PolestarMenu.rows[2].Text:GetText():find("…", 1, true), "no game menu row")
+	PolestarMenu.rows[2]:Click()
+	return stub.menu
+end
+local m = mapMenu()
 local it = m.items
 assert(m.tag == "MENU_WORLD_MAP_TRACKING" and #it == 8 and it[1].title and it[7].title, "filter menu: the stock tag, map filters, then the log ones")
 assert(it[3].onEnter and not it[8].onEnter, "the stock filter tooltips")
@@ -111,12 +119,12 @@ assert(it[3].text == SHOW_QUEST_LEVELS and it[3].get() and it[4].get() and not i
 local n = c.refreshed or 0
 it[3].set()
 assert(stub.cvars.showQuestLevel == "0" and row("A Threat Within").Name:GetText() == "A Threat Within" and c.refreshed == n + 1, "levels off, redrawn at once")
-assert(f.psFilter.psActive and f.psFilter.psTip == "Filter (1 on)", "lit off its default")
-f.psFilter:Click()
+assert(f.psFilter.psActive and f.psFilter.psTip == "Search and filter (1 on)", "lit off its default")
+mapMenu()
 local clear = stub.menu.items[#stub.menu.items]
 assert(clear.button and clear.text == "Clear filters", "clear filters entry")
 clear.click()
-assert(stub.cvars.showQuestLevel == "1" and not f.psFilter.psActive and f.psFilter.psTip == "Filter", "cleared back to the defaults")
+assert(stub.cvars.showQuestLevel == "1" and not f.psFilter.psActive and f.psFilter.psTip == "Search and filter", "cleared back to the defaults")
 assert(row("A Threat Within").Name:GetText() == "[1] A Threat Within", "levels on")
 local function hue() return table.concat({ row("The Defias Brotherhood").Name:GetTextColor() }, ",") end
 local red = hue()
@@ -139,9 +147,14 @@ assert(row("A Threat Within").Name:GetText() == "A Threat Within", "a change fro
 stub.cvars.showQuestLevel = "1"
 stub.fire("CVAR_UPDATE", "showQuestLevel")
 row("The Defias Brotherhood"):Click()
-assert(not f.Search:IsShown() and f.psFilter:IsShown(), "no search on the details; the map's filter stays")
+assert(f.psFilter:IsShown(), "the map's filter left with the details")
+stub.menu = nil
+f.psFilter:Click()
+assert(not f.Search:IsShown() and not PolestarMenu:IsShown() and stub.menu.tag == "MENU_WORLD_MAP_TRACKING", "no search on the details: the game's menu at once")
 q.Details.Back:Click()
-assert(f.Search:IsShown(), "the search back with the list")
+f.psFilter:Click()
+assert(f.Search:IsShown() and PolestarMenu:IsShown(), "the search back with the list")
+Polestar.Widgets.HideMenu()
 -- The Map Legend tab: the legend in the log's place (remembered), its rows
 -- the client's pin kinds by category (one the client lacks left out); a hover
 -- gives the stock tooltip and lights its pins on our map.

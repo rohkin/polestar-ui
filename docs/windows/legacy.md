@@ -11,9 +11,9 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   a slim 48px icon rail (`ns.GameRail`, `slim`; Rewards, Challenges, Tree)
   with the stock tabs' game icons, the Legacy emblem on the rail's head, and
   each label and what the page is for in the rail tooltip. The tab row shows
-  on Challenges (the search and the filter at its right end) and the Tree (the
-  three trees as tabs, each with its points spent, the search at the right
-  end); the Reward Track has neither. The player's legacy points lead the
+  on Challenges (the filter at its right end, the search at the top of its
+  dropdown, `ns.SearchInFilter`) and the Tree (the three trees as tabs, each
+  with its points spent, the same button holding the search alone); the Reward Track has neither. The player's legacy points lead the
   subtitle's status line. Challenges keep their categories in a 184px column
   of the page, left of the list (own scroll, a hairline on its right edge).
 - **Reward Track:** progress toward the next reward (a skill bar, points over
@@ -34,8 +34,9 @@ on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
   answered by `ACHIEVEMENT_SEARCH_UPDATED`); a category with no match dims.
   No page tabs: the stock filter (Completed, Incomplete, both shown at first; one
   earned by another character is incomplete) is a menu on a filter button at
-  the tab row after the search, as Social's, its glyph in the accent and its
-  tooltip "Filter (n on)" while a filter hides challenges, with "Clear
+  the tab row's end, under the search, as Social's, its glyph in the accent
+  while a search runs or a filter hides challenges (tooltip "Search and
+  filter (n on)"), with "Clear
   filters" (both shown again, as the stock reset) in the menu then. A row per challenge: game icon, name, description,
   its legacy points (`GetTraitCurrencyForAchievement`) and the date earned,
   or "Tracking" in the accent while an unfinished one is tracked (the stock

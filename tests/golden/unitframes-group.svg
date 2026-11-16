@@ -80,12 +80,12 @@
 <linearGradient id="p0g34" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="0.09"/><stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0"/></linearGradient>
 <linearGradient id="p0g35" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="0.03"/><stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0"/></linearGradient>
 <clipPath id="p0c0"><rect x="308" y="63" width="151" height="4"/></clipPath>
-<clipPath id="p0c1"><rect x="459" y="29" width="0" height="33"/></clipPath>
-<clipPath id="p0c2"><rect x="383.67" y="132" width="19.33" height="17"/></clipPath>
-<clipPath id="p0c3"><rect x="127.33" y="318" width="19.67" height="44"/></clipPath>
-<clipPath id="p0c4"><rect x="147" y="444" width="0" height="44"/></clipPath>
-<clipPath id="p0c5"><rect x="1010.25" y="169.5" width="35.25" height="23.25"/></clipPath>
-<clipPath id="p0c6"><rect x="1045.5" y="254.5" width="0" height="23.25"/></clipPath>
+<clipPath id="p0c1"><rect x="457" y="29" width="2" height="33"/></clipPath>
+<clipPath id="p0c2"><rect x="381.67" y="132" width="21.33" height="17"/></clipPath>
+<clipPath id="p0c3"><rect x="125.33" y="318" width="21.67" height="44"/></clipPath>
+<clipPath id="p0c4"><rect x="145" y="444" width="2" height="44"/></clipPath>
+<clipPath id="p0c5"><rect x="1008.75" y="169.5" width="36.75" height="23.25"/></clipPath>
+<clipPath id="p0c6"><rect x="1044" y="254.5" width="1.5" height="23.25"/></clipPath>
 <clipPath id="p0c7"><rect x="308" y="29" width="151" height="33"/></clipPath>
 <clipPath id="p0c8"><rect x="316" y="132" width="87" height="17"/></clipPath>
 <clipPath id="p0c9"><rect x="29" y="318" width="118" height="44"/></clipPath>

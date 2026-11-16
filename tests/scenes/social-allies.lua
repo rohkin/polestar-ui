@@ -50,7 +50,7 @@ local show = Polestar.Widgets.ShowMenu
 Polestar.Widgets.ShowMenu = function(a, its, o) items = its; return show(a, its, o) end
 f.psFilter:Click()
 local t = {}
-for _, it in ipairs(items) do if it.text then t[#t + 1] = it.text end end
+for _, it in ipairs(items) do if it.text and it.text ~= "" then t[#t + 1] = it.text end end
 assert(table.concat(t, ",") == "Status,Online,Away,Busy,Offline,Categories,Professions,PvP,Raiding,Dungeons,Questing", "menu: " .. table.concat(t, ","))
 local function pick(text) for _, it in ipairs(items) do if it.text == text then return it.onClick() end end end
 pick("PvP")

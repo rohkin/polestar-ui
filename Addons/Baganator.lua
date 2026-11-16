@@ -1,4 +1,4 @@
--- Baganator in Polestar's look (docs/skins.md). Baganator keeps its own bags,
+-- Baganator in Polestar's look (docs/addons.md). Baganator keeps its own bags,
 -- categories and settings; we only repaint the frames it hands to skins,
 -- through its public skin API (Baganator.API.Skins: RegisterListener,
 -- GetAllFrames, GetCurrentSkin). That API cannot add an entry to Baganator's
@@ -16,6 +16,8 @@
 -- two bag windows would fight over the same keys.
 
 local ADDON, ns = ...
+
+ns.AfterLogin(function()
 local B = _G.Baganator
 local API = B and B.API and B.API.Skins
 if not (API and API.RegisterListener and API.GetAllFrames and API.GetCurrentSkin) then return end
@@ -338,3 +340,4 @@ API.RegisterListener(function(d)
 end)
 
 ns.Module("baganator", M)
+end)

@@ -43,12 +43,17 @@ stub.targeting = false
 stub.RunScript(rows[1], "OnDragStart")
 assert(stub.pickedUp == 1, "a drag did not pick it up")
 stub.pickedUp = nil
--- The tab row search keeps the wares whose names match.
+-- The search, at the top of the filter's dropdown, keeps the wares whose names match; Enter closes the dropdown.
+assert(not w.Search:IsShown(), "the search on the tab row")
+w.psFilter:Click()
+assert(w.Search:IsShown() and w.Search:GetParent() == PolestarMenu, "the search not in the dropdown")
 w.Search:SetText("bread"); stub.RunScript(w.Search, "OnTextChanged", true)
 local shown = 0
 for _, r in ipairs({ w.Body:GetChildren() }) do if r.psIndex and not r.psBuyback and r:IsShown() then shown = shown + 1 end end
 assert(shown == 1 and tostring(w.Subtitle:GetText()) == "Harlan Bagley · 1 of 9 items for sale", "the search: " .. tostring(w.Subtitle:GetText()))
 w.Search:SetText(""); stub.RunScript(w.Search, "OnTextChanged", true)
+stub.RunScript(w.Search, "OnEnterPressed")
+assert(not PolestarMenu:IsShown() and not w.Search:IsShown(), "Enter left the dropdown open")
 
 -- Buying.
 rows[1]:Click("LeftButton")
@@ -140,13 +145,16 @@ assert(not w.Footer:IsShown(), "no repairs or junk here, yet a footer")
 stub.repairCost, stub.junk = 23456, 3
 stub.fire("MERCHANT_UPDATE")
 
--- The filter: the game's menu at the end of the search row, lit while on
--- (the visit starts on the class), its choice applied at once, Clear filters.
-assert(w.psFilter:GetParent() == w.TabRow and w.psFilter.psActive and w.psFilter.psTip == "Filter (1 on)", "the filter not lit for the class")
+-- The filter: the stock menu's choices under the search in our dropdown at
+-- the tab row's end, lit while on (the visit starts on the class), its choice
+-- applied at once, Clear filters.
+assert(w.psFilter:GetParent() == w.TabRow and w.psFilter.psActive and w.psFilter.psTip == "Search and filter (1 on)", "the filter not lit for the class")
+local function item(t) for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() and r.Text:GetText() == t then return r end end end
 w.psFilter:Click()
-assert(stub.menu.tag == "MENU_MERCHANT_FRAME" and #stub.menu.items == 4 and stub.menu.items[4].text == "Clear filters", "the filter menu")
-stub.menu.items[1].set(stub.menu.items[1].value)
-assert(stub.filter == LE_LOOT_FILTER_CLASS and stub.menu.items[1].get(LE_LOOT_FILTER_CLASS), "the filter not set")
-stub.menu.items[4].set()
-assert(stub.filter == LE_LOOT_FILTER_ALL and not w.psFilter.psActive and w.psFilter.psTip == "Filter", "Clear filters")
+assert(item(ALL_SPECS or UnitClass("player")).Check:IsShown() and item(ITEM_BIND_ON_EQUIP) and item(ALL) and item("Clear filters"), "the filter menu")
+item(ITEM_BIND_ON_EQUIP):Click()
+assert(stub.filter == LE_LOOT_FILTER_BOE, "the filter not set")
+w.psFilter:Click()
+item("Clear filters"):Click()
+assert(stub.filter == LE_LOOT_FILTER_ALL and not w.psFilter.psActive and w.psFilter.psTip == "Search and filter", "Clear filters")
 assert(tostring(w.psMoney.psParts[1].text:GetText()) == "123", "the player's money")

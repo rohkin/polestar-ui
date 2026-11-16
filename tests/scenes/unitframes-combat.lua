@@ -21,6 +21,10 @@ local _, _, _, x0 = P:GetPoint(1)
 stub.applyLayout({ [PlayerFrame] = { 300, 650 } })
 stub.advance(0.1)
 assert(select(4, P:GetPoint(1)) == x0, "not moved in combat")
+-- A repaint mid-fight (a theme change) touches nothing protected: the veil, the
+-- bars' hover included (the stub's protected target-of-target bars error), waits.
+PolestarUI.modules.unitframes.Apply()
+assert(not TargetFrameToT.HealthBar:IsMouseMotionEnabled(), "the target of target's bars took the mouse back mid-fight")
 -- The fight ends: placed.
 stub.inCombat = false
 stub.fire("PLAYER_REGEN_ENABLED")

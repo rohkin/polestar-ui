@@ -27,8 +27,16 @@ function ns.Module(key, m)
 	return m
 end
 
+-- Runs fn at PLAYER_LOGIN, before the modules are enabled (every addon and its
+-- saved variables are loaded): for an Addons/*.lua file, which cannot rely on
+-- load order. Now, if login has passed.
+local late = {}
+function ns.AfterLogin(fn)
+	if late then late[#late + 1] = fn else fn() end
+end
+
 -- With no saved choice a module is on, unless the gamepad UI is, or the
--- module says `defaultOff` (our Bags beside Baganator, Skins/Baganator.lua).
+-- module says `defaultOff` (our Bags beside Baganator, Addons/Baganator.lua).
 function ns.Enabled(key)
 	local v = PolestarUIDB and PolestarUIDB.modules[key]
 	if v == nil then
@@ -48,6 +56,9 @@ Polestar.OnLogin(function()
 	PolestarUIDB.modules = PolestarUIDB.modules or {}
 	PolestarUIDB.pos = PolestarUIDB.pos or {}
 	PolestarUICharDB = PolestarUICharDB or {}
+	local q = late
+	late = nil
+	for _, fn in ipairs(q) do fn() end
 	for _, key in ipairs(ns.order) do
 		if ns.Enabled(key) then
 			ns.modules[key].psStarted = true
@@ -111,7 +122,7 @@ local function compactPlace(f)
 		end
 	end
 	-- The search (ns.TopNav) takes the tab row's room right of the tabs, 200 at most.
-	if f.psTopNav then
+	if f.psTopNav and not rawget(f, "psSearchInFilter") then
 		local filter = rawget(f, "psFilter")
 		local room = mainW - pad - x - 12 - (filter and 36 or 0)
 		f.Search:SetWidth(math.max(120, math.min(200, room)))
@@ -179,6 +190,61 @@ function ns.Compact(f)
 	compactPlace(f)
 end
 
+-- The search inside the filter's dropdown (the tab row keeps its room for the
+-- tabs): f.psFilter, a "sliders" button (made here unless the window has one),
+-- opens `menu(button)` (default: the search alone), which shows its rows
+-- through ns.FilterMenu; the box takes the focus only when clicked (movement
+-- keys must still move the character), Enter keeps the search and closes,
+-- any other menu, the dropdown's or the window's hiding puts it away.
+local filterHost -- the window ns.FilterMenu is showing, while it shows
+function ns.SearchInFilter(f, menu)
+	local W = Polestar.Widgets
+	f.psSearchInFilter = true
+	menu = menu or function() ns.FilterMenu(f, {}) end
+	local function click(self)
+		if W.MenuShown(self) then return W.HideMenu() end
+		menu(self)
+	end
+	if rawget(f, "psFilter") then
+		f.psFilter:SetScript("OnClick", click)
+	else
+		f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Search and filter", click, 14)
+		Polestar.Theme.Skin(f.psFilter, "editbox")
+	end
+	f.psFilter.psTip = "Search and filter"
+	f.Search:Hide()
+	f.Search:HookScript("OnEnterPressed", function() W.HideMenu() end)
+	f:HookScript("OnHide", function() if W.MenuShown(f.psFilter) then W.HideMenu() end end)
+	-- Another menu on the shared frame (a submenu of the filter too) leaves the box out.
+	hooksecurefunc(W, "ShowMenu", function() if filterHost ~= f then f.Search:ClearFocus(); f.Search:Hide() end end)
+	return f.psFilter
+end
+
+-- W.ShowMenu on f.psFilter (opts as its) with f.Search over a blank first row.
+function ns.FilterMenu(f, items, opts)
+	local W = Polestar.Widgets
+	local list = { { text = "", disabled = true } }
+	if #items > 0 then list[2] = { separator = true } end
+	for _, it in ipairs(items) do list[#list + 1] = it end
+	opts = opts or {}
+	opts.minWidth = math.max(opts.minWidth or 0, 220)
+	filterHost = f
+	local menu = W.ShowMenu(f.psFilter, list, opts)
+	filterHost = nil
+	local s, row = f.Search, menu.rows[1]
+	if not rawget(f, "psFilterHooked") then
+		f.psFilterHooked = true
+		menu:HookScript("OnHide", function() s:ClearFocus(); s:Hide() end)
+	end
+	s:SetParent(menu)
+	s:SetFrameLevel(row:GetFrameLevel() + 5)
+	s:ClearAllPoints()
+	s:SetPoint("TOPLEFT", row, "TOPLEFT", 6, 0)
+	s:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -6, 0)
+	s:Show()
+	return menu
+end
+
 -- Page nav as top tabs (docs/DESIGN.md, "The Game Window Shell"): the window
 -- has no sidebar (ns.Plain); its pages are W.ShellTabs, each keeping a nav
 -- row's state, and the search (f.Search, and f.psFilter when the window has
@@ -194,13 +260,17 @@ function ns.TopNav(f, items, active, onSelect)
 		f.psKeepTabRow = true
 		local pad = f.psPad or W.SHELL.pad
 		local filter = rawget(f, "psFilter")
-		f.Search:SetParent(f.TabRow)
-		f.Search:ClearAllPoints()
+		-- f.psSearchInFilter: the window hosts its search in the filter's dropdown (Spellbook).
+		local inFilter = filter and rawget(f, "psSearchInFilter")
+		if not inFilter then
+			f.Search:SetParent(f.TabRow)
+			f.Search:ClearAllPoints()
+		end
 		if filter then
 			filter:SetParent(f.TabRow)
 			filter:ClearAllPoints()
 			filter:SetPoint("RIGHT", f.TabRow, "RIGHT", -pad, 0)
-			f.Search:SetPoint("RIGHT", filter, "LEFT", -6, 0)
+			if not inFilter then f.Search:SetPoint("RIGHT", filter, "LEFT", -6, 0) end
 		else
 			f.Search:SetPoint("RIGHT", f.TabRow, "RIGHT", -pad, 0)
 		end

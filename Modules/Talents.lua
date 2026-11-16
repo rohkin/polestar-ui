@@ -437,6 +437,10 @@ end
 
 local optionsItems = { { text = "Game's talents: shift-click their micro button", disabled = true } }
 
+-- What an Addons file adds (Addons/TalentsForever.lua): { button = a footer
+-- button after Reset ({ label, onClick, tip, tipLines }), paint(f, nodes) after
+-- the trees are drawn (nodes: our node buttons, `psNode` their node ID) }.
+M.extras = {}
 
 -- The class's talent art (the stock frame's talent-background-<class>) behind
 -- the trees, under a wash of Polestar's sky blue, both feathered out at the
@@ -502,14 +506,15 @@ local function build()
 	ns.Dock(f)
 	ns.WindowMenu(f, "talents", optionsItems)
 	ns.Compact(f)
-	-- The stock search options, on a filter after the search on the tab row
-	-- (as the Spellbook's), lit while one is on.
+	-- The stock search options, on a filter at the tab row's end, its
+	-- dropdown holding the search too (as the Spellbook's), lit while a
+	-- search runs or an option is on.
 	local function items()
 		local function flip(set)
 			return function()
 				set()
 				M.Show()
-				W.ShowMenu(f.psFilter, items(), { minWidth = 200 })
+				ns.FilterMenu(f, items())
 			end
 		end
 		local list = {
@@ -522,11 +527,7 @@ local function build()
 		end
 		return list
 	end
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Search options", function(self)
-		if W.MenuShown(self) then return W.HideMenu() end
-		W.ShowMenu(self, items(), { minWidth = 200 })
-	end, 14)
-	Polestar.Theme.Skin(f.psFilter, "editbox")
+	ns.SearchInFilter(f, function() ns.FilterMenu(f, items()) end)
 	f.psArt, f.psTint, f.psStripe = {}, {}, {}
 	for i = 1, 2 do
 		f.psStripe[i] = f.Content:CreateTexture(nil, "BORDER")
@@ -569,6 +570,7 @@ local function refresh()
 	local _, left = spentIn(config)
 	found = 0
 	local height = paintTrees(config)
+	for _, x in ipairs(M.extras) do if x.paint then x.paint(f, nodes) end end
 	local active = group == activeGroup()
 	local staged = active and config and not committing and C_Traits.ConfigHasStagedChanges(config)
 	-- A spec without a combat config (a second spec just bought) has its talents
@@ -593,7 +595,7 @@ local function refresh()
 	end
 	-- The subject (the character) leads the subtitle.
 	W.ShellTitle(f, "Talents", ("Level %d %s · %s"):format(UnitLevel("player"), (UnitClass("player")), sub))
-	W.SetIconState(f.psFilter, hidePassives or showRanks)
+	W.SetIconState(f.psFilter, hidePassives or showRanks or query ~= "")
 	-- Apply and Undo always there, so the layout never moves; disabled as
 	-- Polestar disables (faded to 45%) while nothing is staged. On the spec
 	-- that is not active, Activate takes Apply's place, as the stock frame's
@@ -601,7 +603,17 @@ local function refresh()
 	local why = not active and "Not your active spec" or committing and "Applying your talents…" or nil
 	local first = active and { label = "Apply", onClick = apply, opts = { primary = true } }
 		or { label = TALENT_SPEC_ACTIVATE or "Activate", onClick = activate, opts = { primary = true } }
-	ns.Footer(f, { { label = "Reset", onClick = reset } }, { first, { label = "Undo", onClick = undo } })
+	local footLeft = { { label = "Reset", onClick = reset } }
+	for _, x in ipairs(M.extras) do footLeft[#footLeft + 1] = x.button end
+	ns.Footer(f, footLeft, { first, { label = "Undo", onClick = undo } })
+	for i = 2, #footLeft do
+		local b = f.footerButtons.left[i]
+		if footLeft[i].tip and not b.psTip then
+			b.psTip, b.psTipLines = footLeft[i].tip, footLeft[i].tipLines
+			b:HookScript("OnEnter", W.SimpleTip)
+			b:HookScript("OnLeave", W.HideTip)
+		end
+	end
 	local reset_ = f.footerButtons.left[1]
 	reset_.psDanger = true
 	W.RepaintButton(reset_)

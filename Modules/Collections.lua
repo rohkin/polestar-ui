@@ -1702,8 +1702,15 @@ local FILTERS = {
 
 local function isDefault() return FILTERS[qkey()][2]() end
 
+-- With the client's "only show collected" there is one filter setting: none,
+-- as stock (the wardrobe keeps its own filter).
+local function hasFilters() return page == "appearances" or not GetCVarBool("onlyShowCollectedItemsInJournal") end
+
+-- The top level under the search in our dropdown (the search alone without
+-- filters); a submenu is a plain menu.
 function filterMenu(anchor, sub)
 	if not sub and W.MenuShown(anchor) then return W.HideMenu() end
+	if not hasFilters() then return ns.FilterMenu(f, {}) end
 	local fl = FILTERS[qkey()]
 	local items = fl[1](sub)
 	if not sub and not isDefault() then
@@ -1714,7 +1721,7 @@ function filterMenu(anchor, sub)
 			refresh()
 		end }
 	end
-	W.ShowMenu(anchor, items, { minWidth = 180 })
+	if sub then W.ShowMenu(anchor, items, { minWidth = 180 }) else ns.FilterMenu(f, items, { minWidth = 180 }) end
 end
 
 ---------------------------------------------------------------------------
@@ -1754,9 +1761,8 @@ local function build()
 	ns.WindowMenu(f, "collections", options)
 	ns.Plain(f, f.psRail)
 	ns.Compact(f)
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self) filterMenu(self) end, 14)
-	Theme.Skin(f.psFilter, "editbox")
-	ns.TopNav(f, {}, nil, function() end) -- the search and filter onto the tab row
+	ns.SearchInFilter(f, function(self) filterMenu(self) end)
+	ns.TopNav(f, {}, nil, function() end) -- the filter (the search in its dropdown) onto the tab row
 	f.psKeepTabRow = true
 	f.psStatus = W.Text(f.TabRow, "default", "textMuted")
 	nav = W.Scroll(f.Main)
@@ -1821,15 +1827,10 @@ function refresh()
 	looks:SetShown(k == "items")
 	if k ~= "sets" and detail.psPieces then for _, w in ipairs(detail.psPieces) do w:Hide() end end
 	if (f.Search:GetText() or "") ~= query[k] then f.Search:SetText(query[k]) end
-	-- With the client's "only show collected" there is one filter setting: none,
-	-- as stock (the wardrobe keeps its own filter).
-	local filters = page == "appearances" or not GetCVarBool("onlyShowCollectedItemsInJournal")
-	f.psFilter:SetShown(filters)
-	f.Search:ClearAllPoints()
-	f.Search:SetPoint("RIGHT", filters and f.psFilter or f.TabRow, filters and "LEFT" or "RIGHT", filters and -6 or -f.psPad, 0)
-	local lit = not isDefault()
-	W.SetIconState(f.psFilter, lit)
-	f.psFilter.psTip = lit and "Filter (on)" or "Filter"
+	local filters = hasFilters()
+	local lit = filters and not isDefault()
+	W.SetIconState(f.psFilter, lit or query[k] ~= "")
+	f.psFilter.psTip = not filters and "Search" or lit and "Search and filter (on)" or "Search and filter"
 	local foot, title, sub = PAINT[k]()
 	-- The Appearances views on the tab row; the page's fact after them, else on its left (as Guild's).
 	local views

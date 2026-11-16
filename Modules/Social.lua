@@ -233,7 +233,7 @@ local function friends()
 			local client = g.isOnline and g.clientProgram ~= "" and g.clientProgram or nil
 			if friendShown(g.isOnline, a.isAFK or g.isGameAFK, a.isDND or g.isGameBusy, a.friendTags, id) then list[#list + 1] = { name = name, char = char, online = g.isOnline, sub = sub, where = where,
 				client = client, subIcon = g.subIcon, faded = client == BNET_CLIENT_WOW and g.wowProjectID ~= WOW_PROJECT_ID,
-				bnet = true, favorite = a.isFavorite, rank = a.isFavorite and 0 or g.isOnline and 1 or 3, order = 1000 + i,
+				bnet = true, account = id, tag = ns.Clean(a.battleTag), favorite = a.isFavorite, rank = a.isFavorite and 0 or g.isOnline and 1 or 3, order = 1000 + i,
 				status = status, canInvite = g.isOnline and char ~= nil,
 				whisper = function() ChatFrameUtil.SendBNetTell(name) end,
 				invite = function() FriendsFrame_BattlenetInviteByIndex(i) end,
@@ -378,9 +378,12 @@ end
 
 -- Folding groups as the stock lists head them, each entry under the first
 -- head whose test it passes; `label(online, total)` names the head. An empty
--- group shows no head.
+-- group shows no head. A head with `fold` keeps its folded state elsewhere:
+-- `shut` says it, `fold()` flips it; `color` ({ r, g, b }) tints its name;
+-- `tools(first, last)` (first/last of the heads shown) returns icon buttons
+-- at its right end, `{ icon, tip, fn, off }`.
 local function grouped(list, heads)
-	local kids, out = {}, {}
+	local kids, out, shown = {}, {}, {}
 	for i in ipairs(heads) do kids[i] = {} end
 	for _, e in ipairs(list) do
 		for i, h in ipairs(heads) do
@@ -392,14 +395,22 @@ local function grouped(list, heads)
 		if #k > 0 then
 			local on = 0
 			for _, e in ipairs(k) do if e.online then on = on + 1 end end
-			out[#out + 1] = { head = true, key = h.key, name = h.label(on, #k), online = true }
-			if not collapsed[h.key] then for _, e in ipairs(k) do out[#out + 1] = e end end
+			local shut
+			if h.fold then shut = h.shut else shut = collapsed[h.key] end
+			out[#out + 1] = { head = true, key = h.key, name = h.label(on, #k), online = true, shut = shut, fold = h.fold, color = h.color }
+			shown[#shown + 1] = { h = h, e = out[#out] }
+			if not shut then for _, e in ipairs(k) do out[#out + 1] = e end end
 		end
+	end
+	for j, x in ipairs(shown) do
+		if x.h.tools then x.e.tools = x.h.tools(j == 1, j == #shown) end
 	end
 	return out
 end
 
 -- The stock friends list's Favorites and Friends groups, "online/total" of those shown.
+-- M.friendHeads(), set by an addon file (docs/addons.md), returns other heads
+-- for the Friends page (nil: these); entries carry `account` and `tag`.
 local FRIEND_HEADS = {
 	{ key = "fav", test = function(e) return e.favorite end, label = function(on, n) return ("Favorites %d/%d"):format(on, n) end },
 	{ key = "all", label = function(on, n) return ("Friends %d/%d"):format(on, n) end },
@@ -541,7 +552,7 @@ local function newRow(panel, i)
 	r:SetScript("OnClick", function(self, button)
 		local e = self.psEntry
 		if e.head then
-			collapsed[e.key] = not collapsed[e.key] or nil
+			if e.fold then e.fold() else collapsed[e.key] = not collapsed[e.key] or nil end
 			return M.Show() -- at once (docs/CLIENT.md, rule 6)
 		end
 		if not e.whisper then return end
@@ -579,9 +590,12 @@ local function paintRows(list)
 		y = y + r:GetHeight()
 		r.Ground:SetShown(not e.head)
 		r.Name:SetText(e.name)
-		if e.head then W.Uncolor(r.Name); W.Color(r.Name, "textDim") else paintName(r.Name, e.class, not e.online) end
+		if e.head then
+			W.Uncolor(r.Name)
+			if e.color then r.Name:SetTextColor(Theme.Legible(e.color.r, e.color.g, e.color.b)) else W.Color(r.Name, "textDim") end
+		else paintName(r.Name, e.class, not e.online) end
 		r.Chevron:SetShown(e.head ~= nil)
-		r.Chevron:SetTexture(Theme.Media(collapsed[e.key] and "chevron-right" or "chevron-down"))
+		r.Chevron:SetTexture(Theme.Media(e.shut and "chevron-right" or "chevron-down"))
 		r.Pip:SetShown(e.status ~= nil)
 		if e.status then W.Color(r.Pip, PRESENCE_COLOR[e.status]) end
 		r.Invite:SetShown(e.status ~= nil)
@@ -594,7 +608,7 @@ local function paintRows(list)
 		r.Sub:SetText(sub)
 		W.Color(r.Sub, e.online and "textDim" or "textMuted")
 		r.Sub:SetShown(sub ~= "")
-		local right = e.request and 196 or e.act and 120 or e.status and 72 or 48
+		local right = e.request and 196 or e.act and 120 or e.status and 72 or e.tools and 12 + #e.tools * 22 or 48
 		local where = e.where or ""
 		r.Where:SetText(where)
 		W.Color(r.Where, e.online and "text" or "textMuted")
@@ -638,6 +652,23 @@ local function paintRows(list)
 			ns.SetEnabled(r.Act, not e.actOff, "This lockout can't be extended now.")
 		end
 		r.Decline:SetShown(e.request ~= nil)
+		-- A head's tools, right to left from the row's end.
+		local tools = e.tools or {}
+		r.psTools = r.psTools or {}
+		for j = 1, math.max(#tools, #r.psTools) do
+			local t, b = tools[j], r.psTools[j]
+			if t and not b then
+				b = W.IconButton(r, t.icon, 20, t.tip, function(self) self.psFn() end)
+				b:SetPoint("RIGHT", r, "RIGHT", -8 - (j - 1) * 22, 0)
+				r.psTools[j] = b
+			end
+			if b then b:SetShown(t ~= nil) end
+			if t then
+				b.psFn, b.psTip, b.psIconName = t.fn, t.tip, t.icon
+				b.Icon:SetTexture(Theme.Media(Theme.Icon(t.icon)))
+				W.SetIconState(b, false, not t.off)
+			end
+		end
 		r:Show()
 	end
 	for i = #list + 1, #rows do rows[i]:Hide() end
@@ -954,8 +985,10 @@ end
 
 -- The filter menu: the stock list's submenus in one list (Friends: Status
 -- and Tags; Recent allies: Status and Categories); a pick keeps it open.
+-- None on a page without filters (the search alone).
 local function filterItems()
 	local items, filters = {}, filterSets[page]
+	if not filters then return items end
 	local function section(title, list, valid)
 		local any = false
 		for _, o in ipairs(list) do
@@ -970,7 +1003,7 @@ local function filterItems()
 					filters[k] = not filters[k] or nil
 					if page == "friends" then searchQueue() end -- from the click (restricted)
 					M.Show()
-					W.ShowMenu(f.psFilter, filterItems(), { minWidth = 200 })
+					ns.FilterMenu(f, filterItems(), { minWidth = 200 })
 				end }
 			end
 		end
@@ -1093,13 +1126,10 @@ local function build()
 	end)
 	st:SetScript("OnLeave", W.HideTooltip)
 	f.psStatus = st
-	-- The filter acts on the list: it ends the search row as in Crafting, its
-	-- glyph in the accent while a filter is on.
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self)
-		if W.MenuShown(self) then return W.HideMenu() end
-		W.ShowMenu(self, filterItems(), { minWidth = 200 })
-	end, 14)
-	Theme.Skin(f.psFilter, "editbox")
+	-- The filter acts on the list: it ends the tab row, the search in its
+	-- dropdown (alone on a page without filters), its glyph in the accent
+	-- while a search runs or a filter is on.
+	ns.SearchInFilter(f, function() ns.FilterMenu(f, filterItems(), { minWidth = 200 }) end)
 	f.psPanel = CreateFrame("Frame", nil, f.Body)
 	f.psPanel:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -8) -- as the Characters page: no strip above the list
 	f.psPanel:SetPoint("RIGHT", f.Body, "RIGHT", -f.psPad, 0)
@@ -1165,12 +1195,8 @@ local function refresh()
 	local st, n = f.psStatus, 0
 	local filtered = filterSets[page] ~= nil
 	for _ in pairs(filterSets[page] or {}) do n = n + 1 end
-	W.SetIconState(f.psFilter, n > 0)
-	f.psFilter.psTip = n > 0 and ("Filter (%d on)"):format(n) or "Filter"
-	f.psFilter:SetShown(filtered)
-	-- The search keeps the filter's slot on every tab, so it never moves.
-	f.Search:ClearAllPoints()
-	f.Search:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0)
+	W.SetIconState(f.psFilter, n > 0 or query ~= "")
+	f.psFilter.psTip = not filtered and "Search" or n > 0 and ("Search and filter (%d on)"):format(n) or "Search and filter"
 	st.Label:SetText(BNConnected() and battleTag() or "Battle.net offline")
 	st:SetEnabled(BNConnected())
 	st.Arrow:SetShown(BNConnected())
@@ -1227,7 +1253,7 @@ local function refresh()
 		local list = {}
 		local src = page == "raid" and raidLocks() or lists[page]
 		for _, e in ipairs(src) do if matches(e) then list[#list + 1] = e end end
-		if page == "friends" then list = grouped(list, FRIEND_HEADS) end
+		if page == "friends" then list = grouped(list, M.friendHeads and M.friendHeads() or FRIEND_HEADS) end
 		if page == "requests" then list = grouped(list, REQUEST_HEADS) end
 		if page == "ignored" then list = grouped(list, IGNORE_HEADS) end
 		if page == "allies" then list = grouped(list, ALLY_HEADS) end

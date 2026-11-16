@@ -34,9 +34,10 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   lockouts" (Raid info). The "..." menu's options
   (the Nothing Lost Rule: Quick Join and Recruit a Friend, where the game
   has them, stay on the game's window) come before "Use game window".
-- **Tab row:** the shell's search ("Search"; names and
-  Battle.net character names) and, on Friends, a Filter icon button ending
-  the tab row as in Crafting (accent while a filter is on); the search never moves: it keeps the filter slot's place, filter shown or not. Its menu is
+- **Tab row:** a sliders button ends it on every page, its dropdown holding
+  the shell's search ("Search"; names and Battle.net character names) at its
+  top (`ns.SearchInFilter`), alone off Friends and Allies; accent while a
+  search runs or a filter is on. On Friends its menu is
   the stock list's: Status (Online, Away, Busy, Offline, In Queue, Available
   For Queue), then the Interests and Roles tags this game type supports (no
   Delves on Forever), and Clear filters; a pick keeps it open; the tooltip
@@ -69,7 +70,8 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   WoW friend's level, zone and note. Notes are set from the right-click
   menu (Set Note), as in the stock list. Click whispers, right-click opens the
   game's menu (`FriendsFrame_ShowDropdown`/`ShowBNDropdown`, where favorites
-  are set), double-click invites. Footer: "Add friend" (primary), the stock
+  are set), double-click invites. With EllesmereUI loaded, its friend
+  groups instead (docs/addons.md, "EllesmereUI"). Footer: "Add friend" (primary), the stock
   Add Friend button (`AddFriendFrame_Show`): a friendly player targeted who
   is not yet a friend is added at once; else a `W.Modal` with one field and
   "Send request", as `AddFriendFrame_Accept` decides: a BattleTag (or an
@@ -159,4 +161,6 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   restricted search only from a queue pick's click),
   `social-add` (add friend paths, broadcast), `social-requests`, `social-ignored`, `social-allies` (each with its band
   status), `social-raid` (no drag in combat or while targeting, All assist's
-  reason), `social-secret` (names secret in combat keep the last read).
+  reason), `social-secret` (names secret in combat keep the last read),
+  `social-ellesmere` (EllesmereUI's groups, folding, the menu's group entry),
+  `social-ellesmere-edit` (new group, rename, colour, move, delete, Favorites).

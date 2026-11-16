@@ -34,6 +34,8 @@ stub.unitWatch()
 stub.advance(0.2)
 -- The veil: the game's container faded, still shown, nothing else of it touched (the stub's guard).
 assert(stockAuras(TargetFrame):GetAlpha() == 0 and stockAuras(FocusFrame):GetAlpha() == 0 and stockAuras(TargetFrame):IsShown(), "the game's auras are not veiled")
+-- Faded, the game's buttons still took the mouse (its aura tooltip beside ours): the container is switched off too.
+assert(not stockAuras(TargetFrame):IsEnabled() and not stockAuras(FocusFrame):IsEnabled(), "the game's aura buttons still take the mouse")
 -- A hostile creature: the player's debuffs first, then the creature's own (another player's left out), then buffs.
 assert(order(T) == "1,5,3,4", "the target's row: " .. order(T))
 -- A friend: buffs first (the player's own first), then debuffs.
@@ -62,7 +64,7 @@ stub.cvars.noBuffDebuffFilterOnTarget = "0"
 -- The unit frames off: the game's auras back (ours go with our frames); on again, veiled again.
 PolestarUI.Switch("unitframes", false)
 stub.advance(0.2)
-assert(stockAuras(TargetFrame):GetAlpha() == 1, "the game's auras are not back with the unit frames off")
+assert(stockAuras(TargetFrame):GetAlpha() == 1 and stockAuras(TargetFrame):IsEnabled(), "the game's auras are not back with the unit frames off")
 PolestarUI.Switch("unitframes", true)
 stub.unitWatch()
 stub.advance(0.2)
@@ -80,11 +82,11 @@ stub.fire("UNIT_AURA", "target")
 stub.fire("PLAYER_TARGET_CHANGED")
 stub.advance(0.2)
 assert(order(T) == "" and order(F) == "", "our rows still show in combat: " .. order(T))
-assert(stockAuras(TargetFrame):GetAlpha() == 1 and stockAuras(FocusFrame):GetAlpha() == 1, "the game's auras are not back in combat")
+assert(stockAuras(TargetFrame):GetAlpha() == 1 and stockAuras(FocusFrame):GetAlpha() == 1 and stockAuras(TargetFrame):IsEnabled(), "the game's auras are not back in combat")
 stub.inCombat = false
 stub.fire("PLAYER_REGEN_ENABLED")
 stub.advance(0.2)
-assert(stockAuras(TargetFrame):GetAlpha() == 0 and order(T) == "1,5,3,4", "not veiled again after combat: " .. order(T))
+assert(stockAuras(TargetFrame):GetAlpha() == 0 and not stockAuras(TargetFrame):IsEnabled() and order(T) == "1,5,3,4", "not veiled again after combat: " .. order(T))
 -- Out of combat but secret (an encounter, a keystone, a PvP match): the game's auras, ours hidden.
 stub.aurasSecret = true
 stub.fire("UNIT_AURA", "target")

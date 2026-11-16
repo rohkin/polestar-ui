@@ -11,10 +11,11 @@ local function rows() local t = {} for _, r in ipairs({ q.Scroll.Child:GetChildr
 local function row(n) for _, r in ipairs(rows()) do if (r.psTitle or (r.Label and r.Label:GetText())) == n then return r end end end
 local function look(fr, s) for _, r in ipairs({ fr:GetRegions() }) do if r:IsShown() and r.GetText and r:GetText() and tostring(r:GetText()):find(s, 1, true) then return r end end for _, k in ipairs({ fr:GetChildren() }) do if k:IsShown() then local r = look(k, s) if r then return r end end end end
 local function has(s) return look(d.Scroll.Child, s) end
+f.psFilter:Click()
 f.Search:SetText("kobold")
 stub.RunScript(f.Search, "OnTextChanged")
 row("Kobold Camp Cleanup"):Click()
-assert(d:IsShown() and not q.Scroll:IsShown() and not f.Search:IsShown(), "a click opens the details")
+assert(d:IsShown() and not q.Scroll:IsShown() and not f.Search:IsShown() and not PolestarMenu:IsShown(), "a click opens the details")
 assert(c.mapID == 37 and c.events[#c.events][1] == "SetFocusedQuestID" and c.events[#c.events][2] == 7 and C_QuestLog.GetSelectedQuest() == 7, "map, focus, selected")
 d.Back:Click()
 assert(not d:IsShown() and f.Search:GetText() == "kobold" and #rows() == 2 and row("Kobold Camp Cleanup").Sel:IsShown(), "back to the list as it was")

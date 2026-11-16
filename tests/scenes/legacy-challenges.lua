@@ -1,7 +1,7 @@
 --@ title: Legacy: Challenges
 --@ roots: PolestarUILegacy
 --@ stubs: stub_legacy.lua
--- The achievements key opens Challenges on the class's category; the categories fold under their groups at any depth, in the client’s order with children named first (the class one open), only those the client shows, no icons; a click unfolds a challenge's objectives, shift-click links it (chat open) or tracks it; the filter menu after the search on the tab row hides the incomplete ones (one earned on another character among them).
+-- The achievements key opens Challenges on the class's category; the categories fold under their groups at any depth, in the client’s order with children named first (the class one open), only those the client shows, no icons; a click unfolds a challenge's objectives, shift-click links it (chat open) or tracks it; the filter menu (under the search in its dropdown) at the tab row's end hides the incomplete ones (one earned on another character among them).
 stub.pressKey("Y")
 local f = PolestarUILegacy
 assert(f:IsShown() and not LegacySystemFrame:IsShown(), "key")
@@ -33,14 +33,14 @@ assert(stub.tracked[902], "track")
 local tr; for _, r in ipairs(shown()) do if r.psData.id == 902 then tr = r end end
 assert(tr.Date:GetText() == (TRACKING or "Tracking"), "a tracked challenge says so")
 stub.modified = {}
-local function item(t) for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and r.Text and r.Text:GetText() == t then return r end end end
-assert(f.TabRow:IsShown() and f.Search:GetParent() == f.TabRow and f.psFilter:GetParent() == f.TabRow and f.psFilter:IsShown(), "search and filter on the tab row")
+local function item(t) for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() and r.Text:GetText() == t then return r end end end
+assert(f.TabRow:IsShown() and not f.Search:IsShown() and f.psFilter:GetParent() == f.TabRow and f.psFilter:IsShown(), "filter on the tab row")
 stub.RunScript(f.psFilter, "OnClick")
 item("Incomplete"):Click()
 assert(PolestarMenu:IsShown() and #shown() == 1, "completed only: " .. #shown())
-assert(f.psFilter.psActive and f.psFilter.psTip == "Filter (1 on)" and item("Clear filters"), "lit, counted, with Clear filters")
+assert(f.psFilter.psActive and f.psFilter.psTip == "Search and filter (1 on)" and item("Clear filters"), "lit, counted, with Clear filters")
 item("Clear filters"):Click()
-assert(#shown() == 3 and not f.psFilter.psActive and f.psFilter.psTip == "Filter", "cleared")
+assert(#shown() == 3 and not f.psFilter.psActive and f.psFilter.psTip == "Search and filter", "cleared")
 stub.RunScript(f.psFilter, "OnClick")
 assert(not item("Clear filters"), "no Clear filters at the defaults")
 PolestarMenu:Hide()

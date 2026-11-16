@@ -1,11 +1,16 @@
 --@ title: Legacy: Challenges, searched
 --@ roots: PolestarUILegacy
 --@ stubs: stub_legacy.lua
--- The search: every category but Mining comes up empty (dimmed), and Mining\'s challenge unfolds its objectives in two columns.
+-- The search, typed at the top of the filter's dropdown (Enter closes it, the filter stays lit): every category but Mining comes up empty (dimmed), and Mining\'s challenge unfolds its objectives in two columns.
 PolestarUI.Show("legacy", "challenges")
 local f = PolestarUILegacy
+assert(not f.Search:IsShown(), "search on the tab row")
+f.psFilter:Click()
+assert(f.Search:IsShown() and f.Search:GetParent() == PolestarMenu, "search not in the dropdown")
 f.Search:SetText("miner")
 stub.RunScript(f.Search, "OnTextChanged")
+stub.RunScript(f.Search, "OnEnterPressed")
+assert(not PolestarMenu:IsShown() and f.psFilter.psActive, "Enter left the dropdown open, or the filter unlit")
 assert(stub.searched == "miner", "not searched")
 stub.fire("ACHIEVEMENT_SEARCH_UPDATED")
 local mining

@@ -23,6 +23,14 @@ end
 local zone, clock = label("Goldshire"), label("21:40")
 assert(zone and zone:GetPoint(1) == "BOTTOMLEFT" and clock and clock:GetPoint(1) == "TOP" and clock:IsShown(), "no zone name or clock on the map")
 assert(MinimapZoneText:GetAlpha() == 0 and TimeManagerClockTicker:GetAlpha() == 0, "the stock zone text or clock shows")
+-- The faded header buttons show no tooltip over nothing (their clicks stay the game's); our zone name offers the zone's.
+for _, b in ipairs({ MinimapCluster.ZoneTextButton, MinimapCluster.Tracking.Button, GameTimeFrame, MinimapCluster.IndicatorFrame.MailFrame, AddonCompartmentFrame }) do
+	assert(not b:IsMouseMotionEnabled(), "a faded header button still takes the hover")
+end
+assert(PolestarUIMinimapZone:IsMouseMotionEnabled() and not PolestarUIMinimapZone:IsMouseEnabled(), "our zone name has no tooltip, or eats the map's clicks")
+stub.RunScript(PolestarUIMinimapZone, "OnEnter")
+assert(GameTooltip.owner == PolestarUIMinimapZone and GameTooltip.lines[1] ~= nil, "no zone tooltip on our zone name")
+stub.RunScript(PolestarUIMinimapZone, "OnLeave")
 stub.zone = stub.secret("Elwynn Forest")
 stub.fire("ZONE_CHANGED")
 assert(zone:GetText() == "Goldshire", "a secret zone name was shown")

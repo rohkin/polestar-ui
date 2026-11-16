@@ -1,4 +1,4 @@
--- Baganator (the bag addon), as far as Skins/Baganator.lua reaches it: its
+-- Baganator (the bag addon), as far as Addons/Baganator.lua reaches it: its
 -- public skin API (Baganator.API.Skins, Baganator 857: RegisterListener,
 -- GetAllFrames, GetCurrentSkin) and Baganator.Skins.AddFrame, which hands
 -- each new frame to the listeners once. stub.baganator() builds a backpack

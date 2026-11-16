@@ -4,7 +4,7 @@
 -- The stock book's settings on a Filter button at the end of the search row: Hide passives and Show all ranks (the stock CVars), lit while one is off its default, "Clear filters" then; a search ignores them, as stock; no ranks for a Rogue.
 PolestarUI.Show("spellbook", "line2")
 local f = PolestarUISpellbook
-local function item(t) for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and r.Text and r.Text:GetText() == t then return r end end end
+local function item(t) for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and type(r.Text) == "table" and r.Text:GetText() == t then return r end end end
 local function names()
 	local n = {}
 	for _, c in ipairs({ f.Body:GetChildren() }) do if c.psSpell and c:IsShown() then n[#n + 1] = c.psSpell.info.name end end
@@ -17,9 +17,10 @@ item("Hide passives"):Click()
 assert(PolestarMenu:IsShown() and f.psFilter.psActive and not names():find("Arcane Mind"), "passive shown: " .. names())
 item("Show all ranks"):Click()
 assert(select(2, names():gsub("Arcane Missiles", "")) == 2, "low rank hidden: " .. names())
+assert(f.Search:IsShown() and f.Search:GetParent() == PolestarMenu, "no search in the dropdown")
 f.Search:SetText("arcane")
 stub.RunScript(f.Search, "OnTextChanged")
-assert(names():find("Arcane Mind"), "a search hid a passive")
+assert(names():find("Arcane Mind") and PolestarMenu:IsShown() and item("Hide passives").psItem.disabled, "a search hid a passive")
 f.Search:SetText("")
 stub.RunScript(f.Search, "OnTextChanged")
 f.psFilter:Click()

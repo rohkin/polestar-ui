@@ -12,12 +12,15 @@ Talents window's.
   its border cropped; the class's skill line icon for General,
   `GetClassSkillLineInfo`, the skill line's own, the pet's, `GetPetIcon`)
   before the name. The stock book's Transmog tab (outfits) is not built: its
-  shift-click on the micro button opens it. The search ("Search",
-  every category at once, titled "Search" with the count, no tab lit) and
-  the filter at the tab row's right end.
+  shift-click on the micro button opens it. Only the filter sits at the
+  tab row's right end (the tabs, What's Training?'s too, need the room).
 - **Filter:** a 30px square on the search field's well, the `sliders` glyph,
-  as Crafting's; in the accent while a setting is off its default. Its menu
-  is the stock book's settings menu, on the same CVars: "Hide passives"
+  as Crafting's; in the accent while a search runs or a setting is off its
+  default ("Search and filter"). Its dropdown holds the search at its top
+  (focused on open; Enter keeps it and closes the dropdown, its clear button
+  empties it; `ns.SearchInFilter`, shared with nine windows): every category
+  at once, titled "Search" with the count, no tab lit. Under it, the
+  stock book's settings menu, on the same CVars: "Hide passives"
   (`spellBookHidePassives`), "Use flyouts" (`spellBookHideFlyouts` off) and
   "Show all ranks" (`ShowAllSpellRanks`; not for a Rogue or Warrior, as
   stock), then "Clear filters" (back to the defaults) while one is off. A
@@ -66,4 +69,15 @@ Talents window's.
   hairline in the accent while on; right-click toggles it (the secure button
   runs the game's `/petautocasttoggle`). Pet commands (Attack, Follow) only
   drag: cast by name they would be the player's own.
-
+- **Training** (What's Training? loaded, `WT_API` with `GetSpells` and
+  `Status`; without it no tab): a last top tab, "Training" (the addon's book
+  icon), title "Training", subtitle the character and "3 spells to train
+  now.". Its spells (`WT_API.GetSpells`) in its own groups and order under
+  section headers with a count: Available now, Missing requirements, Coming
+  soon, Not yet available, Pet abilities, Missing talents (weapon skills
+  folded into their level's group; known and ignored left out). One column of
+  rows (level, then name): icon well, name, "Rank 3 · Level 26 · Quest", the
+  cost on the right (danger past your money); the tooltip is the spell's link.
+  Redrawn on its Ready, SpellsChanged, LevelChanged and IgnoredChanged
+  callbacks. Code in `Addons/WhatsTraining.lua` (docs/addons.md). The search stays the book's. Its professions page is not built:
+  `WT_API` has no professions data (only the addon's private namespace).

@@ -43,6 +43,8 @@ local function paintTrail(t)
 	t:SetStatusBarColor(r, g, bl, t.psOn == false and 0 or 1)
 end
 
+local TRAIL_OVERLAP = 2 -- UI units: over one physical pixel at any UI scale from 0.5 up
+
 function H.Bar(parent, trail)
 	local aim = trail and CreateFrame("StatusBar", nil, parent)
 	local b = CreateFrame("StatusBar", nil, parent)
@@ -64,7 +66,10 @@ function H.Bar(parent, trail)
 		end
 		aim:SetStatusBarTexture(WHITE)
 		aim:SetStatusBarColor(1, 1, 1, 0)
-		clip:SetPoint("TOPLEFT", aim:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+		-- The clip reaches TRAIL_OVERLAP under the fill's end: a clip edge and a
+		-- texture edge on one coordinate snap to different pixels at a fractional
+		-- UI scale, leaving a pixel of dark track between fill and trail.
+		clip:SetPoint("TOPLEFT", aim:GetStatusBarTexture(), "TOPRIGHT", -TRAIL_OVERLAP, 0)
 		clip:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
 		clip:SetClipsChildren(true)
 		t.psAim = aim

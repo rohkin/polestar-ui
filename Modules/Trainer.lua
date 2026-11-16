@@ -192,7 +192,7 @@ local function filterMenu(anchor)
 			paint()
 		end }
 	end
-	W.ShowMenu(anchor, items, { minWidth = 160 })
+	ns.FilterMenu(f, items, { minWidth = 160 })
 end
 
 local function build()
@@ -203,9 +203,8 @@ local function build()
 	ns.Dock(f)
 	ns.WindowMenu(f, "trainer")
 	ns.Compact(f)
-	-- The stock filter menu's button ends the tab row, after the search.
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", filterMenu, 14)
-	Theme.Skin(f.psFilter, "editbox")
+	-- The stock filter menu's button ends the tab row, the search in its dropdown.
+	ns.SearchInFilter(f, filterMenu)
 	f.psEmpty = W.Text(f.Body, "body", "textMuted")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	f.psEmpty:SetText("Nothing to show.")
@@ -303,8 +302,8 @@ function paint()
 	for n = #list + 1, #rows do rows[n]:Hide() end
 	f.psEmpty:SetShown(#list == 0)
 	local off = hidden()
-	W.SetIconState(f.psFilter, off > 0)
-	f.psFilter.psTip = off > 0 and ("Filter (%d on)"):format(off) or "Filter"
+	W.SetIconState(f.psFilter, off > 0 or query ~= "")
+	f.psFilter.psTip = off > 0 and ("Search and filter (%d on)"):format(off) or "Search and filter"
 
 	local why = blocked(sel)
 	ns.SetEnabled(f.footerButtons.right[1], not why, why)

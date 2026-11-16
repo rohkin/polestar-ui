@@ -418,7 +418,13 @@ Out of combat, from our code, only:
   `HealthBarContainer`, `ManaBar`, `PartyMemberOverlay.Status`), and a
   member's `Portrait`, which the game re-alphas at low health, hidden.
   Happiness, the party's icons, auras and pets stay the game's. A boss frame
-  is veiled as the target's.
+  is veiled as the target's;
+- `SetMouseMotionEnabled(false)` on the faded bars (TextStatusBar,
+  `enableMouseMotion`: its `OnEnter` shows the unit's tooltip): the targets
+  of target's `HealthBar` and `ManaBar`, `PetFrameHealthBar`,
+  `PetFrameManaBar`, a member's `HealthBarContainer.HealthBar` and `ManaBar`.
+  Alpha never stops the mouse: anything faded that takes it still shows the
+  game's tooltip over ours, so every faded veil drops its mouse too.
 
 **Exception (the user's leave), the target's and focus's auras:** from
 `Modules/Auras.lua` only, out of combat and while auras are not secret
@@ -426,8 +432,12 @@ Out of combat, from our code, only:
 `SetAlpha(0)` (and `SetAlpha(1)` to
 give it back) on `TargetFrame`'s and `FocusFrame`'s
 `TargetFrameContent.TargetFrameContentContextual.Auras`, the client's secure
-aura container, and nothing else of it: no `Hide`, no mouse call, no anchor,
-no key, nothing on its buttons (they are out of addon code's reach). Why: a
+aura container, and with it its own public `SetEnabled(false)` (`true` to
+give it back; `AuraContainerSharedMixin`, a secure delegate): faded, its
+buttons still took the mouse and showed the game's `AuraButtonTooltip`
+beside ours; off, it parses no aura and drops them. Nothing else of it: no
+`Hide`, no mouse call, no anchor, no key, nothing on its buttons (they are
+out of addon code's reach). Why: a
 row of ours under our own target and focus frames shows those auras in the
 HUD's look (`C_UnitAuras`, every value handed over unread), and the game's
 container, which cannot be restyled, would show each a second time. Why it
@@ -459,8 +469,8 @@ combat it waits for `PLAYER_REGEN_ENABLED`. Every other Edit Mode system
 frame (minimap, action bars) keeps rule 17.
 
 **Caught by:** the stub's aura container (`psStockAuras`) errors on every
-guarded call but `SetAlpha` out of combat (the `auras-target` scene veils
-it, gives it back with either module off, as combat starts and while auras
+guarded call but `SetAlpha` out of combat, and on `SetEnabled` in combat (the `auras-target` scene veils
+it and switches it off, gives it back with either module off, as combat starts and while auras
 are secret; `stub_auras.lua` errors on every aura call while they are).
 `tests/lua/stub_unitframes.lua` errors on any of those calls
 on a stock unit frame from addon code, and on any move, size, show or
@@ -521,6 +531,15 @@ widget property, not a Lua key; Edit Mode only writes it
 the game's code with no taint, and the cluster's place, size and saved
 layout stay Edit Mode's. Nothing else on the cluster is relaxed.
 
+**Exception, the minimap header's hover:** from `Modules/Minimap.lua` only,
+`SetMouseMotionEnabled(false)` on the header buttons it fades while our map
+shows (`MinimapCluster.ZoneTextButton`, `Tracking.Button`, `GameTimeFrame`,
+`IndicatorFrame.MailFrame`, `AddonCompartmentFrame`), `true` otherwise:
+faded, they showed the game's tooltips over nothing. Their clicks stay the
+game's (the zone's opens the map, rule 14). None is protected, and the game
+never sets their mouse (`Blizzard_Minimap`); ours stand in (the corner
+icons, the zone name's tooltip).
+
 **Exception (the user's leave, approved), the cooldown viewers' square sweep:**
 from `Modules/CooldownViewer.lua` only, `Cooldown:SetSwipeTexture(...)` on
 the `Cooldown` child of the items in `EssentialCooldownViewer`,
@@ -536,8 +555,8 @@ nothing on these items is protected. No other call on the items is relaxed.
 The one exception is rule 16's veil on the stock unit frames we replace
 (`PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, the party members,
 `Boss1TargetFrame`..`Boss5TargetFrame`): exactly the calls rule 16 lists
-(`EnableMouse(false)` on the frame, `Hide()` on its two art and bar
-children, `SetAlpha(0)` on the targets of target and the pet's and party's
+(`EnableMouse(false)` on the frame, `SetMouseMotionEnabled(false)` on its
+faded bars, `Hide()` on its two art and bar children, `SetAlpha(0)` on the targets of target and the pet's and party's
 art regions, `SetTexture(nil)` on the pet's two flashes), out of combat, from `Modules/UnitFrames.lua`. Nothing else
 of this rule is relaxed for them.
 
@@ -619,6 +638,44 @@ So the switch is live both ways (`park`/`unpark`, `M.Apply` in Bags.lua).
 run with Polestar: UI code on the stack. `bags-off` switches on with the
 stock bags open, off with them parked open, and on again;
 `bags-barclick` checks the bag bar's clicks never show a stock frame.
+
+## 20. A nameplate's frames are pooled: hook the mixin table or a global, never the instance
+
+**What the source says:** the client makes the base plates (`NamePlate1`..)
+and reuses them; `NamePlateDriverFrame` hands each a `UnitFrame` from a pool
+(`NamePlateUnitFrameTemplate`, `Blizzard_NamePlates.lua`), sets its unit,
+and on `NAME_PLATE_UNIT_REMOVED` clears it and puts it back for the next
+unit. The template's mixin (`NamePlateUnitFrameMixin`) is copied into a
+frame when the frame is made. Friendly plates in instances come from a pool
+of forbidden frames addon code never gets.
+
+**Rule:** restyle plates as rule 15 says, per pooled frame (our art in a weak
+table keyed by the `UnitFrame`, made once, kept across units), and hook no
+plate frame, the driver or a `UnitFrame` instance. Follow the game with events
+(`NAME_PLATE_UNIT_ADDED`: the driver's handler runs first, so the plate
+already has its `UnitFrame`; on `NAME_PLATE_UNIT_REMOVED` it is already
+gone) and with post-hooks on globals the game calls by name
+(`CompactUnitFrame_UpdateHealthColor`, filtered to our frames). A fade with
+`SetAlpha` survives the game's re-layout (`UpdateAnchors` swaps atlases,
+which keeps alpha). If a reset no event covers turns up, post-hook the mixin
+table at load: it reaches every frame the pool makes after it, and plates are
+made after login. Never touch a frame whose `IsForbidden()` is true, and call
+nothing that sizes or places plates (`C_NamePlate.SetNamePlateSize`, hit-test
+and stacking calls): those are the game's.
+
+**Why not per instance:** FlareUI hooks each `UnitFrame`
+(`hooksecurefunc(unitFrame, "UpdateAnchors", ...)`), which works on this
+client: `hooksecurefunc` keeps the game's call secure. But it writes a method
+key on a frame the pool hands to the game's code and to every other plate
+addon (rule 15: no key on a stock frame), and each pooled frame needs it once
+(a tracking table). The global and the mixin reach the same calls with
+nothing written on a plate.
+
+**Caught by:** `tests/lua/stub_nameplates.lua`: its pool copies the mixin in
+when a frame is made, so a hook on the mixin set later misses older frames;
+a hook, a key, a move, size, show, hide, reparent or script on any plate frame
+or region from Polestar: UI errors, textures take only `SetAlpha`, and a
+forbidden plate errors on any use.
 
 ## Reading errors from the game
 

@@ -93,8 +93,8 @@ end
 -- The stock target's and focus's auras are the client's secure aura
 -- container (TargetFrameContent.TargetFrameContentContextual.Auras), whose
 -- buttons addon code cannot reach. With the user's leave (docs/CLIENT.md,
--- rule 16's exception) that container alone is faded with SetAlpha(0), out
--- of combat, and a row of ours under our own target and focus frames shows
+-- rule 16's exception) that container alone is faded with SetAlpha(0) and
+-- switched off with its SetEnabled(false), out of combat, and a row of ours under our own target and focus frames shows
 -- the auras instead. Everything of an aura is handed over unread: the ids
 -- come sorted by the client (the player's own first: UnitAuraSortRule
 -- Default, and the "PLAYER" filter says which are the player's), the icon
@@ -135,6 +135,9 @@ local function veil(row)
 	local a = stockAuras(row)
 	if not a then return end
 	if pcall(a.SetAlpha, a, want and 0 or 1) then row.veiled = want else row.refused = true end
+	-- Faded, its buttons still took the mouse (the game's aura tooltip beside
+	-- ours): the container's own public switch drops them (rule 16's exception).
+	if a.SetEnabled and not row.refused then pcall(a.SetEnabled, a, not want) end
 	return true
 end
 

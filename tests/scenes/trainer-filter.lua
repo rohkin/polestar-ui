@@ -1,7 +1,7 @@
 --@ title: Trainer: filtered
 --@ roots: PolestarUITrainer, PolestarMenu
 --@ stubs: stub_npc.lua, stub_trainer.lua
--- The categories by name, as the stock list sorts them; one in the sidebar shows only its services. The stock filter on the sliders button: Used and Unavailable off leave what can be learnt (the client's list, redrawn at once); the menu opens again after each pick; the button is lit while a filter hides some. Categorize (the stock menu's) off lists no categories.
+-- The categories by name, as the stock list sorts them; one in the sidebar shows only its services. The stock filter on the sliders button: Used and Unavailable off leave what can be learnt (the client's list, redrawn at once); the menu opens again after each pick; the button is lit while a filter hides some. Categorize (the stock menu's) off lists no categories. The search sits atop the dropdown, focused; its clear button empties it.
 stub.interact(Enum.PlayerInteractionType.Trainer)
 local f = PolestarUITrainer
 local function shown() local n = 0; for _, r in ipairs(f.psRows) do if r:IsShown() then n = n + 1 end end; return n end
@@ -11,7 +11,7 @@ f.tabButtons[1]:Click()
 assert(shown() == 8, "All not back")
 
 stub.RunScript(f.psFilter, "OnClick")
-local function item(t) for _, r in ipairs({ PolestarMenu:GetChildren() }) do if r:IsShown() and r.Text and r.Text:GetText() == t then return r end end end
+local function item(t) for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() and r.Text:GetText() == t then return r end end end
 item("Used"):Click()
 assert(PolestarMenu:IsShown(), "menu closed")
 item("Unavailable"):Click()
@@ -26,11 +26,14 @@ item("Categorize"):Click()
 assert(stub.categorize and f.tabButtons[2]:IsShown(), "categories not back")
 
 -- The sliders button counts the types it hides in its tooltip; Clear filters shows them all again.
-assert(f.psFilter.psTip == "Filter (2 on)", "filter tip: " .. tostring(f.psFilter.psTip))
+assert(f.psFilter.psTip == "Search and filter (2 on)", "filter tip: " .. tostring(f.psFilter.psTip))
 item("Clear filters"):Click()
-assert(stub.typeFilter.used and stub.typeFilter.unavailable and shown() == 8 and f.psFilter.psTip == "Filter", "Clear filters did not show all")
--- The sidebar search keeps to the services whose name has it.
+assert(stub.typeFilter.used and stub.typeFilter.unavailable and shown() == 8 and f.psFilter.psTip == "Search and filter", "Clear filters did not show all")
+-- The search, in the filter's dropdown, keeps to the services whose name has it.
+assert(not f.Search:IsShown(), "search on the tab row")
+stub.RunScript(f.psFilter, "OnClick")
+assert(f.Search:IsShown() and f.Search:GetParent() == PolestarMenu, "search not in the dropdown")
 f.Search:SetText("shield"); stub.RunScript(f.Search, "OnTextChanged")
-assert(shown() == 2, "search rows: " .. shown())
-f.Search:SetText(""); stub.RunScript(f.Search, "OnTextChanged")
-assert(shown() == 8, "search not cleared")
+assert(shown() == 2 and f.psFilter.psActive, "search rows: " .. shown())
+stub.RunScript(f.Search.Clear, "OnClick")
+assert(shown() == 8 and PolestarMenu:IsShown() and not f.psFilter.psActive, "search not cleared")

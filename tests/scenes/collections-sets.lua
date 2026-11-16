@@ -45,6 +45,7 @@ assert(PolestarMenu.rows[1].psItem.text == "Set favorite", "set menu: " .. Poles
 PolestarMenu.rows[1]:Click()
 assert(stub.sets[502].favorite and rows()[2].psSet.setID == 501 and rows()[2].Star:IsShown(), "favorite not redrawn at once")
 -- The async search.
+f.psFilter:Click()
 f.Search:SetText("plate")
 stub.RunScript(f.Search, "OnTextChanged")
 assert(stub.transmogSearch[2] == "plate" and f.psStatus:GetText() == "Searching…", "searching")
@@ -52,15 +53,16 @@ stub.finishSearch(2)
 assert(#rows() == 1 and rows()[1].psSet.setID == 521, "search result")
 f.Search:SetText("")
 stub.RunScript(f.Search, "OnTextChanged")
+Polestar.Widgets.HideMenu()
 -- The items view keeps its own search box.
 f.tabButtons[1]:Click()
 assert(f.Search:GetText() == "" and stub.transmogSearch[2] == nil, "sets search left behind")
 f.tabButtons[2]:Click()
 -- The filter: the class, then the stock set filters.
 f.psFilter:Click()
-assert(PolestarMenu.rows[1].psItem.text == "Class: Warrior…" and PolestarMenu.rows[3].psItem.text == "Not Collected" and PolestarMenu.rows[5].psItem.text == "PvP", "set filter")
-PolestarMenu.rows[2]:Click()
-assert(#rows() == 2 and f.psFilter.psTip == "Filter (on)", "collected off")
+assert(PolestarMenu.rows[2].psItem.text == "Class: Warrior…" and PolestarMenu.rows[4].psItem.text == "Not Collected" and PolestarMenu.rows[6].psItem.text == "PvP", "set filter")
+PolestarMenu.rows[3]:Click()
+assert(#rows() == 2 and f.psFilter.psTip == "Search and filter (on)", "collected off")
 local last
 for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then last = r end end
 last:Click()

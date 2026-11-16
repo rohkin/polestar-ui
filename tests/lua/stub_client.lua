@@ -80,6 +80,16 @@ function M.SetText(self, t)
 	if self.kind == "EditBox" and self.text ~= was then stub.RunScript(self, "OnTextChanged", false) end
 end
 
+-- The mouse's motion half (OnEnter/OnLeave) apart from its clicks: a stock
+-- TextStatusBar (enableMouseMotion) or a header button. EnableMouse sets both.
+function M.SetMouseMotionEnabled(self, v) self.mouseMotion = v and true or false end
+function M.IsMouseMotionEnabled(self)
+	if self.mouseMotion == nil then return self.mouse == true end
+	return self.mouseMotion
+end
+local enableMouse = M.EnableMouse
+function M.EnableMouse(self, v) self.mouseMotion = nil return enableMouse(self, v) end
+
 -- Frame:SetRolesets (the UI modes' visibility tags, C_Roleset) is protected:
 -- a protected frame (stub_unitframes.lua's psProtected) refuses it in combat.
 -- GetRolesetNames answers the tags, "roleless" while none are set.

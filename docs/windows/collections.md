@@ -24,9 +24,10 @@ facts" section wins. Items still marked **LIVE** need a check in game.
 ## Built (stage 1)
 - **Shell:** `W.Shell` 780×540 (600 covered the chat tabs), `sidebar = 0, rail = true`, `ns.Plain`, `ns.Compact`, "..." menu
   (`ns.WindowMenu`; Mounts adds "Show character on mount", the stock `mountJournalShowPlayer` toggle).
-  Search and a sliders filter on the tab row (`ns.TopNav(f, {})` places them); each page keeps its own
+  A sliders filter ends the tab row (`ns.TopNav(f, {})` places it), the search at the top of its
+  dropdown (`ns.SearchInFilter`; a submenu hides the box); each page keeps its own
   query, set on the client (`C_MountJournal.SetSearch`, `C_ToyBox.SetFilterString`). With the CVar
-  `onlyShowCollectedItemsInJournal` the filter button hides and a page with nothing collected leaves
+  `onlyShowCollectedItemsInJournal` the dropdown holds the search alone and a page with nothing collected leaves
   the rail, as stock. Last page in `PolestarUIDB.collectionsPage`.
 - **Rail:** Mounts, Pets, Toys, Appearances with the `TABS_DATA` icons (stage 1 had Pets and
   Appearances locked; no page is locked now). A page the client would not show (the CVar

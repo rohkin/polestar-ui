@@ -84,8 +84,13 @@ No window, so no "..." menu. Off by default with the gamepad UI.
 
 **Not covered yet:** the pet's cast bar (`PetCastingBarFrame`), the bosses'
 (`Boss1TargetFrameSpellBar`..), the professions' overlay bar
-(`OverlayPlayerCastingBarFrame`), nameplate cast bars; the target's name on
+(`OverlayPlayerCastingBarFrame`); the target's name on
 a cast (`CastTargetNameText`, where the game shows one).
+
+**Shared:** the nameplates' cast bars wear this look through `ns.CastLook`
+(`dress(bar, o?)`, `paint`, `fail`, `undress`; `o` a smaller fit: height,
+icon size, texts under the bar, text size), see
+[nameplates.md](nameplates.md).
 
 **An own bar instead (not built; needs a leave).** Bars of ours on our
 target and focus frames (attached, sized to them) would need the stock ones

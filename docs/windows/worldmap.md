@@ -31,8 +31,10 @@ zoom and click-to-open are the game's.
   on a map of several floors (a map group), its floors in the client's
   order, the shown one checked; dividers between them. How to move around
   the map (click a zone, right-click out, scroll to zoom) is its tooltip
-  hint. At the row's right end the quest search (shown with the quest list
-  only) and the filter (always, so the filters work with the log shut).
+  hint. At the row's right end the filter (always, so the filters work with
+  the log shut); while the quest list shows, it opens our dropdown
+  (`ns.SearchInFilter`): the quest search on top, then "Map filters…", which
+  opens the game's menu; else the game's menu at once.
 - **Map controls:** as the stock map's overlay frames, at the canvas's top
   right (above the pins): the full-screen toggle (the stock maximise,
   remembered; out of the dock while full), and under it, unless a game rule
@@ -53,8 +55,8 @@ zoom and click-to-open are the game's.
 - **Side column:** 320 wide right of the canvas, under the tab row, on the
   sidebar ground, its page remembered (Quests, Map Legend or shut).
   Windowed, the window grows by its width; full screen, the map gives it room.
-- **Quest Log:** the column's Quests page, the list from its top (its count,
-  search and filter are on the tab row). The log as the stock panel lists it: header rows (label
+- **Quest Log:** the column's Quests page, the list from its top (its count
+  and filter are on the tab row, the search in the filter's dropdown). The log as the stock panel lists it: header rows (label
   face, chevron, count) fold through the client and redraw at once
   (CLIENT.md, rule 6); hidden quests, tasks and unfinished bounties stay
   out; a campaign's header always shows (unless searching). A quest row: "[level]
@@ -77,11 +79,12 @@ zoom and click-to-open are the game's.
   (`MENU_QUEST_MAP_FRAME`). The focused quest carries the accent bar, the
   clicked one the selected wash. The row's tooltip is the stock one: the
   title, on hold or failed, the hand-in line or the objectives summary and
-  every objective (finished ones grey), then the hint. The search on
-  the tab row ("Search quests") matches a quest's title or what is left of it;
-  searching, every match shows with its header open. The filter after it, as
-  Social's (`sliders`, editbox ground; its glyph in the
-  accent and its tooltip "Filter (n on)" while a filter is off its default)
+  every objective (finished ones grey), then the hint. The search
+  ("Search quests", in the filter's dropdown) matches a quest's title or what is left of it;
+  searching, every match shows with its header open. The filter, as
+  Social's (`sliders`, editbox ground; its glyph in the accent while a
+  filter is off its default or a search runs, its tooltip "Search and filter
+  (n on)" with the list shown)
   opens the stock map's filter menu as Forever builds it (the game's Menu,
   its `MENU_WORLD_MAP_TRACKING` tag, so other addons' entries join it, each
   filter with the stock tooltip): the world quest submenu where the map has

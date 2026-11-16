@@ -17,6 +17,7 @@ assert(MinimapZoneText:GetAlpha() == 1 and TimeManagerClockTicker:GetAlpha() == 
 assert(bagnon:GetScale() == 1, "a button keeps the dock's scale")
 assert(MiniMapMailIcon:GetAlpha() == 1 and GameTimeFrame.StateTexture:GetAlpha() == 1 and AddonCompartmentFrame.Text:GetAlpha() == 1, "a stock header icon is still faded")
 assert(MinimapCluster.ZoneTextButton.AddTexture:GetAtlas() == "ui-hud-minimap-header-button", "the header's hover is not back")
+assert(MinimapCluster.ZoneTextButton:IsMouseMotionEnabled() and AddonCompartmentFrame:IsMouseMotionEnabled(), "the header's tooltips are not back")
 local p1 = { bagnon:GetPoint(1) }
 assert(bagnon:GetParent() == Minimap and p1[1] == "CENTER" and p1[2] == Minimap and math.abs(p1[4] - math.cos(math.rad(200)) * 104) < 0.01 and math.abs(p1[5] - math.sin(math.rad(200)) * 104) < 0.01, "a button is not back where it was")
 assert(WeakAurasMinimapButton:GetParent() == Minimap and not PolestarUIMinimapDock:IsShown() and not PolestarUIMinimapEdge:IsShown(), "the dock or border still shows")
@@ -29,5 +30,6 @@ assert(stub.blobRings.Quest == 1, "the blob rings were changed under another add
 assert(MinimapCompassTexture:GetAlpha() == 1 and LibDBIcon10_Bagnon:GetParent() == Minimap, "the ring or a button was taken from the other addon")
 assert(MinimapCluster.ZoneTextButton.StateTexture:GetAlpha() == 0, "the header is not restyled")
 assert(MinimapZoneText:GetAlpha() == 1, "the zone text is faded with no map text of ours")
+assert(MinimapCluster.ZoneTextButton:IsMouseMotionEnabled() and GameTimeFrame:IsMouseMotionEnabled(), "the shown header lost its tooltips under another addon's shape")
 assert(AddonCompartmentFrame.Text:GetAlpha() == 1 and not PolestarUIMinimapEdge:IsShown(), "the compartment or the corner moved off the other addon's map")
 assert(select(1, MinimapCluster:GetClampRectInsets()) == 0, "the screen clamp was changed under another addon's shape")

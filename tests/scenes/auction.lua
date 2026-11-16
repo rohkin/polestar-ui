@@ -1,7 +1,7 @@
 --@ title: Auction House
 --@ roots: PolestarUIAuction
 --@ stubs: stub_npc.lua, stub_auction.lua
--- The auctioneer opens ours, never the stock window, and the stock addon is never loaded: Forever's AUCTION_HOUSE_SHOW route is stopped and the interaction taken, and ours opens and closes on either route alone or both at once; the bags open with it; closing ours ends the auction house once, the game ending it closes ours without ending it again. On the compact grid (880x600): Buy, Sell, Auctions and Bids are top tabs, the player's money, the search and its options on the tab row, the auctioneer leading the subtitle, the categories a column beside the page; Enter in the search browses (by text and category), each result a row with its lowest price and how many are up; a price over the player's money is red.
+-- The auctioneer opens ours, never the stock window, and the stock addon is never loaded: Forever's AUCTION_HOUSE_SHOW route is stopped and the interaction taken, and ours opens and closes on either route alone or both at once; the bags open with it; closing ours ends the auction house once, the game ending it closes ours without ending it again. On the compact grid (880x600): Buy, Sell, Auctions and Bids are top tabs, the player's money, the Search button and the options (the search in their dropdown) on the tab row, the auctioneer leading the subtitle, the categories a column beside the page; Enter in the search browses (by text and category), each result a row with its lowest price and how many are up; a price over the player's money is red.
 local T = Enum.PlayerInteractionType
 local ns = PolestarUI
 assert(ns.modules.auction.reloadOff, "switching off does not wait for /reload")
@@ -46,10 +46,14 @@ local function rows()
 end
 assert(#rows() == 0, "results before any search")
 
--- A search by text: Enter sends it, its results are rows.
+-- A search by text, typed at the top of the options' dropdown: Enter sends it and closes the dropdown, its results are rows.
+assert(not f.Search:IsShown(), "the search on the tab row")
+f.psFilter:Click()
+assert(f.Search:IsShown() and f.Search:GetParent() == PolestarMenu, "the search not in the dropdown")
 f.Search:SetText("cloth")
 stub.RunScript(f.Search, "OnTextChanged", true)
 stub.RunScript(f.Search, "OnEnterPressed")
+assert(not PolestarMenu:IsShown() and f.psFilter.psActive, "the dropdown stayed open, or the glyph not lit")
 assert(stub.browseQuery.searchString == "cloth" and #stub.browseQuery.itemClassFilters == 0, "the search not sent")
 local r = rows()
 assert(#r == 2 and tostring(r[1].Name:GetText()) == "Linen Cloth" and tostring(r[1].Cells[1].Text:GetText()) == "350", "the cloth results")

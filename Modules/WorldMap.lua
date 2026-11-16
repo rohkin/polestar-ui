@@ -113,9 +113,20 @@ local function setPanel(page)
 	paintTabs()
 end
 
+-- The search is the quest list's: in the filter's dropdown while the list shows.
+local function searchable() return f.psPage == "quests" and not f.psQuests.Details:IsShown() end
+
+-- The filter's state (the quest log's), lit too while a search runs.
+local function paintFilter()
+	f.psQuests.PaintFilter(f.psFilter)
+	if not searchable() then return end
+	if (f.Search:GetText() or "") ~= "" then W.SetIconState(f.psFilter, true) end
+	f.psFilter.psTip = "Search and " .. f.psFilter.psTip:lower()
+end
+
 -- The top tabs (the quest log's count on its own, in danger past the most
--- it holds), the search (the quest list's, shown with it), the filter, and
--- the map's nav after the tabs.
+-- it holds), the filter (the search in its dropdown), and the map's nav
+-- after the tabs.
 function paintTabs()
 	local count, over = f.psQuests.Count()
 	local function tab(key, label)
@@ -126,10 +137,10 @@ function paintTabs()
 	if f.psLegend then items[2] = tab("legend", MAP_LEGEND_FRAME_LABEL or "Map Legend") end
 	ns.TopNav(f, items, f.psPage, function(k) setPanel(f.psPage ~= k and k or nil) end)
 	W.Color(f.tabButtons[1].psNavCount, over and "danger" or "textMuted")
-	f.Search:SetShown(f.psPage == "quests" and not f.psQuests.Details:IsShown())
+	if not searchable() and W.MenuShown(f.psFilter) then W.HideMenu() end
 	f.psNav:ClearAllPoints()
 	f.psNav:SetPoint("LEFT", f.tabButtons[#items], "RIGHT", 12, 0)
-	f.psQuests.PaintFilter(f.psFilter)
+	paintFilter()
 end
 
 -- Full screen, as the stock map's maximise: the window fills the screen, out
@@ -429,7 +440,11 @@ end
 
 local function build()
 	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 2 + MAP_W, height = 60 + 36 + 2 + MAP_H, searchPlaceholder = "Search quests",
-		onSearch = function(text) if f and f.psQuests then f.psQuests.SetQuery(text) end end })
+		onSearch = function(text)
+			if not (f and f.psQuests) then return end
+			f.psQuests.SetQuery(text)
+			paintFilter()
+		end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "map")
 	ns.Compact(f)
@@ -450,9 +465,14 @@ local function build()
 	f.psLegend = legend()
 	-- The stock map's filter menu (the quest log's, one state for both), at
 	-- the tab row's end (ns.TopNav), lit while a filter is off its default.
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function(self) f.psQuests.FilterMenu(self) end, 14)
-	Polestar.Theme.Skin(f.psFilter, "editbox")
-	f.psQuests.OnFilters = function() f.psQuests.PaintFilter(f.psFilter) end
+	-- While the quest list shows, it opens our dropdown: the search, then a
+	-- row for the game's menu (MENU_WORLD_MAP_TRACKING, kept for the addons
+	-- that add to it); else the game's menu at once.
+	ns.SearchInFilter(f, function(self)
+		if not searchable() then return f.psQuests.FilterMenu(self) end
+		ns.FilterMenu(f, { { text = (MAP_FILTERS or "Map filters") .. "…", onClick = function() f.psQuests.FilterMenu(self) end } })
+	end)
+	f.psQuests.OnFilters = paintFilter
 	mapNav()
 	mapControls()
 	coords()

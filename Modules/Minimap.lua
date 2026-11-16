@@ -128,6 +128,41 @@ local function placeNorth()
 	north:SetPoint("CENTER", edge, "CENTER", x / m * r, y / m * r)
 end
 
+-- MinimapZoneTextButtonMixin:OnEnter and Minimap_SetTooltip: the zone, then
+-- the subzone in its PvP colour and what that territory is (a faction's only
+-- with a faction named). Secret in combat: the last clean zone name stays.
+local PVP = {
+	sanctuary = { 0.41, 0.8, 0.94, "SANCTUARY_TERRITORY" }, arena = { 1, 0.1, 0.1, "FREE_FOR_ALL_TERRITORY" },
+	friendly = { 0.1, 1, 0.1, "FACTION_CONTROLLED_TERRITORY" }, hostile = { 1, 0.1, 0.1, "FACTION_CONTROLLED_TERRITORY" },
+	contested = { 1, 0.7, 0, "CONTESTED_TERRITORY" }, combat = { 1, 0.1, 0.1, "COMBAT_ZONE" },
+}
+local function zoneTip(self)
+	GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+	local zone = GetZoneText and ns.Clean(GetZoneText()) or zoneName
+	local sub = GetSubZoneText and ns.Clean(GetSubZoneText()) or ""
+	if sub == zone then sub = "" end
+	local pvp, faction
+	if C_PvP and C_PvP.GetZonePVPInfo then
+		local p, _, f = C_PvP.GetZonePVPInfo()
+		pvp, faction = ns.Clean(p), ns.Clean(f)
+	end
+	GameTooltip:AddLine(zone, 1, 1, 1)
+	local c = PVP[pvp]
+	if c and c[4] == "FACTION_CONTROLLED_TERRITORY" then
+		if faction and faction ~= "" then
+			GameTooltip:AddLine(sub, c[1], c[2], c[3])
+			GameTooltip:AddLine(format(FACTION_CONTROLLED_TERRITORY, faction), c[1], c[2], c[3])
+		end
+	elseif c then
+		GameTooltip:AddLine(sub, c[1], c[2], c[3])
+		GameTooltip:AddLine(_G[c[4]], c[1], c[2], c[3])
+	else
+		local n = NORMAL_FONT_COLOR
+		GameTooltip:AddLine(sub, n and n.r or 1, n and n.g or 0.82, n and n.b or 0)
+	end
+	GameTooltip:Show()
+end
+
 -- Our frame on the Minimap: the border and N (they scale and hide with it).
 local function buildEdge()
 	edge = Polestar.CreateFrameUnder("Frame", "PolestarUIMinimapEdge", Minimap)
@@ -144,6 +179,12 @@ local function buildEdge()
 	zoneLabel:SetWordWrap(false)
 	zoneLabel:SetPoint("BOTTOMLEFT", edge, "BOTTOMLEFT", 24, INSET)
 	zoneLabel:SetPoint("BOTTOMRIGHT", edge, "BOTTOMRIGHT", -24, INSET)
+	-- The stock zone text's tooltip on ours; hover only, so a click still pings the map.
+	local tip = CreateFrame("Frame", "PolestarUIMinimapZone", edge)
+	tip:SetAllPoints(zoneLabel)
+	tip:SetMouseMotionEnabled(true)
+	tip:SetScript("OnEnter", zoneTip)
+	tip:SetScript("OnLeave", function() GameTooltip:Hide() end)
 	clockLabel = H.Text(edge, "number", "text")
 	clockLabel:SetJustifyH("CENTER")
 	clockLabel:SetPoint("TOP", edge, "TOP", 0, -INSET)
@@ -510,10 +551,21 @@ local function clock()
 	paintClock()
 end
 
+-- With our map, the header's buttons are faded where the game puts them, and
+-- their hover showed the game's tooltips over nothing (the zone's beside our
+-- map): hover off while ours stand in (the corner icons, the zone name's
+-- tooltip), back otherwise. Their clicks stay the game's (rule 17's exception).
+local function hover(b)
+	if b and b.SetMouseMotionEnabled then b:SetMouseMotionEnabled(not shaped()) end
+end
+
 local function paintHeader()
 	local shown = on()
 	-- The zone text button stays (its click opens the map), faded: ours is on the map.
 	local zone = MinimapCluster.ZoneTextButton
+	hover(zone)
+	local ind = rawget(MinimapCluster, "IndicatorFrame")
+	hover(ind and rawget(ind, "MailFrame"))
 	local state = zone and rawget(zone, "StateTexture")
 	if state then state:SetAlpha(shown and 0 or 1) end
 	local zt = rawget(_G, "MinimapZoneText")
@@ -524,10 +576,12 @@ local function paintHeader()
 	if t then
 		if t.Background then t.Background:SetAlpha(shown and 0 or 1) end
 		header(t.Button, "search", 12)
+		hover(t.Button)
 	end
 	local sq = shaped()
 	if rawget(_G, "GameTimeFrame") then
 		header(GameTimeFrame)
+		hover(GameTimeFrame)
 		paintDay()
 		-- The invite flash: its alpha the game writes, so emptied.
 		for _, name in ipairs({ "GameTimeCalendarInvitesTexture", "GameTimeCalendarInvitesGlow" }) do
@@ -543,6 +597,7 @@ local function paintHeader()
 	local c = rawget(_G, "AddonCompartmentFrame")
 	if c then
 		header(c)
+		hover(c)
 		local text = rawget(c, "Text")
 		face(text, "number", shown)
 		if text then text:SetAlpha(sq and 0 or 1) end

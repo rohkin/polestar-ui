@@ -67,19 +67,19 @@ f.psDetail.Pet.StartUnwrapAnimation = function(_, done) done() end -- the stub's
 foot:Click()
 assert(not stub.pets[3].fanfare and foot.Label:GetText() == "Summon", "unwrapped")
 -- Search and filter, on the client.
+f.psFilter:Click()
 f.Search:SetText("cat")
 stub.RunScript(f.Search, "OnTextChanged")
 assert(stub.petSearch == "cat" and #rows() == 1 and f.psStatus:GetText() == "6 pets collected · 1 shown", "search: " .. f.psStatus:GetText())
 f.Search:SetText("")
 stub.RunScript(f.Search, "OnTextChanged")
-f.psFilter:Click()
-assert(PolestarMenu.rows[1].psItem.text == "Collected" and PolestarMenu.rows[2].psItem.text == "Not Collected", "filter menu")
-PolestarMenu.rows[2]:Click()
-assert(#rows() == 6 and f.psFilter.psTip == "Filter (on)", "not collected off")
+assert(PolestarMenu.rows[2].psItem.text == "Collected" and PolestarMenu.rows[3].psItem.text == "Not Collected", "filter menu")
+PolestarMenu.rows[3]:Click()
+assert(#rows() == 6 and f.psFilter.psTip == "Search and filter (on)", "not collected off")
 local last
 for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() then last = r end end
 last:Click()
-assert(#rows() == 8 and f.psFilter.psTip == "Filter", "reset")
+assert(#rows() == 8 and f.psFilter.psTip == "Search and filter", "reset")
 -- Leaving the page clears the "new" marks (PetJournal_OnHide); the last page is kept.
 f:Hide()
 assert(stub.petFanfaresCleared, "fanfares not cleared")

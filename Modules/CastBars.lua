@@ -198,6 +198,74 @@ local function update()
 	end
 end
 
+-- A smaller look for another module's bar (a nameplate's): `o.height` (the
+-- bar's own height, from the caller's layout numbers: never read off the bar),
+-- `o.icon` the icon's size (default the height), `o.below`: the name and
+-- time under the bar instead of inside it (a bar too thin for text),
+-- `o.inside`: the icon inside the bar at its left end, the name after it,
+-- `o.text` the texts' size (their roles' faces, outlined as H.Text's).
+local function sized(fs, role, size)
+	Polestar.Widgets.Painter(fs, function(s)
+		Theme.SetFace(s, (Theme.FontSpec(role)), size, "OUTLINE")
+		s:SetShadowOffset(1, -1)
+		s:SetShadowColor(0, 0, 0, 1)
+	end)
+end
+local function fit(l, o)
+	l.box:SetHeight(o.height)
+	l.fill:SetHeight(o.height)
+	l.icon:SetSize(o.icon or o.height, o.icon or o.height)
+	l.icon:ClearAllPoints()
+	if o.inside then l.icon:SetPoint("TOPLEFT", l.box, "TOPLEFT", 0, 0) else l.icon:SetPoint("TOPRIGHT", l.box, "TOPLEFT", -2, 0) end
+	l.time:ClearAllPoints()
+	l.name:ClearAllPoints()
+	if o.inside then
+		l.time:SetPoint("RIGHT", l.box, "RIGHT", -3, 0)
+		l.name:SetPoint("LEFT", l.icon, "RIGHT", 3, 0)
+	elseif o.below then
+		l.time:SetPoint("TOPRIGHT", l.box, "BOTTOMRIGHT", -1, -2)
+		l.name:SetPoint("TOPLEFT", l.box, "BOTTOMLEFT", 1, -2)
+	else
+		l.time:SetPoint("RIGHT", l.box, "RIGHT", -4, 0)
+		l.name:SetPoint("LEFT", l.box, "LEFT", 4, 0)
+	end
+	l.name:SetPoint("RIGHT", l.time, "LEFT", -4, 0)
+	if o.text then
+		sized(l.name, "label", o.text)
+		sized(l.time, "number", o.text)
+	end
+end
+
+-- For another module's stock CastingBarMixin bar (a nameplate's castBar):
+-- dress(bar, o?) gives it this look (nil if it has no fill yet; `o` as fit
+-- above, again whenever the caller's layout changes), paint(bar, spec)
+-- repaints it, spec = {unit, shield?}, fail(bar, word) ends a live cast in
+-- danger with that word, undress(bar) gives the game's art back.
+-- dress fades "BorderShield" (and Spark, Icon, Text): a caller that wants the
+-- game's shield shown sets it back to alpha 1 after each dress/paint.
+ns.CastLook = {
+	dress = function(bar, o)
+		local l = look(bar)
+		if l then
+			if o then fit(l, o) end
+			dress(bar, l, true)
+		end
+		return l
+	end,
+	fail = function(bar, word)
+		local l = looks[bar]
+		if l and l.live then l.failed = word end
+	end,
+	paint = function(bar, spec)
+		local l = looks[bar]
+		if l and bar:IsVisible() then paint(spec, bar, l) end
+	end,
+	undress = function(bar)
+		local l = looks[bar]
+		if l then dress(bar, l, false) end
+	end,
+}
+
 function M.Apply()
 	if not started then return end
 	local on = ns.Enabled(KEY)

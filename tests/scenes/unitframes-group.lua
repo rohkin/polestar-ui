@@ -26,11 +26,13 @@ assert(select(4, B1:GetPoint(1)) == Boss1TargetFrame:GetLeft() + 20 and B1:GetSc
 assert(select(5, B3:GetPoint(1)) == Boss3TargetFrame:GetTop() - 16, "boss 3 placed before it shows: " .. tostring(select(5, B3:GetPoint(1))) .. " " .. Boss3TargetFrame:GetTop())
 -- The stock pieces veiled; happiness, the party's icons, the frames themselves kept.
 assert(PetPortrait:GetAlpha() == 0 and PetFrameHealthBar:GetAlpha() == 0 and PetFrameHappiness:GetAlpha() == 1 and PetFrame:IsShown(), "pet veiled")
+assert(not PetFrameHealthBar:IsMouseMotionEnabled() and not PetFrameManaBar:IsMouseMotionEnabled(), "the pet's faded bars still take the mouse")
 -- The game writes the threat flash's and attack pulse's vertex alpha (which is
 -- their alpha): emptied, not faded, they stay unseen.
 stub.secure(function() PetFrameFlash:SetVertexColor(1, 0, 0); PetAttackModeTexture:SetVertexColor(1, 0, 0, 1) end)
 assert(PetFrameFlash:GetAtlas() == nil and PetAttackModeTexture:GetAtlas() == nil and PetAttackModeTexture:GetTexture() == nil,"pet flash and attack pulse emptied")
 assert(not m1.Portrait:IsShown() and m1.HealthBarContainer:GetAlpha() == 0 and m1.PartyMemberOverlay.LeaderIcon:GetAlpha() == 1 and not m1:IsMouseEnabled(), "party member veiled")
+assert(not m1.HealthBarContainer.HealthBar:IsMouseMotionEnabled() and not m1.ManaBar:IsMouseMotionEnabled(), "a party member's faded bars still take the mouse")
 assert(Boss1TargetFrame.TargetFrameContainer:IsShown() == false, "boss veiled")
 -- Texts: a dead member, an offline one, a boss's ?? level.
 assert(PolestarUIPartyFrame2.healthText:GetText() == "Dead" and PolestarUIPartyFrame3.healthText:GetText() == "Offline", "dead and offline")

@@ -570,9 +570,11 @@ local function paintChallenges(v, list)
 end
 
 -- The stock filter menu (LegacyChallengeFilters): completed and incomplete
--- challenges, each shown or hidden; it opens again after each pick.
+-- challenges, each shown or hidden; it opens again after each pick. Under
+-- the search in our dropdown; on the tree, the search alone.
 local function filterMenu(anchor)
 	if W.MenuShown(anchor) then return W.HideMenu() end
+	if section ~= "challenges" then return ns.FilterMenu(f, {}) end
 	local function pick(key)
 		return function()
 			chal[key], chal.open = not chal[key], nil
@@ -592,7 +594,7 @@ local function filterMenu(anchor)
 			refresh()
 		end }
 	end
-	W.ShowMenu(anchor, items, { minWidth = 160 })
+	ns.FilterMenu(f, items, { minWidth = 160 })
 end
 
 ---------------------------------------------------------------------------
@@ -928,9 +930,8 @@ local function build()
 	f.psEmblem = f.Rail:CreateTexture(nil, "ARTWORK")
 	f.psEmblem:SetSize(32, 32)
 	f.psEmblem:SetAtlas("Legacy-up-c60")
-	-- The filter acts on the list: after the search, on the tab row.
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", filterMenu, 14)
-	Theme.Skin(f.psFilter, "editbox")
+	-- The filter acts on the list: at the tab row's end, the search in its dropdown.
+	ns.SearchInFilter(f, filterMenu)
 	ns.TopNav(f, {}, nil, function() end) -- the search and filter onto the tab row
 	nav = W.Scroll(f.Main)
 	f.psNav = nav
@@ -978,8 +979,8 @@ function refresh()
 	local pts = points()
 	local onChallenges, onTree = section == "challenges", section == "tree"
 	paintRail()
-	-- The tab row holds the search (and the filter on Challenges) on those
-	-- pages, and on the tree its trees with the points spent in each.
+	-- The tab row holds the filter (the search in its dropdown, alone on the
+	-- tree) on those pages, and on the tree its trees with the points spent in each.
 	f.psKeepTabRow = section ~= "track"
 	if onTree then
 		local items = {}
@@ -995,12 +996,11 @@ function refresh()
 	else
 		ns.TopNav(f, {}, nil, function() end)
 	end
-	f.Search:ClearAllPoints()
-	f.Search:SetPoint("RIGHT", onChallenges and f.psFilter or f.TabRow, onChallenges and "LEFT" or "RIGHT", onChallenges and -6 or -f.psPad, 0)
-	f.psFilter:SetShown(onChallenges)
 	nav:SetShown(onChallenges)
 	local want = onTree and tree.query or chal.query
 	if (f.Search:GetText() or ""):lower() ~= want:lower() then f.Search:SetText(want) end
+	W.SetIconState(f.psFilter, want ~= "")
+	f.psFilter.psTip = "Search"
 	for _, r in ipairs(heads) do if not onChallenges then r:Hide() end end
 	for _, r in ipairs(cats) do if not onChallenges then r:Hide() end end
 	local navH = 0
@@ -1035,8 +1035,8 @@ function refresh()
 		W.ShellTitle(f, chal.cat and GetCategoryInfo(chal.cat) or "Challenges", earned(pts))
 		-- The glyph in the accent while a filter hides challenges.
 		local on = (chal.showDone and 0 or 1) + (chal.showTodo and 0 or 1)
-		W.SetIconState(f.psFilter, on > 0)
-		f.psFilter.psTip = on > 0 and ("Filter (%d on)"):format(on) or "Filter"
+		W.SetIconState(f.psFilter, on > 0 or want ~= "")
+		f.psFilter.psTip = on > 0 and ("Search and filter (%d on)"):format(on) or "Search and filter"
 		h = paintChallenges(f.psPages.challenges, chal.cat and challenges(chal.cat, found) or {})
 	else
 		if section == "track" then

@@ -228,7 +228,7 @@ function stub.secure(fn, ...) local was = secure; secure = true; fn(...); secure
 local STOCK_ONLY = { "Show", "Hide", "SetShown", "SetPoint", "ClearAllPoints", "SetAllPoints", "SetScale", "SetSize", "SetWidth", "SetHeight",
 	"SetParent", "UnregisterEvent", "UnregisterAllEvents", "SetScript" }
 local IN_COMBAT = { "Show", "Hide", "SetShown", "SetPoint", "ClearAllPoints", "SetAllPoints", "SetScale", "SetSize", "SetWidth", "SetHeight",
-	"SetParent", "SetAttribute", "EnableMouse", "SetAlpha" }
+	"SetParent", "SetAttribute", "EnableMouse", "SetMouseMotionEnabled", "SetAlpha" }
 local guarded = {}
 for _, n in ipairs(STOCK_ONLY) do guarded[n] = "stock" end
 for _, n in ipairs(IN_COMBAT) do guarded[n] = guarded[n] and "both" or "combat" end
@@ -357,6 +357,14 @@ local function fill(child, parent)
 	return child
 end
 
+-- A stock bar on TextStatusBar (enableMouseMotion: its OnEnter shows the
+-- unit's tooltip); `protected`: SecureFrameParentPropagationTemplate too.
+function stub.textStatusBar(parent, protected, name)
+	local b = fill(create("StatusBar", name, parent), parent)
+	b.mouseMotion, b.psProtected = true, protected or nil
+	return b
+end
+
 local stock = {}
 stub.stockUnits = stock
 
@@ -399,6 +407,14 @@ local function layered(f, prefix)
 			t.points = { { point = "TOPLEFT", rel = a, relPoint = "TOPLEFT", x = (i - 1) * 24, y = 0 } }
 		end
 		a.psStockAuras = true
+		-- AuraContainerSharedMixin:SetEnabled (public, a secure delegate): off,
+		-- the container drops its buttons, and their mouse with them.
+		a.enabled = true
+		function a:IsEnabled() return self.enabled end
+		function a:SetEnabled(on)
+			if InCombatLockdown() then error("SetEnabled on the stock aura container in combat (docs/CLIENT.md, rule 16)", 2) end
+			self.enabled = on
+		end
 		ctx.Auras = a
 	end
 end
@@ -432,6 +448,7 @@ local function tot(parent, name)
 	f.shown = false
 	f.points = { { point = "TOPRIGHT", rel = parent, relPoint = "BOTTOMRIGHT", x = 12, y = 10 } }
 	art(f, 0.35, 0.28, 0.12):SetAllPoints(f)
+	for _, k in ipairs({ "HealthBar", "ManaBar" }) do f[k] = stub.textStatusBar(f, true) end
 	local was = parent.psLayout
 	parent.psLayout = function(p)
 		if was then was(p) end
@@ -457,8 +474,7 @@ end
 PetFrameFlash:SetAtlas("UI-HUD-UnitFrame-TargetofTarget-PortraitOn-InCombat")
 PetAttackModeTexture:SetAtlas("UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Status")
 for _, n in ipairs({ "PetFrameHealthBar", "PetFrameManaBar" }) do
-	_G[n] = create("StatusBar", n, PetFrame)
-	fill(_G[n], PetFrame)
+	_G[n] = stub.textStatusBar(PetFrame, false, n)
 end
 PetFrameHappiness = create("Frame", "PetFrameHappiness", PetFrame)
 
@@ -477,7 +493,8 @@ for i = 1, 4 do
 	end
 	m.Name = m:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	m.HealthBarContainer = fill(create("Frame", nil, m), m)
-	m.ManaBar = fill(create("StatusBar", nil, m), m)
+	m.HealthBarContainer.HealthBar = stub.textStatusBar(m.HealthBarContainer, true)
+	m.ManaBar = stub.textStatusBar(m, true)
 	m.PartyMemberOverlay = fill(create("Frame", nil, m), m)
 	m.PartyMemberOverlay.Status = art(m.PartyMemberOverlay, 1, 0, 0, 0.5)
 	m.PartyMemberOverlay.LeaderIcon = art(m.PartyMemberOverlay, 1, 0.8, 0, 1)

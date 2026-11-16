@@ -319,7 +319,7 @@ local function filterMenu(anchor)
 			paint()
 		end }
 	end
-	W.ShowMenu(anchor, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 200 })
+	ns.FilterMenu(f, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 200 })
 end
 
 ---------------------------------------------------------------------------
@@ -1492,9 +1492,9 @@ local function build()
 	-- Enter searches: each query counts against the client's throttle, so not per keystroke.
 	f.Search:HookScript("OnEnterPressed", browse)
 	f.Scroll:HookScript("OnVerticalScroll", function() moreResults() end)
-	-- The search options at the tab row's end, lit while one is set.
-	f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Search options", filterMenu, 14)
-	Polestar.Theme.Skin(f.psFilter, "editbox")
+	-- The search options at the tab row's end, the search in their dropdown,
+	-- lit while a search is typed or an option set.
+	ns.SearchInFilter(f, filterMenu)
 	-- The stock search bar's Search button: the same as Enter.
 	f.psSearchGo = W.IconButton(f.TabRow, "search", 30, AUCTION_HOUSE_SEARCH_BUTTON or "Search", function()
 		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -1511,9 +1511,7 @@ local function build()
 	f.psFilter:ClearAllPoints()
 	f.psFilter:SetPoint("RIGHT", f.TabRow, "RIGHT", -f.psPad, 0)
 	f.psSearchGo:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0)
-	f.Search:ClearAllPoints()
-	f.Search:SetPoint("RIGHT", f.psSearchGo, "LEFT", -6, 0)
-	money:SetPoint("RIGHT", f.Search, "LEFT", -14, 0)
+	money:SetPoint("RIGHT", f.psSearchGo, "LEFT", -14, 0)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	local strip = CreateFrame("Frame", nil, f.Body)
 	strip:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
@@ -1645,8 +1643,8 @@ function paint()
 	f.psNavTop = NAV_TOP - W.SHELL.footer
 	paintNav()
 	local on = filtered()
-	W.SetIconState(f.psFilter, on > 0)
-	f.psFilter.psTip = on > 0 and ("Search options (%d on)"):format(on) or "Search options"
+	W.SetIconState(f.psFilter, on > 0 or (f.Search:GetText() or "") ~= "")
+	f.psFilter.psTip = on > 0 and ("Search and filter (%d on)"):format(on) or "Search and filter"
 	ns.SetMoney(money, GetMoney())
 	local commodity = tab == "buy" and view and view.info.isCommodity
 	f.psSell:SetShown(tab == "sell")
@@ -1668,8 +1666,6 @@ function paint()
 	W.Color(f.psEmpty, browseFailed and tab == "buy" and not view and "danger" or "textDim")
 	f.psEmpty:SetShown(n == 0 and empty ~= nil)
 	W.ShellBody(f, top + math.max(1, n) * ROW_H + 24)
-	-- The footer's relayout widens the search to the tab row's room; the money and Search button share it.
-	f.Search:SetWidth(math.max(100, math.min(200, f.BodyWidth + f.psPad - f.psTabsRight - 12 - 2 * 36 - money:GetWidth() - 14)))
 	f.psList = { n = n, top = top }
 	moreResults()
 end

@@ -11,7 +11,8 @@ ours is on.
   The pages are top tabs (`ns.TopNav`, the stock bottom text tabs, no
   icons): Buy, Sell, Auctions, Bids (the stock Auctions tab's two sub-tabs as
   tabs of their own). The tab row's right end: the player's money, the
-  search, the stock Search button, the search options. The auctioneer
+  stock Search button, the search options (the search at the top of their
+  dropdown, `ns.SearchInFilter`). The auctioneer
   (`UnitName("npc")`) leads the band's one-line subtitle, then a count: the
   results, how many of the item are in the bags, the auctions and how many
   sold, an item's listings, the bids and how many are outbid; what a click
@@ -34,11 +35,11 @@ ours is on.
   a click on one on the picked path closes it. Each searches with its item
   class filters. All, Favorites (dimmed with none), and the WoW Token where
   the client shows it (`C_WowTokenUI.ShouldDisplayInAuctionHouse`). The
-  tab row's search sends on Enter; a link shift-clicked with no chat line open
+  search sends on Enter (closing the dropdown); a link shift-clicked with no chat line open
   fills it. The sliders button holds the stock search options: a level
   range, the client's filter groups (`GetFilterGroups`: usable, upgrades,
-  the rarities), kept per character, the glyph lit while one is set, its
-  tooltip counting them ("Search options (2 on)"), and Clear filters. Results:
+  the rarities), kept per character, the glyph lit while one is set or a
+  search typed, its tooltip counting them ("Search and filter (2 on)"), and Clear filters. Results:
   name, the category's column (required level, slots, skill), available,
   lowest price (red over the player's money), a favorite star; a right-click
   is the stock favorite menu. The window opens on the favorites when there

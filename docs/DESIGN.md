@@ -283,7 +283,12 @@ hidden):
 | Cast bars: player, target, focus (`PlayerCastingBarFrame`, `TargetFrameSpellBar`, `FocusFrameSpellBar`) | high | built | [windows/castbars.md](windows/castbars.md) |
 | Cooldown Viewer: essential, utility, tracked buffs and bars (`EssentialCooldownViewer`, `UtilityCooldownViewer`, `BuffIconCooldownViewer`, `BuffBarCooldownViewer`) | high | built | [windows/cooldowns.md](windows/cooldowns.md) |
 | Personal Resource Display (`PersonalResourceDisplayFrame`) | medium | built | [windows/resource.md](windows/resource.md) |
+| Nameplates: enemy and friendly (`NamePlateDriverFrame`, each plate's pooled `UnitFrame`; forbidden plates untouched) | high | built | [windows/nameplates.md](windows/nameplates.md) |
 | Damage meter (`DamageMeter`, `DamageMeterSessionWindow1`..`3`) | medium | built | [windows/damagemeter.md](windows/damagemeter.md) |
+
+Other addons (the Baganator skin, What's Training?'s Spellbook tab, Talents
+Forever's Talents button and ring) live in `Addons/<Addon>.lua`, each a no-op
+without its addon: [addons.md](addons.md).
 
 ## Components
 

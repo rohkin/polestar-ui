@@ -15,17 +15,17 @@ applied. Not protected, but refused in combat and while
   the other with its points spent as the count. Until dual spec is learnt
   (`GetNumSpecGroups() > 1`) Secondary is locked, as the stock tab: the lock
   glyph, receding, a click does nothing, and its tooltip is the stock
-  `TALENT_SPEC_LOCKED`. The search ("Search talents") and its filter at the
-  tab row's right end. A spec
+  `TALENT_SPEC_LOCKED`. The filter at the tab row's right end, the search
+  ("Search talents") at the top of its dropdown (`ns.SearchInFilter`). A spec
   just bought has no combat config (`GetCombatConfigIDForSpecGroup` nil)
   until the client makes it after the first switch (`TRAIT_CONFIG_CREATED`):
   the body says "Activate this spec to spend its points." (then "Loading this
   spec's talents…"), never the level-10 line, and refreshes when it is made.
 - **Search:** as the stock frame's, a talent matches on its name or its
   description; the others recede to 25%, and the subtitle counts the matches
-  ("7 talents match."). The stock search options on a filter after the
-  search (a 30px `sliders` square on the search field's well, as the
-  Spellbook's), lit while one is on, kept for the session as stock: "Hide
+  ("7 talents match."). The stock search options under the search in
+  the filter's dropdown (a 30px `sliders` square on the search field's well,
+  as the Spellbook's), lit while one is on or a search runs, kept for the session as stock: "Hide
   passives" (`C_Spell.IsSpellPassive` talents never match) and "Show ranks"
   (each match's chip shows its ranks of the most, "2/3", widening to fit),
   then "Clear filters" while one is on.
@@ -102,6 +102,16 @@ applied. Not protected, but refused in combat and while
   subtitle "Switching to this spec…" until `ACTIVE_TALENT_GROUP_CHANGED`
   (then that spec shows, now the active one) or 10 seconds; disabled in
   combat ("Not in combat").
+- **Talents Forever** (addon `TalentsForeverBook`, feature-detected; without
+  it nothing changes): a "Talents Forever" footer button after Reset opens
+  its planner (`TalentsForeverBook.Toggle`), and the plan's next point not yet
+  learnt (`NextUp`, its node from `Game.Node(ti, i).id`, else the data's
+  `.node` while the game has not answered) gets a pulsing `todo` gold edge on
+  our node, as the addon rings it on the stock window. Only for a plan of the
+  player's class and while its "Show plan on the game's talents" setting is
+  on; read in `pcall`, redrawn on its `PLAN_CHANGED`/`GAME_CHANGED`. Its
+  Apply is never called. Its gold planned-rank badges are not drawn. Code in
+  `Addons/TalentsForever.lua` (docs/addons.md).
 - **Options:** first in the "..." menu, a disabled line saying the micro button's
   shift-click opens the game's talents (its search and inspect, until ours has
   them: the Nothing Lost Rule).

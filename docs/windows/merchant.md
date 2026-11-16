@@ -15,11 +15,12 @@ label; gone when the plan is empty).
   (`ns.TopNav`): the tabs Merchant and Buyback (the stock `MerchantFrameTab1/2`),
   at its right the vendor's currencies the player holds
   (`C_MerchantFrame.GetMerchantCurrencies`, each with its tooltip), the
-  player's money, the search (the wares' names, on both tabs) and, ending the
-  row, the filter (`MENU_MERCHANT_FRAME`, the game's Menu kept, with "Clear
-  filters"): lit while it hides anything (the visit starts on the class, as
-  the stock show resets it), "Filter (1 on)" in its tooltip, gone under the
-  `MerchantFilterDisabled` game rule (the search then runs to the row's edge).
+  player's money and, ending the row, the filter: Polestar's dropdown
+  (`ns.SearchInFilter`), the search on top (the wares' names, on both tabs),
+  then `MENU_MERCHANT_FRAME`'s choices with "Clear filters": lit while it
+  hides anything (the visit starts on the class, as the stock show resets it)
+  or a search runs, "Search and filter (1 on)" in its tooltip; under the
+  `MerchantFilterDisabled` game rule the dropdown holds the search alone.
 - **Buy:** every item on one scrolling page (the stock 10 a page is gone):
   two columns of item rows, each an Item Well (36px), the name in Label
   (quality colour, legible; one line, truncated; centred on the well when

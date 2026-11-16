@@ -308,28 +308,36 @@ end
 ---------------------------------------------------------------------------
 -- The window.
 
-local function filterMenu(self)
-	MenuUtil.CreateContextMenu(self, function(_, root)
-		root:SetTag("MENU_MERCHANT_FRAME")
+-- A game rule can take the filter away (MerchantFrame_Update).
+local function hasFilter()
+	return GetMerchantFilter and not (C_GameRules and C_GameRules.IsGameRuleActive(Enum.GameRule.MerchantFilterDisabled))
+end
+
+-- The stock filter menu's choices (MENU_MERCHANT_FRAME's) under the search,
+-- in Polestar's dropdown; the search alone without the filter.
+local function filterMenu()
+	local items = {}
+	if hasFilter() then
 		local function radio(text, v)
-			root:CreateRadio(text, function(x) return GetMerchantFilter() == x end, function(x)
-				SetMerchantFilter(x)
+			items[#items + 1] = { text = text, checked = GetMerchantFilter() == v, onClick = function()
+				SetMerchantFilter(v)
 				paint() -- at once, not on the client's event (docs/CLIENT.md, rule 6)
-			end, v)
+			end }
 		end
 		for k = 1, GetNumSpecializations() do
 			radio(select(2, C_SpecializationInfo.GetSpecializationInfo(k, false, false, nil, UnitSex("player"))), LE_LOOT_FILTER_SPEC1 + k - 1)
 		end
 		radio(ALL_SPECS or UnitClass("player"), LE_LOOT_FILTER_CLASS)
-		root:CreateDivider()
+		items[#items + 1] = { separator = true }
 		radio(ITEM_BIND_ON_EQUIP, LE_LOOT_FILTER_BOE)
 		radio(ALL, LE_LOOT_FILTER_ALL)
-		root:CreateDivider()
-		root:CreateButton("Clear filters", function()
+		items[#items + 1] = { separator = true }
+		items[#items + 1] = { text = "Clear filters", onClick = function()
 			SetMerchantFilter(LE_LOOT_FILTER_ALL)
 			paint()
-		end)
-	end)
+		end }
+	end
+	ns.FilterMenu(f, items, { minWidth = 200 })
 end
 
 local function build()
@@ -343,14 +351,11 @@ local function build()
 	ns.Dock(f)
 	ns.WindowMenu(f, "merchant")
 	ns.Compact(f)
-	-- The player's money left of the search on the tab row.
+	-- The player's money left of the filter on the tab row.
 	money = ns.Money(f.TabRow)
 	f.psMoney = money
-	-- The filter ends the tab row, lit while one is on.
-	if GetMerchantFilter then
-		f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", filterMenu, 14)
-		Polestar.Theme.Skin(f.psFilter, "editbox")
-	end
+	-- The filter ends the tab row, the search in its dropdown, lit while one is on.
+	ns.SearchInFilter(f, filterMenu)
 	f.psEmpty = W.Text(f.Body, "default", "textDim")
 	f.psEmpty:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)
 	f:HookScript("OnReceiveDrag", sell)
@@ -527,22 +532,13 @@ function paint()
 	f.psEmpty:SetShown(n == 0)
 	ns.SetMoney(money, GetMoney())
 	currencies()
-	-- A game rule can take the filter away (MerchantFrame_Update); the search
-	-- then runs to the tab row's edge.
-	local filter = f.psFilter and not (C_GameRules and C_GameRules.IsGameRuleActive(Enum.GameRule.MerchantFilterDisabled))
-	f.Search:ClearAllPoints()
-	if filter then f.Search:SetPoint("RIGHT", f.psFilter, "LEFT", -6, 0) else f.Search:SetPoint("RIGHT", f.TabRow, "RIGHT", -f.psPad, 0) end
 	money:ClearAllPoints()
-	money:SetPoint("RIGHT", f.Search, "LEFT", -14, 0)
-	if f.psFilter then
-		f.psFilter:SetShown(filter and true or false)
-		local on = GetMerchantFilter() ~= LE_LOOT_FILTER_ALL
-		W.SetIconState(f.psFilter, on)
-		f.psFilter.psTip = on and "Filter (1 on)" or "Filter"
-	end
+	money:SetPoint("RIGHT", f.psFilter, "LEFT", -14, 0)
+	local on = hasFilter() and GetMerchantFilter() ~= LE_LOOT_FILTER_ALL
+	W.SetIconState(f.psFilter, on or query ~= "")
+	f.psFilter.psTip = on and "Search and filter (1 on)" or "Search and filter"
 	footer()
 	W.ShellBody(f, h)
-	f.Search:SetWidth(130) -- the footer's relayout widens it; the money needs the room
 end
 
 function M.Show()

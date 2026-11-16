@@ -70,13 +70,14 @@ assert(PolestarMenu.rows[1].psItem.text == "One-Handed Axes" and not PolestarMen
 Polestar.Widgets.HideMenu()
 -- The class, first in the filter menu: a class change on a weapon goes back to the head.
 f.psFilter:Click()
-assert(PolestarMenu.rows[1].psItem.text == "Class: Warrior…", "class row: " .. PolestarMenu.rows[1].psItem.text)
-PolestarMenu.rows[1]:Click()
+assert(PolestarMenu.rows[2].psItem.text == "Class: Warrior…", "class row: " .. PolestarMenu.rows[2].psItem.text)
+PolestarMenu.rows[2]:Click()
 assert(PolestarMenu.rows[1].psItem.text == "Back" and PolestarMenu.rows[2].psItem.checked and PolestarMenu.rows[4].psItem.text == "Hunter", "classes")
 PolestarMenu.rows[4]:Click()
-assert(C_TransmogCollection.GetClassFilter() == 3 and stub.searchCategory == 1 and PolestarMenu.rows[1].psItem.text == "Class: Hunter…", "class change")
+assert(C_TransmogCollection.GetClassFilter() == 3 and stub.searchCategory == 1 and PolestarMenu.rows[2].psItem.text == "Class: Hunter…", "class change")
 Polestar.Widgets.HideMenu()
--- The async search: "Searching…" until the client answers.
+-- The async search (in the filter's dropdown): "Searching…" until the client answers.
+f.psFilter:Click()
 f.Search:SetText("helm 12")
 stub.RunScript(f.Search, "OnTextChanged")
 assert(stub.transmogSearch[1] == "helm 12" and f.psStatus:GetText() == "Searching…" and #looks() == 0, "searching")
@@ -86,10 +87,9 @@ f.Search:SetText("")
 stub.RunScript(f.Search, "OnTextChanged")
 assert(stub.transmogSearch[1] == nil and #looks() == 18, "search cleared")
 -- The filter: Forever's source types, flat.
-f.psFilter:Click()
-assert(f.psFilter:IsShown() and PolestarMenu.rows[2].psItem.text == "Check All" and PolestarMenu.rows[4].psItem.text == "Boss Drop", "filter")
-PolestarMenu.rows[4]:Click()
-assert(f.psFilter.psTip == "Filter (on)", "filter glyph")
+assert(f.psFilter:IsShown() and PolestarMenu.rows[3].psItem.text == "Check All" and PolestarMenu.rows[5].psItem.text == "Boss Drop", "filter")
+PolestarMenu.rows[5]:Click()
+assert(f.psFilter.psTip == "Search and filter (on)", "filter glyph")
 Polestar.Widgets.HideMenu()
 C_TransmogCollection.SetDefaultFilters()
 -- Closing ends the search (WardrobeCollectionFrameMixin:OnHide).

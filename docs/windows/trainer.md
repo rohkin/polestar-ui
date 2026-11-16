@@ -12,9 +12,9 @@ spell purchase (`QoL.Trainer.Start`) on purpose.
   (+5)/150") in its place; the portrait is gone. Tab row (`ns.TopNav`): the
   stock categories (`Blizzard_TrainerUI_Camelot`: by skill line, sorted by
   name as the stock list) as tabs after All, with counts of what can be
-  learnt, when categorized; at its right the search (keeps to the services
-  whose name has it) and the stock filter menu (`MENU_TRAINER_FILTER`) on the
-  sliders button: available, unavailable, used, Clear filters while one is
+  learnt, when categorized; at its right the sliders button, its dropdown (`ns.SearchInFilter`) the
+  search (keeps to the services whose name has it; lit while it runs) over the
+  stock filter menu's choices: available, unavailable, used, Clear filters while one is
   off, and Categorize (`C_Trainer.Get/SetCategorizeTrainerUI`; none at a pet
   trainer, which never categorizes). The glyph is lit and its tooltip counts
   the types hidden ("Filter (2 on)"). Many categories crowd the tabs.

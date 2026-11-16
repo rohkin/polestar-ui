@@ -22,6 +22,8 @@ assert(PlayerFrame:IsShown() and not PlayerFrame:IsMouseEnabled(), "stock player
 assert(not PlayerFrame.PlayerFrameContainer:IsShown() and not PlayerFrame.PlayerFrameContent.PlayerFrameContentMain:IsShown(), "stock art hidden")
 assert(PlayerFrame.PlayerFrameContent.PlayerFrameContentContextual:IsShown(), "stock icons and auras kept")
 assert(TargetFrameToT:GetAlpha() == 0, "stock target of target faded")
+-- Faded, its bars (TextStatusBar) would still show the game's unit tooltip over ours: their hover off.
+assert(not TargetFrameToT.HealthBar:IsMouseMotionEnabled() and not TargetFrameToT.ManaBar:IsMouseMotionEnabled(), "the faded target of target's bars still take the mouse")
 -- Secure: targets on left click, the game's unit menu on right click.
 assert(T:GetAttribute("*type1") == "target" and T:GetAttribute("*type2") == "togglemenu" and T:GetAttribute("unit") == "target", "secure clicks")
 assert(P:GetAttribute("toggleForVehicle"), "player follows the vehicle")

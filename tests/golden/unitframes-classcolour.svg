@@ -47,16 +47,16 @@
 <path id="gInter-Mediumttf-384" d="M165 0L165 -1490L699 -1490Q871 -1490 986 -1430Q1101 -1370 1158 -1264.5Q1215 -1159 1215 -1022Q1215 -872 1147 -762.5Q1079 -653 943 -602L1271 0L1012 0L710 -563Q704 -563 697 -563L393 -563L393 0ZM393 -758L675 -758Q839 -758 911.5 -827.5Q984 -897 984 -1022Q984 -1148 911 -1221.5Q838 -1295 673 -1295L393 -1295Z"/>
 <path id="gInter-Mediumttf-411" d="M90 -1294L90 -1490L1247 -1490L1247 -1294L784 -1294L784 0L555 0L555 -1294Z"/>
 <clipPath id="p0c0"><rect x="308" y="63" width="151" height="4"/></clipPath>
-<clipPath id="p0c1"><rect x="423.14" y="29" width="35.86" height="33"/></clipPath>
-<clipPath id="p0c2"><rect x="662.62" y="29" width="57.38" height="33"/></clipPath>
-<clipPath id="p0c3"><rect x="420" y="229" width="0" height="33"/></clipPath>
-<clipPath id="p0c4"><rect x="762.98" y="104.5" width="28.02" height="18"/></clipPath>
-<clipPath id="p0c5"><rect x="383.67" y="132" width="19.33" height="17"/></clipPath>
-<clipPath id="p0c6"><rect x="127.33" y="318" width="19.67" height="44"/></clipPath>
-<clipPath id="p0c7"><rect x="121.71" y="381" width="25.29" height="44"/></clipPath>
-<clipPath id="p0c8"><rect x="147" y="444" width="0" height="44"/></clipPath>
-<clipPath id="p0c9"><rect x="91.47" y="507" width="55.53" height="44"/></clipPath>
-<clipPath id="p0c10"><rect x="1010.25" y="169.5" width="35.25" height="23.25"/></clipPath>
+<clipPath id="p0c1"><rect x="421.14" y="29" width="37.86" height="33"/></clipPath>
+<clipPath id="p0c2"><rect x="660.62" y="29" width="59.38" height="33"/></clipPath>
+<clipPath id="p0c3"><rect x="418" y="229" width="2" height="33"/></clipPath>
+<clipPath id="p0c4"><rect x="760.98" y="104.5" width="30.02" height="18"/></clipPath>
+<clipPath id="p0c5"><rect x="381.67" y="132" width="21.33" height="17"/></clipPath>
+<clipPath id="p0c6"><rect x="125.33" y="318" width="21.67" height="44"/></clipPath>
+<clipPath id="p0c7"><rect x="119.71" y="381" width="27.29" height="44"/></clipPath>
+<clipPath id="p0c8"><rect x="145" y="444" width="2" height="44"/></clipPath>
+<clipPath id="p0c9"><rect x="89.47" y="507" width="57.53" height="44"/></clipPath>
+<clipPath id="p0c10"><rect x="1008.75" y="169.5" width="36.75" height="23.25"/></clipPath>
 <clipPath id="p0c11"><rect x="308" y="29" width="151" height="33"/></clipPath>
 <clipPath id="p0c12"><rect x="569" y="29" width="151" height="33"/></clipPath>
 <clipPath id="p0c13"><rect x="269" y="229" width="151" height="33"/></clipPath>
@@ -68,9 +68,9 @@
 <clipPath id="p0c19"><rect x="29" y="507" width="118" height="44"/></clipPath>
 <clipPath id="p0c20"><rect x="904.5" y="169.5" width="141" height="23.25"/></clipPath>
 <clipPath id="p1c0"><rect x="68" y="63" width="151" height="4"/></clipPath>
-<clipPath id="p1c1"><rect x="183.14" y="29" width="35.86" height="33"/></clipPath>
-<clipPath id="p1c2"><rect x="422.62" y="29" width="57.38" height="33"/></clipPath>
-<clipPath id="p1c3"><rect x="180" y="229" width="0" height="33"/></clipPath>
+<clipPath id="p1c1"><rect x="181.14" y="29" width="37.86" height="33"/></clipPath>
+<clipPath id="p1c2"><rect x="420.62" y="29" width="59.38" height="33"/></clipPath>
+<clipPath id="p1c3"><rect x="178" y="229" width="2" height="33"/></clipPath>
 <clipPath id="p1c4"><rect x="68" y="29" width="151" height="33"/></clipPath>
 <clipPath id="p1c5"><rect x="329" y="29" width="151" height="33"/></clipPath>
 <clipPath id="p1c6"><rect x="29" y="229" width="151" height="33"/></clipPath>

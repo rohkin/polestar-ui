@@ -5,4 +5,4 @@
 Polestar.Set("ui.skin", "forever")
 PolestarUI.Show("talents")
 local f = PolestarUITalents
-assert(f.TabRow:GetHeight() == 32 and f.psPad == 20 and not f.Close:IsShown() and f.Search:GetParent() == f.TabRow, "not the game's looks")
+assert(f.TabRow:GetHeight() == 32 and f.psPad == 20 and not f.Close:IsShown() and not f.Search:IsShown() and f.psFilter:GetParent() == f.TabRow, "not the game's looks")
