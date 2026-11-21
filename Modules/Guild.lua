@@ -474,16 +474,16 @@ local function buildDetail()
 	end
 	d.Note = note("Note", d.RankPick)
 	d.Officer = note("Officer note", d.Note.Text)
-	d.Note.Edit:SetScript("OnClick", function()
+	-- SetNote is forbidden to addon code: the stock roster's own popup saves it (GuildRoster.xml).
+	local function editNote(isPublic)
 		local m = detailMember()
-		if m then editText("Note", ("The note on %s, seen by the guild."):format(m.name), m.memberNote, 31,
-			function(t) C_GuildInfo.SetNote(m.guid, t, true) end) end
-	end)
-	d.Officer.Edit:SetScript("OnClick", function()
-		local m = detailMember()
-		if m then editText("Officer note", ("The note on %s, seen by officers."):format(m.name), m.officerNote, 31,
-			function(t) C_GuildInfo.SetNote(m.guid, t, false) end) end
-	end)
+		if m and m.guid then
+			StaticPopup_Show("SET_GUILD_COMMUNITIY_NOTE", nil, nil,
+				{ guid = m.guid, currentNote = (isPublic and m.memberNote or m.officerNote) or "", isPublic = isPublic })
+		end
+	end
+	d.Note.Edit:SetScript("OnClick", function() editNote(true) end)
+	d.Officer.Edit:SetScript("OnClick", function() editNote(false) end)
 	d.Remove = W.Button(d, "Remove", function()
 		local m = detailMember()
 		if not m then return end

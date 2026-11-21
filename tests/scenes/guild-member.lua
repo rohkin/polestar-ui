@@ -3,7 +3,8 @@
 --@ stubs: stub_guild.lua
 -- A click on a member opens the stock detail frame as a flyout: level and class, zone,
 -- online; the rank menu with the ranks an officer may set (one needing an authenticator
--- greyed); note and officer note, each edited in a field of 31 letters; Remove behind a
+-- greyed); note and officer note, each edited in the stock note popup (SetNote is
+-- forbidden to addon code); Remove behind a
 -- confirm, and Group invite only for those in the game. The guild master's rank and the
 -- player's own Remove stay out of reach.
 PolestarUI.Show("guild", "roster")
@@ -35,15 +36,17 @@ d.RankPick:Click()
 assert(menu() == "Veteran,Member,Initiate(off)", "rank menu: " .. menu())
 for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() and r.Text:GetText() == "Member" then r:Click() end end
 assert(stub.rankSet and stub.rankSet[1] == "Player-1-3" and stub.rankSet[2] == 4, "rank set")
+local function popup()
+	local p = stub.popups[#stub.popups]
+	return p and p.which == "SET_GUILD_COMMUNITIY_NOTE" and p.args[3] or {}
+end
 d.Note.Edit:Click()
-assert(PolestarModal:IsShown() and stub.focus:GetText() == "Healer", "note field")
-stub.focus:SetText("Raid healer")
-PolestarModal.Box.Action:Click()
-assert(stub.noteSet[2] == "Raid healer" and stub.noteSet[3] == true, "public note")
+assert(not (PolestarModal and PolestarModal:IsShown()), "our modal for a note")
+local p = popup()
+assert(p.guid == "Player-1-3" and p.currentNote == "Healer" and p.isPublic == true, "public note popup")
 d.Officer.Edit:Click()
-stub.focus:SetText("Ready")
-PolestarModal.Box.Action:Click()
-assert(stub.noteSet[2] == "Ready" and stub.noteSet[3] == false, "officer note")
+p = popup()
+assert(p.guid == "Player-1-3" and p.currentNote == "Promote soon" and p.isPublic == false, "officer note popup")
 d.Invite:Click()
 assert(stub.invited == "Brannoc", "group invite")
 d.Remove:Click()

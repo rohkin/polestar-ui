@@ -122,6 +122,13 @@ clicks and drags back to the slot, and hide it on `PLAYER_REGEN_DISABLED`
 (`overSlot` in Character.lua). Give it a strata above the window's: in the same
 strata, a level higher, the game still handed the mouse to the slot under it.
 
+`C_GuildInfo.SetNote` (a guild member's public or officer note) is forbidden
+too, even from the player's click (`ADDON_ACTION_FORBIDDEN` from Guild.lua).
+Open the game's own popup as the stock roster does
+(`StaticPopup_Show("SET_GUILD_COMMUNITIY_NOTE", nil, nil, { guid, currentNote, isPublic })`,
+GuildRoster.xml) and let its code call it. Caught by: the `guild-member` scene
+(the stub's `SetNote` errors on any call).
+
 Calls restricted to a hardware event (`C_LFGList.Search`, `CreateListing`,
 `UpdateListing`, `UnitSetRole`, `SendWho`) run only inside a click or key, and
 one per event: Group Finder's Post called `CreateListing` then `Search` in the
