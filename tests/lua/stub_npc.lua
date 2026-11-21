@@ -110,3 +110,16 @@ function C_Container.GetContainerItemInfo(bag, slot)
 	if not s then return nil end
 	return { iconFileID = s[1], quality = s[2], stackCount = s[3], isLocked = s[4] or false, itemID = 1000 + slot }
 end
+
+-- The NPC's name can come secret (seen in game, docs/CLIENT.md rule 3):
+-- stub.secretNpc = true makes UnitName (and GetUnitName) answer stub.SECRET
+-- for npc, questnpc and pet. Wrapped at login, over each window stub's own name.
+local secretName = CreateFrame("Frame")
+secretName:RegisterEvent("PLAYER_LOGIN")
+secretName:SetScript("OnEvent", function()
+	local NPC = { npc = true, questnpc = true, pet = true }
+	for _, fn in ipairs({ "UnitName", "GetUnitName" }) do
+		local name = _G[fn]
+		if name then _G[fn] = function(unit, ...) if stub.secretNpc and NPC[unit] then return stub.SECRET end return name(unit, ...) end end
+	end
+end)
