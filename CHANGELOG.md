@@ -18,7 +18,7 @@
 - Fixed: clicking New or Change Name/Icon in Macros, with another window docked after it and no room left for the icon picker, no longer raises a Lua error.
 - Opening a docked window's side panel (the Macros icon picker, the Character stats drawer, Guild member details, a Mail letter) no longer closes that window when room runs out: the dock closes the other window instead.
 - Fixed: the Macros icon picker's "Click on an icon to set it as the macro's icon." hint wraps instead of being cut off.
-- Guild: member notes are read-only in our window (Edit points to the game's guild window: shift-click the Guild micro button), since the game forbids addons to change them, even through its own note popup; this ends the ADDON_ACTION_FORBIDDEN on saving a note.
+- Guild: a member note's Edit icon opens the game's guild window, where you pick the member and edit the note (the game forbids addons to save notes, even through its own note popup; this ends the ADDON_ACTION_FORBIDDEN on saving one). Greyed in combat.
 - Fixed: using a toy from the Collections window's Toy Box no longer raises ADDON_ACTION_FORBIDDEN; a secure button over the hovered toy uses it.
 
 ## 0.2.0

@@ -133,7 +133,8 @@ dialog's `which`/`data` ours, its OnAccept runs tainted and SetNote is refused
 untainted: `/run` in a secure button's `macrotext` runs insecure (`RunScript`),
 the stock note frames take `OnMouseUp` (out of a secure `type=click`'s reach),
 and opening the stock roster from our code taints its member info (rule 8). Show
-notes read-only and point to the game's window (shift-click its micro button).
+notes read-only; Edit is a secure `type=click` on `GuildMicroButton` (`overNote`
+in Guild.lua) that opens the game's window, where the player picks the member.
 Caught by: the `guild-member` scene (no popup, Edit greyed with its reason; the
 stub's `SetNote` errors on any call).
 

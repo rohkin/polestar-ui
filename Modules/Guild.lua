@@ -429,6 +429,29 @@ local function rankItems(m)
 	return items
 end
 
+-- SetNote is forbidden to addon code, and so is the stock popup we show (its
+-- OnAccept runs tainted; docs/CLIENT.md, rule 4): a note's Edit is a door to
+-- the game's guild window. A secure button of ours over it (ns.Overlay, out of
+-- combat) clicks the micro button from secure code, as the micro button's
+-- shift-click does (ns.Doors); ours stays open, pushed aside by the dock. The
+-- player picks the member and the note there (we cannot preselect, rule 8).
+local GAME_NOTE = "Edit notes in the game's guild window: shift-click the Guild micro button."
+local fighting -- from PLAYER_REGEN_DISABLED, which comes before the lockdown
+local overNote = ns.Overlay("PolestarUIGuildNote", {
+	enter = function(t)
+		local m = detailMember()
+		GameTooltip:SetOwner(t, "ANCHOR_TOP")
+		GameTooltip:SetText(("Opens the game's guild window: pick %s, then click the note."):format(m and m.name or "the member"), 1, 1, 1, 1, true)
+		GameTooltip:Show()
+	end,
+	pickup = function() end,
+	stale = function(t) return not t:IsEnabled() end,
+	attrs = function(over)
+		over:SetAttribute("type1", "click")
+		over:SetAttribute("clickbutton", GuildMicroButton)
+	end,
+})
+
 local function buildDetail()
 	local d = ns.Flyout(f, NAME .. "Member", DETAIL_W)
 	d:Hide()
@@ -474,10 +497,8 @@ local function buildDetail()
 	end
 	d.Note = note("Note", d.RankPick)
 	d.Officer = note("Officer note", d.Note.Text)
-	-- SetNote is forbidden to addon code, and so is the stock popup we show
-	-- (its OnAccept runs tainted): notes are edited in the game's own window.
 	for _, n in ipairs({ d.Note, d.Officer }) do
-		ns.SetEnabled(n.Edit, false, "Edit notes in the game's guild window: shift-click the Guild micro button.")
+		n.Edit:HookScript("OnEnter", function(self) if self:IsEnabled() then overNote(self) end end)
 	end
 	d.Remove = W.Button(d, "Remove", function()
 		local m = detailMember()
@@ -527,6 +548,10 @@ local function paintDetail()
 		W.Color(d.Officer.Text, (m.officerNote or "") ~= "" and "text" or "textMuted")
 		d.Officer.Edit:SetShown(C_GuildInfo.CanEditOfficerNote())
 	end
+	-- In combat the door's secure button cannot be placed.
+	local door = not fighting and not InCombatLockdown()
+	ns.SetEnabled(d.Note.Edit, door, GAME_NOTE)
+	ns.SetEnabled(d.Officer.Edit, door, GAME_NOTE)
 	ns.SetEnabled(d.Remove, not m.isSelf and CanGuildRemove() and o > mo, m.isSelf and "Leave the guild from the footer instead."
 		or "Only a higher rank with the right can remove members.")
 	ns.SetEnabled(d.Invite, online(m) and not m.isRemoteChat and not mobile(m), "They are not in the game.")
@@ -1093,9 +1118,11 @@ function M.Enable()
 	for _, ev in ipairs({ "GUILD_ROSTER_UPDATE", "PLAYER_GUILD_UPDATE", "GUILD_MOTD", "GUILD_RANKS_UPDATE", "GUILD_NEWS_UPDATE",
 		"GUILD_REWARDS_LIST", "GUILD_REWARDS_LIST_UPDATE", "GUILD_EVENT_LOG_UPDATE", "GUILD_CHALLENGE_UPDATED", "CALENDAR_UPDATE_GUILD_EVENTS",
 		"CLUB_MEMBER_ADDED", "CLUB_MEMBER_REMOVED", "CLUB_MEMBER_UPDATED", "CLUB_MEMBERS_UPDATED", "CLUB_MEMBER_PRESENCE_UPDATED",
-		"INITIAL_CLUBS_LOADED", "PLAYER_REGEN_ENABLED", "PLAYER_MONEY" }) do
+		"INITIAL_CLUBS_LOADED", "PLAYER_MONEY" }) do
 		Polestar.RegisterEvent(ev, changed)
 	end
+	Polestar.RegisterEvent("PLAYER_REGEN_DISABLED", function() fighting = true; changed() end)
+	Polestar.RegisterEvent("PLAYER_REGEN_ENABLED", function() fighting = false; changed() end)
 end
 
 -- The stock window, for the button that switches back to ours (Core.lua).
