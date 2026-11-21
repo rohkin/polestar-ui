@@ -113,7 +113,9 @@ our book), check `InCombatLockdown()` and queue it for
 Some calls are not blocked but forbidden outright from addon code, in or out
 of combat: `PickupInventoryItem` while a spell waits for its item (an enchant,
 a sharpening stone, an armor kit) is applying that spell, and
-`UseInventoryItem` (right-click use) is protected. Hand those to the client's
+`UseInventoryItem` (right-click use) is protected, and `UseToy` is forbidden
+(`ADDON_ACTION_FORBIDDEN`, even out of combat: the Toy Box uses its toys through
+the `toy` type, `overToy` in Collections.lua). Hand those to the client's
 secure code (a `SecureActionButtonTemplate` button: `*target-slot*` for the
 targeting, which the game gates on `SpellCanTargetItem`, and the `item` type for
 use), on a button kept off our windows: a window with secure children cannot be

@@ -11,7 +11,8 @@ facts" section wins. Items still marked **LIVE** need a check in game.
 - **No heirlooms** (`C_HeirloomInfo.HeirloomsAvailable()` false, 0 displayed), **no warband scenes**, **no mount equipment**:
   those pages are dropped entirely (not even locked). The rail is Mounts, Pets, Toys, Appearances.
 - From insecure `/run` code, out of combat: `C_MountJournal.SummonByID` summons, `C_PetJournal.SummonPetByGUID`
-  summons, `UseToy(id)` uses the toy (no block), `C_MountJournal.Pickup` puts the mount on the cursor.
+  summons, `C_MountJournal.Pickup` puts the mount on the cursor. `UseToy(id)` is forbidden
+  (`ADDON_ACTION_FORBIDDEN` from our tile's click in game, and from a forced-taint test).
 - The pet journal is the Classic one: no loadout, abilities, rename, release or cage.
 - The client's `onlyShowCollectedItemsInJournal` is on (only collected mounts and toys are listed): the filter button is hidden, as stock hides its filter dropdown then.
 - Appearances (A1-A3): 262 head appearances (`GetFilteredCategoryTotal(1)` and `#GetCategoryAppearances(1, ...)`);
@@ -53,15 +54,19 @@ facts" section wins. Items still marked **LIVE** need a check in game.
 - **Toys:** 18 a page in 3 columns of tiles (36px well, name), favorites first (the client's order),
   uncollected desaturated and textMuted, star on a favorite, "New" chip (fanfare, or learnt this session
   until hovered), stock cooldown sweep (`C_Spell.GetItemCooldown`; left as drawn while the times are
-  secret). Click: a new toy unwraps (`C_ToyBoxInfo.ClearFanfare`), else `UseToy(id)` out of combat;
+  secret). Click: a new toy unwraps (`C_ToyBoxInfo.ClearFanfare`), else the secure overlay's `toy` action out of combat;
   right-click Set/Remove Favorite (redrawn at once); drag `C_ToyBox.PickupToyBoxItem` out of combat;
   shift-click links. Footer Previous / Next, the wheel turns pages, a toy just learnt opens its page
   (`TOYS_UPDATED` new). Tab-row fact "16 of 24 toys collected · Page 1 of 2". Filter (flat): Collected,
   Not Collected, Usable Only, "Sources…", "Expansions…", "Reset filters".
-- **Decision, toys:** no secure overlay. `UseToy` works from addon code out of combat (live fact), and
-  the plan's overlay could not be placed in combat either, so both ways a toy cannot be used from ours
-  mid-fight. Ours does not call `UseToy` in combat; the tile's tooltip says "Toys can't be used from
-  this window in combat." (the action bar or the stock window still can).
+- **Decision, toys:** a secure overlay (`overToy`, `ns.Overlay("PolestarUICollectionsToy")`): `UseToy`
+  is forbidden from addon code (BugGrabber: `ADDON_ACTION_FORBIDDEN` from the old plain click). Out of
+  combat the hovered tile gets it, `type1 = "toy"`, `toy = itemID` (`SECURE_ACTIONS.toy`) only for a
+  collected toy past its unwrap; its PostClick hands every click back to the tile (right-click menu,
+  shift-click link, unwrap), its drag to `C_ToyBox.PickupToyBoxItem`; it hides when the tile's toy or
+  fanfare changes (`stale`). In combat it is not placed, so a toy cannot be used from ours mid-fight;
+  the tile's tooltip says "Toys can't be used from this window in combat." (the action bar or the
+  stock window still can).
 - **Decision, pickups:** mount and toy drags are refused in combat (not checked live in combat).
 
 ## Built (stage 2: Pets)
@@ -177,8 +182,8 @@ facts" section wins. Items still marked **LIVE** need a check in game.
   exactly (`ItemModelBaseMixin:OnLoad`: ambient 1.05, diffuse 0). Open: the /run checks in the report.
 - The mount model: framing and zoom in our well (rule 5; a tall mount, "Show character on mount" on,
   a self-mount), drag-to-turn, the Unwrap animation then `ClearFanfare`.
-- `UseToy` and `C_MountJournal.SummonByID` from our clicks (expected as the `/run` checks), and whether
-  either is blocked in combat (ours does not try toys there; Mount follows `isUsable`).
+- The toy overlay's `type=toy` use, and `C_MountJournal.SummonByID` from our clicks (Mount follows
+  `isUsable` in combat).
 - `C_MountJournal.Pickup` / `C_ToyBox.PickupToyBoxItem` in combat (ours refuses them there).
 - Toy cooldown sweep in combat (secret times: the sweep should stay, no error).
 - Shift-click on the micro button opens the stock journal; the switch-back button above it.
@@ -286,7 +291,7 @@ by default (the gamepad radial drives `CollectionsMicroButton`,
 | Pet Summon/Dismiss/Unwrap | footer primary | `C_PetJournal.SummonPetByGUID(petID)` (also dismisses the summoned one), unwrap as mounts then `C_PetJournal.ClearFanfare` | **LIVE** insecure summon; redraw on `COMPANION_UPDATE` ("CRITTER") |
 | Pet right-click menu, drag | `W.ShowMenu`; `C_PetJournal.PickupPet(petID)` | `C_PetJournal.SetFavorite(petID, 0/1)`, `PetIsFavorite` | Skip revoked (`PetIsRevoked`) and locked pets |
 | Toy grid `ToySpellButtonTemplate` ×18 + `PagingFrame` | `ns.ItemGrid(parent, 3, 36, gap)` of tiles with the name beside (Reward Tile shape), 18 per page, wheel pages | `ns.ItemWell` + `ns.PaintItem`; `C_ToyBox.GetToyFromIndex((page-1)*18+i)`, `GetToyInfo`, `PlayerHasToy` | Uncollected: desaturated, name textMuted |
-| Toy use (`ToySpellButton_OnClick` → `UseToy`) | **Superseded (built): a plain click, `UseToy(id)` out of combat** (live: not blocked from addon code); was: secure hover button `ns.Overlay("PolestarUICollectionsToy", { attrs = type1 "toy", toy = itemID; type2 nil })` | `overRow` in `Spellbook.lua`, `overSlot` in `Character.lua` | Rules 4, 9, 10: placed out of combat, hides on `PLAYER_REGEN_DISABLED`; right-click passes to our tile (favorite menu); `pickup` = `C_ToyBox.PickupToyBoxItem`. **LIVE** `UseToy` blocked from addon code (expected) and `type=toy` working |
+| Toy use (`ToySpellButton_OnClick` → `UseToy`) | **Built: secure hover button** (a plain `UseToy(id)` click was tried and is `ADDON_ACTION_FORBIDDEN`) `ns.Overlay("PolestarUICollectionsToy", { attrs = type1 "toy", toy = itemID; type2 nil })` | `overRow` in `Spellbook.lua`, `overSlot` in `Character.lua` | Rules 4, 9, 10: placed out of combat, hides on `PLAYER_REGEN_DISABLED`; right-click passes to our tile (favorite menu); `pickup` = `C_ToyBox.PickupToyBoxItem`. **LIVE** `UseToy` blocked from addon code (expected) and `type=toy` working |
 | Toy cooldown | stock `CooldownFrameTemplate` on our well | `C_Container.GetItemCooldown(itemID)` as the stock button does (grep `ToySpellButton_UpdateButton`'s cooldown) | Secret in combat: duration object if one exists, else hide in combat |
 | Toy favorite menu | `W.ShowMenu` | `C_ToyBox.SetIsFavorite(itemID, on)` | Redraw at once (`TOYS_UPDATED` may lag) |
 | Toy progress `ToyProgressTracker` | subtitle "n of m toys" | `C_ToyBox.GetNumLearnedDisplayedToys`, `GetNumTotalDisplayedToys` | — |
@@ -315,7 +320,7 @@ by default (the gamepad radial drives `CollectionsMicroButton`,
 |---|---|---|---|
 | Summon / dismiss mount | `C_MountJournal.SummonByID`, `Dismiss` from the stock button | **insecure click** | Not marked protected in `MountJournalDocumentation.lua` (only `SecretArguments = "AllowedWhenUntainted"`: pass clean IDs). **LIVE 1** |
 | Summon / dismiss pet | `C_PetJournal.SummonPetByGUID`, `DismissSummonedPet` | **insecure click** | **LIVE 2** |
-| Use toy | `UseToy` from `CollectionsSpellButtonTemplate` (inherits `SecureFrameTemplate`) | **Built: insecure click out of combat, none in combat** (live: `UseToy` works from addon code); was: secure overlay (`ns.Overlay`, `type = "toy"`, `toy = itemID`; `SECURE_ACTIONS.toy` in `Blizzard_FrameXML/SecureTemplates.lua`) | `UseToy` is protected from addon code on mainline. Out of combat only: the overlay cannot be placed in combat, so a toy cannot be used from ours mid-fight (stock can). Tooltip hint says so; Nothing Lost via shift-click micro. **LIVE 3** |
+| Use toy | `UseToy` from `CollectionsSpellButtonTemplate` (inherits `SecureFrameTemplate`) | **Built: secure overlay out of combat, none in combat** (an insecure `UseToy` click is `ADDON_ACTION_FORBIDDEN`): (`ns.Overlay`, `type = "toy"`, `toy = itemID`; `SECURE_ACTIONS.toy` in `Blizzard_FrameXML/SecureTemplates.lua`) | `UseToy` is protected from addon code on mainline. Out of combat only: the overlay cannot be placed in combat, so a toy cannot be used from ours mid-fight (stock can). Tooltip hint says so; Nothing Lost via shift-click micro. **LIVE 3** |
 | Create heirloom | `C_Heirloom.CreateHeirloom` | **insecure click** | **LIVE 4**. Fallback: secure overlay impossible (no secure type); point to the stock window |
 | Upgrade heirloom | `C_Heirloom.UpgradeHeirloom` while a token targets | **insecure click**, unverified | Rule 4: item targeting from addon code was forbidden for `PickupInventoryItem`. **LIVE 5**; fallback as above |
 | Drag to action bars | `C_MountJournal.Pickup(index)`, `C_PetJournal.PickupPet(guid)`, `C_ToyBox.PickupToyBoxItem(id)` | plain `OnDragStart`, refused in combat; toys through the overlay's `pickup` | Rule 4 (spell pickup is blocked in combat), rule 9 (drag source stays shown until `OnDragStop`). **LIVE 6** |
@@ -347,7 +352,7 @@ by default (the gamepad radial drives `CollectionsMicroButton`,
   (extend, do not replace, the `C_MountJournal` table Polestar's
   `stub_lookup_runtime.lua` makes), `C_PetJournal`, `C_ToyBox`, `C_ToyBoxInfo`,
   `C_Heirloom`, `C_HeirloomInfo`, `C_TransmogCollection`, `C_TransmogSets`,
-  `PlayerHasToy`, `UseToy` (errors when called from addon code: protected),
+  `PlayerHasToy`, `UseToy` (errors with our code on the stack: forbidden),
   `C_MountJournal.Pickup`/`PickupPet`/`PickupToyBoxItem` refused in combat;
   records `stub.summoned`, `stub.dismissed`, `stub.favorites`, `stub.picked`.
   A stub `CollectionsJournal` whose `Show`/`Hide` error from addon code (as
@@ -395,7 +400,7 @@ Run each in game, out of combat unless noted; report what printed or happened.
    `/run for i=1,C_MountJournal.GetNumDisplayedMounts() do local _,_,_,_,u,_,_,_,_,_,c,id=C_MountJournal.GetDisplayedMountInfo(i) if u and c then C_MountJournal.SummonByID(id) return end end`
    (then `/run C_MountJournal.Dismiss()`; expect no "blocked" message)
 2. Pet summon: `/run local id=C_PetJournal.GetPetInfoByIndex(1) print(id) if id then C_PetJournal.SummonPetByGUID(id) end`
-3. Toy from addon code (expect "blocked"/protected):
+3. Toy from addon code (forbidden: `ADDON_ACTION_FORBIDDEN`, confirmed):
    `/run for i=1,C_ToyBox.GetNumFilteredToys() do local id=C_ToyBox.GetToyFromIndex(i) if PlayerHasToy(id) then print(id) UseToy(id) return end end`
 4. Heirloom tab and create: `/run print(C_HeirloomInfo.HeirloomsAvailable(), PlayerIsTimerunning and PlayerIsTimerunning(), C_Heirloom.GetNumDisplayedHeirlooms())`
    then, if available: `/run local id=C_Heirloom.GetHeirloomItemIDFromDisplayedIndex(1) print(id, C_Heirloom.PlayerHasHeirloom(id)) C_Heirloom.CreateHeirloom(id)`

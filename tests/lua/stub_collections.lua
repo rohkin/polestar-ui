@@ -3,7 +3,7 @@
 -- with a sample of 10 mounts (7 collected) and 24 toys (15 collected), the
 -- filters and search filtering for real. Records:
 --   stub.summoned, stub.dismissed   mount summoned (its ID) / dismissed
---   stub.usedToy                    the toy used (UseToy)
+--   stub.usedToy                    the toy used (UseToy; errors from our code)
 --   stub.picked                     what a drag picked up ("mount:3", "toy:1001")
 --   stub.blocked                    protected calls made in combat
 -- stub.mountSearch, stub.toySearch: the search set on the client.
@@ -247,12 +247,13 @@ C_ToyBoxInfo.SetDefaultFilters = defaultToyFilters
 function C_ToyBoxInfo.ClearFanfare(id) toy(id).fanfare = nil end
 function C_ToyBoxInfo.HasAnyToy() return true end
 function PlayerHasToy(id) return toy(id) and toy(id).has or false end
--- Out of combat UseToy works from addon code (checked in game); in combat it
--- is not checked, so ours never calls it then.
+-- UseToy is forbidden from addon code, in or out of combat (docs/CLIENT.md,
+-- rule 4): it errors with our code on the stack; only the secure "toy" action may use one.
 function UseToy(id)
-	if InCombatLockdown() then
-		stub.blocked = stub.blocked or {}
-		return table.insert(stub.blocked, "UseToy")
+	for level = 2, 40 do
+		local info = debug.getinfo(level, "S")
+		if not info then break end
+		if stub.addonSources[info.source] == "Polestar_UI" then error("ADDON_ACTION_FORBIDDEN: UseToy from Polestar_UI", 2) end
 	end
 	stub.usedToy = id
 end

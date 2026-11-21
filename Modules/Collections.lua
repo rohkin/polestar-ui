@@ -624,8 +624,8 @@ local function toyEnter(t)
 	end
 end
 
--- A click uses it (UseToy works from addon code out of combat, checked in game;
--- in combat ours does not try). A new toy's first click unwraps it, as stock.
+-- Using a toy is the overlay's (below); this is every other click. A new toy's
+-- first click unwraps it, as stock.
 local function toyClick(t, button)
 	local id = t.psID
 	if button == "RightButton" then
@@ -642,8 +642,6 @@ local function toyClick(t, button)
 		C_ToyBoxInfo.ClearFanfare(id)
 		newToys[id] = nil
 		redraw()
-	elseif PlayerHasToy(id) and not InCombatLockdown() then
-		UseToy(id)
 	end
 end
 
@@ -651,6 +649,27 @@ local function toyDrag(t)
 	if InCombatLockdown() or not PlayerHasToy(t.psID) then return end
 	C_ToyBox.PickupToyBoxItem(t.psID)
 end
+
+-- UseToy is forbidden from addon code (docs/CLIENT.md, rule 4). So out of
+-- combat one secure button takes the hovered tile's place (ns.Overlay), its
+-- plain left click the game's "toy" action; every other click (right-click
+-- menu, shift-click link, a new toy's unwrap) and the drag go back to the tile.
+local toyOn -- the toy (and its fanfare) the overlay's attributes were set for
+local function toyKey(t) return (t.psFanfare and "new:" or "") .. tostring(t.psID) end
+local overToy = ns.Overlay("PolestarUICollectionsToy", {
+	enter = toyEnter,
+	pickup = toyDrag,
+	stale = function(t) return toyKey(t) ~= toyOn end, -- unwrapped, or the page turned
+	setup = function(over)
+		over:HookScript("PostClick", function(self, button) toyClick(self.psTarget, button) end)
+	end,
+	attrs = function(over, t)
+		toyOn = toyKey(t)
+		local use = PlayerHasToy(t.psID) and not t.psFanfare
+		over:SetAttribute("type1", use and "toy" or nil)
+		over:SetAttribute("toy", use and t.psID or nil)
+	end,
+})
 
 local function newTile(parent)
 	local t = CreateFrame("Button", nil, parent)
@@ -676,7 +695,7 @@ local function newTile(parent)
 	t:RegisterForDrag("LeftButton")
 	t:SetScript("OnClick", toyClick)
 	t:SetScript("OnDragStart", toyDrag)
-	t:SetScript("OnEnter", toyEnter)
+	t:SetScript("OnEnter", function(self) toyEnter(self); overToy(self) end)
 	t:SetScript("OnLeave", W.HideTooltip)
 	return t
 end
