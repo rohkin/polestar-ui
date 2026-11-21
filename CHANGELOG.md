@@ -15,6 +15,7 @@
 - Clique: our unit frames register with click-casting addons such as Clique, so their bindings work on them.
 - Tooltips: the ground takes the colour scheme's background (a dark fallback where white text would not read on it) and follows a scheme change live.
 - Fixed: a "stack overflow" error in the minimap with map pin addons that add thousands of pins.
+- Fixed: clicking New or Change Name/Icon in Macros, with another window docked after it and no room left for the icon picker, no longer raises a Lua error.
 
 ## 0.2.0
 

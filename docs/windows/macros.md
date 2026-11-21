@@ -57,7 +57,9 @@ answers `MacroFrame` (its `CloseButton` serves the switch-back button).
   no name and the "?" icon (the macro then takes its spell's icon), and the
   body appears and takes the focus once it is made, as stock. Picking a
   macro, a tab or New again closes the picker (the stock window greys its
-  tabs and buttons instead).
+  tabs and buttons instead). With another docked window opened after
+  Macros, the picker's width past the dock's room closes Macros (the dock
+  closes the oldest), picker and all; nothing more is painted into it.
 - **Footer:** Delete at the left (danger; Polestar's dialog in place of
   `CONFIRM_DELETE_SELECTED_MACRO`), New (primary; off when the tab is full,
   "All 120 general macro slots are used.") at the right. No Exit button:
@@ -88,5 +90,6 @@ answers `MacroFrame` (its `CloseButton` serves the switch-back button).
   shown, the grid, body and counter, saving on select, pickup, a link into
   the body, delete, switched off the stock one opens), `macros-character`
   (the character tab and a full tab's New), `macros-icons` (the picker:
-  new and edit, filter, a dropped item's icon), `macros-combat` (greyed with
+  new and edit, filter, a dropped item's icon), `macros-picker-narrow`
+  (New with no room left closes Macros without an error), `macros-combat` (greyed with
   the reason, the body locked, the change saved after the fight).
