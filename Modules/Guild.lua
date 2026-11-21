@@ -474,16 +474,11 @@ local function buildDetail()
 	end
 	d.Note = note("Note", d.RankPick)
 	d.Officer = note("Officer note", d.Note.Text)
-	-- SetNote is forbidden to addon code: the stock roster's own popup saves it (GuildRoster.xml).
-	local function editNote(isPublic)
-		local m = detailMember()
-		if m and m.guid then
-			StaticPopup_Show("SET_GUILD_COMMUNITIY_NOTE", nil, nil,
-				{ guid = m.guid, currentNote = (isPublic and m.memberNote or m.officerNote) or "", isPublic = isPublic })
-		end
+	-- SetNote is forbidden to addon code, and so is the stock popup we show
+	-- (its OnAccept runs tainted): notes are edited in the game's own window.
+	for _, n in ipairs({ d.Note, d.Officer }) do
+		ns.SetEnabled(n.Edit, false, "Edit notes in the game's guild window: shift-click the Guild micro button.")
 	end
-	d.Note.Edit:SetScript("OnClick", function() editNote(true) end)
-	d.Officer.Edit:SetScript("OnClick", function() editNote(false) end)
 	d.Remove = W.Button(d, "Remove", function()
 		local m = detailMember()
 		if not m then return end

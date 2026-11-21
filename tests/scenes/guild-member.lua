@@ -3,8 +3,8 @@
 --@ stubs: stub_guild.lua
 -- A click on a member opens the stock detail frame as a flyout: level and class, zone,
 -- online; the rank menu with the ranks an officer may set (one needing an authenticator
--- greyed); note and officer note, each edited in the stock note popup (SetNote is
--- forbidden to addon code); Remove behind a
+-- greyed); note and officer note, read-only (edited in the game's window: SetNote and
+-- its popup are forbidden to addon code); Remove behind a
 -- confirm, and Group invite only for those in the game. The guild master's rank and the
 -- player's own Remove stay out of reach.
 PolestarUI.Show("guild", "roster")
@@ -36,17 +36,13 @@ d.RankPick:Click()
 assert(menu() == "Veteran,Member,Initiate(off)", "rank menu: " .. menu())
 for _, r in ipairs(PolestarMenu.rows) do if r:IsShown() and r.Text:GetText() == "Member" then r:Click() end end
 assert(stub.rankSet and stub.rankSet[1] == "Player-1-3" and stub.rankSet[2] == 4, "rank set")
-local function popup()
-	local p = stub.popups[#stub.popups]
-	return p and p.which == "SET_GUILD_COMMUNITIY_NOTE" and p.args[3] or {}
-end
-d.Note.Edit:Click()
-assert(not (PolestarModal and PolestarModal:IsShown()), "our modal for a note")
-local p = popup()
-assert(p.guid == "Player-1-3" and p.currentNote == "Healer" and p.isPublic == true, "public note popup")
-d.Officer.Edit:Click()
-p = popup()
-assert(p.guid == "Player-1-3" and p.currentNote == "Promote soon" and p.isPublic == false, "officer note popup")
+-- Notes are edited in the game's window: our code showing the stock popup left its
+-- OnAccept tainted and SetNote was forbidden (in game), so Edit only says where.
+local popups = #(stub.popups or {})
+d.Note.Edit:Click(); d.Officer.Edit:Click()
+assert(#(stub.popups or {}) == popups and not (PolestarModal and PolestarModal:IsShown()), "a note popup from our code")
+assert(not d.Note.Edit:IsEnabled() and d.Note.Edit.psReason:find("shift-click", 1, true)
+	and not d.Officer.Edit:IsEnabled(), "note edit points to the game's window")
 d.Invite:Click()
 assert(stub.invited == "Brannoc", "group invite")
 d.Remove:Click()

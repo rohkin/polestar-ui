@@ -71,11 +71,10 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
   player may promote or demote (`CanGuildPromote`/`CanGuildDemote` and rank
   orders as stock; a rank `C_GuildInfo.IsGuildRankAssignmentAllowed` refuses is
   greyed with the stock authenticator reason; `C_GuildInfo.SetGuildRankOrder`);
-  Note and Officer note (only with `CanViewOfficerNote`), each with Edit where
-  allowed (`CanEditPublicNote` or self; `CanEditOfficerNote`), opening the
-  game's own note popup as the stock roster does
-  (`StaticPopup_Show("SET_GUILD_COMMUNITIY_NOTE", nil, nil, {guid, currentNote, isPublic})`;
-  `C_GuildInfo.SetNote` is forbidden to addon code, `ADDON_ACTION_FORBIDDEN`);
+  Note and Officer note (only with `CanViewOfficerNote`), read-only: an Edit
+  icon where allowed (`CanEditPublicNote` or self; `CanEditOfficerNote`),
+  greyed, its tooltip pointing to the game's guild window (shift-click the
+  Guild micro button); see Taint;
   Remove (danger, confirm; `CanGuildRemove` and a lower rank;
   `C_GuildInfo.RemoveFromGuild`) and Group invite (online on WoW only;
   `C_PartyInfo.InviteUnit`).
@@ -112,7 +111,12 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
 - **Taint:** the calls the API docs mark `HasRestrictions`
   (`RemoveFromGuild`, `SetGuildRankOrder`, `SetMOTD`, `SetInfoText`) run only
   from the player's click. `C_GuildInfo.SetNote` is forbidden to addon code even
-  from a click (in game): only the stock popup calls it. `GuildControlUI` is the
+  from a click, and so is the stock `SET_GUILD_COMMUNITIY_NOTE` popup shown by
+  our code: its `which`/`data` are ours, its OnAccept runs tainted and SetNote is
+  refused (BugGrabber, both in game). Nothing of ours can open it untainted
+  (`/run` macrotext is insecure; the stock note frames take `OnMouseUp`, out of a
+  secure click's reach; opening the stock roster from our code taints its member
+  info), so notes are edited in the stock window, opened by the player. `GuildControlUI` is the
   game's own dialog (no secure frame in its show or hide), opened by its own
   `GuildControlUI_Show`. Unproven in game: a BugGrabber entry for one moves it
   to the stock window ("..." menu).
@@ -123,7 +127,7 @@ the chat frame: "Guild chat" opens its edit box on `/g`.
 - **Tests:** `stub_guild.lua` (a `CommunitiesFrame` whose `Hide`/`Show` error
   from addon code, `C_Club`, `C_GuildInfo`, the guild news, perks, rewards,
   log); scenes `guild` (key and micro overlay, sort, offline toggle, combat
-  secret keeps the roster), `guild-member` (details, rank menu, notes through the stock popup with
-  the stub's `SetNote` erroring,
+  secret keeps the roster), `guild-member` (details, rank menu, notes read-only: Edit greyed with its
+  reason, no popup, the stub's `SetNote` erroring,
   remove), `guild-info`, `guild-news`, `guild-benefits`, `guild-log`,
   `guild-none` (not in a guild), `guild-game-looks` (the skin's sizes; search and filter on the tab row).

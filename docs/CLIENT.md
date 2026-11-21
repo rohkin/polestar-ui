@@ -125,11 +125,17 @@ clicks and drags back to the slot, and hide it on `PLAYER_REGEN_DISABLED`
 strata, a level higher, the game still handed the mouse to the slot under it.
 
 `C_GuildInfo.SetNote` (a guild member's public or officer note) is forbidden
-too, even from the player's click (`ADDON_ACTION_FORBIDDEN` from Guild.lua).
-Open the game's own popup as the stock roster does
-(`StaticPopup_Show("SET_GUILD_COMMUNITIY_NOTE", nil, nil, { guid, currentNote, isPublic })`,
-GuildRoster.xml) and let its code call it. Caught by: the `guild-member` scene
-(the stub's `SetNote` errors on any call).
+too, even from the player's click (`ADDON_ACTION_FORBIDDEN` from Guild.lua), and
+so is the stock popup when our code shows it:
+`StaticPopup_Show("SET_GUILD_COMMUNITIY_NOTE", ...)` from addon code leaves the
+dialog's `which`/`data` ours, its OnAccept runs tainted and SetNote is refused
+(BugGrabber, from `GameDialogDefs.lua` OnAccept). No route of ours reaches it
+untainted: `/run` in a secure button's `macrotext` runs insecure (`RunScript`),
+the stock note frames take `OnMouseUp` (out of a secure `type=click`'s reach),
+and opening the stock roster from our code taints its member info (rule 8). Show
+notes read-only and point to the game's window (shift-click its micro button).
+Caught by: the `guild-member` scene (no popup, Edit greyed with its reason; the
+stub's `SetNote` errors on any call).
 
 Calls restricted to a hardware event (`C_LFGList.Search`, `CreateListing`,
 `UpdateListing`, `UnitSetRole`, `SendWho`) run only inside a click or key, and
