@@ -12,6 +12,10 @@ local add = f.footerButtons.right[1]
 stub.target = "Grimble"
 add:Click()
 assert(stub.added == "Grimble" and not (PolestarModal and PolestarModal:IsShown()), "target added at once")
+stub.target = stub.SECRET -- a secret target name (CLIENT.md, rule 3): the dialog, not the name
+add:Click()
+assert(stub.added == "Grimble" and PolestarModal:IsShown(), "secret target name added")
+PolestarModal:Hide()
 stub.target = "Aelric" -- already a friend: the dialog
 add:Click()
 assert(PolestarModal:IsShown() and PolestarModal.Box.Action.Label:GetText() == "Send request", "dialog")

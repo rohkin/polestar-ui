@@ -9,6 +9,12 @@ stub.RunScript(f.tabButtons[3], "OnClick")
 local v = f.psPages.guild
 assert(v:IsShown() and v.Name:GetText() == "Silver Hand", "guild page")
 assert(v.Faction:GetText() == "Alliance Guild" and v.Members:GetText() == "42 Members", "faction or members")
+local faction = UnitFactionGroup -- a secret faction (CLIENT.md, rule 3) leaves the line out
+UnitFactionGroup = function() return stub.SECRET, stub.SECRET end
+stub.RunScript(f.tabButtons[3], "OnClick")
+assert(v.Faction:GetText() == "", "secret faction shown")
+UnitFactionGroup = faction
+stub.RunScript(f.tabButtons[3], "OnClick")
 assert(v.Emblem:GetTexture() == "Interface/GuildFrame/GuildEmblemsLG_01", "emblem")
 -- No guild: no Guild tab, back on Character.
 stub.inspectGuild = { 0, 0, "", "" }

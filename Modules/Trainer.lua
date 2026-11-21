@@ -39,7 +39,7 @@ local function needs(i)
 		met = met and ok
 	end
 	local _, _, _, reqLevel = GetTrainerServiceInfo(i)
-	if reqLevel and reqLevel > 1 then add((TRAINER_REQ_LEVEL or "Level %d"):format(reqLevel), UnitLevel(petTrainer() and "pet" or "player") >= reqLevel) end
+	if reqLevel and reqLevel > 1 then add((TRAINER_REQ_LEVEL or "Level %d"):format(reqLevel), ns.Num(UnitLevel(petTrainer() and "pet" or "player")) >= reqLevel) end
 	local skill, rank, has = GetTrainerServiceSkillReq(i)
 	if skill then add((TRAINER_REQ_SKILL_RANK or "%s (%d)"):format(skill, rank), has) end
 	for a = 1, GetTrainerServiceNumAbilityReq(i) do

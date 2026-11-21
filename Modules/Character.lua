@@ -680,7 +680,7 @@ ns.CharacterPanes.pet = { page = "PaperDollFrame", label = PET or "Pet", order =
 		return sf
 	end,
 	paint = function(sf)
-		local text = (UNIT_TYPE_LEVEL_TEMPLATE or "Level %d %s"):format(UnitLevel("pet"), UnitCreatureFamily("pet") or "")
+		local text = (UNIT_TYPE_LEVEL_TEMPLATE or "Level %d %s"):format(ns.Num(UnitLevel("pet")), ns.Clean(UnitCreatureFamily("pet")) or "")
 		local loyalty = C_PetInfo.GetPetLoyalty and C_PetInfo.GetPetLoyalty()
 		if loyalty and loyalty ~= "" then text = text .. " (" .. loyalty .. ")" end
 		sf.Level:SetText(text)

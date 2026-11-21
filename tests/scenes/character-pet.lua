@@ -10,6 +10,12 @@ assert(tab, "no Pet tab")
 tab:Click()
 local sf = d.panes.pet.psView
 assert(sf.Level:GetText() == "Level 24 Wolf (Loyalty Level 3)" and sf.Happy:GetText() == "Content", "pet line: " .. sf.Level:GetText())
+local family = UnitCreatureFamily -- a secret family (CLIENT.md, rule 3) leaves it out
+UnitCreatureFamily = function() return stub.SECRET end
+tab:Click()
+assert(sf.Level:GetText() == "Level 24  (Loyalty Level 3)", "secret pet line: " .. sf.Level:GetText())
+UnitCreatureFamily = family
+tab:Click()
 local names = {}
 for _, s in ipairs(sf.Child.sections) do if s.Head:IsShown() then names[#names + 1] = s.name end end
 assert(table.concat(names, ",") == "Pet,Combat,Resistance", "pet categories: " .. table.concat(names, ","))

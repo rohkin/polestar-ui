@@ -940,7 +940,7 @@ end
 -- targeted becomes a friend at once; else the dialog, which needs Battle.net
 -- or the old friends list.
 local function addFriend()
-	local target = GetUnitName("target", true)
+	local target = ns.Clean(GetUnitName("target", true))
 	local legacy = C_FriendList.IsLegacyFriendSystemEnabled()
 	if target and UnitIsHumanPlayer("target") and UnitCanCooperate("player", "target") and legacy and not C_FriendList.GetFriendInfo(target) then
 		C_FriendList.AddFriend(target)
@@ -966,8 +966,9 @@ end
 -- The stock ignore list's Block button: the target if a friendly player,
 -- else a name (the ADD_IGNORE dialog).
 local function ignorePlayer()
-	if UnitCanCooperate("player", "target") and UnitIsHumanPlayer("target") then
-		C_FriendList.AddIgnore(GetUnitName("target", true))
+	local target = ns.Clean(GetUnitName("target", true))
+	if target and UnitCanCooperate("player", "target") and UnitIsHumanPlayer("target") then
+		C_FriendList.AddIgnore(target)
 		return M.Show()
 	end
 	f.psIgnore = f.psIgnore or fieldBody()

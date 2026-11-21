@@ -198,7 +198,7 @@ pages.gear = {
 local function showModel()
 	local v = f.psPages.gear
 	local drawn = v.Model:SetUnit(unit)
-	local logo = drawn ~= true and FACTION_LOGO[UnitFactionGroup(unit) or ""]
+	local logo = drawn ~= true and FACTION_LOGO[clean(UnitFactionGroup(unit)) or ""]
 	v.Model:SetShown(not logo)
 	v.Logo:SetShown(logo and true or false)
 	if logo then v.Logo:SetTexture(logo) end
@@ -209,7 +209,7 @@ end
 
 local function rankTitle(rank)
 	if not rank or rank <= 0 then return PVP_RANK_0_NAME or "Unranked" end
-	local alliance = UnitFactionGroup(unit) == "Alliance" and 1 or 0
+	local alliance = clean(UnitFactionGroup(unit)) == "Alliance" and 1 or 0
 	return GetText("PVP_RANK_" .. (Enum.PvPRanks.Rank_1 + rank - 1) .. "_" .. alliance, UnitSex(unit))
 end
 
@@ -296,6 +296,7 @@ pages.guild = {
 	paint = function(v)
 		local name, members = guildOf(unit)
 		local _, faction = UnitFactionGroup(unit)
+		faction = clean(faction)
 		v.Name:SetText(name or "")
 		v.Faction:SetText(faction and members and (INSPECT_GUILD_FACTION or "%s Guild"):format(faction) or "")
 		v.Members:SetText(faction and members and (INSPECT_GUILD_NUM_MEMBERS or "%d Members"):format(members) or "")
@@ -370,7 +371,7 @@ local function refresh()
 	-- The Guild tab only for a unit in a guild, as the stock UpdateTabs.
 	local items = { SECTIONS[1], SECTIONS[2] }
 	if guildOf(unit) then items[3] = SECTIONS[3] elseif section == "guild" then section = "gear" end
-	SECTIONS[2].icon = UnitFactionGroup(unit) == "Alliance" and "Interface/ICONS/INV_SideTab_Honor_Alliance_c60"
+	SECTIONS[2].icon = clean(UnitFactionGroup(unit)) == "Alliance" and "Interface/ICONS/INV_SideTab_Honor_Alliance_c60"
 		or "Interface/ICONS/INV_SideTab_Honor_Horde_c60"
 	ns.TopNav(f, items, section, function(k)
 		section = k

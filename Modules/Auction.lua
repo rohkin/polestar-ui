@@ -463,7 +463,7 @@ local function queryBids() AH.QueryBids(sorts("owned:bids"), bidList()) end
 
 local function bidsUpdated()
 	for _, id in ipairs(bidList()) do outbid[id] = true end
-	local list, me = {}, UnitGUID("player")
+	local list, me = {}, ns.Clean(UnitGUID("player"))
 	for i = 1, AH.GetNumBids() do
 		local b = AH.GetBidInfo(i)
 		if b then
@@ -477,7 +477,7 @@ end
 -- AuctionHouseFrameMixin:GetBidStatus: "mine", "outbid", "other" or nil.
 local function bidStatus(r)
 	if not r.bidder then return nil end
-	if r.bidder == UnitGUID("player") then return "mine" end
+	if r.bidder == ns.Clean(UnitGUID("player")) then return "mine" end
 	if outbid[r.auctionID] then return "outbid" end
 	return "other"
 end
