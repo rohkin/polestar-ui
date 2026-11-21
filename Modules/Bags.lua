@@ -313,10 +313,13 @@ local function park()
 end
 -- Switched off: each given back closed. Hide() first, while invisible (no
 -- script runs): given back shown, it would show and run its OnShow as ours.
+-- One another addon has since re-parked stays theirs.
 local function unpark()
 	for fr, p in pairs(parked) do
-		fr:Hide()
-		reparent(fr, p)
+		if fr:GetParent() == hider then
+			fr:Hide()
+			reparent(fr, p)
+		end
 	end
 	parked = {}
 end

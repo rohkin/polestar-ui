@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="295" height="101" viewBox="0 0 295 101">
+<title>Bag bar: off</title>
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="80%"><stop offset="0" stop-color="#2a2e36"/><stop offset="1" stop-color="#121418"/></radialGradient>
+<path id="gInter-Mediumttf-1437" d="M202 -607Q202 -770 235 -949Q268 -1128 326.5 -1293Q385 -1458 460 -1581L669 -1581Q593 -1424 538.5 -1255Q484 -1086 455 -920Q426 -754 426 -607Q426 -409 484 -200.5Q542 8 669 279L460 279Q332 64 267 -161Q202 -386 202 -607Z"/>
+<path id="gInter-Mediumttf-1345" d="M643 20Q492 20 374.5 -32Q257 -84 188.5 -176Q120 -268 116 -390L347 -390Q353 -291 437 -233.5Q521 -176 641 -176Q771 -176 855.5 -242.5Q940 -309 940 -417Q940 -528 855 -598.5Q770 -669 617 -669L490 -669L490 -855L617 -855Q740 -855 817.5 -919.5Q895 -984 895 -1091Q895 -1194 827 -1256.5Q759 -1319 645 -1319Q537 -1319 454 -1261.5Q371 -1204 367 -1102L147 -1102Q151 -1223 218.5 -1315Q286 -1407 398.5 -1458.5Q511 -1510 649 -1510Q792 -1510 897.5 -1454Q1003 -1398 1060 -1305.5Q1117 -1213 1117 -1104Q1117 -978 1047 -891.5Q977 -805 860 -774L860 -763Q1009 -740 1090 -644.5Q1171 -549 1171 -409Q1171 -285 1102.5 -188Q1034 -91 915 -35.5Q796 20 643 20Z"/>
+<path id="gInter-Mediumttf-1342" d="M685 -1490L685 0L459 0L459 -1283L449 -1283L95 -1025L95 -1254L421 -1490Z"/>
+<path id="gInter-Mediumttf-1438" d="M86 279Q173 94 226.5 -58.5Q280 -211 305 -344.5Q330 -478 330 -607Q330 -754 300.5 -920Q271 -1086 216.5 -1255Q162 -1424 86 -1581L296 -1581Q371 -1459 429 -1293.5Q487 -1128 520.5 -949Q554 -770 554 -607Q554 -383 487.5 -158Q421 67 296 279Z"/>
+<mask id="p0m0" maskUnits="userSpaceOnUse" x="222" y="28" width="45" height="45"><image x="222" y="28" width="45" height="45" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nNWX0Q3DIAxEmSC7sQKzsAIrZBZ2YQZ0NSpIFCUqaYBrnuSfJMZHMGCrRwFAizkxLxbEYraQn6V3Wo1EBtzEbA7SS/o2+WzqDjKAwbXALcnXqF/A+3eOwqkriMOO8eyqB4ydeYv7FtxgPuYseMr2OwnXS4qxHQmwWIc9ErBi9oXQBtdYj64FzMz8M1wtwGM9nrX+hVALiFhP/CsB9CWgJyF9G3IPIkIefB7FWQD9MuJex1kEryCpRPBKsgKYRWkBzLK8AGZjUgCzNWsBozmdzQs0YmOyPlbQfgAAAABJRU5ErkJggg=="/></mask>
+<mask id="p0m1" maskUnits="userSpaceOnUse" x="190" y="43" width="30" height="30"><image x="190" y="43" width="30" height="30" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nNWX0Q3DIAxEmSC7sQKzsAIrZBZ2YQZ0NSpIFCUqaYBrnuSfJMZHMGCrRwFAizkxLxbEYraQn6V3Wo1EBtzEbA7SS/o2+WzqDjKAwbXALcnXqF/A+3eOwqkriMOO8eyqB4ydeYv7FtxgPuYseMr2OwnXS4qxHQmwWIc9ErBi9oXQBtdYj64FzMz8M1wtwGM9nrX+hVALiFhP/CsB9CWgJyF9G3IPIkIefB7FWQD9MuJex1kEryCpRPBKsgKYRWkBzLK8AGZjUgCzNWsBozmdzQs0YmOyPlbQfgAAAABJRU5ErkJggg=="/></mask>
+<mask id="p0m2" maskUnits="userSpaceOnUse" x="158" y="43" width="30" height="30"><image x="158" y="43" width="30" height="30" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nNWX0Q3DIAxEmSC7sQKzsAIrZBZ2YQZ0NSpIFCUqaYBrnuSfJMZHMGCrRwFAizkxLxbEYraQn6V3Wo1EBtzEbA7SS/o2+WzqDjKAwbXALcnXqF/A+3eOwqkriMOO8eyqB4ydeYv7FtxgPuYseMr2OwnXS4qxHQmwWIc9ErBi9oXQBtdYj64FzMz8M1wtwGM9nrX+hVALiFhP/CsB9CWgJyF9G3IPIkIefB7FWQD9MuJex1kEryCpRPBKsgKYRWkBzLK8AGZjUgCzNWsBozmdzQs0YmOyPlbQfgAAAABJRU5ErkJggg=="/></mask>
+<mask id="p0m3" maskUnits="userSpaceOnUse" x="126" y="43" width="30" height="30"><image x="126" y="43" width="30" height="30" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nNWX0Q3DIAxEmSC7sQKzsAIrZBZ2YQZ0NSpIFCUqaYBrnuSfJMZHMGCrRwFAizkxLxbEYraQn6V3Wo1EBtzEbA7SS/o2+WzqDjKAwbXALcnXqF/A+3eOwqkriMOO8eyqB4ydeYv7FtxgPuYseMr2OwnXS4qxHQmwWIc9ErBi9oXQBtdYj64FzMz8M1wtwGM9nrX+hVALiFhP/CsB9CWgJyF9G3IPIkIefB7FWQD9MuJex1kEryCpRPBKsgKYRWkBzLK8AGZjUgCzNWsBozmdzQs0YmOyPlbQfgAAAABJRU5ErkJggg=="/></mask>
+<mask id="p0m4" maskUnits="userSpaceOnUse" x="62" y="43" width="30" height="30"><image x="62" y="43" width="30" height="30" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nNWX0Q3DIAxEmSC7sQKzsAIrZBZ2YQZ0NSpIFCUqaYBrnuSfJMZHMGCrRwFAizkxLxbEYraQn6V3Wo1EBtzEbA7SS/o2+WzqDjKAwbXALcnXqF/A+3eOwqkriMOO8eyqB4ydeYv7FtxgPuYseMr2OwnXS4qxHQmwWIc9ErBi9oXQBtdYj64FzMz8M1wtwGM9nrX+hVALiFhP/CsB9CWgJyF9G3IPIkIefB7FWQD9MuJex1kEryCpRPBKsgKYRWkBzLK8AGZjUgCzNWsBozmdzQs0YmOyPlbQfgAAAABJRU5ErkJggg=="/></mask>
+<mask id="p0m5" maskUnits="userSpaceOnUse" x="30" y="43" width="30" height="30"><image x="30" y="43" width="30" height="30" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nNWX0Q3DIAxEmSC7sQKzsAIrZBZ2YQZ0NSpIFCUqaYBrnuSfJMZHMGCrRwFAizkxLxbEYraQn6V3Wo1EBtzEbA7SS/o2+WzqDjKAwbXALcnXqF/A+3eOwqkriMOO8eyqB4ydeYv7FtxgPuYseMr2OwnXS4qxHQmwWIc9ErBi9oXQBtdYj64FzMz8M1wtwGM9nrX+hVALiFhP/CsB9CWgJyF9G3IPIkIefB7FWQD9MuJex1kEryCpRPBKsgKYRWkBzLK8AGZjUgCzNWsBozmdzQs0YmOyPlbQfgAAAABJRU5ErkJggg=="/></mask>
+</defs>
+<rect width="100%" height="100%" fill="url(#bg)"/>
+<g transform="translate(0 0)">
+<rect x="22" y="22" width="250" height="56" fill="rgb(89,71,41)" fill-opacity="1"/>
+<rect x="222" y="28" width="45" height="45" fill="rgb(153,115,64)" fill-opacity="1" mask="url(#p0m0)"/>
+<rect x="222" y="28" width="45" height="45" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<g transform="translate(233.82 64.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1437" x="0"/><use href="#gInter-Mediumttf-1345" x="755"/><use href="#gInter-Mediumttf-1342" x="2039"/><use href="#gInter-Mediumttf-1438" x="2889"/></g>
+<rect x="190" y="43" width="30" height="30" fill="rgb(115,77,51)" fill-opacity="1" mask="url(#p0m1)"/>
+<rect x="190" y="43" width="30" height="30" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<rect x="158" y="43" width="30" height="30" fill="rgb(128,89,77)" fill-opacity="1" mask="url(#p0m2)"/>
+<rect x="158" y="43" width="30" height="30" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<rect x="158" y="43" width="30" height="30" fill="rgb(255,217,77)" fill-opacity="0.6"/>
+<rect x="126" y="43" width="30" height="30" fill="rgb(89,77,128)" fill-opacity="1" mask="url(#p0m3)"/>
+<rect x="126" y="43" width="30" height="30" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<rect x="94" y="43" width="30" height="30" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<rect x="62" y="43" width="30" height="30" fill="rgb(77,140,77)" fill-opacity="1" mask="url(#p0m4)"/>
+<rect x="62" y="43" width="30" height="30" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<rect x="30" y="43" width="30" height="30" fill="rgb(128,128,128)" fill-opacity="1" mask="url(#p0m5)"/>
+<rect x="30" y="43" width="30" height="30" fill="rgb(179,148,82)" fill-opacity="0.8"/>
+<rect x="215" y="43" width="6" height="30" fill="rgb(115,51,38)" fill-opacity="1"/>
+<rect x="183" y="43" width="6" height="30" fill="rgb(115,51,38)" fill-opacity="1"/>
+<rect x="151" y="43" width="6" height="30" fill="rgb(115,51,38)" fill-opacity="1"/>
+<rect x="119" y="43" width="6" height="30" fill="rgb(115,51,38)" fill-opacity="1"/>
+<rect x="87" y="43" width="6" height="30" fill="rgb(115,51,38)" fill-opacity="1"/>
+<rect x="55" y="43" width="6" height="30" fill="rgb(115,51,38)" fill-opacity="1"/>
+</g>
+</svg>

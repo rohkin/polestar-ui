@@ -41,7 +41,7 @@ changes with it, and the preview goldens (`tests/golden`) show exactly how.
 
 **Who it is for.** The same Forever players as Polestar, who already chose its
 look and want the rest of the game to match it, often in place of a full UI
-suite (ElvUI, EllesmereUI).
+suite (ElvUI).
 
 **What success looks like.** Opening the Character window feels like opening
 Polestar's Options: the same sidebar, band, tabs and rows, read at the same arm's
@@ -91,7 +91,7 @@ How a stock element is replaced, for every module.
    unregister; `/reload` with the module off routes it again.
 3. **Off is off, and live.** Each window is Polestar's or the game's, saved per
    window (`PolestarUIDB.modules`, on by default) and switched by
-   `/pui <window> on|off` (bare `/pui` lists them), the "Use game window" entry
+   `/pui <window> on|off` (`/pui help` lists them), the "Use game window" entry
    of the window's own menu (the "..." left of ✕, Polestar's `W.ShowMenu`), or a
    small "Polestar" button of ours above the stock window's top right corner
    while that one is in use (`ns.Switch` in Core.lua). The switch is live: off,
@@ -171,6 +171,10 @@ corner).
   dock: one inside the window grows it (the map's quest log); one hung off
   its right edge (the Stats drawer) is given to `ns.DockFlyout`, so the
   dock makes room for it while it shows and the window keeps it on screen.
+  With its window it reads as one window, at every border size and with
+  the border off: one outer border (the window's top and bottom run on
+  round the flyout), none at the seam but a 1 px divider, one shadow round
+  both; put away, the window's own right border is back.
 - **Escape** closes it through `Polestar.CloseOnEscape`, which already skips
   `UISpecialFrames` under the gamepad UI.
 
@@ -279,6 +283,8 @@ hidden):
 | Unit frames: player, target, target of target, focus, focus's target, pet, party, bosses (`PlayerFrame`, `TargetFrame`, `FocusFrame`, their `ToT`, `PetFrame`, `PartyFrame`, `BossTargetFrameContainer`) | high | building (phases 1-3; compact raid next) | [windows/unitframes.md](windows/unitframes.md) |
 | Minimap (`MinimapCluster`, `Minimap`) | high | built | [windows/minimap.md](windows/minimap.md) |
 | Action bars (`MainActionBar`, `MultiBar*`, pet, stance, possess) | high | built | [windows/actionbars.md](windows/actionbars.md) |
+| Bag bar (`BagsBar`: backpack, bag slots, reagent bag, keyring) | high | built | [windows/bagbar.md](windows/bagbar.md) |
+| Micro menu (`MicroMenuContainer`, `MicroMenu`, the micro buttons) | high | built | [windows/micromenu.md](windows/micromenu.md) |
 | Player buffs and debuffs (`BuffFrame`, `DebuffFrame`) | medium | built, with the target's and focus's rows under our unit frames | [windows/auras.md](windows/auras.md) |
 | Cast bars: player, target, focus (`PlayerCastingBarFrame`, `TargetFrameSpellBar`, `FocusFrameSpellBar`) | high | built | [windows/castbars.md](windows/castbars.md) |
 | Cooldown Viewer: essential, utility, tracked buffs and bars (`EssentialCooldownViewer`, `UtilityCooldownViewer`, `BuffIconCooldownViewer`, `BuffBarCooldownViewer`) | high | built | [windows/cooldowns.md](windows/cooldowns.md) |

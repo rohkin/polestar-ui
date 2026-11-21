@@ -223,7 +223,7 @@ end
 -- The edge: the threat the player holds on the unit, in the game's threat
 -- colours; the player's own frame in danger while in combat; else the border.
 local function edge(f, unit)
-	local a = opt("ground")
+	local a = H.GroundAlpha()
 	if unit == "player" or unit == "vehicle" then
 		if f.spec.unit == "player" and ns.Clean(UnitAffectingCombat("player")) then
 			local r, g, b = Theme.Color("danger")
@@ -314,8 +314,8 @@ local function paint(f, snap)
 	glow(f.OverAbsorb, over, "text")
 	glow(f.OverHealAbsorb, overHeal, "danger")
 	H.SetBarColor(f.Power, H.PowerColor(unit))
-	H.SetTrack(f.Health, opt("ground"))
-	H.SetTrack(f.Power, opt("ground"))
+	H.SetTrack(f.Health, H.GroundAlpha())
+	H.SetTrack(f.Power, H.GroundAlpha())
 	f.Sep:SetVertexColor(Theme.Color("border"))
 	local powerMax = UnitPowerMax(unit)
 	f.Power:SetMinMaxValues(0, powerMax)
@@ -464,6 +464,8 @@ local function build(spec)
 	f:SetAttribute("*type1", "target")
 	f:SetAttribute("*type2", "togglemenu")
 	if spec.vehicle then f:SetAttribute("toggleForVehicle", true) end
+	ClickCastFrames = ClickCastFrames or {} -- click-casting addons (Clique): the standard registry, either load order
+	ClickCastFrames[f] = true
 	f.Ground = H.Ground(f)
 	if spec.portrait then f.portrait = H.Portrait(f, spec.slim) end
 	f.Health = H.Bar(f, true)
@@ -937,8 +939,6 @@ local function buildOptions()
 		y = y + (r:GetHeight() > 0 and r:GetHeight() or W.RowH())
 		return r
 	end
-	f.Ground = row(W.Slider(body, "Background opacity", nil, 0, 100, 5, "%d%%", "The ground behind the bars. Their colours follow your Polestar theme; with its \"Class colour\" on, players wear their class colour.", nil,
-		{ get = function() return math.floor(opt("ground") * 100 + 0.5) end, set = function(v) setOpt("ground", v and v / 100) end }))
 	f.portrait = row(W.Toggle(body, "3D portraits", nil, "The unit's model in a square beside the bars.", nil,
 		{ get = function() return opt("portrait") end, set = function(v) setOpt("portrait", v) end }))
 	f.powerText = row(W.Toggle(body, "Power text", nil, "The unit's power as a number, shown as the game's Status Text options show the health.", nil,
@@ -956,7 +956,6 @@ end
 function M.Show()
 	page = page or buildOptions()
 	page:Show()
-	if page.Ground.Refresh then page.Ground:Refresh() end
 	if page.portrait.Refresh then page.portrait:Refresh() end
 	for _, k in ipairs({ "powerText", "sparkle", "smooth", "trail" }) do
 		if page[k].Refresh then page[k]:Refresh() end

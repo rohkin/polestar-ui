@@ -47,10 +47,10 @@ stub.updatePlate("nameplate1", { health = 500, tapped = true })
 assert(hb.barTexture:GetAlpha() == 0 and e.health:GetText() == "50%", "the game's fill came back, or our health text did not follow")
 stub.updatePlate("nameplate1", { tapped = false })
 assert(filled(e, T.Color("danger")) and hb.barTexture:GetAlpha() == 0, "the colour did not follow")
--- The ground and edges: the target the plain border (the dim of the others marks it), the focus a flat warning hairline, the others the border and the dim.
-assert(e.ground.fill:IsShown() and not e.ground.glow[1]:IsShown() and is(e.ground.edges[1], T.Color("border")), "the target does not have the plain border")
+-- The ground and edges: the target the plain border (Polestar's window border; the dim of the others marks it), the focus a flat warning hairline, the others the border and the dim; untinted, Polestar's window shadow instead of a glow.
+assert(e.ground.fill:IsShown() and not e.ground.glow[1]:IsShown() and is(e.ground.edges[1], T.Color("windowBorder")), "the target does not have the plain border")
 assert(not n.ground.glow[1]:IsShown() and is(n.ground.edges[1], T.Color("warning")), "the focus has no flat warning hairline")
-assert(not f.ground.glow[1]:IsShown() and is(f.ground.edges[1], T.Color("border")), "another plate's edge is not the border")
+assert(not f.ground.glow[1]:IsShown() and is(f.ground.edges[1], T.Color("windowBorder")), "another plate's edge is not the border")
 assert(f.dim:IsShown() and not e.dim:IsShown() and not n.dim:IsShown(), "the plates that are not the target or focus are not dimmed")
 assert(hb.bgTexture:GetAlpha() == 0 and hb.selectedBorder:GetAlpha() == 0 and hb.deselectedOverlay:GetAlpha() == 0 and hb.totalAbsorb:GetAlpha() == 0,
 	"the game's ground, selection art or absorb art is not faded")

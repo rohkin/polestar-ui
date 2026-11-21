@@ -37,6 +37,8 @@ Modules\HUD.lua
 Modules\UnitFrames.lua
 Modules\Minimap.lua
 Modules\ActionBars.lua
+Modules\BagBar.lua
+Modules\MicroMenu.lua
 Modules\Auras.lua
 Modules\CastBars.lua
 Modules\CooldownViewer.lua
@@ -51,8 +53,10 @@ Modules\GroupFinderWho.lua
 Modules\Bags.lua
 Modules\Tooltips.lua
 Modules\Chat.lua
+Addons\AuctionHouse.lua
 Addons\Baganator.lua
-Addons\EllesmereUI.lua
+Addons\Bagnon.lua
+Addons\Immersion.lua
 Addons\TalentsForever.lua
 Addons\WhatsTraining.lua
 Settings.lua

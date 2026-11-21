@@ -1,6 +1,6 @@
 #### Bank (`BankFrame`) — Risk: medium
 Opened by the interaction manager (Banker, CharacterBanker, AccountBanker),
-taken as above (`ns.Interaction`, `C_Bank.CloseBankFrame`). Forever loads
+taken as above (`ns.Interaction`, `C_Bank.CloseBankFrame`). Beside Baganator or Bagnon ours is blocked: off whatever was saved, and it cannot switch on (`blockedBy`; `Addons/Baganator.lua`, `Addons/Bagnon.lua`; `baganator`, `bags-bagnon`). Forever loads
 Camelot's `BankFrame.lua` over the mainline `BankFrameTemplates`: a bank of
 bags (`C_Bank.ShouldUsePlayerBagsInBank`). The Bank and the Warband bank each
 have bought bags (`C_Bank.FetchPurchasedBankTabData`, the first the bank

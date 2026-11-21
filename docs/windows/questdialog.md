@@ -54,3 +54,5 @@ marks (`QoL.Rewards`, feature-detected) sit on our choices.
   not mark the stock buttons (`Rewards.Mark` finds no `QuestInfoFrame`); with
   ours showing the marks the line is redundant, and is Polestar's to drop.
 - **Tests:** `stub_questdialog.lua` (`QuestFrame` with its registered events, portraits, the offer's origin, the tracker's pop-ups); scenes `questdialog`, `questdialog-greeting` (a long title wraps), `questdialog-progress`, `questdialog-reward` (Polestar's marks), `questdialog-portrait` (portraits, extras, write-in, offers elsewhere, auto-accept), `questdialog-game-looks` (the skin's pad, the portrait in the 60 band), each asserting `QuestFrame` never shows.
+
+- **Immersion:** with Immersion loaded this module starts off (`Addons/Immersion.lua`; a saved choice wins), as it shows quest dialogs itself.

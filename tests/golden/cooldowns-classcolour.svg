@@ -25,36 +25,36 @@
 </defs>
 <rect width="100%" height="100%" fill="url(#bg)"/>
 <g transform="translate(0 0)">
-<rect x="60" y="33.5" width="188" height="19" fill="rgb(24,29,45)" fill-opacity="0.6"/>
+<rect x="60" y="33.5" width="188" height="19" fill="rgb(24,29,45)" fill-opacity="0.94"/>
 <rect x="60" y="33.5" width="94" height="19" fill="rgb(255,128,64)" fill-opacity="1"/>
 <rect x="60" y="33.5" width="94" height="19" fill="rgb(64,199,235)" fill-opacity="1"/>
 <g transform="translate(65 47.32) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-197" x="0"/><use href="#gInter-Mediumttf-586" x="558"/><use href="#gInter-Mediumttf-614" x="1740"/><use href="#gInter-Mediumttf-65" x="3489"/><use href="#gInter-Mediumttf-507" x="4834"/><use href="#gInter-Mediumttf-852" x="5997"/><use href="#gInter-Mediumttf-852" x="6789"/><use href="#gInter-Mediumttf-689" x="7581"/><use href="#gInter-Mediumttf-614" x="8097"/><use href="#gInter-Mediumttf-852" x="9300"/></g>
 <g transform="translate(216.4 47.32) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1342" x="0"/><use href="#gInter-Mediumttf-1347" x="850"/><use href="#gInter-Mediumttf-1502" x="2085"/><use href="#gInter-Mediumttf-1341" x="2706"/></g>
 <rect x="60" y="33.5" width="188" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="60" y="51.5" width="188" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="60" y="33.5" width="1" height="19" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="247" y="33.5" width="1" height="19" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="60" y="66.5" width="188" height="19" fill="rgb(24,29,45)" fill-opacity="0.6"/>
+<rect x="60" y="34.5" width="1" height="17" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="247" y="34.5" width="1" height="17" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="60" y="66.5" width="188" height="19" fill="rgb(24,29,45)" fill-opacity="0.94"/>
 <rect x="60" y="66.5" width="150.4" height="19" fill="rgb(255,128,64)" fill-opacity="1"/>
 <rect x="60" y="66.5" width="150.4" height="19" fill="rgb(64,199,235)" fill-opacity="1"/>
 <g transform="translate(65 80.32) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-2" x="0"/><use href="#gInter-Mediumttf-852" x="1452"/><use href="#gInter-Mediumttf-586" x="2244"/><use href="#gInter-Mediumttf-507" x="3426"/><use href="#gInter-Mediumttf-773" x="4589"/><use href="#gInter-Mediumttf-614" x="5821"/><use href="#gInter-Mediumttf-197" x="7570"/><use href="#gInter-Mediumttf-773" x="8128"/><use href="#gInter-Mediumttf-889" x="9360"/><use href="#gInter-Mediumttf-614" x="10057"/><use href="#gInter-Mediumttf-736" x="11260"/><use href="#gInter-Mediumttf-736" x="11776"/><use href="#gInter-Mediumttf-614" x="12292"/><use href="#gInter-Mediumttf-586" x="13495"/><use href="#gInter-Mediumttf-889" x="14677"/></g>
 <g transform="translate(213.35 80.32) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1343" x="0"/><use href="#gInter-Mediumttf-1346" x="1262"/><use href="#gInter-Mediumttf-1502" x="2606"/><use href="#gInter-Mediumttf-1341" x="3227"/></g>
 <rect x="60" y="66.5" width="188" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="60" y="84.5" width="188" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="60" y="66.5" width="1" height="19" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="247" y="66.5" width="1" height="19" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="30" y="30" width="26" height="26" fill="rgb(24,29,45)" fill-opacity="0.6"/>
+<rect x="60" y="67.5" width="1" height="17" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="247" y="67.5" width="1" height="17" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="30" y="30" width="26" height="26" fill="rgb(24,29,45)" fill-opacity="0.94"/>
 <rect x="28" y="28" width="30" height="30" fill="rgb(217,179,64)" fill-opacity="1" mask="url(#p0m0)"/>
 <g transform="translate(49.84 54.6) scale(0.004883)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="327.68" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1343" x="0"/></g>
 <rect x="30" y="30" width="26" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="30" y="55" width="26" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="30" y="30" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="55" y="30" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="30" y="63" width="26" height="26" fill="rgb(24,29,45)" fill-opacity="0.6"/>
+<rect x="30" y="31" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="55" y="31" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="30" y="63" width="26" height="26" fill="rgb(24,29,45)" fill-opacity="0.94"/>
 <rect x="28" y="61" width="30" height="30" fill="rgb(77,128,217)" fill-opacity="1" mask="url(#p0m1)"/>
 <rect x="30" y="63" width="26" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="30" y="88" width="26" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="30" y="63" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="55" y="63" width="1" height="26" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="30" y="64" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="55" y="64" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 </g>
 </svg>

@@ -354,7 +354,7 @@ local function build()
 	p.Text:SetSpacing(2)
 	p:Hide()
 	f.psPortrait = p
-	ns.DockFlyout(f, p, 1)
+	ns.DockFlyout(f, p)
 	f:HookScript("OnShow", function() PlaySound(SOUNDKIT.IG_QUEST_LIST_OPEN) end)
 	f:SetScript("OnUpdate", function(_, elapsed)
 		if not (fading and f.psDesc) then return end

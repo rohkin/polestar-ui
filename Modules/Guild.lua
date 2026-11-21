@@ -496,7 +496,7 @@ local function buildDetail()
 		if m then C_PartyInfo.InviteUnit(m.name) end
 	end, { primary = true })
 	d.Invite:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -24, 16)
-	ns.DockFlyout(f, d, 1)
+	ns.DockFlyout(f, d)
 	f.psDetail = d
 end
 

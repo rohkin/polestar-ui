@@ -17,7 +17,7 @@ local LABELS = {
 	gossip = "Gossip", merchant = "Merchant", trainer = "Trainer", questdialog = "Quest dialog", loot = "Loot",
 	social = "Social", auction = "Auction house", guild = "Guild", macros = "Macros", inspect = "Inspect",
 	collections = "Collections", groupfinder = "Group finder", bags = "Bags", baganator = "Baganator skin",
-	unitframes = "Unit frames", minimap = "Minimap", actionbars = "Action bars", auras = "Buffs and debuffs",
+	unitframes = "Unit frames", minimap = "Minimap", actionbars = "Action bars", bagbar = "Bag bar", micromenu = "Micro menu", auras = "Buffs and debuffs",
 	castbars = "Cast bars", cooldownviewer = "Cooldown viewer", resourcedisplay = "Personal resource display",
 	nameplates = "Nameplates", damagemeter = "Damage meter", tooltips = "Tooltips", chat = "Chat",
 }
@@ -49,11 +49,16 @@ local function setModule(key, v)
 	end
 end
 
+local function blockedNote(by) return "Off while " .. by .. " is loaded: its own bags and bank take its place." end
+
 local function moduleToggle(key)
 	local m = ns.modules[key]
 	local what = m.noun and ("the game's " .. m.noun) or "the game's own window"
-	return { kind = "toggle", label = LABELS[key] or key, search = "/pui " .. key,
-		help = "On: Polestar's. Off: " .. what .. (m.reloadOff and ", after /reload." or ".") .. " Not in combat.",
+	local help = "On: Polestar's. Off: " .. what .. (m.reloadOff and ", after /reload." or ".") .. " Not in combat."
+	-- ns.Enabled: blocked beside another addon (Addons/Bagnon.lua), off and greyed.
+	if m.blockedBy then help = blockedNote(m.blockedBy) end
+	return { kind = "toggle", label = LABELS[key] or key, search = "/pui " .. key, help = help,
+		disabled = m.blockedBy and function() return true end or nil,
 		get = function() return ns.Enabled(key) end, set = function(v) setModule(key, v) end }
 end
 
@@ -66,6 +71,114 @@ local function ufToggle(k, label, help)
 		get = function() return ufGet(k) end, set = function(v) ufSet(k, v) end }
 end
 
+-- The nameplates' cast bar: PolestarUIDB.nameplates through the module's Option/SetOption (live).
+local function plateCast()
+	local function get(k) return function() return ns.modules.nameplates.Option(k) end end
+	local function set(k) return function(v) ns.modules.nameplates.SetOption(k, v) end end
+	return {
+		{ kind = "toggle", label = "Cast bar icon", search = "nameplate cast bar icon, spell icon",
+			help = "The spell's icon at the left end of a nameplate's cast bar (with the game's own Spell Icon option on).",
+			get = get("castIcon"), set = set("castIcon") },
+		{ kind = "slider", label = "Cast bar height", min = 6, max = 16, step = 1, format = "%d", search = "nameplate cast bar height, thin cast bar",
+			help = "In the plate's units (the game's Thin bar is 6, its cast area 16). Under 9, the spell's name and time go under the bar. Block and Cast Focus keep at least 16.",
+			get = get("castHeight"), set = set("castHeight") },
+	}
+end
+
+-- Polestar's page re-checks a row's `disabled` (and redraws its value) only on
+-- a SETTING_CHANGED, and the look rows are no settings: each look change
+-- refreshes the look rows itself (the rows Options made, W.SetDisabledWhen
+-- then w.psControl).
+local W = Polestar.Widgets
+local optionRows, lookControl = setmetatable({}, { __mode = "k" }), {}
+hooksecurefunc(W, "SetDisabledWhen", function(w) optionRows[w] = true end)
+local function refreshLookRows()
+	local set = {}
+	for w in pairs(optionRows) do if lookControl[w.psControl] then set[w] = true end end
+	W.RefreshShownAll(set)
+end
+
+-- One HUD look group's controls (PolestarUIDB.hudLook[group]), as Polestar's
+-- Frames tab offers them for its windows. Shown as followed while off.
+local function lookControls(group, what)
+	local H = ns.HUD
+	local function db() PolestarUIDB.hudLook = PolestarUIDB.hudLook or {}; return PolestarUIDB.hudLook end
+	local function own() local o = db()[group]; return o and o.override and o or nil end
+	local function following() return own() == nil end
+	local function repaint() Polestar.Theme.Refresh(); refreshLookRows() end
+	-- A value control: the override's own, else what Polestar's gives now; reset: Polestar's now.
+	local function field(k, get, scale)
+		return function() local o = own(); if o then return get(o[k], o) end return get(H.Seed(group)[k], H.Seed(group)) end,
+			function(v) local o = own(); if not o then return end
+				if v == nil then v = H.Seed(group)[k] elseif scale then v = v / scale end
+				o[k] = v
+				repaint()
+			end
+	end
+	local function pct(v) return math.floor((tonumber(v) or 0) * 100 + 0.5) end
+	local controls = {
+		{ kind = "toggle", label = "Override Polestar's look", search = "hud border, shadow, background, " .. what,
+			help = "Off: the " .. what .. " wear Polestar's own Frames settings (border, shadow, background opacity). On: the settings below, for these alone.",
+			get = function() return not following() end,
+			set = function(v)
+				local d = db()
+				if v then
+					local o = d[group]
+					if not (o and o.borderSize) then o = H.Seed(group) end
+					o.override = true
+					d[group] = o
+				elseif d[group] then
+					d[group].override = nil
+				end
+				repaint()
+			end },
+	}
+	local function add(c)
+		c.search = c.search .. ", " .. what
+		local was = c.disabled
+		c.disabled = function() return following() or (was and was() or false) end
+		controls[#controls + 1] = c
+	end
+	local borderOff = function() local o = own(); return o and o.border == false end
+	local get, set = field("border", function(v) return v ~= false end)
+	add({ kind = "toggle", label = "Window border", search = "border, edge, outline", help = "The line round each of them.", get = get, set = set })
+	get, set = field("borderSize", function(v) return tonumber(v) or 1 end)
+	add({ kind = "slider", label = "Border", min = 1, max = 4, step = 1, format = "%d px", search = "border thickness, border size",
+		help = "In screen pixels; a thicker border grows outward, as a window's.", disabled = borderOff, get = get, set = set })
+	get, set = field("borderColor", function(v) return v or "scheme" end)
+	local colorSet = set
+	add({ kind = "dropdown", label = "Border colour", search = "border colour, edge colour", disabled = borderOff,
+		help = "The scheme's hairline (the accent with Accent border on), or a colour of its own (which turns Accent border off).",
+		choices = function()
+			local list = { { value = "scheme", label = "The scheme's" }, { value = "class", label = "Class colour" }, { value = "white", label = "White" },
+				{ value = "black", label = "Black" }, { value = "gold", label = "Gold" }, { value = "silver", label = "Silver" } }
+			local o = own()
+			if o and o.ownColor then list[#list + 1] = { value = "own", label = "Polestar's border colour" } end
+			return list
+		end,
+		-- A colour and the accent are rivals, as Polestar's ui.borderColor and ui.borderAccent.
+		get = get, set = function(v) if v == "scheme" then v = false end local o = own(); if o and v then o.borderAccent = false end colorSet(v) end })
+	get, set = field("borderAccent", function(v) return v and true or false end)
+	local accentSet = set
+	add({ kind = "toggle", label = "Accent border", search = "accent border, gold border", disabled = borderOff,
+		help = "The border takes your accent colour. Picking a border colour turns this off.", get = get,
+		set = function(v) local o = own(); if o and v then o.borderColor = false end accentSet(v) end })
+	get, set = field("hairline", pct, 100)
+	add({ kind = "slider", label = "Hairlines", min = 0, max = 300, step = 10, format = "%d%%", search = "hairline, border opacity, stronger lines",
+		help = "How strongly the border shows, against its colour's own.", get = get, set = set })
+	local shadowOff = function() local o = own(); return o and o.shadow == false end
+	get, set = field("shadow", function(v) return v ~= false end)
+	add({ kind = "toggle", label = "Window shadow", search = "shadow, drop shadow, depth", help = "The soft shadow round each of them.", get = get, set = set })
+	get, set = field("shadowStrength", pct, 100)
+	add({ kind = "slider", label = "Shadow strength", min = 0, max = 200, step = 5, format = "%d%%", search = "shadow strength, darker shadow",
+		help = "How dark the shadow falls, against the skin's.", disabled = shadowOff, get = get, set = set })
+	get, set = field("ground", pct, 100)
+	add({ kind = "slider", label = "Background opacity", min = 0, max = 100, step = 5, format = "%d%%", search = "background opacity, ground, transparency",
+		help = "The ground behind them.", get = get, set = set })
+	for _, c in ipairs(controls) do lookControl[c] = true end
+	return controls
+end
+
 local function register(spec)
 	spec.page, spec.key, spec.icon, spec.order, spec.group = PAGE, KEY, "window", 66, "setup"
 	local ok, err = Polestar.RegisterOptions(spec)
@@ -76,22 +189,48 @@ end
 -- /reload (reloadOff) only once ns.Interaction has run.
 Polestar.OnLogin(function()
 	if ns.tooOld then return end
-	local windows, hud = {}, {}
+	local windows, hud, blocked, names = {}, {}, {}, {}
 	for _, key in ipairs(ns.order) do
-		local list = tabOf(key) == HUD and hud or windows
+		local by = ns.modules[key].blockedBy
+		local list = by and blocked or tabOf(key) == HUD and hud or windows
 		list[#list + 1] = moduleToggle(key)
+		if by then names[#names + 1] = key end
 	end
-	register({ tab = WINDOWS, section = "Windows", controls = windows })
+	-- Blocked toggles go first, side by side from the left column, under one wide note (Polestar's options API has no text row: a dimmed row with a disabled button says why). One shared reason: one note; else a note after each.
+	local function note(key, text)
+		return { kind = "button", wide = true, label = text, button = "Blocked", onClick = function() end,
+			disabled = function() return true end, search = "/pui " .. key }
+	end
+	local head, same = {}, true
+	for _, k in ipairs(names) do same = same and ns.modules[k].blockedBy == ns.modules[names[1]].blockedBy end
+	if same and #names > 0 then
+		for _, c in ipairs(blocked) do head[#head + 1] = c end
+		local by = ns.modules[names[1]].blockedBy
+		head[#head + 1] = note(names[1], #names > 1 and "Bags and Bank are off while " .. by .. " is loaded: its own bags and bank take their place." or blockedNote(by))
+	else
+		for i, c in ipairs(blocked) do head[#head + 1] = c; head[#head + 1] = note(names[i], blockedNote(ns.modules[names[i]].blockedBy)) end
+	end
+	for _, c in ipairs(windows) do head[#head + 1] = c end
+	windows = head
+	-- The page's subtitle (Polestar's registry keeps the first one given).
+	local v = (C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata)(ADDON, "Version")
+	register({ tab = WINDOWS, section = "Windows", controls = windows, subtitle = v and ("Version " .. v) or nil })
 	register({ tab = WINDOWS, section = "Docking", controls = {
 		{ kind = "toggle", label = "Dock windows", search = "dock, move, /pui dock",
 			help = "On: the windows line up from the top left as the game's do. Off: drag each where you like.",
 			get = function() return ns.Docked() end, set = function(v) ns.SetDocked(v ~= false) end },
 	} })
 	register({ tab = HUD, section = "HUD", controls = hud })
+	-- The HUD's look, per group (ns.HUD: Edge, ShadowColor, GroundAlpha): Polestar's
+	-- Frames settings, or with "Override" on the group's own, which start as
+	-- Polestar's (H.Seed). Every change repaints (Theme.Refresh).
+	for _, g in ipairs({ { "frames", "Frames look", "unit frames, cast bars, the damage meter and the minimap" },
+		{ "plates", "Plates look", "nameplates and their cast bars" },
+		{ "icons", "Icons look", "action and bag buttons, the micro menu, buffs and the cooldown viewer's icons" } }) do
+		register({ tab = HUD, section = g[2], controls = lookControls(g[1], g[3]) })
+		if g[1] == "plates" then register({ tab = HUD, section = "Nameplate cast bars", controls = plateCast() }) end
+	end
 	register({ tab = HUD, section = "Unit frames", controls = {
-		{ kind = "slider", label = "Background opacity", min = 0, max = 100, step = 5, format = "%d%%", search = "unit frames",
-			help = "The ground behind the bars. Their colours follow your Polestar theme; with its \"Class colour\" on, players wear their class colour.",
-			get = function() return math.floor(ufGet("ground") * 100 + 0.5) end, set = function(v) ufSet("ground", v and v / 100) end },
 		ufToggle("portrait", "3D portraits", "The unit's model in a square beside the bars."),
 		ufToggle("powerText", "Power text", "The unit's power as a number, shown as the game's Status Text options show the health."),
 		ufToggle("sparkle", "Sparkle", "Polestar's stars over the health bars, as over its windows' header band."),
@@ -111,6 +250,8 @@ end)
 function ns.ShowSettings(key)
 	local UI = Polestar.UI
 	if not UI then return end
+	-- The settings window sits on Polestar's layer: hidden with Polestar, it would open unseen (Polestar's own commands unhide first).
+	if Polestar.Hidden() then Polestar.SetHidden(false) end
 	UI.ShowOptions(KEY)
 	local O = UI.Options
 	if O and O.Select then O.Select(KEY, key and tabOf(key) or nil) end

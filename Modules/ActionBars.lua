@@ -18,6 +18,7 @@
 
 local ADDON, ns = ...
 local Theme = Polestar.Theme
+local H = ns.HUD
 
 local M = { noun = "action bars" }
 -- The buttons by name (ActionBar.lua names the bars' buttons; the others are
@@ -32,9 +33,11 @@ local NAMED = {
 -- ActionButtonTemplate's slot art (UpdateButtonArt shows one or the other).
 local SLOT = { "SlotArt", "SlotBackground" }
 -- Each with its face and, on ours, its outline (the key and count legible over any icon).
-local FONTS = { { "HotKey", "number", "OUTLINE", true }, { "Count", "number", "OUTLINE" }, { "Name", "small" } }
-local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
+-- FreeSlots: the backpack's free count (the bag bar, Modules/BagBar.lua).
+local FONTS = { { "HotKey", "number", "OUTLINE", true }, { "Count", "number", "OUTLINE" }, { "Name", "small" },
+	{ "FreeSlots", "number", "OUTLINE" } }
 local CROP = 0.08 -- the icon's baked border, cropped as ns.GameIcon does
+local LOOK, SHADOW = H.ICONS, 6 -- the HUD look's Icons group (2 px at most while it follows Polestar); the shadow's reach
 
 local looks = setmetatable({}, { __mode = "k" }) -- stock button -> its textures of ours and what it was
 local driver, started
@@ -52,19 +55,14 @@ local function look(b)
 	if l then return l end
 	local icon = rawget(b, "icon") or rawget(b, "Icon")
 	if not icon then return end
-	l = { icon = icon, mask = rawget(b, "IconMask"), fill = tex(b, "BACKGROUND", -8), wash = tex(b, "OVERLAY", 6),
-		hover = tex(b, "HIGHLIGHT"), edges = {}, fonts = {} }
+	-- An item button's icon also wears ItemButtonMixin:PostOnLoad's rounded `Mask` (the bag bar).
+	l = { icon = icon, masks = { rawget(b, "IconMask") or rawget(b, "SquareMask"), b.GetItemButtonIconTexture and rawget(b, "Mask") or nil }, fill = tex(b, "BACKGROUND", -8), wash = tex(b, "OVERLAY", 6),
+		hover = tex(b, "HIGHLIGHT"), edges = ns.Hairlines(b, b, function() return tex(b, "OVERLAY", 7) end), fonts = {}, shadow = H.Shadow(b, b, SHADOW) }
 	l.checked = b.GetCheckedTexture and b:GetCheckedTexture()
 	l.atlas = l.checked and l.checked:GetAtlas()
 	l.fill:SetAllPoints(b)
 	l.wash:SetAllPoints(b)
 	l.hover:SetAllPoints(b)
-	for i, p in ipairs(EDGES) do
-		local t = tex(b, "OVERLAY", 7)
-		t:SetPoint(p[1], b, p[1], 0, 0)
-		t:SetPoint(p[2], b, p[2], 0, 0)
-		l.edges[i] = t
-	end
 	for _, f in ipairs(FONTS) do
 		local fs = rawget(b, f[1])
 		if fs then l.fonts[#l.fonts + 1] = { fs = fs, role = f[2], flags = f[3], dot = f[4], stock = { fs:GetFont() } } end
@@ -91,18 +89,20 @@ local function setFace(f, shown)
 	Theme.SetFace(f.fs, ours and (Theme.FontSpec(f.role)) or s[1], s[2], (shown and f.flags) or s[3] or "")
 end
 
+-- Checked, or lit by the caller's own test (`l.lit`: the bag bar's open bags).
+local function isChecked(b, l)
+	if l.lit then return l.lit(b) and true or false end
+	return b.GetChecked and b:GetChecked() and true or false
+end
+
 local function paintState(b, l)
 	local pushed = b:GetButtonState() == "PUSHED"
-	local checked = b.GetChecked and b:GetChecked() and true or false
+	local checked = isChecked(b, l)
 	l.pushed, l.isChecked = pushed, checked
 	local r, g, bl = Theme.Accent()
 	l.wash:SetVertexColor(r, g, bl, pushed and 0.3 or 0.15)
 	l.wash:SetShown(pushed or checked)
-	local px = Theme.Pixel(b)
-	for i, t in ipairs(l.edges) do
-		if checked then t:SetVertexColor(r, g, bl, 1) else t:SetVertexColor(Theme.Color("border")) end
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
+	if checked then H.PaintTint(l.edges, true, LOOK, r, g, bl, 1) else H.PaintEdge(l.edges, true, LOOK) end
 end
 
 local function fade(a, ...)
@@ -112,9 +112,10 @@ local function fade(a, ...)
 	end
 end
 
-local function paint(b, shown)
+local function paint(b, shown, lit)
 	local l = look(b)
 	if not l then return end
+	l.lit = lit or l.lit
 	local a = shown and 0 or 1
 	for _, k in ipairs(SLOT) do fade(a, rawget(b, k)) end
 	fade(a, b:GetNormalTexture(), b:GetPushedTexture(), b:GetHighlightTexture())
@@ -122,21 +123,39 @@ local function paint(b, shown)
 		if shown then l.checked:SetTexture(nil) elseif l.atlas then l.checked:SetAtlas(l.atlas) end
 	end
 	if shown ~= (l.square or false) then
-		if l.mask then
-			if shown then l.icon:RemoveMaskTexture(l.mask) else l.icon:AddMaskTexture(l.mask) end
+		for _, m in pairs(l.masks) do
+			if shown then l.icon:RemoveMaskTexture(m) else l.icon:AddMaskTexture(m) end
 		end
 		if shown then l.icon:SetTexCoord(CROP, 1 - CROP, CROP, 1 - CROP) else l.icon:SetTexCoord(0, 1, 0, 1) end
 	end
 	l.square = shown
 	for _, f in ipairs(l.fonts) do setFace(f, shown) end
 	local r, g, bl = Theme.Color("bg")
-	l.fill:SetVertexColor(r, g, bl, Theme.GroundAlpha())
+	l.fill:SetVertexColor(r, g, bl, H.GroundAlpha(LOOK))
 	l.hover:SetVertexColor(Theme.Wash("hover"))
 	l.fill:SetShown(shown)
 	l.hover:SetShown(shown)
-	for _, t in ipairs(l.edges) do t:SetShown(shown) end
-	if shown then paintState(b, l) else l.wash:Hide() end
+	H.PaintShadow(l.shadow, shown, nil, LOOK)
+	if shown then paintState(b, l) else l.wash:Hide(); ns.PaintHairlines(l.edges, false, 0, 0, 0, 0) end
 end
+
+-- One restyled button's states, each frame: pressed, checked, the range dot.
+local function tick(b)
+	local l = looks[b]
+	if not (l and l.square and b:IsVisible()) then return end
+	if (b:GetButtonState() == "PUSHED") ~= l.pushed or isChecked(b, l) ~= l.isChecked then paintState(b, l) end
+	-- An item button's new icon resets its coords (SetItemButtonTexture: SetTexCoord(0, 1, 0, 1)).
+	-- (Coords come back as float32: compared loosely.)
+	if math.abs((l.icon:GetTexCoord() or 0) - CROP) > 1e-3 then l.icon:SetTexCoord(CROP, 1 - CROP, CROP, 1 - CROP) end
+	-- The key turned into the range dot or back (no event says so).
+	for _, f in ipairs(l.fonts) do
+		if f.dot and dotted(f.fs) ~= f.isDot then setFace(f, true) end
+	end
+end
+
+-- The look for other stock item buttons (the bag bar), whatever this
+-- module's switch: paint(b, shown, lit?) and tick(b) from the caller's driver.
+ns.ButtonLook = { paint = paint, tick = tick }
 
 -- Every button there is now: the bars' (by name) and the zone ability's.
 local function each(fn)
@@ -175,17 +194,7 @@ local function update(_, elapsed)
 		scan = 0
 		if not InCombatLockdown() then each(function(b) if not looks[b] then paint(b, true) end end) end
 	end
-	for b, l in pairs(looks) do
-		if l.square and b:IsVisible() then
-			local pushed = b:GetButtonState() == "PUSHED"
-			local checked = b.GetChecked and b:GetChecked() and true or false
-			if pushed ~= l.pushed or checked ~= l.isChecked then paintState(b, l) end
-			-- The key turned into the range dot or back (no event says so).
-			for _, f in ipairs(l.fonts) do
-				if f.dot and dotted(f.fs) ~= f.isDot then setFace(f, true) end
-			end
-		end
-	end
+	for b in pairs(looks) do tick(b) end
 end
 
 function M.Enable()

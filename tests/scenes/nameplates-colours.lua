@@ -31,5 +31,5 @@ assert(is(g2.edges[1], tr, tg, tb) and g2.glow[1]:IsShown(), "threat on the play
 assert(l(NamePlate4).name:IsShown() and not tostring(stub.reveal(l(NamePlate4).name:GetText())):find("30", 1, true), "a secret level was read")
 -- Threat drops: the edge goes back to the border.
 stub.updatePlate("nameplate2", { threat = 0 })
-assert(is(g2.edges[1], T.Color("border")) and not g2.glow[1]:IsShown(), "the threat edge stayed")
+assert(is(g2.edges[1], T.Color("windowBorder")) and not g2.glow[1]:IsShown(), "the threat edge stayed")
 assert(filled(l(NamePlate2), T.Color("danger")), "a hostile mob without threat is not in danger")

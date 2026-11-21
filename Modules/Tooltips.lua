@@ -50,9 +50,19 @@ local function look(tip)
 	return l
 end
 
--- The ground Polestar's own tooltips use: solid, Theme.TIP_GROUND.
+-- The ground: the scheme's bg where white text still reads on it (7:1), else
+-- the fixed dark Theme.TIP_GROUND (a light look's tooltip stays dark; the
+-- game's lines and Theme.TipColor assume it). Solid; follows the scheme live.
+local WHITE = { 1, 1, 1 }
+local function groundRGB()
+	local c = { Theme.Color("bg") }
+	if Theme.Contrast(WHITE, c) >= 7 then return c[1], c[2], c[3] end
+	return Theme.TIP_GROUND[1], Theme.TIP_GROUND[2], Theme.TIP_GROUND[3]
+end
+
 local function paintGround(l, on)
-	l.fill:SetVertexColor(Theme.TIP_GROUND[1], Theme.TIP_GROUND[2], Theme.TIP_GROUND[3], 1)
+	local r, g, b = groundRGB()
+	l.fill:SetVertexColor(r, g, b, 1)
 	l.fill:SetShown(on)
 	ns.PaintHairlines(l.edges, on, Theme.Color("border"))
 end

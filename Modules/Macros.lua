@@ -256,7 +256,7 @@ local function buildPicker()
 	p:SetScript("OnUpdate", function() if p.Scroll:GetVerticalScroll() ~= p.psDrawn then paintIcons() end end)
 	-- The icon list is let go with the picker, as the stock provider's.
 	p:SetScript("OnHide", function() p.psIcons = nil; if f:IsShown() then M.Refresh() end end)
-	ns.DockFlyout(f, p, 1)
+	ns.DockFlyout(f, p)
 end
 
 -- The picker for a new macro ("?", no name) or the selected one's name and icon.

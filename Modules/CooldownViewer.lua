@@ -22,6 +22,7 @@ local M = { noun = "cooldown viewer" }
 local KEY = "cooldowns"
 local VIEWERS = { "EssentialCooldownViewer", "UtilityCooldownViewer", "BuffIconCooldownViewer", "BuffBarCooldownViewer" }
 local CROP = 0.08 -- the icon's baked border, cropped as ns.GameIcon does
+local LOOK = H.ICONS -- the HUD look's Icons group (2 px at most while it follows Polestar)
 local OVERLAY = "UI-HUD-CoolDownManager-IconOverlay" -- the unnamed rounded frame over each icon
 local SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe" -- the templates' rounded sweep (set in XML only)
 -- The game lays items out at Edit Mode's Padding less 4 (GetAdditionalPaddingOffset):
@@ -111,11 +112,10 @@ local function paint(l, shown)
 	if l.overlay then l.overlay:SetAlpha(shown and 0 or 1) end
 	for _, f in ipairs(l.fonts) do H.Face(f[1], f[2], shown) end
 	local r, g, b = Theme.Color("bg")
-	local a = H.GroundAlpha()
+	local a = H.GroundAlpha(LOOK)
 	l.ground:SetVertexColor(r, g, b, a)
 	l.ground:SetShown(shown)
-	local br, bg, bb, ba = Theme.Color("border")
-	ns.PaintHairlines(l.edges, shown, br, bg, bb, ba)
+	H.PaintEdge(l.edges, shown, LOOK)
 	if l.bar then
 		for _, t in pairs(l.faded) do t:SetAlpha(shown and 0 or 1) end
 		l.track:SetVertexColor(r, g, b, a)
@@ -124,7 +124,7 @@ local function paint(l, shown)
 		local fr, fg, fb = H.FillColor("player")
 		l.fill:SetVertexColor(fr, fg, fb, 1)
 		l.fill:SetShown(shown)
-		ns.PaintHairlines(l.barEdges, shown, br, bg, bb, ba)
+		H.PaintEdge(l.barEdges, shown, LOOK)
 	end
 end
 

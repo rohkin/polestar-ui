@@ -470,8 +470,8 @@ function svg(dump, { fonts, textures, roots, margin = 28, prefix = 'p', shared, 
 		rect({ x: r.x + r.w - 1, y: r.y + 1, w: 1, h: r.h - 2 }, c, alpha, clip);
 	};
 
-	// What EllesmereUI's primitives would paint (approximated from its look:
-	// flat panel fill, 1px dark border, accent details).
+	// What a flat-style primitive would paint (flat panel fill, 1px dark
+	// border, accent details).
 	const accent = dump.accent || [0.05, 0.82, 0.62];
 	const PANEL = [0.07, 0.07, 0.08, 0.95];
 	function euiPaint(o, r, a, clip) {

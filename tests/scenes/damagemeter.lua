@@ -24,7 +24,7 @@ for _, r in ipairs({ c:GetRegions() }) do
 	if r ~= c.Background and r.layer == "BACKGROUND" and r.sublayer == -8 and r.points[1] and r.points[1].rel == c and #r.points == 2 then ground = r break end
 end
 local _, _, _, ga = ground:GetVertexColor()
-assert(ground and ground:IsShown() and math.abs(ga - 0.6 * 0.6) < 1e-6, "our ground's alpha: " .. tostring(ga))
+assert(ground and ground:IsShown() and math.abs(ga - 0.6 * Polestar.Theme.GroundAlpha()) < 1e-6, "our ground's alpha: " .. tostring(ga))
 -- A row: our fill (hung on the game's fill) in the accent mixed 0.55 into the ground colour, the row's art faded, the texts in Polestar's faces.
 local e = c.ScrollBox.ScrollTarget:GetChildren()
 local sb = e.StatusBar

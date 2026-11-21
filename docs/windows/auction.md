@@ -112,3 +112,5 @@ ours is on.
   the skin's tab row and pad, the tab row's parts, no lockup). They also check the band's counts,
   the one-line row, the filter count and Clear filters, Post's reason in its
   tooltip, the well's hint and no bag button while targeting.
+
+- **Auction house addons:** with Auctionator, AHledger, CraftProfit, TradeSkillMaster, Undying or NaowhForever loaded this module starts off (`Addons/AuctionHouse.lua`; a saved choice wins), as they build on the game's AuctionHouseFrame.

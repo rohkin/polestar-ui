@@ -23,7 +23,7 @@ the frames keep them in `auraFrames`):
 |---|---|---|---|
 | `Icon` (30 x 30, the client's baked border) | square, cropped 8% | `SetTexCoord`, as `ns.GameIcon` | given back with `SetTexCoord(0, 1, 0, 1)` |
 | `DebuffBorder` (an atlas per dispel type, `AuraUtil.SetAuraBorderAtlas`), `TempEnchantBorder` | faded | `SetAlpha(0)`: the game only swaps the atlas and shows or hides them, which keeps the alpha | Edit Mode's Show Dispel Type glyph sits on that border: faded with it (the colour says the type) |
-| the border's meaning | a 1px hairline of ours round the icon | `ns.Hairlines(button, Icon)` + `ns.PaintHairlines`, kept in a weak table | a buff: the `border` token; a debuff: its dispel type's colour, the game's own (`AuraUtil.GetDebuffDisplayInfoTable()`, as item quality keeps the game's meaning); a weapon enchant: the epic colour (the game's border is purple) |
+| the border's meaning | a hairline of ours round the icon (Polestar's border size, 2 px at most) | `ns.Hairlines(button, Icon)` + `ns.PaintHairlines`, kept in a weak table | a buff: Polestar's window border (`H.PaintTint`; none with the border off); a debuff: its dispel type's colour, the game's own (`AuraUtil.GetDebuffDisplayInfoTable()`, as item quality keeps the game's meaning); a weapon enchant: the epic colour (the game's border is purple) |
 | `Duration` (`GameFontNormalSmall`), `Count` (`NumberFontNormal`) | Polestar's `number` face, outlined, at the game's sizes and colours (gold, white under 90 s) | `H.Face` (Modules/HUD.lua) | never read (rule 3). In zhTW the game swaps the duration's font each frame for long buffs: there it stays the game's |
 | The low-time flash (the button's alpha), `Symbol`, the collapse arrow, Consolidated Buffs, the deadly debuff warning, private auras | the game's | untouched | |
 
@@ -97,7 +97,7 @@ game hangs 26 units under our frame with no auras and lower with them.
 | The player's own auras large (21), others small (17) | 20 and 16 | from the `PLAYER` filter |
 | On a hostile creature, another player's debuffs left out; `noBuffDebuffFilterOnTarget` shows all (`ShouldShowAuraAsDebuff`) | the same | `isFromPlayerOrPlayerPet` through `ns.Clean`: while the client keeps it secret (combat) they show |
 | Icon | square, cropped, on the HUD ground, a 1px hairline | `SetTexture(aura.icon)` takes a secret file |
-| Debuff border by dispel type | the hairline in the type's colour (`AuraUtil.GetDebuffDisplayInfoTable()`); a buff's in `border` | `dispelName` through `ns.Clean`: plain debuff red while secret |
+| Debuff border by dispel type | the hairline in the type's colour (`AuraUtil.GetDebuffDisplayInfoTable()`); a buff's Polestar's window border | `dispelName` through `ns.Clean`: plain debuff red while secret |
 | The time's sweep | the game's own Cooldown (`CooldownFrameTemplate`), its countdown in the `number` face, outlined | `C_UnitAuras.GetAuraDuration` into `SetCooldownFromDurationObject`; the face on `GetCountdownFontString()` |
 | Stacks | bottom right, `number`, outlined | `C_UnitAuras.GetAuraApplicationDisplayCount(unit, id, 2, 99)` into `SetFormattedText` |
 | Tooltip | the game's | `GameTooltip:SetUnitAuraByAuraInstanceID(unit, id)` on hover |

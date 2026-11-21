@@ -57,11 +57,19 @@
 <g transform="translate(262.6 45.82) scale(0.005859)" fill="rgb(230,186,102)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-73" x="0"/></g>
 <image x="36.5" y="34.9" width="10" height="10" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAgklEQVR4nO3PsQ2AIBAF0NvGVehZia0o7dzB0i1M9Ei4xBjQi8DF4r/kOj//SwAA8Hvzska+nS+QUvo2ZyK14Ac833G5oMiEW8bTVxye8p+oRhTKU3aiFvyA04yolDvq4W3E0HJRG2FSLiojbMrFw4jx5aIwwq5c5BFbPttyAADo6QRluyYSkOoYCQAAAABJRU5ErkJggg=="/>
 <g transform="translate(48.5 46.18) scale(0.006348)" fill="rgb(247,248,253)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="252.06" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-84" x="0"/><use href="#gInter-Mediumttf-507" x="1478"/><use href="#gInter-Mediumttf-766" x="2641"/><use href="#gInter-Mediumttf-507" x="4460"/><use href="#gInter-Mediumttf-658" x="5623"/><use href="#gInter-Mediumttf-614" x="6892"/><use href="#gInter-Mediumttf-84" x="8641"/><use href="#gInter-Mediumttf-790" x="10119"/><use href="#gInter-Mediumttf-773" x="11356"/><use href="#gInter-Mediumttf-614" x="12588"/></g>
-<rect x="28" y="268" width="260" height="150" fill="rgb(24,29,45)" fill-opacity="0.36"/>
+<rect x="28" y="268" width="260" height="150" fill="rgb(24,29,45)" fill-opacity="0.56"/>
+<image x="12" y="256" width="22" height="22" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAyElEQVR4nO2SPQvCQBBEV+RAIhGiEMGPIhBJoYWCkCJYCJImWFhYiaWt/790ZrO1XJL2Hrx2mLlbCQQCf3F0LMNhiJvAKZxJf9zIgmI4hylcST+0VQQTuIRbmMGddEfDOG8B1xZUwAM8Sjd0ZmRhG5jDPTzBElbSDX2zxJrl1urcBrkrrMUfnRrbm2XWjGEXeIMNfIg/2o6/yQ8obGZlYXf4hC/xQ4+WH5FaO04tbWZjYW/4ET90Lo6Wd8bT4G9qu7qdyWYMc98fl4cO6BvP8NcAAAAASUVORK5CYII="/>
+<image x="282" y="256" width="22" height="22" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAwklEQVR4nO3SvQrCQBAE4BNZCJEEjKDgTyFELGKhIKQIFoKkCRYWVmJp6/uXzuA8QO5iJVn42mHnbl0//fzp2BDcD8dSGEH0De88NocpZJAoeODCxzawhhXMYAxxh21tDzvYKngBEz1DSKhVUMIBCshhqdA4oL7VcFbwUdvm2pT1I+c3doMGLnBSaKH6fNPEs7o94A5XhVaqzzflR2WeW9oLngptVL9UdW7Jk+IHuZZjb4VyU9avtSV/nyfFO03b1v4ApvAO6IQ6JJwAAAAASUVORK5CYII="/>
+<image x="12" y="416" width="22" height="22" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAxklEQVR4nO3SMQuCUBTF8RsiiJJQQYHmECQONhgIDtEQhEs0ODRJY2vff+z/nvcDqDWFB37r4Z6n0i+ugxARUhQ4oUaDFi+8pV9cI8AaOxxQ4YIbHnh2pb3jelgiQYajXnnFXUtb6R87e46NXpmjxFlLzaWNDIu9coEYe51e6qVmfi3D4s7gY4WtluY6v+qKB8dOD7Q01vmZXlvIuNhSX+ebN020OJXxsfPNm5oPZb6++aUi+T72Wk+fIZTfxf78jkyZ8o/5AI+oDujNzMp1AAAAAElFTkSuQmCC"/>
+<image x="282" y="416" width="22" height="22" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAxklEQVR4nO3SMQvCQAyG4RMRxKJQBQVrB0HpUAeFQgdxKIhLcXBwEkdX///omxih411X+8GzfiR3cc4N3njhgRsuOGKPLZaYoO/8omVP3FGjQokd1pgjgvOMTiZlV5xtugMypJhi6Pyja9ZWdkKB3KZbYBywrkTfrLLJClt1gwRx4HQSLSptzdzKVphhhJ4Li/6mTJXZmomVRYGr/qKnIUWpvVlsk7Upk+idyWnIb46/bxa8ZjN6tJEVtZ2qGSnxPtouXf4zH58RDugwyp5dAAAAAElFTkSuQmCC"/>
+<image x="34" y="256" width="248" height="22" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAb0lEQVR4nO3NIQ6AMBBE0ZpFgwcNaNANtkE3WFJkE1wFnJ6Z9ApdVCd5dr6pq6v7ZSLQKBEGWuiUtAz0MCjpGRhhgrmwKX8bWWBVsjBgYVNiGXCwK3EMeDiUeAZOCHAVFvK3kQi3kshAggfewviZPuRRRsXKjqmIAAAAAElFTkSuQmCC"/>
+<image x="34" y="416" width="248" height="22" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAcElEQVR4nO3NIQ6AMBBE0TWLBg8a0KAJtkE3WFJkExyinJ7Z9Aod10menS8i+kKCr7CUv0UjPCTRAhcEuAsL+VvUw0niLeDgIHEW2GAn2SywwEqyWGCECebCpvwt2sNA0lughY6ktYBCQ4Lvuro6+n7FdUbFFOJhrwAAAABJRU5ErkJggg=="/>
+<image x="12" y="278" width="22" height="138" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYklEQVR4nO3VIQ9AYBSF4Vs+mU5GJptqsqlGtGkCv94bFJtwgmT3bE996zFtISBGihwVGnQYMGHFbtpChAQZCtRo0WPEjA2HaXsEy5fgcgdP0+ZBD3pQmQc9+P/gJycl3+gFirVGxRzVHEUAAAAASUVORK5CYII="/>
+<image x="282" y="278" width="22" height="138" preserveAspectRatio="none" opacity="0.4" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYUlEQVR4nO3VIRNAUBBF4S0r08nIZKMa2aiGaEYT+PVOEF/Y8NrbO/PVU6+I6I0TGxZMGNChRokcKrbpgws7VswY0aNBhQKZ2KbvHzwCwdaDlnnQgx60zINJBKOfVNQb/QA6R0bF0SZRTwAAAABJRU5ErkJggg=="/>
 <rect x="28" y="268" width="260" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="28" y="417" width="260" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="28" y="268" width="1" height="150" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="287" y="268" width="1" height="150" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="28" y="269" width="1" height="148" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="287" y="269" width="1" height="148" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="28" y="300" width="260" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <image x="270" y="275.1" width="12" height="12" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAf0lEQVR4nO2PwQ2AIAxFuw2rcGcltuLozR08ugWJ1qSHxoASlUaS/5J/ou1/EAAAgGGZ5sVzVoknS6Q8czZJNpMolNtJXJT3l6iUR0lfiVq5eu8ncVeu5r6X4AOupVzNlyQcPYWXQ2u52jlLBHoDH0jyk0iNiMSxkwgAAMDf2QGkOiYSsnt7PgAAAABJRU5ErkJggg=="/>
 <image x="244.5" y="273.1" width="14" height="14" preserveAspectRatio="none" opacity="1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA9ElEQVR4nO2XwQ2DMAxFvQcjcEXi0B1YJWuwEBP8W3foAEyRxiJIaZSkbkqwqvKkfwmx/SHgBLr4SXB/jE5zpJHOwhe0kWZqgUt8c+qjsbcGOIZj6RtcgsknX52GYLxogOf6GB6fqIaguA1NOHU5A/5aWNxWmcD22G1Ca2ZcMke+HNjWT1JMKs7V0ycg/Shriw9UwwEm6osz2F6qXPLFyXgthXkdSUG6w6WSmkSsycyVd8xCwZc7L8Qvgvh8xxQaMIV48xcGmi6B7ksYg7M/wxhoNiJotmJob0bQ3o4ZaB5IdqB5JNuB5qE0h8RAU6D9Y3JxJE/l1IFYSMNLGAAAAABJRU5ErkJggg=="/>
@@ -74,9 +82,9 @@
 <rect x="33" y="302" width="24" height="24" fill="rgb(119,93,66)" fill-opacity="1" clip-path="url(#p0c0)"/>
 <rect x="33" y="302" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
 <rect x="33" y="325" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
-<rect x="33" y="302" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
-<rect x="56" y="302" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
-<rect x="57" y="302" width="226" height="23" fill="rgb(24,29,45)" fill-opacity="0.6" clip-path="url(#p0c0)"/>
+<rect x="33" y="303" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
+<rect x="56" y="303" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c0)"/>
+<rect x="57" y="302" width="226" height="23" fill="rgb(24,29,45)" fill-opacity="0.94" clip-path="url(#p0c0)"/>
 <rect x="57" y="302" width="226" height="23" fill="rgb(217,158,26)" fill-opacity="1" clip-path="url(#p0c0)"/>
 <rect x="57" y="302" width="226" height="23" fill="rgb(137,116,77)" fill-opacity="1" clip-path="url(#p0c0)"/>
 <g clip-path="url(#p0c0)"><g transform="translate(240.12 317.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1346" x="0"/><use href="#gInter-Mediumttf-1342" x="1344"/><use href="#gInter-Mediumttf-1343" x="2194"/><use href="#gInter-Mediumttf-1502" x="3456"/><use href="#gInter-Mediumttf-1341" x="4077"/><use href="#gInter-Mediumttf-271" x="5399"/></g></g>
@@ -84,9 +92,9 @@
 <rect x="33" y="330" width="24" height="24" fill="rgb(153,153,153)" fill-opacity="1" clip-path="url(#p0c1)"/>
 <rect x="33" y="330" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
 <rect x="33" y="353" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
-<rect x="33" y="330" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
-<rect x="56" y="330" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
-<rect x="57" y="330" width="226" height="23" fill="rgb(24,29,45)" fill-opacity="0.6" clip-path="url(#p0c1)"/>
+<rect x="33" y="331" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
+<rect x="56" y="331" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c1)"/>
+<rect x="57" y="330" width="226" height="23" fill="rgb(24,29,45)" fill-opacity="0.94" clip-path="url(#p0c1)"/>
 <rect x="57" y="330" width="174.44" height="23" fill="rgb(217,158,26)" fill-opacity="1" clip-path="url(#p0c1)"/>
 <rect x="57" y="330" width="174.44" height="23" fill="rgb(137,116,77)" fill-opacity="1" clip-path="url(#p0c1)"/>
 <g clip-path="url(#p0c1)"><g transform="translate(240.31 345.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1345" x="0"/><use href="#gInter-Mediumttf-1342" x="1284"/><use href="#gInter-Mediumttf-1351" x="2134"/><use href="#gInter-Mediumttf-1502" x="3423"/><use href="#gInter-Mediumttf-1341" x="4044"/><use href="#gInter-Mediumttf-271" x="5366"/></g></g>
@@ -94,24 +102,32 @@
 <rect x="33" y="358" width="24" height="24" fill="rgb(38,119,141)" fill-opacity="1" clip-path="url(#p0c2)"/>
 <rect x="33" y="358" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c2)"/>
 <rect x="33" y="381" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c2)"/>
-<rect x="33" y="358" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c2)"/>
-<rect x="56" y="358" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c2)"/>
-<rect x="57" y="358" width="226" height="23" fill="rgb(24,29,45)" fill-opacity="0.6" clip-path="url(#p0c2)"/>
+<rect x="33" y="359" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c2)"/>
+<rect x="56" y="359" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c2)"/>
+<rect x="57" y="358" width="226" height="23" fill="rgb(24,29,45)" fill-opacity="0.94" clip-path="url(#p0c2)"/>
 <rect x="57" y="358" width="52.66" height="23" fill="rgb(217,158,26)" fill-opacity="1" clip-path="url(#p0c2)"/>
 <rect x="57" y="358" width="52.66" height="23" fill="rgb(137,116,77)" fill-opacity="1" clip-path="url(#p0c2)"/>
 <g clip-path="url(#p0c2)"><g transform="translate(245.25 373.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1352" x="0"/><use href="#gInter-Mediumttf-1349" x="1290"/><use href="#gInter-Mediumttf-1502" x="2580"/><use href="#gInter-Mediumttf-1341" x="3201"/><use href="#gInter-Mediumttf-271" x="4523"/></g></g>
 <g clip-path="url(#p0c2)"><g transform="translate(59 373.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1345" x="0"/><use href="#gInter-Mediumttf-1502" x="1284"/><use href="#gInter-Mediumttf-266" x="2451"/><use href="#gInter-Mediumttf-507" x="3629"/><use href="#gInter-Mediumttf-689" x="4792"/><use href="#gInter-Mediumttf-773" x="5308"/><use href="#gInter-Mediumttf-507" x="6540"/></g></g>
 <rect x="292" y="268" width="240" height="96" fill="rgb(24,29,45)" fill-opacity="0.94"/>
+<image x="276" y="256" width="22" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAyElEQVR4nO2SPQvCQBBEV+RAIhGiEMGPIhBJoYWCkCJYCJImWFhYiaWt/790ZrO1XJL2Hrx2mLlbCQQCf3F0LMNhiJvAKZxJf9zIgmI4hylcST+0VQQTuIRbmMGddEfDOG8B1xZUwAM8Sjd0ZmRhG5jDPTzBElbSDX2zxJrl1urcBrkrrMUfnRrbm2XWjGEXeIMNfIg/2o6/yQ8obGZlYXf4hC/xQ4+WH5FaO04tbWZjYW/4ET90Lo6Wd8bT4G9qu7qdyWYMc98fl4cO6BvP8NcAAAAASUVORK5CYII="/>
+<image x="526" y="256" width="22" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAwklEQVR4nO3SvQrCQBAE4BNZCJEEjKDgTyFELGKhIKQIFoKkCRYWVmJp6/uXzuA8QO5iJVn42mHnbl0//fzp2BDcD8dSGEH0De88NocpZJAoeODCxzawhhXMYAxxh21tDzvYKngBEz1DSKhVUMIBCshhqdA4oL7VcFbwUdvm2pT1I+c3doMGLnBSaKH6fNPEs7o94A5XhVaqzzflR2WeW9oLngptVL9UdW7Jk+IHuZZjb4VyU9avtSV/nyfFO03b1v4ApvAO6IQ6JJwAAAAASUVORK5CYII="/>
+<image x="276" y="362" width="22" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAxklEQVR4nO3SMQuCUBTF8RsiiJJQQYHmECQONhgIDtEQhEs0ODRJY2vff+z/nvcDqDWFB37r4Z6n0i+ugxARUhQ4oUaDFi+8pV9cI8AaOxxQ4YIbHnh2pb3jelgiQYajXnnFXUtb6R87e46NXpmjxFlLzaWNDIu9coEYe51e6qVmfi3D4s7gY4WtluY6v+qKB8dOD7Q01vmZXlvIuNhSX+ebN020OJXxsfPNm5oPZb6++aUi+T72Wk+fIZTfxf78jkyZ8o/5AI+oDujNzMp1AAAAAElFTkSuQmCC"/>
+<image x="526" y="362" width="22" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAxklEQVR4nO3SMQvCQAyG4RMRxKJQBQVrB0HpUAeFQgdxKIhLcXBwEkdX///omxih411X+8GzfiR3cc4N3njhgRsuOGKPLZaYoO/8omVP3FGjQokd1pgjgvOMTiZlV5xtugMypJhi6Pyja9ZWdkKB3KZbYBywrkTfrLLJClt1gwRx4HQSLSptzdzKVphhhJ4Li/6mTJXZmomVRYGr/qKnIUWpvVlsk7Upk+idyWnIb46/bxa8ZjN6tJEVtZ2qGSnxPtouXf4zH58RDugwyp5dAAAAAElFTkSuQmCC"/>
+<image x="298" y="256" width="228" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAb0lEQVR4nO3NIQ6AMBBE0ZpFgwcNaNANtkE3WFJkE1wFnJ6Z9ApdVCd5dr6pq6v7ZSLQKBEGWuiUtAz0MCjpGRhhgrmwKX8bWWBVsjBgYVNiGXCwK3EMeDiUeAZOCHAVFvK3kQi3kshAggfewviZPuRRRsXKjqmIAAAAAElFTkSuQmCC"/>
+<image x="298" y="362" width="228" height="22" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAcElEQVR4nO3NIQ6AMBBE0TWLBg8a0KAJtkE3WFJkExyinJ7Z9Aod10menS8i+kKCr7CUv0UjPCTRAhcEuAsL+VvUw0niLeDgIHEW2GAn2SywwEqyWGCECebCpvwt2sNA0lughY6ktYBCQ4Lvuro6+n7FdUbFFOJhrwAAAABJRU5ErkJggg=="/>
+<image x="276" y="278" width="22" height="84" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYklEQVR4nO3VIQ9AYBSF4Vs+mU5GJptqsqlGtGkCv94bFJtwgmT3bE996zFtISBGihwVGnQYMGHFbtpChAQZCtRo0WPEjA2HaXsEy5fgcgdP0+ZBD3pQmQc9+P/gJycl3+gFirVGxRzVHEUAAAAASUVORK5CYII="/>
+<image x="526" y="278" width="22" height="84" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAYCAYAAAD6S912AAAAYUlEQVR4nO3VIRNAUBBF4S0r08nIZKMa2aiGaEYT+PVOEF/Y8NrbO/PVU6+I6I0TGxZMGNChRokcKrbpgws7VswY0aNBhQKZ2KbvHzwCwdaDlnnQgx60zINJBKOfVNQb/QA6R0bF0SZRTwAAAABJRU5ErkJggg=="/>
 <rect x="292" y="268" width="240" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="292" y="363" width="240" height="1" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="292" y="268" width="1" height="96" fill="rgb(255,255,255)" fill-opacity="0.1"/>
-<rect x="531" y="268" width="1" height="96" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="292" y="269" width="1" height="94" fill="rgb(255,255,255)" fill-opacity="0.1"/>
+<rect x="531" y="269" width="1" height="94" fill="rgb(255,255,255)" fill-opacity="0.1"/>
 <rect x="298" y="274" width="24" height="24" fill="rgb(38,119,141)" fill-opacity="1" clip-path="url(#p0c3)"/>
 <rect x="298" y="274" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c3)"/>
 <rect x="298" y="297" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c3)"/>
-<rect x="298" y="274" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c3)"/>
-<rect x="321" y="274" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c3)"/>
-<rect x="322" y="274" width="200" height="23" fill="rgb(24,29,45)" fill-opacity="0.6" clip-path="url(#p0c3)"/>
+<rect x="298" y="275" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c3)"/>
+<rect x="321" y="275" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c3)"/>
+<rect x="322" y="274" width="200" height="23" fill="rgb(24,29,45)" fill-opacity="0.94" clip-path="url(#p0c3)"/>
 <rect x="322" y="274" width="200" height="23" fill="rgb(217,158,26)" fill-opacity="1" clip-path="url(#p0c3)"/>
 <rect x="322" y="274" width="200" height="23" fill="rgb(137,116,77)" fill-opacity="1" clip-path="url(#p0c3)"/>
 <g clip-path="url(#p0c3)"><g transform="translate(485.46 289.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1347" x="0"/><use href="#gInter-Mediumttf-1350" x="1235"/><use href="#gInter-Mediumttf-1502" x="2405"/><use href="#gInter-Mediumttf-1349" x="3026"/><use href="#gInter-Mediumttf-271" x="4316"/></g></g>
@@ -119,9 +135,9 @@
 <rect x="298" y="302" width="24" height="24" fill="rgb(38,119,141)" fill-opacity="1" clip-path="url(#p0c4)"/>
 <rect x="298" y="302" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c4)"/>
 <rect x="298" y="325" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c4)"/>
-<rect x="298" y="302" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c4)"/>
-<rect x="321" y="302" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c4)"/>
-<rect x="322" y="302" width="200" height="23" fill="rgb(24,29,45)" fill-opacity="0.6" clip-path="url(#p0c4)"/>
+<rect x="298" y="303" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c4)"/>
+<rect x="321" y="303" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c4)"/>
+<rect x="322" y="302" width="200" height="23" fill="rgb(24,29,45)" fill-opacity="0.94" clip-path="url(#p0c4)"/>
 <rect x="322" y="302" width="100" height="23" fill="rgb(217,158,26)" fill-opacity="1" clip-path="url(#p0c4)"/>
 <rect x="322" y="302" width="100" height="23" fill="rgb(137,116,77)" fill-opacity="1" clip-path="url(#p0c4)"/>
 <g clip-path="url(#p0c4)"><g transform="translate(484.61 317.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1343" x="0"/><use href="#gInter-Mediumttf-1351" x="1262"/><use href="#gInter-Mediumttf-1502" x="2551"/><use href="#gInter-Mediumttf-1351" x="3172"/><use href="#gInter-Mediumttf-271" x="4461"/></g></g>
@@ -129,9 +145,9 @@
 <rect x="298" y="330" width="24" height="24" fill="rgb(38,119,141)" fill-opacity="1" clip-path="url(#p0c5)"/>
 <rect x="298" y="330" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c5)"/>
 <rect x="298" y="353" width="24" height="1" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c5)"/>
-<rect x="298" y="330" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c5)"/>
-<rect x="321" y="330" width="1" height="24" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c5)"/>
-<rect x="322" y="330" width="200" height="23" fill="rgb(24,29,45)" fill-opacity="0.6" clip-path="url(#p0c5)"/>
+<rect x="298" y="331" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c5)"/>
+<rect x="321" y="331" width="1" height="22" fill="rgb(255,255,255)" fill-opacity="0.1" clip-path="url(#p0c5)"/>
+<rect x="322" y="330" width="200" height="23" fill="rgb(24,29,45)" fill-opacity="0.94" clip-path="url(#p0c5)"/>
 <rect x="322" y="330" width="33.33" height="23" fill="rgb(217,158,26)" fill-opacity="1" clip-path="url(#p0c5)"/>
 <rect x="322" y="330" width="33.33" height="23" fill="rgb(137,116,77)" fill-opacity="1" clip-path="url(#p0c5)"/>
 <g clip-path="url(#p0c5)"><g transform="translate(488.39 345.82) scale(0.005859)" fill="rgb(255,255,255)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1352" x="0"/><use href="#gInter-Mediumttf-1349" x="1290"/><use href="#gInter-Mediumttf-1341" x="2580"/><use href="#gInter-Mediumttf-1341" x="3902"/></g></g>

@@ -244,7 +244,7 @@ local function buildLetter()
 	letter.Discard = W.Button(letter, "Delete", discard)
 	letter.Discard:SetPoint("BOTTOMLEFT", letter, "BOTTOMLEFT", 24, 16)
 	-- The dock makes room for it, and the window keeps it on screen.
-	ns.DockFlyout(f, letter, 1)
+	ns.DockFlyout(f, letter)
 end
 
 local function paintLetter()

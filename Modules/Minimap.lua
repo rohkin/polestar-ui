@@ -45,6 +45,7 @@ local edge, north, dock, zoneLabel, clockLabel, addons
 local clamp -- the screen clamp to the map's edges (below)
 local corner = {} -- the corners' icons of ours: { b = ours, at = its corner, stock = function() -> the game's }
 local INSET = 4 -- a corner icon's, the zone's and the clock's distance from the map's edge
+local SHADOW = 10 -- the shadow's reach round the map (H.Shadow)
 local zoneName = "" -- the last zone name read out of combat
 local blocked, started
 
@@ -63,7 +64,6 @@ end
 
 -- Four hairlines round region `r`, on frame `f` (over the map: OVERLAY).
 local function hairline(f, r) return ns.Hairlines(f, r, function() return tex(f, "OVERLAY", 7) end) end
-local paintLine = ns.PaintHairlines
 
 -- A font string in Polestar's face (role) at the game's size and flags; off, the game's face.
 local function face(fs, role, shown)
@@ -168,7 +168,7 @@ local function buildEdge()
 	edge = Polestar.CreateFrameUnder("Frame", "PolestarUIMinimapEdge", Minimap)
 	edge:SetAllPoints(Minimap)
 	edge:SetFrameLevel(Minimap:GetFrameLevel() + 6)
-	looks[edge] = { edges = hairline(edge, edge) }
+	looks[edge] = { edges = hairline(edge, edge), shadow = H.Shadow(edge, edge, SHADOW) }
 	north = W.Text(edge, "caption", "accent")
 	north:SetText("N")
 	north:SetJustifyH("CENTER")
@@ -354,8 +354,8 @@ local function paintEdge()
 		corner.glow:SetVertexColor(Theme.Accent())
 		corner.hover:SetVertexColor(Theme.Wash("hover"))
 	end
-	local r, g, b = Theme.Accent()
-	paintLine(looks[edge].edges, true, r, g, b, 1)
+	H.PaintEdge(looks[edge].edges, true)
+	H.PaintShadow(looks[edge].shadow, true, 1)
 	lastFacing = nil
 	if edge:IsShown() then placeNorth() end
 end
@@ -403,7 +403,10 @@ local function collect()
 	end
 	take(rawget(_G, "PolestarMinimapButton"))
 	for _, parent in ipairs({ Minimap, MinimapBackdrop }) do
-		for _, c in ipairs({ parent:GetChildren() }) do
+		-- Map pin addons can put more frames here than the Lua stack holds as
+		-- return values ("stack overflow"): the scan skipped, LibDBIcon's list still docks.
+		local ok, kids = pcall(function() return { parent:GetChildren() } end)
+		for _, c in ipairs(ok and kids or {}) do
 			if addonButton(c) then take(c) end
 		end
 	end
@@ -434,8 +437,9 @@ end
 
 local function paintFlyout()
 	local l = looks[dock]
-	ns.PaintGround(l.fill, true)
-	ns.PaintHairlines(l.edges, true, Theme.Color("border"))
+	local r, g, b = Theme.Color("bg")
+	l.fill:SetVertexColor(r, g, b, H.GroundAlpha())
+	H.PaintEdge(l.edges, true)
 end
 
 local shownKey

@@ -6,7 +6,7 @@ replaced: other addons add their lines to them (`AddLine`,
 Covered: `GameTooltip`, `ItemRefTooltip`, `ShoppingTooltip1/2`,
 `ItemRefShoppingTooltip1/2`, `EmbeddedItemTooltip`, `GameNoHeaderTooltip`
 and `GameSmallHeaderTooltip` (`Modules/Tooltips.lua`).
-- **Ground:** Polestar's tooltip ground, solid (`Theme.TIP_GROUND`, as 0.4.0's own tooltips), no longer scaled by Background opacity. A 1px border hairline, square, in
+- **Ground:** the scheme's `bg`, solid (no Background opacity), live with the scheme; where white text would not read on it (a light look) the fixed dark `Theme.TIP_GROUND`. A 1px border hairline, square, in
   place of the stock border (its NineSlice's pieces faded out). Ours lies on
   the NineSlice, so an embedded tooltip, whose art the game hides, shows
   none.

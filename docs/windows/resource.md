@@ -2,7 +2,7 @@
 
 The game's own Personal Resource Display, restyled in place and never
 rebuilt (`Modules/ResourceDisplay.lua`, key `resource`), in the HUD's look:
-flat bars on a track, a 1px hairline, the heal, absorb and cost segments as
+flat bars on a track, Polestar's window border as the edge (`H.PaintEdge`), the heal, absorb and cost segments as
 our unit frames draw them, the bar text in Polestar's face. On Forever it is
 a standalone frame on `UIParent` (not a nameplate), an Edit Mode system
 (`EditModePersonalResourceDisplaySystemTemplate`), shown when the game rule

@@ -1,0 +1,50 @@
+name: Bug report
+description: "Something in Polestar: UI is broken or looks wrong."
+labels: ["bug"]
+body:
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+  - type: input
+    id: version
+    attributes:
+      label: "Polestar: UI version"
+      description: Shown in the addon list or under the title of /pui.
+    validations:
+      required: true
+  - type: input
+    id: polestar-version
+    attributes:
+      label: Polestar version
+      description: Shown in the addon list.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Lua error
+      description: Copy it from BugSack/BugGrabber if you have one.
+      render: text
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag an image in.
+  - type: textarea
+    id: other-addons
+    attributes:
+      label: Other addons that touch the same window

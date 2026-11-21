@@ -2,7 +2,7 @@
 
 The first HUD element. Phase 1: the player, target, target of target, focus
 and focus's target; phases 2 and 3: the pet, the party (four members) and the
-bosses (five), in Polestar's look, after EllesmereUI's (flat bars, a
+bosses (five), in Polestar's look, (flat bars, a
 square portrait, the name over the bars). Ours are secure unit buttons of our
 own (`Modules/UnitFrames.lua`), built from the HUD kit (`Modules/HUD.lua`);
 the stock frames stay, as the game's Edit Mode proxies (docs/CLIENT.md,
@@ -67,8 +67,12 @@ default) the name has the bar. The bosses' line keeps the rank
 words.
 
 **Colours** (from the player's Polestar theme, never fixed):
-- Ground: the scheme's `bg` at the player's "Background opacity" (60%), a 1px
-  `border` hairline. The bars' tracks are `bg` at the same opacity over it,
+- Ground: the scheme's `bg` at the HUD's opacity (`H.GroundAlpha`: Polestar's
+  Background opacity, or the Frames look's own while it overrides Polestar's), edged by Polestar's window border (`H.Edge`: its colour or
+  the accent, `windowBorder`; its size 1-4 px, the first pixel inside, the rest outward, as Theme.Border lays a window's; none with the
+  border off, a tint still shows). Untinted, Polestar's window shadow round
+  it as the window painter lays it (`H.Shadow`: 16 out, dropped 4, at the
+  shadow token's alpha times the ground's + 0.1; `H.ShadowColor`: on in its look). The bars' tracks are `bg` at the same opacity over it,
   so missing health reads dark. The hairline turns `danger` round the player's frame in
   combat, and takes the game's threat colours (`GetThreatStatusColor`) round
   a unit the player has threat on, with a glow: four gradient strips and four rounded corners (`H.GLOW` = 8 px, 0.455 alpha at the
@@ -171,7 +175,7 @@ stand in with the player too, and go back to their units as it closes.
 | Target and focus auras | a row of ours under our target and focus frames, the game's container veiled ([auras.md](auras.md); rule 16's exception) |
 | Cast bars (target, focus, player) | the game's own, restyled in place where the game puts them ([castbars.md](castbars.md)) |
 | Combo points, totems, pet frame, alternate power | the game's own (they hang off the stock frames, which stay) |
-| Left click targets, right click opens the unit menu, click casting, pings | secure attributes (`target`, `togglemenu`), SecureUnitButtonTemplate, PingableUnitFrameTemplate |
+| Left click targets, right click opens the unit menu, click casting, pings | secure attributes (`target`, `togglemenu`), SecureUnitButtonTemplate, PingableUnitFrameTemplate; every button of ours is put in `ClickCastFrames` (Clique and the like bind ours, the veiled stock ones take no mouse) |
 | Tooltip on hover | GameTooltip:SetUnit |
 | Vehicle swap | the player frame shows the vehicle; clicks follow `toggleForVehicle` |
 | Target of target: the `showTargetOfTarget` option; hidden with no unit or a dead target | the same CVar; a state driver `[@targettarget,noexists][@target,dead] hide; show` |
@@ -188,7 +192,7 @@ pulse; the party pets keep the stock look; a boss with no power shows "0"
 under an empty power bar; range fading is none on the stock ones either.
 
 **Settings** (`/pui unitframes`, a small page of ours,
-`PolestarUIUnitFramesOptions`): Background opacity, 3D portraits, Power text (off), Sparkle, Smooth bars, Damage trail, saved in
+`PolestarUIUnitFramesOptions`): 3D portraits, Power text (off), Sparkle, Smooth bars, Damage trail, saved in
 `PolestarUIDB.unitframes`. Its "..." menu has "Use game window".
 
 **Switch:** `/pui unitframes on|off`, live (refused in combat): off hides ours,
@@ -199,7 +203,7 @@ a progress-wash track, with `trail` a damage trail under its fill fed by `H.SetT
 another's fill, or eating into it from its end; without a token the caller colours it), `H.SetValue(b, v, smooth)`
 (the client's eased fill), `H.Sparkle`/`H.SizeSparkle`/`H.PaintSparkle`
 (Polestar's band stars over a bar), `H.Text` (outlined HUD text, SetFormattedText only),
-`H.Ground`/`H.PaintGround`, `H.Portrait(parent, bare)`/`H.SetPortrait` (square 3D well, framed before it shows: `H.Framed`),
+`H.Ground`/`H.PaintGround` (`g.look`: its look group), `H.Edge(look)`/`H.PaintEdge(e, on, look)`/`H.PaintTint(e, on, look, r, g, b, a)` (the group's border on a HUD edge: Polestar's window border, or the group's override; colour, size as a window's, off), `H.ShadowColor(look)`/`H.Shadow(f, rel, out)`/`H.PaintShadow(s, on, ground, look)` (the window shadow round a piece, as the window painter's), `H.GroundAlpha(look)` (the group's ground opacity), `H.Own`/`H.Seed` (a group's override, its start from Polestar's look), `H.Portrait(parent, bare)`/`H.SetPortrait` (square 3D well, framed before it shows: `H.Framed`),
 `H.ClassColor` (secret-safe), `H.UnitColor`, `H.PowerColor`.
 
 **Polestar asks** (built here for now; for Polestar when it takes them):

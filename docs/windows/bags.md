@@ -61,16 +61,22 @@ Made with the `stock-to-polestar` skill.
   `OpenAllBagsMatchingContext(dispatcher)` (the `CURRENT_SPELL_CAST_CHANGED`
   route is the gamepad combined frame's only): `bags-targeting` follows that.
 - **Off:** live both ways (`M.Apply`; refused in combat by `ns.Switch`, as
-  every window). Off: ours closes, each parked frame is hidden while still
-  parked, then given back to its own parent closed; the hooks and keys do
-  nothing. On: the hidden stock frames are parked; one shown stays until the
+  every window). Off: ours closes, each frame still parked is hidden there,
+  then given back to its own parent closed (one another addon re-parked
+  since stays theirs); the hooks
+  and keys do nothing. Beside Baganator or Bagnon
+  ours is blocked (`blockedBy`): off whatever was saved, `/pui bags on`,
+  the stock window's switch button and the settings toggle refused or greyed
+  (`Addons/Baganator.lua`, `Addons/Bagnon.lua`; `baganator`, `bags-bagnon`). On: the hidden stock frames are parked; one shown stays until the
   game closes it (the bag bar's next click closes it and opens ours; the
   "Polestar" button over it clicks its close button). Other code calling
   `IsBagOpen`/`IsAnyBagOpen` gets the parked frames' state, which can differ
   from ours (ours also opens and closes on its own: keys, close, NPC
   windows). The bank's stock bag frames are parked too (as before, they
   never showed while Bags is on). The bag bar's open-bag highlight no longer
-  lights (it was the stock `OnShow`'s).
+  lights (it was the stock `OnShow`'s); with the Bag bar module on, every
+  bag bar slot wears the accent while ours shows instead
+  ([bagbar.md](bagbar.md)).
 - **Not in stage 1** (stage 2/3 below): sections (separate look, reagent bag,
   keyring), the strip's equip/pick-up/hover light/filter menu, the backpack's
   locked extra slots, currencies, junk coin, crafting quality and warbound
@@ -167,7 +173,7 @@ none is open.
 | Locked, search miss | desaturated (`ns.PaintItem` desat), alpha 0.25 on `isFiltered` | `paintSlot` in `Bank.lua` | — |
 | Item context dim `ItemContextOverlay` (socketing, scrapper) | the template's own (ItemButton updates it on its context events) | — | Check it shows in the stub; restyle not needed |
 | Crafting quality pips, warbound overlay `IconOverlay` | the template's, through `SetItemButtonQuality(w, quality, link)` | ItemButton mixin | Then fade `IconBorder` again (that call shows it) |
-| Upgrade arrow `UpgradeIcon` | Polestar's verdict on the template's arrow | `Polestar.Gear.Bags.IsOn()` / `.IsUpgrade(link)`, feature-detected | Polestar draws its arrow, step glow and quest mark only on the stock bags, Baganator and EllesmereUI (`Gear/Bags.lua`, `QoL/BagGlow.lua`, `Quests/BagMarks.lua`): ours is a fourth view, painted from `Polestar.QoL.BagGlow.Items(...)` and `Polestar.QuestDB.IsItemNeeded(id)` (with `qol.questBagMarks`), repainted on the events those files listen to. Never edit Polestar |
+| Upgrade arrow `UpgradeIcon` | Polestar's verdict on the template's arrow | `Polestar.Gear.Bags.IsOn()` / `.IsUpgrade(link)`, feature-detected | Polestar draws its arrow, step glow and quest mark only on the stock bags, Baganator (`Gear/Bags.lua`, `QoL/BagGlow.lua`, `Quests/BagMarks.lua`): ours is a fourth view, painted from `Polestar.QoL.BagGlow.Items(...)` and `Polestar.QuestDB.IsItemNeeded(id)` (with `qol.questBagMarks`), repainted on the events those files listen to. Never edit Polestar |
 | Split `StackSplitFrame` (opened by the template's `OnModifiedClick`) | **left stock** (a shared dialog, as StaticPopup) | — | Bank uses a Polestar stepper; ours cannot without taking the template's click (Taint) |
 | Bag bar slots (`BaseBagSlotButtonMixin`: click puts the cursor item in, else toggles; drag picks the bag up; tooltip with filters) | the first-row strip: wells with the bag's icon | `C_Container.ContainerIDToInventoryID`, `GameTooltip:SetInventoryItem`; `PutItemInBag(inv)`/`PutItemInBackpack()`, `PickupBagFromSlot(inv)` through `ns.Pickup`; `wireBag` in `Bank.lua` | Hover lights that bag's wells (the stock `BagSlot.OnEnter` highlight, Bank's `glow`). Click in the separate look toggles the bag's section. Check 6 (not protected) |
 | Bag menu (`PortraitButton` dropdown: Assign to, Ignore clean up, Exclude from junk sell) | right-click a strip well: `W.ShowMenu` with `checked` items | `C_Container.Get/SetBagSlotFlag`, `Get/SetBackpackAutosortDisabled`, `Get/SetBackpackSellJunkDisabled` (`ContainerFrame_AddButtons_BagFilters`, `_BagCleanup`) | Flat, no submenus: one menu per bag fits. Backpack, profession and reagent bags take no filter (`ContainerFrame_CanContainerUseFilterMenu`). Redraw after (rule 6) |

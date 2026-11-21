@@ -63,7 +63,7 @@ local function look(bar)
 	box:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
 	box:SetHeight(HEIGHT)
 	local function edge() return tex(box, "OVERLAY", 7) end
-	l = { box = box, stockFill = fill, track = tex(box, "BACKGROUND"), fill = tex(box, "ARTWORK"), edges = ns.Hairlines(box, box, edge) }
+	l = { box = box, stockFill = fill, track = tex(box, "BACKGROUND"), fill = tex(box, "ARTWORK"), edges = ns.Hairlines(box, box, edge), shadow = H.Shadow(box, box, 8) }
 	l.track:SetAllPoints(box)
 	-- Our fill: from the game's fill's left to its right edge, at our own
 	-- height. Nothing of the stock bar's geometry is read: its size, like
@@ -142,15 +142,15 @@ local function paint(spec, bar, l)
 	l.track:SetShown(not empower)
 	l.fill:SetShown(not empower)
 	local r, g, b = Theme.Color("bg")
-	l.track:SetVertexColor(r, g, b, H.GroundAlpha())
+	l.track:SetVertexColor(r, g, b, H.GroundAlpha(l.look))
 	if live then
 		castColor(spec, l, channel)
 	elseif l.failed then
 		r, g, b = Theme.Color("danger")
 		l.fill:SetVertexColor(r, g, b, 1)
 	end
-	local br, bg, bb, ba = Theme.Color("border")
-	ns.PaintHairlines(l.edges, true, br, bg, bb, ba)
+	H.PaintEdge(l.edges, true, l.look)
+	H.PaintShadow(l.shadow, true, nil, l.look)
 	local spark = rawget(bar, "Spark")
 	if spark then spark:SetAlpha(0) end
 	-- The icon and the name, from the cast itself (secret for another unit:
@@ -169,7 +169,7 @@ local function paint(spec, bar, l)
 	end
 	local icon = l.iconSet and not editing or false
 	l.icon:SetShown(icon)
-	ns.PaintHairlines(l.iconEdges, icon, br, bg, bb, ba)
+	H.PaintEdge(l.iconEdges, icon, l.look)
 	-- The time left, from the cast's duration object (secret; never read).
 	-- Always shown, whatever Edit Mode's Show Cast Time says (the game's own
 	-- cast time is faded); a sample in Edit Mode.
@@ -202,8 +202,10 @@ end
 -- bar's own height, from the caller's layout numbers: never read off the bar),
 -- `o.icon` the icon's size (default the height), `o.below`: the name and
 -- time under the bar instead of inside it (a bar too thin for text),
--- `o.inside`: the icon inside the bar at its left end, the name after it,
--- `o.text` the texts' size (their roles' faces, outlined as H.Text's).
+-- `o.inside`: the icon inside the bar at its left end, the name after it
+-- (`o.noIcon`: the name from the bar's left end, the caller hides the icon),
+-- `o.text` the texts' size (their roles' faces, outlined as H.Text's),
+-- `o.look` its HUD look group (H.Edge: a nameplate's, H.PLATES).
 local function sized(fs, role, size)
 	Polestar.Widgets.Painter(fs, function(s)
 		Theme.SetFace(s, (Theme.FontSpec(role)), size, "OUTLINE")
@@ -212,6 +214,7 @@ local function sized(fs, role, size)
 	end)
 end
 local function fit(l, o)
+	l.look = o.look
 	l.box:SetHeight(o.height)
 	l.fill:SetHeight(o.height)
 	l.icon:SetSize(o.icon or o.height, o.icon or o.height)
@@ -219,12 +222,12 @@ local function fit(l, o)
 	if o.inside then l.icon:SetPoint("TOPLEFT", l.box, "TOPLEFT", 0, 0) else l.icon:SetPoint("TOPRIGHT", l.box, "TOPLEFT", -2, 0) end
 	l.time:ClearAllPoints()
 	l.name:ClearAllPoints()
-	if o.inside then
-		l.time:SetPoint("RIGHT", l.box, "RIGHT", -3, 0)
-		l.name:SetPoint("LEFT", l.icon, "RIGHT", 3, 0)
-	elseif o.below then
+	if o.below then
 		l.time:SetPoint("TOPRIGHT", l.box, "BOTTOMRIGHT", -1, -2)
 		l.name:SetPoint("TOPLEFT", l.box, "BOTTOMLEFT", 1, -2)
+	elseif o.inside then
+		l.time:SetPoint("RIGHT", l.box, "RIGHT", -3, 0)
+		if o.noIcon then l.name:SetPoint("LEFT", l.box, "LEFT", 3, 0) else l.name:SetPoint("LEFT", l.icon, "RIGHT", 3, 0) end
 	else
 		l.time:SetPoint("RIGHT", l.box, "RIGHT", -4, 0)
 		l.name:SetPoint("LEFT", l.box, "LEFT", 4, 0)

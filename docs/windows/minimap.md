@@ -18,9 +18,10 @@ of ours under the `Minimap` (`Polestar.CreateFrameUnder`).
   on the edge (LibDBIcon, Polestar's own) ride the square.
 - **Ring:** the compass ring (`MinimapCompassTexture`, swapped between its
   fixed and pointer atlases by the game, which keeps the alpha), its underlay
-  and the day/night ring's pieces faded with `SetAlpha`. A 1px border in the
-  accent (the class colour when Polestar follows it) round the map, on a
-  frame of ours.
+  and the day/night ring's pieces faded with `SetAlpha`. Polestar's window border
+  round the map (`H.PaintEdge`: its colour, `windowBorder`, or the accent;
+  its size, the first pixel inside, the rest outward, as Theme.Border lays a window's; none with it off) and its window shadow outside it
+  (`H.Shadow`, while Polestar draws one), on a frame of ours.
 - **North:** while the map turns with the player, an "N" (caption, accent)
   rides the square's edge where north is, from `GetPlayerFacing` (radians,
   counter-clockwise from north), on a square 26 units inside the map's
@@ -75,7 +76,7 @@ of ours under the `Minimap` (`Polestar.CreateFrameUnder`).
 - **Addons flyout:** one click target for every addon: the addons icon
   (`plug` glyph, `ADDONS` tooltip) in the map's bottom-right corner, shown
   while there is anything to hold, toggles a flyout of ours
-  (`PolestarUIMinimapDock`, Polestar's ground and a border hairline) on the
+  (`PolestarUIMinimapDock`, the HUD's ground, `H.GroundAlpha`, and its edge) on the
   map, up from the icon. It is shut by default, by a second click, by
   Escape (`UISpecialFrames`) and by a click anywhere else
   (`GLOBAL_MOUSE_DOWN` off the flyout and icon). It holds the addon
@@ -94,7 +95,9 @@ of ours under the `Minimap` (`Polestar.CreateFrameUnder`).
   `PolestarMinimapButton`, and other addons' named buttons on `Minimap` or
   `MinimapBackdrop`: never a stock one (its global is secure:
   `issecurevariable`), nor a protected one, a map pin (a name with "Pin") or
-  anything not button-sized (14 to 40). A collected button cannot be dragged
+  anything not button-sized (14 to 40). With more frames on a parent than
+  `GetChildren` can return (thousands of map pins: "stack overflow"), that
+  parent's scan is skipped (`minimap-pins`). A collected button cannot be dragged
   round the edge; its clicks are its addon's. The flyout follows buttons
   their addons show or hide (checked twice a second). Switched off, each one goes
   back to its parent and anchors, dragging again.

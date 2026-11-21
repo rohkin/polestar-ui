@@ -49,7 +49,9 @@ assert(e.padding + e.offset == -2 and e.padding + e.offset + 2 * inset == 2, "no
 assert(first.Cooldown.swipe:find("cooldown%-swipe%-50$"), "the sweep is not the inset square: " .. tostring(first.Cooldown.swipe))
 -- The border shows: the hairline hangs on the tile's edges over our ground, and the icon (our square mask) sits a unit inside it, so no art lies under the line.
 local n = 0
-for _, r in ipairs(regions(first)) do if r.layer == "OVERLAY" and r:IsShown() and r.points[1] and r.points[1].rel == ground then n = n + 1 end end
+-- (the top and bottom on the tile, the sides between them, as Theme.Border lays a window's)
+local function onTile(rel) return rel == ground or (rel and rel.points and rel.points[1] and rel.points[1].rel == ground) end
+for _, r in ipairs(regions(first)) do if r.layer == "OVERLAY" and r:IsShown() and r.points[1] and onTile(r.points[1].rel) then n = n + 1 end end
 local mask = first.Icon.mask
 assert(n == 4 and mask and mask.points[1].x == inset + 1 and mask.points[2].x == -inset - 1, "the hairline lies on the icon's art")
 -- A relayout (a spec or settings change) hands back the same pooled frames, still dressed.

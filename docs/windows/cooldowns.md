@@ -3,7 +3,7 @@
 The game's own Cooldown Manager viewers, restyled in place and never rebuilt
 (`Modules/CooldownViewer.lua`, key `cooldowns`), in the HUD's look: the
 cooldown and tracked buff icons as the action buttons (square, our ground
-and a 1px hairline, a square sweep), the tracked buff bars as the cast bars
+and Polestar's window border as the edge, 2 px at most, a square sweep), the tracked buff bars as the cast bars
 (a track, a flat fill, a hairline), every number and name in Polestar's
 faces, outlined.
 

@@ -409,8 +409,6 @@ local function grouped(list, heads)
 end
 
 -- The stock friends list's Favorites and Friends groups, "online/total" of those shown.
--- M.friendHeads(), set by an addon file (docs/addons.md), returns other heads
--- for the Friends page (nil: these); entries carry `account` and `tag`.
 local FRIEND_HEADS = {
 	{ key = "fav", test = function(e) return e.favorite end, label = function(on, n) return ("Favorites %d/%d"):format(on, n) end },
 	{ key = "all", label = function(on, n) return ("Friends %d/%d"):format(on, n) end },
@@ -641,7 +639,7 @@ local function paintRows(list)
 		if e.favorite then
 			r.Fav:SetAtlas(e.online and "friends-icon-favorites" or "friends-icon-favorites-dis")
 			r.Fav:ClearAllPoints()
-			r.Fav:SetPoint("LEFT", r.Name, "LEFT", math.min(r.Name:GetStringWidth(), r.Name:GetWidth()) + 4, 0)
+			r.Fav:SetPoint("LEFT", r.Name, "LEFT", math.min(r.Name:GetStringWidth(), f.BodyWidth - x + nameRight) + 4, 0) -- not GetWidth: 0 until a new row is laid out
 		end
 		r.Remove:SetShown(e.unignore ~= nil or e.unblock ~= nil)
 		r.Remove.psTip = e.unblock and "Unblock invites" or "Stop ignoring"
@@ -1253,7 +1251,7 @@ local function refresh()
 		local list = {}
 		local src = page == "raid" and raidLocks() or lists[page]
 		for _, e in ipairs(src) do if matches(e) then list[#list + 1] = e end end
-		if page == "friends" then list = grouped(list, M.friendHeads and M.friendHeads() or FRIEND_HEADS) end
+		if page == "friends" then list = grouped(list, FRIEND_HEADS) end
 		if page == "requests" then list = grouped(list, REQUEST_HEADS) end
 		if page == "ignored" then list = grouped(list, IGNORE_HEADS) end
 		if page == "allies" then list = grouped(list, ALLY_HEADS) end

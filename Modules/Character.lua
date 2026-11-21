@@ -814,7 +814,7 @@ local function build()
 	f.psGear = buildGear(f.Body, f.BodyWidth, f.psPad)
 	f.psStats = buildDrawer()
 	-- The dock makes room for the drawer, and the window keeps it on screen.
-	ns.DockFlyout(f, f.psStats, 1)
+	ns.DockFlyout(f, f.psStats)
 	-- The other sections' pages (CharacterPages.lua), each with the height it last drew.
 	f.psPages = {}
 	for key, page in pairs(ns.CharacterPages) do

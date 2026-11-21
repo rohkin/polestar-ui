@@ -25,7 +25,7 @@ The HUD in the same look, restyled or replaced: unit frames (with a damage trail
 ## Switching back to the game's window
 
 - Open the window's "..." menu and pick **Use game window**.
-- Or type `/pui <window> off` (and `/pui <window> on` to return). `/pui` lists every window and its state.
+- Or type `/pui <window> off` (and `/pui <window> on` to return). `/pui` opens the settings (with the version); `/pui help` lists every window and its state.
 - `/pui dock off` lets you drag windows anywhere instead of docking them from the top left.
 
 You can't switch while in combat. Crafting changes after `/reload`.

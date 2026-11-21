@@ -70,8 +70,7 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   WoW friend's level, zone and note. Notes are set from the right-click
   menu (Set Note), as in the stock list. Click whispers, right-click opens the
   game's menu (`FriendsFrame_ShowDropdown`/`ShowBNDropdown`, where favorites
-  are set), double-click invites. With EllesmereUI loaded, its friend
-  groups instead (docs/addons.md, "EllesmereUI"). Footer: "Add friend" (primary), the stock
+  are set), double-click invites. Footer: "Add friend" (primary), the stock
   Add Friend button (`AddFriendFrame_Show`): a friendly player targeted who
   is not yet a friend is added at once; else a `W.Modal` with one field and
   "Send request", as `AddFriendFrame_Accept` decides: a BattleTag (or an
@@ -161,6 +160,4 @@ Nothing Lost Rule, said in the "..." menu). `M.stock()` answers
   restricted search only from a queue pick's click),
   `social-add` (add friend paths, broadcast), `social-requests`, `social-ignored`, `social-allies` (each with its band
   status), `social-raid` (no drag in combat or while targeting, All assist's
-  reason), `social-secret` (names secret in combat keep the last read),
-  `social-ellesmere` (EllesmereUI's groups, folding, the menu's group entry),
-  `social-ellesmere-edit` (new group, rename, colour, move, delete, Favorites).
+  reason), `social-secret` (names secret in combat keep the last read).

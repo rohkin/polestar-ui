@@ -22,6 +22,7 @@ local H = ns.HUD
 local M = { noun = "buffs and debuffs" }
 local KEY = "auras"
 local CROP = 0.08 -- the icon's baked border, cropped as ns.GameIcon does
+local LOOK = H.ICONS -- the HUD look's Icons group (2 px at most while it follows Polestar)
 -- AuraButtonArtTemplate's borders (BuffFrameTemplates.xml).
 local FADED = { "DebuffBorder", "TempEnchantBorder" }
 
@@ -60,7 +61,7 @@ local function edgeColor(b, f)
 		local r, g, bl = ns.QualityRGB(4)
 		if r then return r, g, bl end
 	end
-	return Theme.Color("border")
+	return nil -- the HUD's edge (H.PaintTint)
 end
 
 local function paint(b, f, shown)
@@ -83,7 +84,7 @@ local function paint(b, f, shown)
 	-- Where the game swaps the duration's font each frame (zhTW's smaller
 	-- face for long buffs, AuraButtonMixin:OnUpdate), it stays the game's.
 	if not SMALLER_AURA_DURATION_FONT_MIN_THRESHOLD then H.Face(rawget(b, "Duration"), "number", shown) end
-	ns.PaintHairlines(l.edges, shown, edgeColor(b, f))
+	H.PaintTint(l.edges, shown, LOOK, edgeColor(b, f))
 end
 
 ---------------------------------------------------------------------------
@@ -239,7 +240,7 @@ local function paintRow(row)
 			b:ClearAllPoints()
 			b:SetPoint("TOPLEFT", row.frame, "TOPLEFT", x, 0)
 			x = x + size + GAP
-			b.fill:SetVertexColor(gr, gg, gb, H.GroundAlpha())
+			b.fill:SetVertexColor(gr, gg, gb, H.GroundAlpha(LOOK))
 			b.Icon:SetTexture(aura.icon)
 			local d = C_UnitAuras.GetAuraDuration and C_UnitAuras.GetAuraDuration(unit, a.id)
 			if d and b.cd.SetCooldownFromDurationObject then b.cd:SetCooldownFromDurationObject(d) else b.cd:Clear() end
@@ -249,11 +250,11 @@ local function paintRow(row)
 			b.count:SetFormattedText("%s", count or "")
 			local kind = a.harmful and types and (types[ns.Clean(aura.dispelName) or "None"] or types.None)
 			if kind and kind.color then
-				ns.PaintHairlines(b.edges, true, kind.color:GetRGB())
+				H.PaintTint(b.edges, true, LOOK, kind.color:GetRGB())
 			elseif a.harmful then
-				ns.PaintHairlines(b.edges, true, Theme.Color("danger"))
+				H.PaintTint(b.edges, true, LOOK, Theme.Color("danger"))
 			else
-				ns.PaintHairlines(b.edges, true, Theme.Color("border"))
+				H.PaintEdge(b.edges, true, LOOK)
 			end
 			b:Show()
 		end

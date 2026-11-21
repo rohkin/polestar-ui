@@ -22,9 +22,10 @@ stock frame and nothing is moved, sized, shown or hidden.
   which keeps the alpha); the `CheckedTexture` emptied (the game writes its
   alpha for auto-attack), given back with its atlas. The icon unmasked
   (`RemoveMaskTexture(IconMask)`) and cropped 8% each side, as `ns.GameIcon`
-  crops the client's border. Ours: the window ground (`bg` at the Background
-  opacity) under the icon, so an empty slot shown in the grid is a well; a 1px
-  `border` hairline round the button; the hover wash.
+  crops the client's border. Ours: the HUD ground (`bg` at `H.GroundAlpha`)
+  under the icon, so an empty slot shown in the grid is a well; Polestar's window border (`H.Edge`: its colour, `windowBorder`, or the accent; its size, the first pixel inside, the rest outward, as Theme.Border lays a window's,
+  2 px at most; none with it off, a checked edge still shows) round the
+  button; Polestar's window shadow outside it (`H.Shadow`, 6 units); the hover wash.
 - **States:** pressed (a click or its key: the button's state is `PUSHED`)
   the accent wash at 30%; checked (a stance, auto-attack, a spell waiting for
   its target) the accent wash at 15% and the hairline in the accent. No event
@@ -53,9 +54,10 @@ stock frame and nothing is moved, sized, shown or hidden.
 - **Combat:** repainting the look (a theme change) writes only colours and
   alphas on textures; a button the game makes mid-fight (a flyout first
   opened in combat) keeps the game's look until `PLAYER_REGEN_ENABLED`.
-- **Later:** the micro menu (`MicroMenuContainer`: its buttons' art is their
-  icons, and our `ns.Doors` overlays sit over them) and the bag bar
-  (`BagsBar`, item buttons) are not restyled yet.
+- **Shared look:** `ns.ButtonLook` (`paint(b, shown, lit?)`, `tick(b)`)
+  hands this look to the bag bar ([bagbar.md](bagbar.md)), which has its own
+  switch and driver, so it works with this module off. The micro menu has its
+  own look ([micromenu.md](micromenu.md)).
 - **Switch:** `/pui actionbars on|off`, live (not in combat): off gives back
   every faded piece, the masks, the checked glow and the fonts at once. No
   window, so no "..." menu. Off by default with the gamepad UI.

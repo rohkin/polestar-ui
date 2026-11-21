@@ -60,9 +60,8 @@ Baganator draws it. Each frame remembers the skin it was made under
 | `TrimScrollBar`, `CheckBox`, `Slider`, `Dropdown`, `Dialog` | Baganator's (its Customise dialog) |
 
 **Beside our Bags window:** two bag windows would fight over B and the bag
-openers, so with Baganator loaded our Bags module starts off: the skin sets
-`defaultOff` on it, which `ns.Enabled` reads when there is no saved choice.
-`/pui bags on` (a saved choice) still wins.
+openers, so with Baganator loaded our Bags and Bank are blocked (`blockedBy = "Baganator"`,
+as beside Bagnon): off whatever was saved and they cannot switch on.
 
 **Tests:** `tests/lua/stub_baganator.lua` (the API and a backpack view in
 Baganator's shapes, stock art as colour textures); the `baganator` scene
@@ -76,7 +75,7 @@ quality; Polestar's upgrade arrows and quest marks still shown once; use,
 split and sell items, in combat too (no `ADDON_ACTION_BLOCKED`); change
 Polestar's scheme and skin (the bags follow); `/pui baganator off` and on;
 pick Dark in Baganator (ours stands aside), then Blizzard again; Baganator's
-transparency slider, then reopen; `/pui` shows bags off.
+transparency slider, then reopen; `/pui help` shows bags off.
 
 ## What's Training? (`Addons/WhatsTraining.lua`, addon `WhatsTraining`)
 
@@ -111,134 +110,20 @@ combat (`ns.modules.talents.Show()`).
 
 **Tests:** `tests/lua/stub_talentsforever.lua`, the `talents-forever` scene.
 
-## EllesmereUI (`Addons/EllesmereUI.lua`, addon `EllesmereUI`)
+## Bagnon (`Addons/Bagnon.lua`, addon `Bagnon`)
 
-EllesmereUI's friends list (`EllesmereUI_FriendsList.lua`, in the core
-addon; on Forever started by EllesmereUIBlizzardSkin's Friends List card)
-groups Battle.net friends in sections of its own. Our Social's Friends page
-shows those sections from **its** saved data, `EllesmereUIDB.global`, never a
-copy (an exception to "public API only": the user's groups live nowhere
-else):
+Bagnon has its own bag and bank windows and takes the bag keys, so with it loaded our Bags and Bank are blocked (`blockedBy = "Bagnon"`): off whatever was saved and cannot switch on. Nothing of Bagnon is read but its presence (`C_AddOns.IsAddOnLoaded("Bagnon")`). Not installed here when written: the bank takeover is from Bagnon's own description, unverified in game.
 
-- read: `friendGroups` (`{ name, collapsed }`), `friendGroupsByTag` (key:
-  BattleTag, or `"title:"` and `C_BattleNet.GetDefaultTitleWhisperTarget`
-  for a friend added by character), `friendGroupColors` (`{ r, g, b }`, the
-  head's name tint; ours `textDim` without), `friendGroupOrder` (its
-  `ValidOrder` rebuilt: Favorites first if missing, new groups before the
-  ungrouped, those last), `friendFavCollapsed`, `friendUngroupedCollapsed`.
-  Missing tables are made as its `Store()` makes them. A friend's section is
-  its `BucketOf`: its group, then Favorites (Battle.net's own flag), else
-  "Friends" (WoW friends too: it groups Battle.net friends only). Empty
-  sections have no head.
-- written, each as its own function writes it (`EllesmereUI_FriendsList.lua`,
-  verified against the Forever build 9.8.8), then our redraw (its list reads
-  the store afresh each time it shows: no refresh call):
-  - folding a head: its folded state (`ToggleCollapsed`);
-  - head tools, right to left: Move down / Move up (`MoveGroup`: swaps with
-    the next shown section in `friendGroupOrder`, the validated order written
-    first; off at the ends), the pencil (a group: Polestar's dialog to rename,
-    `RenameGroup`: name, colour key, order entry and members; a taken or
-    empty name does nothing; its palette button and the palette on Favorites
-    and Friends set `friendGroupColors[key]` through the game's colour
-    picker, a cancel restoring it), delete (a group, after Polestar's
-    confirmation; `DeleteGroup`: the group, its members' tags and colour; the
-    order keeps the name until its `ValidOrder` drops it);
-  - the game's Battle.net friend menu, opened from our row, gets its
-    "EllesmereUI" section: "Add to Group" ("Move to Group" once grouped or a
-    favorite) with "New Group..." (Polestar's dialog; `CreateGroup`: trimmed,
-    32 letters, then the friend in it), Favorites, its other groups and
-    "Remove from Group" (`PlaceFriend`: a group sets
-    `friendGroupsByTag[key]`; Favorites and Remove clear it and call
-    `BNSetFriendFavoriteFlag(id, on)` only when the flag differs, as its
-    `AskFavorite`; the friend moves when the client's
-    `BN_FRIEND_INFO_CHANGED` redraws us, as it keeps no pending state).
-- not taken: its own menu entries off its list (Set Note, favorite, Tags,
-  Remove Friend: the game's menu has them from our row, `friendsList` set),
-  the search-only folding, the note-tag migration (it runs on its own list).
-- gate: `EllesmereUI.FriendsList` at load; per redraw, the card on
-  (`friendsListCard.enabled ~= false`) and `customTiles` (Custom Friends
-  List Tiles; unset follows `GetBlizzWindowStyle("socialui") ~= "off"`, in
-  `pcall`) on. Off: the stock Favorites/Friends heads.
-- the menu entries go in by tag (`Menu.ModifyMenu`, `MENU_UNIT_BN_FRIEND`
-  and `_OFFLINE`), only on a client with `Menu.IsMenuProxy` (added entries
-  isolated, as EllesmereUI requires for its own) and only while our window
-  is shown under the mouse. Taint: they write its saved table and call
-  `BNSetFriendFavoriteFlag`, the plain friend function its own added entries
-  call from the same isolated menu (its file header: field-checked secure);
-  nothing touches Blizzard's friends data. Its own entries need its list on
-  screen, so they never show in ours.
+**Tests:** `tests/lua/stub_bagnon.lua`, the `bags-bagnon` scene (both blocked, a saved choice too; the switch refused with its line; the settings toggle greyed).
 
-Extension point: `ns.modules.spellbook.pages`, a list of extra top-tab pages
-after the book's: `{ key, label, icon, subtitle(), paint(f) -> body height,
-hide(), option(button) -> a "..." item or nil }`; the title is `label`, the
-subtitle the character then `subtitle()`; a search shows the book's results
-over it. `ns.modules.spellbook.Refresh()` redraws the open book (registered
-on its Ready, SpellsChanged, LevelChanged and IgnoredChanged callbacks).
+## Immersion (`Addons/Immersion.lua`, addon `Immersion`)
 
-**Tests:** `tests/lua/stub_whatstraining.lua`, the `spellbook-training` scene.
+Immersion shows gossip and quest dialogs itself, so with it loaded our Gossip and Quest dialog start off (`defaultOff`; two dialogs would open together). A saved choice wins: `/pui gossip off` and `/pui questdialog off`, then /reload, for anyone who switched them on.
 
-## Talents Forever (`Addons/TalentsForever.lua`, addon `TalentsForeverBook`)
+**Tests:** `tests/lua/stub_immersion.lua`, the `immersion` scene.
 
-Reads `TalentsForeverBook` (`Toggle`, `db.settings.overlay`, `plan`,
-`NextUp`, `Game.Node`, `On`) and `TalentsForeverBookData`: a footer button to
-its planner and its next planned point ringed in our Talents
-(docs/windows/talents.md, "Talents Forever"). Without `Toggle` the file
-returns. Every call into it runs in `pcall`; its Apply is never called.
+## Auction house addons (`Addons/AuctionHouse.lua`)
 
-Extension point: `ns.modules.talents.extras`, a list of `{ button = { label,
-onClick, tip, tipLines } (a footer button after Reset), paint(f, nodes)
-(after the trees are drawn; `nodes` are our node buttons, `psNode` their node
-ID) }`. Its `PLAN_CHANGED`/`GAME_CHANGED` redraw the shown window out of
-combat (`ns.modules.talents.Show()`).
+Our Auction window takes the Auctioneer interaction, so the game's `AuctionHouseFrame` never loads, and addons built on it find nothing to attach to. With one loaded, our Auction starts off (`defaultOff`; a saved choice wins: `/pui auction off`, then /reload, to use the game's window): Auctionator, AHledger, CraftProfit, TradeSkillMaster, Undying (not its Undying_Data or Undying_World) and NaowhForever (the last two add their scan button on AuctionHouseFrame).
 
-**Tests:** `tests/lua/stub_talentsforever.lua`, the `talents-forever` scene.
-
-## EllesmereUI (`Addons/EllesmereUI.lua`, addon `EllesmereUI`)
-
-EllesmereUI's friends list (`EllesmereUI_FriendsList.lua`, in the core
-addon; on Forever started by EllesmereUIBlizzardSkin's Friends List card)
-groups Battle.net friends in sections of its own. Our Social's Friends page
-shows those sections from **its** saved data, `EllesmereUIDB.global`, never a
-copy (an exception to "public API only": the user's groups live nowhere
-else):
-
-- read: `friendGroups` (`{ name, collapsed }`), `friendGroupsByTag` (key:
-  BattleTag, or `"title:"` and `C_BattleNet.GetDefaultTitleWhisperTarget`
-  for a friend added by character), `friendGroupColors` (`{ r, g, b }`, the
-  head's name tint; ours `textDim` without), `friendGroupOrder` (its
-  `ValidOrder` rebuilt, not written back: Favorites first if missing, new
-  groups before the ungrouped, those last), `friendFavCollapsed`,
-  `friendUngroupedCollapsed`. A friend's section is its `BucketOf`: its
-  group, then Favorites (Battle.net's own flag), else "Friends" (WoW
-  friends too: it groups Battle.net friends only). Empty sections have no head.
-- written: folding a head flips its folded state (the same keys); the game's
-  Battle.net friend menu, opened from our row, gets "Add to group"/"Move to
-  group" (its groups, "Remove from group"), which sets or clears
-  `friendGroupsByTag[key]` as its `PlaceFriend`. Groups are made, renamed,
-  coloured and removed in EllesmereUI only; Favorites stays the menu's own
-  favorite switch.
-- gate: `EllesmereUI.FriendsList` at load; per redraw, its store present, the
-  card on (`friendsListCard.enabled ~= false`) and `customTiles` (Custom
-  Friends List Tiles; unset follows `GetBlizzWindowStyle("socialui") ~=
-  "off"`, in `pcall`) on. Off: the stock Favorites/Friends heads.
-- the menu entries go in by tag (`Menu.ModifyMenu`, `MENU_UNIT_BN_FRIEND`
-  and `_OFFLINE`), only on a client with `Menu.IsMenuProxy` (added entries
-  isolated, as EllesmereUI requires for its own) and only while our window
-  is shown under the mouse; they write saved data and redraw, nothing else.
-  Its own entries need its list on screen, so they never show in ours.
-
-Extension point: `ns.modules.social.friendHeads()`, heads for the Friends
-page or nil for the stock ones: `{ key, test(e), label(online, total),
-shut, fold(), color, tools(first, last) }` (tools: icon buttons `{ icon, tip, fn, off }`, right to left) (`fold` set: the folded state is the caller's);
-Battle.net entries carry `account` (the account ID) and `tag` (BattleTag).
-
-**Tests:** `tests/lua/stub_ellesmereui.lua` (its store, `Menu`, the
-favorite flag), the `social-ellesmere` and `social-ellesmere-edit` scenes.
-
-**In game (data keys checked against the installed 9.8.8; behaviour
-unverified):** with EllesmereUI's groups, open the Social: its sections,
-order, colours and folds; fold, move, recolour, rename and delete a group,
-then open EllesmereUI's list (same state); right-click a Battle.net friend:
-New Group..., Favorites, Remove from Group. After each kind of change,
-whisper a Battle.net friend from that menu and from a row click (no taint
-error).
+**Tests:** `tests/lua/stub_auctionator.lua`, the `auction-addons` scene.

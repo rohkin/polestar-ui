@@ -49,18 +49,32 @@ end
 
 -- With no saved choice a module is on, unless the gamepad UI is, or the
 -- module says `defaultOff` (our Bags beside Baganator, Addons/Baganator.lua).
+-- A module with `blockedBy` (another addon's name, set in ns.AfterLogin: our
+-- Bags and Bank beside Bagnon) is off whatever was saved, and cannot switch on.
 function ns.Enabled(key)
+	local m = ns.modules[key]
+	if m and m.blockedBy then return false end
 	local v = PolestarUIDB and PolestarUIDB.modules[key]
 	if v == nil then
-		local m = ns.modules[key]
 		return not Polestar.GamepadUI() and not (m and m.defaultOff)
 	end
 	return v
 end
 
+local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
+
+-- Says why a blocked module stays off; true when it is.
+local function blocked(key)
+	local m = ns.modules[key]
+	if not (m and m.blockedBy) then return false end
+	say(key .. ": off while " .. m.blockedBy .. " is loaded (its own window takes its place).")
+	return true
+end
+
 function ns.Show(key, ...)
 	if ns.tooOld then return print(NEEDS) end
 	local m = ns.modules[key]
+	if blocked(key) then return end
 	if m and m.Show then m.Show(...) end
 end
 
@@ -499,17 +513,77 @@ function ns.Footer(f, left, right)
 	end
 end
 
--- A flyout: a window-skinned panel on the right edge of window `f`, as tall as
--- it and `width` wide, that takes the mouse. The caller shows it and calls
--- ns.DockFlyout.
+-- A flyout: a window-skinned panel flush on the right edge of window `f`, as
+-- tall as it and `width` wide, that takes the mouse. With the window it reads
+-- as one window (joinFlyout): one border and one shadow round both, a
+-- divider between. The caller shows it and calls ns.DockFlyout.
 function ns.Flyout(f, name, width)
 	local d = CreateFrame("Frame", name, f)
-	d:SetPoint("TOPLEFT", f, "TOPRIGHT", -1, 0)
-	d:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", -1, 0)
+	d:SetPoint("TOPLEFT", f, "TOPRIGHT", 0, 0)
+	d:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", 0, 0)
 	d:SetWidth(width)
 	d:EnableMouse(true)
+	-- Its outer border is the window's, drawn on psRim (joinFlyout).
+	d.psNoBorder = true
+	d.psRim = CreateFrame("Frame", nil, d)
+	d.psDivider = Polestar.Widgets.Divider(d, true)
+	d.psDivider:SetPoint("TOPLEFT", d, "TOPLEFT", 0, 0)
+	d.psDivider:SetPoint("BOTTOMLEFT", d, "BOTTOMLEFT", 0, 0)
 	Polestar.Theme.Skin(d, "window")
 	return d
+end
+
+-- A piece Polestar's paint shows again (Show, SetShown) kept hidden while
+-- r.psJoined.
+local function keepHidden(r, on)
+	if not r then return end
+	if not r.psKeepHidden then
+		r.psKeepHidden = true
+		local function back(self) if self.psJoined then self:Hide() end end
+		hooksecurefunc(r, "Show", back)
+		hooksecurefunc(r, "SetShown", back)
+	end
+	r.psJoined = on
+	if on then r:Hide() end
+end
+
+-- The window and its shown flyout as one window. Polestar paints each frame's
+-- border (Theme.Border, growing n px outward), contact lines (psSkin.edge:
+-- light, top, bottom, left, right) and shadow (psShadow) alone; here the
+-- window's right border and contact line go while the flyout shows, the
+-- flyout's border is the window's continued on psRim (its top and bottom from
+-- where the window's end, no left one), and the window's shadow reaches round
+-- the flyout, whose own never shows. Put away, the window is painted again.
+-- Called again on each paint of the window's border (the Theme.Border hook
+-- below) and full theme change.
+local function joinFlyout(f, fly)
+	local Theme = Polestar.Theme
+	local on = fly:IsShown()
+	local e, rim = f.psBorder, fly.psRim
+	if e and e[1]:IsShown() then
+		local n = f.psBorderSize or 1
+		local o = (n - 1) * Theme.Pixel(fly)
+		rim:ClearAllPoints()
+		rim:SetPoint("TOPLEFT", fly, "TOPLEFT", 2 * o, 0)
+		rim:SetPoint("BOTTOMRIGHT", fly, "BOTTOMRIGHT", 0, 0)
+		local r, g, b, a = Theme.Color("windowBorder")
+		Theme.Border(rim, r, g, b, a, nil, n)
+		rim.psBorder[3]:Hide()
+	elseif rim.psBorder then
+		for i = 1, 4 do rim.psBorder[i]:Hide() end
+	end
+	local fe, de = f.psSkin and f.psSkin.edge, fly.psSkin and fly.psSkin.edge
+	keepHidden(e and e[4], on)
+	keepHidden(fe and fe[5], on)
+	keepHidden(de and de[4], true)
+	keepHidden(fly.psShadow, true)
+	local s = f.psShadow
+	if s and s.psOut then
+		s:SetPoint("BOTTOMRIGHT", on and fly or f, "BOTTOMRIGHT", s.psOut, -s.psOut - s.psDrop)
+	end
+	local was = f.psJoined
+	f.psJoined = on
+	if was and not on then Theme.Repaint(f) end
 end
 
 -- A texture for a game icon (item, currency, spell), cropped of the border
@@ -1278,12 +1352,28 @@ function ns.Hairlines(f, rel, make)
 		t:SetPoint(p[2], rel, p[2], 0, 0)
 		e[i] = t
 	end
+	e.rel = rel
 	return e
 end
 
--- Shows (or hides) hairlines `e` in r, g, b, a, one pixel of their frame thick.
-function ns.PaintHairlines(e, on, r, g, b, a)
+-- Shows (or hides) hairlines `e` in r, g, b, a, `n` (default 1) pixels of
+-- their frame thick, laid as Theme.Border lays a window's: the first pixel
+-- inside `rel`, the rest outward; the sides between the top and the bottom.
+-- (Hairlines `e` not made by ns.Hairlines: sized only.)
+function ns.PaintHairlines(e, on, r, g, b, a, n)
 	local px = Polestar.Theme.Pixel(e[1]:GetParent())
+	n = n or 1
+	local rel = e.rel
+	if rel and (e.px ~= px or e.n ~= n) then
+		e.px, e.n = px, n
+		local o = px * (n - 1)
+		local top, bottom, left, right = e[1], e[2], e[3], e[4]
+		top:ClearAllPoints(); top:SetPoint("TOPLEFT", rel, "TOPLEFT", -o, o); top:SetPoint("TOPRIGHT", rel, "TOPRIGHT", o, o)
+		bottom:ClearAllPoints(); bottom:SetPoint("BOTTOMLEFT", rel, "BOTTOMLEFT", -o, -o); bottom:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", o, -o)
+		left:ClearAllPoints(); left:SetPoint("TOPLEFT", top, "BOTTOMLEFT", 0, 0); left:SetPoint("BOTTOMLEFT", bottom, "TOPLEFT", 0, 0)
+		right:ClearAllPoints(); right:SetPoint("TOPRIGHT", top, "BOTTOMRIGHT", 0, 0); right:SetPoint("BOTTOMRIGHT", bottom, "TOPRIGHT", 0, 0)
+	end
+	px = px * n
 	for i, t in ipairs(e) do
 		t:SetShown(on)
 		t:SetVertexColor(r, g, b, a)
@@ -1541,7 +1631,7 @@ function ns.Docked() return not PolestarUIDB.free end
 -- A window's width with its shown flyouts (ns.DockFlyout).
 local function footprint(f)
 	local w = f:GetWidth()
-	for _, o in ipairs(f.psFlyouts or {}) do if o:IsShown() then w = w + o:GetWidth() - o.psOverlap end end
+	for _, o in ipairs(f.psFlyouts or {}) do if o:IsShown() then w = w + o:GetWidth() end end
 	return w
 end
 
@@ -1588,24 +1678,35 @@ end
 ns.Relayout = layout
 
 -- A flyout hung off a docked window's right edge, outside it (the Character
--- window's stats drawer), `overlap` px over its edge: while shown, the dock
--- counts its width as the window's and the window keeps it on screen. A
--- flyout inside the window (the map's quest log) needs none: the window
--- grows, and the dock follows its size.
-function ns.DockFlyout(f, fly, overlap)
-	fly.psOverlap = overlap or 0
+-- window's stats drawer, ns.Flyout), one window with it (joinFlyout): while
+-- shown, the dock counts its width as the window's and the window keeps it on
+-- screen. A flyout inside the window (the map's quest log) needs none: the
+-- window grows, and the dock follows its size.
+function ns.DockFlyout(f, fly)
 	f.psFlyouts = f.psFlyouts or {}
 	table.insert(f.psFlyouts, fly)
+	local function join() joinFlyout(f, fly) end
 	local function changed()
+		join()
 		f:SetClampRectInsets(0, footprint(f) - f:GetWidth(), 0, 0)
 		if f:IsShown() then layout() end
 	end
 	fly:HookScript("OnShow", changed)
 	fly:HookScript("OnHide", changed)
 	fly:HookScript("OnSizeChanged", changed)
-	-- Shown or hidden while the window was shut sends neither.
-	f:HookScript("OnShow", changed)
+	-- Shown or hidden while the window was shut sends neither; a window shut
+	-- through a theme change is painted as it shows, maybe after this.
+	f:HookScript("OnShow", function() changed(); C_Timer.After(0, join) end)
+	-- The window's border painted anew (its thickness), or turned off; a
+	-- shadow made anew.
+	f.psFlyoutJoins = f.psFlyoutJoins or {}
+	table.insert(f.psFlyoutJoins, join)
+	Polestar.Theme.OnChanged(join, true)
+	join()
 end
+hooksecurefunc(Polestar.Theme, "Border", function(fr)
+	for _, fn in ipairs(rawget(fr, "psFlyoutJoins") or {}) do fn() end
+end)
 
 function ns.SetDocked(on)
 	PolestarUIDB.free = not on or nil
@@ -1721,8 +1822,6 @@ function ns.Dock(f)
 	end)
 end
 
-local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
-
 -- A window as Polestar's (on) or the game's (off), saved per window in
 -- PolestarUIDB.modules. Live: switched off, ours closes and its doors (keys,
 -- micro button, toggle hook) are the game's again at once; switched on, they
@@ -1733,6 +1832,7 @@ function ns.Switch(key, on)
 	local m = ns.modules[key]
 	if ns.tooOld then return print(NEEDS) end
 	if InCombatLockdown() then return say("windows cannot switch in combat; try again after it.") end
+	if on and blocked(key) then return end
 	PolestarUIDB.modules[key] = on
 	if on and not m.psStarted then
 		m.psStarted = true
@@ -1749,6 +1849,7 @@ end
 
 local function stateOf(key)
 	if ns.Enabled(key) then return "on" end
+	if ns.modules[key].blockedBy then return "off while " .. ns.modules[key].blockedBy .. " is loaded" end
 	return ns.modules[key].reloadOff and ns.modules[key].psStarted and "off after /reload" or "off"
 end
 
@@ -1880,7 +1981,7 @@ if not Polestar.GamepadUI() then
 	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
 		for _, key in ipairs(ns.order) do
 			local m, b = ns.modules[key], stockButtons[key]
-			local fr = PolestarUIDB and not ns.Enabled(key) and m.stock and m.stock()
+			local fr = PolestarUIDB and not ns.Enabled(key) and not m.blockedBy and m.stock and m.stock()
 			local k = fr and fr:IsVisible() and fr:GetTop() and fr:GetEffectiveScale() / UIParent:GetEffectiveScale()
 			if InCombatLockdown() then
 				if b then b:Hide() end
@@ -1926,16 +2027,18 @@ if not Polestar.GamepadUI() then
 		end
 	end)
 
-	-- /pui lists the windows and whether each is Polestar's; /pui <window>
-	-- on|off switches it, /pui <window> opens ours.
+	-- /pui opens our settings; /pui help lists the windows and whether each is
+	-- Polestar's; /pui <window> on|off switches it, /pui <window> opens ours.
 	SLASH_POLESTARUI1 = "/pui"
 	SlashCmdList.POLESTARUI = function(msg)
 		local key, state = (msg or ""):lower():match("^(%S*)%s*(%S*)")
 		if key == "dock" then
 			if state == "on" or state == "off" then ns.SetDocked(state == "on") end
 			say("windows " .. (ns.Docked() and "dock as the game's do" or "move freely") .. " (/pui dock on|off)")
+		elseif key == "" then
+			ns.ShowSettings()
 		elseif not ns.modules[key] then
-			say("windows (on: Polestar's, off: the game's). /pui <window> on|off, /pui dock on|off")
+			say("/pui opens the settings. Windows (on: Polestar's, off: the game's): /pui <window> on|off, /pui dock on|off")
 			for _, k in ipairs(ns.order) do say("  " .. k .. ": " .. stateOf(k)) end
 		elseif state == "on" or state == "off" then
 			ns.Switch(key, state == "on")

@@ -4,7 +4,7 @@ The game's own nameplates, restyled in place and never rebuilt
 (`Modules/Nameplates.lua`, key `nameplates`), in the unit frames' look: a
 health bar of our own over the game's (as wide as the plate's content, a
 little taller than the game's bar) on the unit frames' ground (`H.Ground`:
-track at the HUD's Background opacity, 1px hairline, glow), a flat fill in the
+track at the HUD's Background opacity, Polestar's window border as the edge, 2 px at most, its first pixel inside, glow or a 6-unit shadow), a flat fill in the
 target frame's colour for the same unit (`H.UnitColor`), the level (in its
 difficulty colour) and the name in the row above the bar, the health text
 inside at the right; the target has no glow, the focus a flat
@@ -45,8 +45,8 @@ game's size scale):
   short for its level badge; that room is the bar's now) and 3 taller than
   the game's 13 (2 up into the name's row, 1 down into the gap over the cast
   area). The unit frames' ground, hairline and flat fill; heals and absorbs
-  as the unit frames' segments. The fill is inset by the hairline's own
-  thickness (one physical pixel, read with it on each repaint), not by 1
+  as the unit frames' segments. The fill is inset by the hairline's
+  inner pixel (one physical pixel, read with it on each repaint; a thicker border grows outward, as a window's), not by 1
   unit: the game scales plates with distance and selection, and a fixed
   1-unit inset beside a 1-pixel hairline left a strip of ground that
   flickered as a dark line under the fill.
@@ -60,8 +60,33 @@ game's size scale):
   flat `warning` hairline; threat the threat glow. While there is a target,
   every other plate's bar is dimmed (35% of the ground colour over it), so
   the target reads first. No scaling: the plates' size is the game's.
-- **Cast bar:** unchanged, the cast bars' look over the game's cast area (16
-  high in Thin), 1 unit under the health bar, at the same width.
+- **Cast bar:** the cast bars' look from the top of the game's cast area,
+  1 unit under the health bar, at the same width, 10 high (in Thin, Modern,
+  Health Focus; Block and Cast Focus keep their 16), no icon: the name from
+  the left and the time at the right, inside at 8 (9 from 12 high). Options:
+  "Cast bar icon" (the icon inside at the left, as high as the bar, the
+  shield on it) and "Cast bar height" (6-16; under 9 the texts go under the
+  bar, where the game's Thin style puts its name). A cast that cannot be
+  interrupted is the `textMuted` fill (the shield only with the icon); the
+  game's "targets me" and important-cast highlights, which stuck out round
+  ours and showed through its ground, are faded and tint our hairline
+  `danger` and `warning` instead.
+
+  What the plate addons do (defaults, from their sources):
+
+  | Addon | Cast bar vs health bar | Icon | Name / time |
+  | --- | --- | --- | --- |
+  | Blizzard (this client, Thin) | 6 under a 10-13 bar, same width | left, in a 10 row under the bar | name in that row, no time |
+  | Plater | 10 vs 12, same width | on, left, the cast bar's height | name 12 inside, % 11 inside right; target name off |
+  | KuiNameplates | 8 vs 14, same width | on, left outside, health + cast high | name under the bar, no time |
+  | Threat Plates | 10 vs 10, same width | on, right outside, 20 (both bars) | name 8 inside left, time inside right, target under |
+  | ElvUI | 8 vs 10, 150 wide | on, right, 30 | name and time 11 under the bar; target off |
+  | Platynator (default design) | the health bar's size | none | name centred inside, no time; a shield marker |
+
+  Most draw it the health bar's width, a little thinner (8-10 against 10-14),
+  with the name inside and the time at the right; the icon is common but
+  Platynator, the calmest, has none. Ours: 10, no icon, both texts inside
+  (Threat Plates' 8 in its 10 bar), the icon an option at Plater's place.
 - **Auras:** the game's row above the name, square in a hairline, timers in
   the number face; their size stays the game's (Options > Nameplates, the
   aura size), see Sizing.
@@ -163,7 +188,7 @@ unit already wears it.
 | `name` | faded while our bar shows; ours (11 times the size scale, `ns.NameFont`) in the row above the bar, centred, as wide as the plate (the bar plus the 12-unit insets); inside the bar at the left in Modern and Block | `UnitName(unit)` into ours unread (`SetFormattedText("%s%s", level prefix, name)`); after the global `CompactUnitFrame_UpdateName`; ours shows only where the game shows a name and a bar (a name-only or widget plate keeps the game's name) | the game still anchors its aura row on its own faded name: the row above the bar is 14 high plus the 2-unit gap |
 | health texts | faded with the bar; ours (`H.Text` "number", 9 times the size scale) inside the bar's right end, as `nameplateInfoDisplay` asks: the percent (`UnitHealthPercent`), the value (`AbbreviateNumbers(UnitHealth)`), both, or none | on the health events and `CVAR_UPDATE` | the game also shows its text on mouse-over (`forceShow`): ours follows the option only |
 | cast texts, the game's name where it shows (a name-only plate) | Polestar's face, the game's sizes and outline | `Theme.SetFace` on the roman member (`GetFontObjectForAlphabet("roman")`) of the game's font families `SystemFont_NamePlate`, `SystemFont_NamePlate_Outlined` (names: `label`), `SystemFont_NamePlateLevel`, `SystemFont_NamePlateCastBar`, given back off. The families' Cyrillic, Korean and Chinese members keep the client's faces, so names in any script draw (the font family path, as `ns.FontFamily`; `ns.NameFont` itself would hook the game's string, rule 15) | forbidden plates share these families and take the face too; that the client's roman member is live (a face set on it reaches the strings on the family): live check |
-| `castBar` | as the target's cast bar, compact over the plate's whole cast area: art faded, our fill on the game's fill, the icon inside at the left, the name after it, the time at the right | `ns.CastLook.dress(bar, { height, inside = true, text })`, `paint`, `fail`, `undress` (`CastBars.lua`; `inside` is the plate's option): the height from the game's layout numbers, never read off the bar (Thin, Modern, Health Focus: the 6-high bar plus the 10-high icon row under it; Block, Cast Focus: 16; times `nameplateSize`'s vertical scale); the name and icon follow `nameplateCastBarDisplay` | our box covers the game's icon row: `CastTargetNameText` is faded and, while the game shows it, the caster's target (`UnitSpellTargetName`, unread) takes the time's place; a shield texture of ours (`nameplates-InterruptShield`) on our icon while `BorderShield:IsShown()` (through `ns.Clean`: secret, ours stays off and the `textMuted` fill marks it); `ImportantCastIndicator`, `CastTargetIndicator` stay the game's |
+| `castBar` | as the target's cast bar, compact from the top of the plate's cast area: art faded, our fill on the game's fill (faded each frame: its colour writes its alpha), no icon by default (an option: inside at the left, the name after it), the name, the time at the right | `ns.CastLook.dress(bar, { height, inside = true, text })`, `paint`, `fail`, `undress` (`CastBars.lua`; `inside` is the plate's option): the height from our "Cast bar height" (default 10; Block, Cast Focus at least 16; times `nameplateSize`'s vertical scale), never read off the bar; `below` under 9, `noIcon` unless "Cast bar icon" and the game's Spell Icon are on; the name and icon follow `nameplateCastBarDisplay` | our box covers the game's icon row: `CastTargetNameText` is faded and, while the game shows it, the caster's target (`UnitSpellTargetName`, unread) takes the time's place; a shield texture of ours (`nameplates-InterruptShield`) on our icon while `BorderShield:IsShown()` (through `ns.Clean`: secret, ours stays off and the `textMuted` fill marks it); `CastTargetIndicator`, `ImportantCastIndicator` faded each frame (`SetAlpha`; they stuck out round ours and showed through its ground), and while the game shows one our hairline takes `danger` or `warning` (`H.PaintTint`); live check: that the important cast's flash animation (an Alpha animation on that texture) does not lift our fade |
 | `AurasFrame` items | square: the game's rounded mask swapped for ours, the icon cropped 8%, the unnamed overlay ring faded, a hairline, the stack count in Polestar's face (`H.Face`, the game's corner), the countdown (the Cooldown's own string, `GetCountdownFontString`, centred) in the number face at 11 on the 25-unit item (the target frame's 9 on 20) | widget calls on the game's items (no aura read), each item once (pooled) | the items' size is the game's (`AURA_ITEM_HEIGHT` 25 x Aura scale x `nameplateSize`): a pooled stock frame is never sized (rule 20) | `UNIT_AURA` reaches ours before the game's handler (its frames are made after ours): the plate is dressed on the next frame |
 | `ClassificationFrame`, `RaidTargetFrame`, aggro flare, `WidgetContainer`, `SoftTargetFrame`, private auras | the game's | | game icons stay game icons (Two Families Rule); the aggro flare's alpha is animated by the game |
 
@@ -199,7 +224,7 @@ restyles `plate.UnitFrame` on this client too: per-instance
 fight over the same regions, so ours starts off (the module's `defaultOff`,
 as Bags beside Baganator; the player can still switch it on) while a known
 plate addon is loaded: Plater, Platynator, KuiNameplates, Threat Plates,
-EllesmereUI Nameplates, ElvUI with its nameplates on. FlareUI is not
+ElvUI with its nameplates on. FlareUI is not
 detected: how to read its plate tweak's switch is still an open question
 (a live check), so beside it both restyle the same plates.
 
@@ -236,7 +261,7 @@ health; level and name in the row above, the plate's width; the game's fill,
 texts, badge and name faded, the fill still faded after the game colours it
 again; the target plain, the others dimmed, none without a target; Modern:
 the name inside),
-`nameplates-cast` (Thin's and Cast Focus's bars, shielded, important, the caster's target, an interrupt),
+`nameplates-cast` (Thin's 10-high bar with no icon, the icon and height options live and their reset, the texts under a 6-high bar, Cast Focus's bar, shielded, important and "targets me" on our hairline, no stock region showing during a cast, a channel or a shielded cast, the caster's target, an interrupt),
 `nameplates-auras` (countdown face and size, in combat too: drawn, nothing read), `nameplates-pool`
 (a frame reused for another unit, no second set of ours, the new unit's health),
 `nameplates-colours` (threat on the edge not the fill, tapped, a secret

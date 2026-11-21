@@ -12,8 +12,8 @@
 -- template; only their quality ring (IconBorder) is hooked, which only paint
 -- code touches. Polestar's own bag marks (upgrade arrow, step glow, quest
 -- mark) are Baganator corner widgets and stay as they are.
--- With Baganator in, our Bags window starts off (its saved choice wins):
--- two bag windows would fight over the same keys.
+-- With Baganator in, our Bags and Bank are blocked (blockedBy, as beside
+-- Bagnon): two bag windows would fight over the same keys.
 
 local ADDON, ns = ...
 
@@ -22,8 +22,9 @@ local B = _G.Baganator
 local API = B and B.API and B.API.Skins
 if not (API and API.RegisterListener and API.GetAllFrames and API.GetCurrentSkin) then return end
 
-local bags = ns.modules.bags
-if bags then bags.defaultOff = true end
+for _, k in ipairs({ "bags", "bank" }) do
+	if ns.modules[k] then ns.modules[k].blockedBy = "Baganator" end
+end
 
 local Theme = Polestar.Theme
 local SKIN = "blizzard" -- Baganator's default skin, the one we paint over

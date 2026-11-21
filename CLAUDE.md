@@ -3,7 +3,7 @@
 WoW (Forever client) addon: replaces stock Blizzard windows with Polestar's kit (`Polestar.Widgets`, `Polestar.Theme`). Lua 5.1, tested in Node under a client stub. Depends on the Polestar addon.
 
 ## Layout
-- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, Guild, Macros, Inspect, HUD, UnitFrames, Minimap, ActionBars, Auras, CastBars, CooldownViewer, ResourceDisplay, DamageMeter, Collections, GroupFinder, GroupFinderListing, GroupFinderBrowse, GroupFinderWho, Bags, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
+- `Polestar_UI.toc`: load order is `Core.lua`, then `Modules/*` (CharacterPages, Character, CharacterGear, CharacterDetails, Spellbook, Talents, Professions, Crafting, Legacy, WorldMap.xml, Bank, Mail, Gossip, Merchant, Trainer, QuestDialog, Loot, Social, Auction, Guild, Macros, Inspect, HUD, UnitFrames, Minimap, ActionBars, BagBar, MicroMenu, Auras, CastBars, CooldownViewer, ResourceDisplay, DamageMeter, Collections, GroupFinder, GroupFinderListing, GroupFinderBrowse, GroupFinderWho, Bags, Tooltips, Chat). A new window goes before Tooltips. `Modules/QuestLog.lua` is not in the .toc (loaded by `WorldMap.xml`).
 - `docs/CLIENT.md`: client rules learnt from bugs (taint, secret values, secure buttons, doors). MANDATORY reading before any surface work; this file does not repeat them.
 - `docs/DESIGN.md`: shared sections (Replacement Contract, Shell, Components) plus the window index. Each window's entry: `docs/windows/<key>.md`.
 - `Addons/<Addon>.lua`: third-party addon code (the Baganator skin, What's Training?'s Spellbook tab, Talents Forever's Talents button and ring), loaded last, no `## OptionalDeps`, a no-op without the addon; the convention and each integration in `docs/addons.md`.
@@ -40,7 +40,7 @@ Modules and state
 Docking
 - `ns.Dock(f)`: lays the window out as the stock panel manager does (the default); `ns.Docked()`, `ns.SetDocked(on)`, `ns.Relayout()`.
 - `ns.Float(f, label?)`: a window that is no UI panel (Bags): never docked, first where the stock bags open, draggable, kept in `PolestarUIDB.pos[name]`; registered with Polestar's Move frames (`Polestar.Movers`, as `label`) through that same saved place.
-- `ns.DockFlyout(f, fly, overlap)`: a flyout outside a docked window's right edge counts in its width.
+- `ns.DockFlyout(f, fly)`: a flyout outside a docked window's right edge counts in its width; with the window one window: one outer border and shadow, a 1 px divider at the seam.
 - `ns.LinkPlace(win)` (Professions.lua): windows sharing a `psDockGroup` swap in place.
 Doors and secure parts
 - `ns.Doors(module, Name, {BINDING = fn}, microButton, onMicro)`: override-binding clicks plus a secure button over the micro button (shift-click = stock window).
@@ -55,7 +55,7 @@ Shell pieces
 - `ns.GameMenu(owner, generator, show)`: a game menu (Blizzard_Menu generator, its tag's `Menu.ModifyMenu` entries too) read into Polestar menu rows; titles headings, checks checked rows, a submenu a "…" row opened in place (Back first); a click `Pick`s the entry and follows its `MenuResponse`; `show(items, depth)` shows a level (`ns.FilterMenu` or `W.ShowMenu`) and returns the menu.
 - `ns.TopNav(f, items, active, onSelect)`: page nav as top tabs, no sidebar (`ns.Plain`); items `{key, label, icon (game texture), count, dot, locked, tip}` (locked: receding, click ignored, `tip` in its tooltip); `f.Search` and `f.psFilter` (make it on `f.TabRow` before) at the tab row's right end; `active` nil marks none.
 - `ns.GameRail(win, items, active, onSelect, opts?)`: `W.ShellRail` with each item's game icon (`icon`, 24px, untinted, cropped), then `ns.Plain` off the rail when the sidebar is hidden (Professions, Character); `opts.slim`: a 48px icon-only rail, labels in tooltips.
-- `ns.Flyout(f, name, width)`: window-skinned panel on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
+- `ns.Flyout(f, name, width)`: window-skinned panel flush on `f`'s right edge; caller hides it and calls `ns.DockFlyout`.
 Widgets
 - `ns.GameIcon(parent, layer)`: texture cropped of the client's icon border.
 - `ns.ItemWell(parent, size, kind?, template?, name?)`: inset icon well; returns `well, icon` (`well.Icon`).
@@ -78,20 +78,21 @@ Widgets
 - `ns.NameFont(fs)`: puts a string on the font family of its Polestar font (Latin Polestar's, Cyrillic/Hangul/Chinese the client's; the engine picks per glyph, no text read); follows every Polestar repaint (post-hook on `SetFont`); false without font families. `ns.NameText(fs, role, text)`: a player name through it, else the old scan. `ns.FontFamily(path, size, flags)`: the cached family.
 Restyle kit (art of ours on a stock frame, CLIENT.md rule 15; Tooltips, Chat)
 - `ns.FadeNine(holder, a)`: the NineSlice pieces keyed on `holder` at alpha `a`.
-- `ns.Hairlines(f, rel, make?)`: four hairline textures on `f` round `rel` (top, bottom, left, right; `make()` supplies them on a pooled menu); `ns.PaintHairlines(e, on, r, g, b, a)` shows, colours and sizes them to one pixel.
+- `ns.Hairlines(f, rel, make?)`: four hairline textures on `f` round `rel` (top, bottom, left, right; `make()` supplies them on a pooled menu); `ns.PaintHairlines(e, on, r, g, b, a, n?)` shows, colours and sizes them to n pixels (default 1), the first pixel inside, the rest outward, as Theme.Border lays a window's (the sides between the top and the bottom).
 - `ns.ModelShade(holder, layer?)`: the Model Well backdrop (Character, Collections): `glow` texture in `shade` at 60% over `holder`, no border.
 - `ns.PaintGround(fill, on, k?)`: `bg` at `Theme.GroundAlpha()` times `k` (0.85 = the tooltip look).
 HUD kit (`ns.HUD`, `Modules/HUD.lua`; takes secret values, follows every scheme and skin)
 - `H.Bar(parent, trail?)` (StatusBar on a progress track; `trail`: a damage trail under the fill, `b.trail`; `H.SetBarColor(b, r, g, b)`), `H.SetTrail(b, v, snap, on, max)` (the value after a 0.4 s hold, then eased, drawn only past the value; `snap` sets it at once), `H.Segment(bar, token, alpha, back?)` (continues a fill, or eats into it from its end), `H.Text(parent, role, color)` (outlined; set values with SetFormattedText only), `H.Ground(f)`/`H.PaintGround(g, alpha, r?, g?, b?, a?)`, `H.Portrait(parent)`/`H.SetPortrait(p, unit)` (square 3D well).
 - `ns.CastLook` (`Modules/CastBars.lua`): the cast bar look on another stock CastingBarMixin bar: `.dress(bar)`, `.paint(bar, {unit, shield?})`, `.undress(bar)`; dress fades BorderShield, Spark, Icon, Text (not ImportantCastIndicator/CastTargetIndicator).
-- `H.Face(fontString, role, on)` (a stock font string in Polestar's face, outlined, at the game's size; off gives it back), `H.GroundAlpha()` (the unit frames' Background opacity), `H.FillTexture()`.
+- The look, per group (`look` = `H.FRAMES` (nil), `H.FRAME_ICONS`, `H.PLATES`, `H.ICONS`: `{group, cap}`): Polestar's Frames settings, or the group's own while `PolestarUIDB.hudLook[group].override` (Settings.lua, `H.Own(look)`, seeded by `H.Seed(group)`; the cap off). `H.Edge(look?)` -> shown, r, g, b, a, n (the window border: `windowBorder` colour, `ui.borderSize` px, at most `look.cap` while following), `H.PaintEdge(e, on, look?)` (hidden with the border off), `H.PaintTint(e, on, look, r?, g?, b?, a?)` (a tint shows with the border off; nil r: `H.PaintEdge`), `H.ShadowColor(look?)`, `H.Shadow(f, rel?, out?)`/`H.PaintShadow(s, on, ground?, look?)` (the window painter's shadow round `rel`: `out` (16) units, dropped out/4, alpha times ground + 0.1; `H.Ground(f, out?)` has one, `g.look` its group, hidden under a tint), `H.GroundAlpha(look?)`.
+- `H.Face(fontString, role, on)` (a stock font string in Polestar's face, outlined, at the game's size; off gives it back), `H.FillTexture()`.
 - `H.ClassColor(unit)` (nil while secret), `H.UnitColor(unit)` (theme accent, class colour with Polestar's "Class colour", danger/warning by reaction), `H.PowerColor(unit)`.
 - Frames of ours on UIParent take the stock equivalent's roleset (`SetRolesets`, out of combat, once; unit frames 'unitFrames').
 Values
 - `ns.PlayerText(fn)`: the player's name (`UnitName`, `UnitPVPName`) as last read out of combat.
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).
 - `Settings.lua` (`docs/settings.md`): our page in Polestar's settings (`Polestar.RegisterOptions`, key `polestarui`), every control get/set over PolestarUIDB; `ns.ShowSettings(key?)` opens it on that module's tab.
-Slash: `/pui` lists windows, `/pui <key> [on|off]`, `/pui dock on|off`.
+Slash: `/pui` opens settings (the page subtitle shows the version), `/pui help` lists windows and commands, `/pui <key> [on|off]`, `/pui dock on|off`.
 
 ## Test API (scene globals: `stub`, `PolestarUI`, `Polestar`, `assert`)
 Generic (Polestar `wow_stub.lua`, `stub_ui.lua`; `stub_client.lua`)

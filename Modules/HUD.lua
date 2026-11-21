@@ -241,11 +241,12 @@ end
 -- The HUD ground: the scheme's ground at `alpha` (the player's choice), edged
 -- by a hairline in the border token unless the caller tints it (threat,
 -- combat). -> ground; H.PaintGround(g, alpha, r, g, b, a) repaints it.
-function H.Ground(f)
+function H.Ground(f, out)
 	local g = { fill = f:CreateTexture(nil, "BACKGROUND", nil, -8) }
 	g.fill:SetTexture(WHITE)
 	g.fill:SetAllPoints(f)
 	g.edges = ns.Hairlines(f, f)
+	g.shadow = H.Shadow(f, f, out)
 	-- The glow: four strips just outside the frame, fading to clear outward.
 	-- Textures, so neither the frame's rect (Edit Mode) nor its size changes.
 	-- Each corner is a quarter disc of GLOW rows, one texture per row, fading
@@ -284,14 +285,158 @@ H.GLOW = 8 -- px a tinted edge's glow reaches outward
 H.GLOW_PEAK = 0.7 -- the glow's alpha at the frame, times the edge's alpha (sides and corners alike)
 H.THREAT_ALPHA = 0.65 -- the threat edge's alpha: hairline, and the glow peak scaled by it (0.455)
 
--- `flat`: a tint without the glow (the player's own combat edge).
+-- The HUD's look, per group (`look`: H.FRAMES, H.PLATES, H.ICONS, or nil for
+-- frames): Polestar's Frames settings, the window's own (border, its size,
+-- colour or accent; shadow and its strength; Background opacity), a small
+-- piece's border `cap` px at most. A group whose "Override Polestar's look" is
+-- on (PolestarUIDB.hudLook[group].override, Settings.lua) takes its own values
+-- instead, the cap aside (the player sets the size).
+H.FRAMES = { group = "frames" }
+H.FRAME_ICONS = { group = "frames", cap = 2 } -- an icon on a frame (the damage meter's rows)
+H.PLATES = { group = "plates", cap = 2 }
+H.ICONS = { group = "icons", cap = 2 }
+H.GROUPS = { "frames", "plates", "icons" }
+H.COLORS = { white = { 1, 1, 1 }, black = { 0, 0, 0 }, gold = { 1, 0.82, 0 }, silver = { 0.75, 0.75, 0.78 } }
+
+-- The group's own look while it overrides Polestar's, else nil.
+function H.Own(look)
+	local d = PolestarUIDB and PolestarUIDB.hudLook
+	local o = d and d[look and look.group or "frames"]
+	return o and o.override and o or nil
+end
+
+-- What Polestar's window border would be with no colour of the player's:
+-- the skin's windowBorder, else the look's edge, else its hairline.
+local function schemeEdge()
+	local r, g, b, a = Theme.SkinToken("windowBorder")
+	if r then return r, g, b, a end
+	local p = Theme.Palette()
+	local c = p.windowEdge or p.border
+	return c[1], c[2], c[3], c[4] or 1
+end
+
+-- A group's own look as Polestar's settings stand now (an override's start):
+-- the small pieces' size at their cap, so turning it on changes nothing.
+function H.Seed(group)
+	local shown, n = Theme.WindowBorder()
+	local own = Polestar.Get("ui.borderColor")
+	local cap = group ~= "frames" and 2 or 4
+	return { override = true, border = shown, borderSize = math.max(1, math.min(n, cap)),
+		borderColor = type(own) == "table" and "own" or nil, ownColor = type(own) == "table" and { own[1], own[2], own[3] } or nil,
+		borderAccent = Polestar.Get("ui.borderAccent") and true or false, hairline = 1,
+		shadow = Polestar.Get("ui.shadow") ~= false, shadowStrength = tonumber(Polestar.Get("ui.shadowStrength")) or 1,
+		ground = Theme.GroundAlpha() }
+end
+
+-- -> shown, r, g, b, a, n (n at least 1: a tint's thickness while it is off)
+function H.Edge(look)
+	local o = H.Own(look)
+	if o then
+		local r, g, b, a
+		local c = o.borderColor == "own" and o.ownColor or H.COLORS[o.borderColor or ""]
+		if o.borderColor == "class" then r, g, b = H.ClassColor("player"); a = 1 end
+		if r then -- the class colour
+		elseif c then r, g, b, a = c[1], c[2], c[3], 1
+		elseif o.borderAccent then r, g, b = Theme.Accent(); a = 0.8
+		else r, g, b, a = schemeEdge() end
+		a = math.min(1, (a or 1) * (o.hairline or 1))
+		local n = math.max(1, math.min(4, math.floor((o.borderSize or 1) + 0.5)))
+		return o.border ~= false, r, g, b, a, n
+	end
+	local shown, n = Theme.WindowBorder()
+	local r, g, b, a = Theme.Color("windowBorder")
+	local cap = look and look.cap
+	return shown, r, g, b, a, math.max(1, math.min(n, cap or n))
+end
+
+-- Hairlines `e` (ns.Hairlines) as the HUD's edge, while `on` and the border is.
+function H.PaintEdge(e, on, look)
+	local shown, r, g, b, a, n = H.Edge(look)
+	ns.PaintHairlines(e, on and shown, r, g, b, a, n)
+end
+
+-- Hairlines `e` in a tint (r, g, b, a: shown with the border off too, at its
+-- thickness), else as the HUD's edge (H.PaintEdge).
+function H.PaintTint(e, on, look, r, g, b, a)
+	if not r then return H.PaintEdge(e, on, look) end
+	ns.PaintHairlines(e, on, r, g, b, a, select(6, H.Edge(look)))
+end
+
+-- The window shadow's colour while it is drawn (ui.shadow, the shadow token's
+-- alpha with ui.shadowStrength in it; an override: its own switch and
+-- strength on the token), else nil. -> r, g, b, a
+function H.ShadowColor(look)
+	local r, g, b, a = Theme.Color("shadow")
+	local o = H.Own(look)
+	if o then
+		if o.shadow == false or not a then return nil end
+		local s = tonumber(Polestar.Get("ui.shadowStrength")) or 1
+		a = math.min(1, (s > 0 and a / s or a) * (o.shadowStrength or 1))
+		if a <= 0 then return nil end
+		return r, g, b, a
+	end
+	if Polestar.Get("ui.shadow") == false or not a or a <= 0 then return nil end
+	return r, g, b, math.min(1, a)
+end
+
+-- Polestar's window shadow round region `rel` (default f), as Theme.lua's
+-- shadowFor lays it (its softBox): eight slices of Media/UI/shadow on a box
+-- `out` units round rel, dropped out / 4, cut at the shape's edge (half
+-- strength), each corner reaching out * 6 / 16 into rel (the window's 16, 4
+-- and 6, scaled). Textures on `f` only: no rect Edit Mode sees.
+local SLICE = 20 / 64
+function H.Shadow(f, rel, out)
+	rel, out = rel or f, out or 16
+	local drop, C, S, parts = out / 4, out * 22 / 16, SLICE, {}
+	local function part(u0, u1, v0, v1)
+		local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+		t:SetTexture(Theme.Media("shadow"))
+		t:SetTexCoord(u0, u1, v0, v1)
+		parts[#parts + 1] = t
+		return t
+	end
+	local tl, tr, bl, br = part(0, S, 0, S), part(1 - S, 1, 0, S), part(0, S, 1 - S, 1), part(1 - S, 1, 1 - S, 1)
+	for _, t in ipairs({ tl, tr, bl, br }) do t:SetSize(C, C) end
+	tl:SetPoint("TOPLEFT", rel, "TOPLEFT", -out, out - drop)
+	tr:SetPoint("TOPRIGHT", rel, "TOPRIGHT", out, out - drop)
+	bl:SetPoint("BOTTOMLEFT", rel, "BOTTOMLEFT", -out, -out - drop)
+	br:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", out, -out - drop)
+	local function edge(a1, a2, ul, ur, vt, vb)
+		local t = part(ul, ur, vt, vb)
+		t:SetPoint(a1[1], a1[2], a1[3])
+		t:SetPoint(a2[1], a2[2], a2[3])
+	end
+	edge({ "TOPLEFT", tl, "TOPRIGHT" }, { "BOTTOMRIGHT", tr, "BOTTOMLEFT" }, S, 1 - S, 0, S)
+	edge({ "TOPLEFT", bl, "TOPRIGHT" }, { "BOTTOMRIGHT", br, "BOTTOMLEFT" }, S, 1 - S, 1 - S, 1)
+	edge({ "TOPLEFT", tl, "BOTTOMLEFT" }, { "BOTTOMRIGHT", bl, "TOPRIGHT" }, 0, S, S, 1 - S)
+	edge({ "TOPLEFT", tr, "BOTTOMLEFT" }, { "BOTTOMRIGHT", br, "TOPRIGHT" }, 1 - S, 1, S, 1 - S)
+	return parts
+end
+
+-- Shows shadow `s` (H.Shadow) while `on` and Polestar draws window shadows,
+-- at the window painter's alpha: the shadow's, times the ground's `ground`
+-- (default the group's) plus 0.1.
+function H.PaintShadow(s, on, ground, look)
+	local r, g, b, a = H.ShadowColor(look)
+	if r then a = a * math.min(1, (ground or H.GroundAlpha(look)) + 0.1) end
+	for _, t in ipairs(s) do
+		t:SetShown(on and r ~= nil)
+		if r then t:SetVertexColor(r, g, b, a) end
+	end
+end
+
+-- `flat`: a tint without the glow (the player's own combat edge). A tint
+-- shows with the border off; `g.look`: its group and cap (H.Edge).
+-- Untinted, Polestar's window shadow round it (a tint, flat too, has none).
 function H.PaintGround(g, alpha, r, gr, b, a, flat)
 	local br, bg, bb = Theme.Color("bg")
 	g.fill:SetVertexColor(br, bg, bb, alpha)
 	g.fill:SetShown(alpha > 0)
 	local tinted = r ~= nil and not flat
-	if not r then r, gr, b, a = Theme.Color("border") end
-	ns.PaintHairlines(g.edges, true, r, gr, b, a)
+	local shown, er, eg, eb, ea, n = H.Edge(g.look)
+	H.PaintShadow(g.shadow, r == nil, alpha, g.look)
+	if r then shown = true else r, gr, b, a = er, eg, eb, ea end
+	ns.PaintHairlines(g.edges, shown, r, gr, b, a, n)
 	-- Strongest at the frame, clear at the far edge.
 	local clear = CreateColor(r, gr, b, 0)
 	for _, t in ipairs(g.glow) do
@@ -312,7 +457,7 @@ function H.Portrait(parent, bare)
 	Theme.Skin(p, "inset")
 	if not bare then
 		p.Edges = ns.Hairlines(p, p)
-		W.Painter(p, function(well) ns.PaintHairlines(well.Edges, true, Theme.Color("border")) end)
+		W.Painter(p, function(well) H.PaintEdge(well.Edges, true) end)
 	end
 	p.Model = CreateFrame("PlayerModel", nil, p)
 	p.Model:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -1)
@@ -357,12 +502,28 @@ function H.SetPortrait(p, unit)
 	end
 end
 
--- The HUD's ground alpha: the unit frames' "Background opacity" (/pui
--- unitframes), one setting for every HUD piece (the cast bars' track).
-function H.GroundAlpha()
-	local o = PolestarUIDB and PolestarUIDB.unitframes
-	return o and o.ground or 0.6
+-- A group's ground alpha: Polestar's Background opacity (ui.bgOpacity), or
+-- its override's own.
+function H.GroundAlpha(look)
+	local o = H.Own(look)
+	return o and tonumber(o.ground) or Theme.GroundAlpha()
 end
+
+-- Once: a save from before the groups (one HUD-wide opacity of our own,
+-- PolestarUIDB.hudOwnGround over unitframes.ground) becomes an override of
+-- every group at Polestar's look and that opacity, so nothing changes.
+ns.AfterLogin(function()
+	local db = PolestarUIDB
+	if not db.hudOwnGround then return end
+	db.hudLook = db.hudLook or {}
+	local ground = db.unitframes and tonumber(db.unitframes.ground) or 0.6
+	for _, group in ipairs(H.GROUPS) do
+		local o = H.Seed(group)
+		o.ground = ground
+		db.hudLook[group] = o
+	end
+	db.hudOwnGround = nil
+end)
 
 -- A stock font string in Polestar's face for `role`, outlined, at the game's
 -- size (docs/CLIENT.md, rule 15: a widget call, no key written; what it was

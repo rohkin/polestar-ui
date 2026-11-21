@@ -33,7 +33,7 @@ local OVERLAY = "UI-HUD-CoolDownManager-IconOverlay" -- the aura item's unnamed 
 local FONTS = { SystemFont_NamePlate = "number", SystemFont_NamePlate_Outlined = "label", SystemFont_NamePlateLevel = "number",
 	SystemFont_NamePlateCastBar = "label" }
 -- Plate addons that draw over these frames: ours is off by default beside them.
-local OTHERS = { "Plater", "Platynator", "Kui_Nameplates", "TidyPlates_ThreatPlates", "EllesmereUINameplates" }
+local OTHERS = { "Plater", "Platynator", "Kui_Nameplates", "TidyPlates_ThreatPlates" }
 -- The cast bar's height by nameplateStyle (GetCastBarHeight: Block and Cast
 -- Focus large, the others small) and nameplateSize (NAME_PLATE_SCALES' vertical).
 local LARGE_CAST = { [2] = true, [4] = true }
@@ -43,6 +43,13 @@ local INSIDE = { [0] = true, [2] = true } -- Modern, Block: the name inside the 
 local UP = 2 -- units our bar is taller than the game's, upward into the name's row (times the vertical scale)
 local INSET = 12 -- the plate's side inset (HORIZONTAL_INSET): the name may reach the plate's edges
 local DIM = 0.35 -- the dim over a plate that is not the target, on the ground colour
+local LOOK = H.PLATES -- the HUD look's Plates group (2 px at most while it follows Polestar)
+-- Our options (PolestarUIDB.nameplates; Settings.lua): the cast bar thinner than
+-- the health bar and no icon, as most plate addons draw it (docs/windows/nameplates.md).
+local DEFAULTS = { castIcon = false, castHeight = 10 }
+-- The game's highlights round the cast bar (bits 5 and 4 of nameplateCastBarDisplay):
+-- faded, ours is our hairline in that colour.
+local HIGHLIGHTS = { { "CastTargetIndicator", "danger" }, { "ImportantCastIndicator", "warning" } }
 
 local looks = setmetatable({}, { __mode = "k" }) -- pooled UnitFrame -> our textures on it
 local auraLooks = setmetatable({}, { __mode = "k" }) -- pooled aura item -> ours on it
@@ -53,6 +60,12 @@ local stockFaces = {}
 local driver, started
 
 local function on() return started and ns.Enabled(KEY) end
+local function opt(k)
+	local d = PolestarUIDB and PolestarUIDB.nameplates
+	local v = d and d[k]
+	if v == nil then return DEFAULTS[k] end
+	return v
+end
 
 local function tex(f, layer, sub)
 	local t = f:CreateTexture(nil, layer, nil, sub)
@@ -120,7 +133,8 @@ local function look(uf)
 	local box = Polestar.CreateFrameUnder("Frame", nil, hb)
 	l.box = box
 	-- The unit frames' ground: the scheme's ground at the HUD's Background opacity, a hairline, the glow.
-	l.ground = H.Ground(box)
+	l.ground = H.Ground(box, 6)
+	l.ground.look = LOOK
 	-- A bar of our own (a StatusBar: it takes the secret health), inside the hairline, with the unit frames' segments.
 	l.bar = H.Bar(box) -- placed in colour(), inset by the hairline's own thickness
 	l.bar:SetClipsChildren(true) -- the segments end at the bar's ends
@@ -287,7 +301,7 @@ local function colour(uf, l)
 	local unit = rawget(uf, "unit")
 	if not unit then return end
 	l.gameFill:SetAlpha(0) -- the game's SetStatusBarColor wrote its alpha again
-	-- The bar inset by exactly the hairline's thickness (one physical pixel as
+	-- The bar inset by exactly the hairline's thickness (its first pixel, inside the box: the rest grows outward, as
 	-- PaintHairlines reads it now), so both edges are the same coordinate and
 	-- snap alike at any scale: the game scales plates with distance and
 	-- selection, and a fixed 1-unit inset beside a 1-pixel hairline left a
@@ -306,7 +320,7 @@ local function colour(uf, l)
 	local dr, dg, db = Theme.Color("bg")
 	l.dim:SetVertexColor(dr, dg, db, DIM)
 	l.dim:SetShown(not target and not focus and ns.Clean(UnitExists("target")) == true)
-	local a = H.GroundAlpha()
+	local a = H.GroundAlpha(LOOK)
 	if focus then
 		local fr, fg, fb = Theme.Color("warning")
 		return H.PaintGround(l.ground, a, fr, fg, fb, 1, true)
@@ -339,16 +353,20 @@ end
 -- Cast bar (ns.CastLook, Modules/CastBars.lua)
 ---------------------------------------------------------------------------
 
--- Ours fills the game's cast area (never read off the bar: secret in combat):
--- the bar's height plus, where the spell's name sits under a thin bar, the
--- icon's row under it (GetCastBarHeight, GetCastBarIconHeight: 6 + 10, or
--- 16 for Block and Cast Focus; times nameplateSize's vertical scale). The
--- icon inside on the left, where the game's icon and its shield are.
+-- Ours from the top of the game's cast area (never read off the bar: secret
+-- in combat), our "Cast bar height" high (6 to 16, default 10: the game's
+-- Thin bar is 6, its whole cast area with the icon's row 16; Block and Cast
+-- Focus keep their 16), times nameplateSize's vertical scale. The name and
+-- time inside (8, 9 from 12 up), under the bar below 9. The icon, with our
+-- "Cast bar icon" and the game's Spell Icon both on, inside on the left.
 local function castLayout()
 	local style, size = tonumber(GetCVar("nameplateStyle")), tonumber(GetCVar("nameplateSize"))
 	local v = VERTICAL[size or 2] or 1
-	local h = (LARGE_CAST[style or 1] and 16 or 6 + 10) * v
-	return { height = h, inside = true, text = math.floor(9 * v + 0.5) }
+	local h = opt("castHeight")
+	if LARGE_CAST[style or 1] then h = math.max(h, 16) end
+	local below = h < 9
+	return { height = h * v, inside = true, below = below, noIcon = not (opt("castIcon") and bit("nameplateCastBarDisplay", 2)),
+		text = math.floor(((below or h >= 12) and 9 or 8) * v + 0.5), look = LOOK }
 end
 
 -- Ours over the game's shield and target name (our box covers the bar):
@@ -369,8 +387,25 @@ local function afterCast(cb, l, unit)
 		s:SetPoint("BOTTOMRIGHT", l.icon, "BOTTOMRIGHT", 0, 0)
 		shields[cb] = s
 	end
-	s:SetShown(game ~= nil and ns.Clean(game:IsShown()) == true)
+	local icon = opt("castIcon") and bit("nameplateCastBarDisplay", 2)
+	s:SetShown(icon and game ~= nil and ns.Clean(game:IsShown()) == true)
 	if not bit("nameplateCastBarDisplay", 1) then l.name:SetText("") end
+	-- The game's fill (its colour writes its alpha) and highlights, under ours
+	-- and round it, faded each frame; a highlight the game shows tints our hairline.
+	local fill = cb:GetStatusBarTexture()
+	if fill then fill:SetAlpha(0) end
+	local tint
+	for _, h in ipairs(HIGHLIGHTS) do
+		local t = rawget(cb, h[1])
+		if t then
+			t:SetAlpha(0)
+			if not tint and ns.Clean(t:IsShown()) == true then tint = h[2] end
+		end
+	end
+	if tint then
+		local r, g, b = Theme.Color(tint)
+		H.PaintTint(l.edges, true, LOOK, r, g, b, 1)
+	end
 	local target = rawget(cb, "CastTargetNameText")
 	if target then
 		target:SetAlpha(0)
@@ -378,7 +413,7 @@ local function afterCast(cb, l, unit)
 			and ns.Clean(UnitShouldDisplaySpellTargetName and UnitShouldDisplaySpellTargetName(unit)) ~= false
 		if show then l.time:SetFormattedText("%s", UnitSpellTargetName(unit) or "") end
 	end
-	if not bit("nameplateCastBarDisplay", 2) then
+	if not icon then
 		l.icon:Hide()
 		ns.PaintHairlines(l.iconEdges, false, 0, 0, 0, 0)
 	end
@@ -388,8 +423,13 @@ local function dressCast(uf, shown)
 	local CL, cb = ns.CastLook, castBar(uf)
 	if not (CL and cb) then return end
 	if not shown then
-		local target, s = rawget(cb, "CastTargetNameText"), shields[cb]
+		local target, s, fill = rawget(cb, "CastTargetNameText"), shields[cb], cb:GetStatusBarTexture()
 		if target then target:SetAlpha(1) end
+		if fill then fill:SetAlpha(1) end
+		for _, h in ipairs(HIGHLIGHTS) do
+			local t = rawget(cb, h[1])
+			if t then t:SetAlpha(1) end
+		end
 		if s then s:Hide() end
 		return CL.undress(cb)
 	end
@@ -464,8 +504,7 @@ local function paintAura(l, shown)
 		local f = l.timerFont
 		if shown then Theme.SetFace(l.timer, (Theme.FontSpec("number")), 11, "OUTLINE") elseif f[1] then Theme.SetFace(l.timer, f[1], f[2], f[3] or "") end
 	end
-	local r, g, b, a = Theme.Color("border")
-	ns.PaintHairlines(l.edges, shown, r, g, b, a or 1)
+	H.PaintEdge(l.edges, shown, LOOK)
 end
 
 local LISTS = { "DebuffListFrame", "BuffListFrame", "CrowdControlListFrame" }
@@ -635,6 +674,14 @@ ns.AfterLogin(function()
 	local E = rawget(_G, "ElvUI") and ElvUI[1]
 	if E and E.private and E.private.nameplates and E.private.nameplates.enable then M.defaultOff = true end
 end)
+
+-- Our options (Settings.lua): nil sets the default again; applied live.
+M.Option = opt
+function M.SetOption(k, v)
+	PolestarUIDB.nameplates = PolestarUIDB.nameplates or {}
+	PolestarUIDB.nameplates[k] = v
+	M.Apply()
+end
 
 -- For the scenes: ours on a pooled UnitFrame (box, bar, ground, name, health, dim), or nil.
 function M.look(uf) return looks[uf] end

@@ -30,7 +30,7 @@ Download `Polestar_UI-<version>.zip` from [Releases](https://github.com/rohkin/p
 
 ## Use
 
-- `/pui` lists the windows, each on (Polestar's) or off (the game's); `/pui character` opens the Character window.
+- `/pui` opens the settings, which show the version; `/pui help` lists the windows, each on (Polestar's) or off (the game's); `/pui character` opens the Character window.
 - `/pui <window> off`, or "Use game window" in the window's "..." menu, gives the game's own window back at once (crafting after `/reload`); `/pui <window> on`, or the Polestar button above the game's window, brings ours back. Not in combat.
 - The windows dock from the top left as the game's own do; `/pui dock off` lets you drag them anywhere.
 - `/pui tooltips off` gives the game's tooltips their own look back at once; `/pui tooltips on` restyles them again.

@@ -37,3 +37,5 @@ events and is unaffected.
 - **Taint:** none protected; a gossip that opens another window (vendor,
   trainer) flows into that window's interaction.
 - **Tests:** `stub_gossip.lua` (`CustomGossipFrameManager` with the stock dispatch, `C_GossipInfo` with friendship); scenes `gossip` (the base handler is ours, the key hint in the row tooltip, the NPE guide kit still goes to its handler, `GOSSIP_CLOSED` closes ours, prefixes, portrait), `gossip-quests` (the stock order), `gossip-friend` (the friendship bar), `gossip-game-looks` (the skin's pad, the portrait in the 60 band).
+
+- **Immersion:** with Immersion loaded this module starts off (`Addons/Immersion.lua`; a saved choice wins), as it shows gossip itself.

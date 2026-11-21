@@ -45,6 +45,9 @@ local function row(name)
 end
 assert(rowsInOrder() == "Favorites 0/1,Sefa,Friends 5/7,Mira,Jon,Aelric,Brannoc,Corwyn,Dovaline,Eldric", "order: " .. rowsInOrder())
 assert(row("Sefa").Fav:IsShown() and row("Sefa").Fav.atlas == "friends-icon-favorites-dis" and not row("Mira").Fav:IsShown(), "favorite mark")
+-- The star follows the name even on a row not laid out yet (its name's GetWidth still 0).
+local _, _, _, starX = row("Sefa").Fav:GetPoint(1)
+assert(starX > 4 + 0.5 * row("Sefa").Name:GetStringWidth(), "star over the name: " .. starX)
 assert(row("Mira").Client:IsShown() and row("Mira").Client.psClient == "WoW" and row("Jon").Client.psClient == "App", "client icon")
 assert(row("Mira").Client.psVersion == Enum.TitleIconVersion.Small, "client icon size")
 assert(not row("Sefa").Client:IsShown() and not row("Aelric").Client:IsShown(), "client icon offline or WoW-only")

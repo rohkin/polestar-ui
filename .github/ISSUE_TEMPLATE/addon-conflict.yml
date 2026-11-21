@@ -1,0 +1,66 @@
+name: Addon conflict
+description: "Another addon does not work with a Polestar: UI window."
+labels: ["addon-compat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Polestar: UI replaces the game's windows, so addons that add to those windows can lose their additions or open a second window. We either host the addon's own panel as a tab or step aside for it.
+  - type: input
+    id: addon
+    attributes:
+      label: Addon name
+      description: Exactly as in the AddOns folder or the addon list.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Where you got it
+      description: A link (CurseForge, GitHub, ...).
+  - type: dropdown
+    id: window
+    attributes:
+      label: "Which Polestar: UI window?"
+      options:
+        - Bags
+        - Bank
+        - Auction House
+        - Gossip / Quest dialog
+        - Merchant
+        - Group Finder
+        - Social
+        - Professions
+        - Spellbook
+        - Character
+        - Unit frames
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What goes wrong?
+      options:
+        - A button or tab of the addon is missing
+        - Two windows open at once
+        - It stopped working
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag an image in.
+  - type: input
+    id: version
+    attributes:
+      label: "Polestar: UI version"
+      description: Shown in the addon list or under the title of /pui.

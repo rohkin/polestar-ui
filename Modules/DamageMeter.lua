@@ -45,7 +45,10 @@ end
 local function showGround(g, shown)
 	g.fill:SetShown(shown)
 	for _, t in ipairs(g.edges) do t:SetShown(shown) end
-	if not shown then for _, t in ipairs(g.glow) do t:Hide() end end
+	if not shown then
+		for _, t in ipairs(g.glow) do t:Hide() end
+		for _, t in ipairs(g.shadow) do t:Hide() end
+	end
 end
 
 -- A row (a pooled ScrollBox entry, the pinned player row, a breakdown row).
@@ -81,8 +84,7 @@ local function dressRow(e, l)
 	l.fill:SetTexture(H.FillTexture())
 	l.color = nil
 	if l.edges then
-		local r, g, b, a = Theme.Color("border")
-		ns.PaintHairlines(l.edges, on, r, g, b, a)
+		H.PaintEdge(l.edges, on, H.FRAME_ICONS)
 	end
 end
 

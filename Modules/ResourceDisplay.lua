@@ -144,8 +144,7 @@ local function paint(f, spec, l)
 			s.tex:SetVertexColor(mix(r, g, b, "shade", 0.55))
 		end
 	end
-	local br, bg, bb, ba = Theme.Color("border")
-	ns.PaintHairlines(l.edges, true, br, bg, bb, ba)
+	H.PaintEdge(l.edges, true)
 end
 
 local function update()

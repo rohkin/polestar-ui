@@ -22,5 +22,5 @@ for _, r in ipairs({ c:GetRegions() }) do
 	if r ~= c.Background and r.layer == "BACKGROUND" and r.sublayer == -8 and r.points[1] and r.points[1].rel == c and #r.points == 2 then ground = r break end
 end
 local _, _, _, a = ground:GetVertexColor()
-assert(math.abs(a - 0.3 * 0.6) < 1e-6, "Background Transparency is not copied: " .. tostring(a))
+assert(math.abs(a - 0.3 * Polestar.Theme.GroundAlpha()) < 1e-6, "Background Transparency is not copied: " .. tostring(a))
 assert(c.Background:GetAlpha() == 0.3 and c.Background:GetTexture() == nil, "the game's ground was touched")

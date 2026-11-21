@@ -4,7 +4,9 @@
 -- Baganator's backpack view on its Blizzard skin, painted through its skin API: the stock art faded under our ground and hairlines, the title and category headers in Polestar's face, the close button and title-bar icon buttons as our header buttons, the text buttons and tabs on our control fill with our label fonts (the selected tab on the selected wash with an accent foot), the search box on our input fill, each slot an inset well edged in its quality from uncommon up. A quality change repaints the edge. Our Bags window starts off beside Baganator. Switched off, Baganator's art is back at once, and on again; a view made on another Baganator skin is left alone.
 local f = stub.baganator()
 local T = Polestar.Theme
-assert(not PolestarUI.Enabled("bags"), "our Bags window starts on beside Baganator")
+assert(not PolestarUI.Enabled("bags") and not PolestarUI.Enabled("bank"), "our Bags or Bank is on beside Baganator")
+PolestarUI.Switch("bags", true)
+assert(not PolestarUI.Enabled("bags") and PolestarUIDB.modules.bags == nil, "Bags switched on beside Baganator")
 assert(PolestarUI.Enabled("baganator"), "the skin is off")
 local function edge(b) for _, r in ipairs({ b:GetRegions() }) do if r ~= b.icon and r.layer == "BORDER" and r.sublayer == 7 then return r end end end
 local function painted(v)
