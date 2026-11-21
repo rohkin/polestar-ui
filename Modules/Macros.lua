@@ -214,6 +214,9 @@ local function buildPicker()
 	p.ChosenText:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -4)
 	p.ChosenText:SetWidth(w - 44 - 12 - 36)
 	p.ChosenText:SetJustifyH("LEFT")
+	p.ChosenText:SetWordWrap(true)
+	p.ChosenText:SetHeight(28)
+	p.ChosenText:SetJustifyV("TOP")
 	-- The stock icon filter (All, Spells, Items).
 	local filters = { { "all", ICON_FILTER_ALL or "All" }, { "spell", ICON_FILTER_SPELL or "Spells" }, { "item", ICON_FILTER_ITEM or "Items" } }
 	p.Filter = W.IconButton(p, "sliders", 30, "Filter", function(self)

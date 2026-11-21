@@ -1,5 +1,5 @@
 --@ title: Macros: icon picker with no room left
---@ roots: PolestarUIMacros
+--@ roots: PolestarUIMacros, PolestarUIMacrosIcons
 --@ stubs: stub_macros.lua
 -- Macros opened first, another docked window after it, the two just fitting:
 -- New's picker widens Macros past the room, and the dock closes the oldest,
@@ -10,6 +10,7 @@ local f = PolestarUIMacros
 -- The room ends just past the second window, as the dock adds them up.
 local L = GetUIPanelLayoutAttribute
 local room = L("LEFT_OFFSET") + f:GetWidth() * f:GetScale() + L("PANEl_SPACING_X") + 300 * f:GetScale() + 20
+local wide = GetMaxUIPanelsWidth
 function GetMaxUIPanelsWidth() return room end
 local other = CreateFrame("Frame", "PolestarUITestOther", UIParent)
 other:SetSize(300, 400)
@@ -23,6 +24,7 @@ assert(not f:IsShown() and other:IsShown(), "the dock did not close the oldest")
 assert(not (PolestarUIMacrosIcons and PolestarUIMacrosIcons:IsShown()), "the picker stayed open")
 -- Opened again, New opens the picker (it fits alone).
 other:Hide()
+GetMaxUIPanelsWidth = wide
 ShowMacroFrame()
 f.footerButtons.right[1]:Click()
 assert(PolestarUIMacrosIcons:IsShown() and #PolestarUIMacrosIcons.psIcons > 0, "no picker after reopening")

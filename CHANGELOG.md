@@ -16,6 +16,7 @@
 - Tooltips: the ground takes the colour scheme's background (a dark fallback where white text would not read on it) and follows a scheme change live.
 - Fixed: a "stack overflow" error in the minimap with map pin addons that add thousands of pins.
 - Fixed: clicking New or Change Name/Icon in Macros, with another window docked after it and no room left for the icon picker, no longer raises a Lua error.
+- Fixed: the Macros icon picker's "Click on an icon to set it as the macro's icon." hint wraps instead of being cut off.
 - Fixed: editing a guild member's note or officer note no longer raises ADDON_ACTION_FORBIDDEN; it opens the game's own note dialog.
 - Fixed: using a toy from the Collections window's Toy Box no longer raises ADDON_ACTION_FORBIDDEN; a secure button over the hovered toy uses it.
 
