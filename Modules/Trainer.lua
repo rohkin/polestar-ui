@@ -234,7 +234,8 @@ end
 function paint()
 	local pet = petTrainer()
 	-- The trainer leads the subtitle; the title says what kind of trainer.
-	local who = UnitName(pet and "pet" or "npc") or ""
+	-- The name can come secret (CLIENT.md rule 3): then the subtitle goes without it.
+	local who = ns.Clean(UnitName(pet and "pet" or "npc"))
 	local kind = classTrainer() and (UnitClass("player") .. " trainer") or IsTradeskillTrainer() and "Profession trainer" or pet and "Pet trainer" or "Trainer"
 
 	-- The services (headers skipped), by category (Camelot's skill lines) when
@@ -290,7 +291,7 @@ function paint()
 		status = ((mod or 0) > 0 and (TRADESKILL_RANK_WITH_MODIFIER or "Skill %d (+%d)/%d"):format(rank, mod, maxRank)
 			or (TRADESKILL_RANK or "Skill %d/%d"):format(rank, maxRank)) -- the All tab has the count; the narrow band keeps the rank
 	end
-	W.ShellTitle(f, cat == ALL and kind or cat, who .. " · " .. status)
+	W.ShellTitle(f, cat == ALL and kind or cat, who and (who .. " · " .. status) or status)
 	for n, i in ipairs(list) do
 		local r = rows[n] or newRow(n)
 		r:ClearAllPoints()

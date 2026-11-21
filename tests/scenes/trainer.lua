@@ -45,6 +45,13 @@ assert(rows[4].Sel:IsShown() and not train:IsEnabled(), "Train on for a service 
 stub.RunScript(rows[5], "OnClick")
 assert(not train:IsEnabled(), "Train on for an unavailable service")
 
+-- The trainer's name can come secret (seen in game): the subtitle drops it, nothing errors.
+stub.secretNpc = true
+f:Hide()
+stub.interact(T.Trainer)
+assert(f:IsShown() and f.Subtitle:GetText() == "4 to learn", "secret trainer name: " .. tostring(f.Subtitle:GetText()))
+stub.secretNpc = false
+
 -- A profession trainer: Train asks before it learns a profession.
 stub.tradeskill = true
 stub.trainer[2][8] = true

@@ -91,6 +91,10 @@ The player's own name (`UnitName("player")`, `UnitPVPName`) is secret in
 combat too: `GameTooltip:SetText` refuses it. Read it through `ns.PlayerText`,
 which keeps the last name read out of combat.
 
+An NPC's name (`UnitName("npc")`, `"pet"`, `"questnpc"`) can come secret too
+(Trainer, s448): every NPC window reads it through `ns.Clean` and leaves the
+name out when it is nil.
+
 Defense's gear bonus (`UnitDefenseSkill`) was secret in a background read
 out of combat: a page painted only out of combat still errored comparing it.
 Skill bonuses go through `ns.SkillModifier` (CharacterPages.lua).

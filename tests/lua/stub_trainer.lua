@@ -71,7 +71,7 @@ GameTooltip.SetTrainerService = GameTooltip.SetTrainerService or function(self, 
 -- The trainer: Thurman, npc 914, a warrior trainer.
 local unitName = UnitName
 function UnitName(unit, ...)
-	if unit == "npc" then return "Thurman Schneider" end
+	if unit == "npc" then return stub.secretNpc and stub.SECRET or "Thurman Schneider" end
 	if unit == "pet" and stub.trainerType == 1 then return "Grimclaw" end
 	return unitName(unit, ...)
 end
