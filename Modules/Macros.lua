@@ -281,8 +281,8 @@ local function openPicker(mode)
 		p.psIcon = C_Macro.GetSelectedMacroIcon(i)
 	end
 	p:Show()
-	-- Its width past the dock's room closes the oldest docked window: this
-	-- one, when another opened after it (Core.lua layout), the picker with it.
+	-- Its width past the dock's room closes another docked window, never this
+	-- one (Core.lua layout: the picker makes Macros the newest); kept as a guard.
 	if not p:IsShown() then return end
 	W.ScrollTo(p.Scroll, 0)
 	choose(p.psIcon) -- sizes the grid first: a scroll is kept within it

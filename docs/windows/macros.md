@@ -58,8 +58,8 @@ answers `MacroFrame` (its `CloseButton` serves the switch-back button).
   body appears and takes the focus once it is made, as stock. Picking a
   macro, a tab or New again closes the picker (the stock window greys its
   tabs and buttons instead). With another docked window opened after
-  Macros, the picker's width past the dock's room closes Macros (the dock
-  closes the oldest), picker and all; nothing more is painted into it.
+  Macros, the picker's width past the dock's room closes that other window:
+  opening a flyout makes its window the dock's newest.
 - **Footer:** Delete at the left (danger; Polestar's dialog in place of
   `CONFIRM_DELETE_SELECTED_MACRO`), New (primary; off when the tab is full,
   "All 120 general macro slots are used.") at the right. No Exit button:

@@ -2,9 +2,8 @@
 --@ roots: PolestarUIMacros, PolestarUIMacrosIcons
 --@ stubs: stub_macros.lua
 -- Macros opened first, another docked window after it, the two just fitting:
--- New's picker widens Macros past the room, and the dock closes the oldest,
--- Macros itself (its picker with it). Nothing is painted into the picker
--- let go (its icon list gone).
+-- New's picker widens Macros past the room, and the dock closes the other
+-- window: Macros, whose flyout just opened, counts as the newest.
 ShowMacroFrame()
 local f = PolestarUIMacros
 -- The room ends just past the second window, as the dock adds them up.
@@ -20,12 +19,7 @@ PolestarUI.Dock(other)
 other:Show()
 assert(f:IsShown() and other:IsShown(), "the two windows do not fit")
 f.footerButtons.right[1]:Click()
-assert(not f:IsShown() and other:IsShown(), "the dock did not close the oldest")
-assert(not (PolestarUIMacrosIcons and PolestarUIMacrosIcons:IsShown()), "the picker stayed open")
--- Opened again, New opens the picker (it fits alone).
-other:Hide()
+assert(f:IsShown() and not other:IsShown(), "the dock did not close the other window")
+assert(PolestarUIMacrosIcons:IsShown() and #PolestarUIMacrosIcons.psIcons > 0, "the picker is not painted")
 GetMaxUIPanelsWidth = wide
-ShowMacroFrame()
-f.footerButtons.right[1]:Click()
-assert(PolestarUIMacrosIcons:IsShown() and #PolestarUIMacrosIcons.psIcons > 0, "no picker after reopening")
 stub.assertNoErrors()

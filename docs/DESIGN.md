@@ -170,7 +170,9 @@ corner).
 - **Flyouts** (a drawer, a side panel) are part of their window to the
   dock: one inside the window grows it (the map's quest log); one hung off
   its right edge (the Stats drawer) is given to `ns.DockFlyout`, so the
-  dock makes room for it while it shows and the window keeps it on screen.
+  dock makes room for it while it shows and the window keeps it on screen;
+  opening it makes its window the newest, so when the room runs out the
+  dock closes another window, never this one.
   With its window it reads as one window, at every border size and with
   the border off: one outer border (the window's top and bottom run on
   round the flyout), none at the seam but a 1 px divider, one shadow round

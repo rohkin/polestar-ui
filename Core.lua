@@ -1621,7 +1621,8 @@ end
 -- (UpdateUIPanelPositions in UIParentPanelManager.lua): from the top left, in
 -- the order they opened, 32 apart, right of any stock panel open, and not
 -- draggable. When they do not fit (GetMaxUIPanelsWidth), the oldest closes,
--- unless it is the one just opened. Their size is Polestar's Menu scale
+-- unless it is the one just opened (or whose flyout just opened): then the
+-- next oldest. Their size is Polestar's Menu scale
 -- (ui.menuScale), the player's to set. We cannot place the stock panels (their
 -- manager is forbidden to us, docs/CLIENT.md rule 1), so ours give way to
 -- them. A stock "center" panel closes ours itself: they are UISpecialFrames.
@@ -1653,9 +1654,14 @@ local function layout()
 	for i, f in ipairs(docked) do
 		right = right + footprint(f) * f:GetScale() + (i > 1 and gap or 0)
 	end
-	if right > GetMaxUIPanelsWidth() and docked[1] and docked[1] ~= newest then
-		docked[1]:Hide() -- its OnHide lays the rest out
-		return
+	if right > GetMaxUIPanelsWidth() then
+		-- The oldest that is not the newest (one just opened, or whose flyout did).
+		for _, f in ipairs(docked) do
+			if f ~= newest then
+				f:Hide() -- its OnHide lays the rest out
+				return
+			end
+		end
 	end
 	for _, f in ipairs(docked) do
 		local s = f:GetScale()
@@ -1691,7 +1697,8 @@ function ns.DockFlyout(f, fly)
 		f:SetClampRectInsets(0, footprint(f) - f:GetWidth(), 0, 0)
 		if f:IsShown() then layout() end
 	end
-	fly:HookScript("OnShow", changed)
+	-- Opening a flyout counts as opening its window: the dock closes another.
+	fly:HookScript("OnShow", function() if f:IsShown() then newest = f end; changed() end)
 	fly:HookScript("OnHide", changed)
 	fly:HookScript("OnSizeChanged", changed)
 	-- Shown or hidden while the window was shut sends neither; a window shut
