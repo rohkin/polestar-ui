@@ -1,7 +1,7 @@
 --@ title: World Map: Questie's icons
 --@ roots: PolestarUIWorldMap
 --@ stubs: stub_worldmap.lua, stub_questie.lua
--- With Questie loaded, its world map icons for the shown map are mirrored on our canvas (textures of ours, at each icon's spot, size and art); one Questie hides and another zone's are left out; a new map and a zoom draw them afresh; the continent and Azeroth show every zone's by HBD's show flag, none with Questie's "hide icons on continents"; an icon Questie adds, sizes, hides, fades or removes while the map is open follows at once through post-hooks, that icon alone, with no timer; nothing of Questie's is written (the stub errors) and the stock map never opens.
+-- With Questie loaded, its world map icons for the shown map are mirrored on our canvas (frames of ours, at each icon's spot, size, art and frame level, with its objective glow and overlay; sized as Questie sizes them for the shown kind of map); one Questie hides and another zone's are left out; a new map and a zoom draw them afresh; the continent and Azeroth show every zone's by HBD's show flag, none with Questie's "hide icons on continents"; an icon Questie adds, sizes, hides, fades or removes while the map is open follows at once through post-hooks, that icon alone, with no timer; nothing of Questie's is written (the stub errors) and the stock map never opens.
 stub.pressKey("M")
 local c = PolestarUIWorldMapCanvas
 local holder = PolestarUIQuestiePins
@@ -10,9 +10,9 @@ local function at(r) local _, rel, point, x, y = r:GetPoint(1) return rel == c:G
 -- The shown textures, as "art@x,y" in order.
 local function shown()
 	local t, by = {}, {}
-	for _, r in ipairs({ holder:GetRegions() }) do
+	for _, r in ipairs({ holder:GetChildren() }) do
 		if r:IsShown() then
-			local key = r:GetTexture():match("([%a]+)%.blp$") .. "@" .. tostring(at(r))
+			local key = r.tex:GetTexture():match("([%a]+)%.blp$") .. "@" .. tostring(at(r))
 			t[#t + 1] = key
 			by[key] = r
 		end
@@ -68,11 +68,41 @@ new:FakeShow()
 expect("available@251,-334 complete@501,-167 loot@902,-601", "shown again")
 new.texture:SetVertexColor(1, 1, 1, 0.3)
 _, by = shown()
-assert(near(select(4, by["loot@902,-601"]:GetVertexColor()), 0.3), "a fade")
+assert(near(select(4, by["loot@902,-601"].tex:GetVertexColor()), 0.3), "a fade")
 new.texture:SetTexture("Interface/AddOns/Questie/Icons/slay.blp")
 expect("available@251,-334 complete@501,-167 slay@902,-601", "new art")
 stub.questieRemove(new)
 expect("available@251,-334 complete@501,-167", "removed")
+-- An objective: Questie's glow behind it in the objective's colour (its rule: the setting, an objective, not a giver or a turn-in), 1.13 its size; a turn-in in front of the rest; the size Questie's settings give (16 x icon scale x map icon scale), smaller on a continent as on the stock map.
+local slay = stub.questieIcon(37, 0.6, 0.6, "Interface/AddOns/Questie/Icons/slay.blp", 12, false, 3, { Type = "monster", IconScale = 1, ObjectiveData = { Color = { 0.2, 0.8, 0.4 } } })
+local done = stub.questieIcon(37, 0.6, 0.62, "Interface/AddOns/Questie/Icons/complete.blp", 12, false, 3, { Type = "complete", IconScale = 1.2, ObjectiveData = { Color = { 1, 1, 1 } } })
+_, by = shown()
+local s1, d1 = by["slay@601,-401"], by["complete@601,-414"]
+assert(s1 and d1, "the objective and the turn-in: " .. shown())
+assert(near(s1:GetWidth(), 16 * 0.75 / 0.9) and near(d1:GetWidth(), 16 * 1.2 * 0.75 / 0.9), "Questie's size: " .. s1:GetWidth())
+local gr, gg, gb = s1.glow:GetVertexColor()
+assert(s1.glow:IsShown() and near(gr, 0.2) and near(gg, 0.8) and near(gb, 0.4) and near(s1.glow:GetWidth(), s1:GetWidth() * 1.13), "the objective's glow")
+assert(not d1.glow:IsShown() and not kept.glow:IsShown(), "a glow on a turn-in or a plain icon")
+assert(d1:GetFrameLevel() > s1:GetFrameLevel() and s1:GetFrameLevel() >= holder:GetFrameLevel(), "the turn-in in front")
+assert(not s1.over:IsShown(), "an overlay with none set")
+slay.overlayTexture:SetTexture("Interface/AddOns/Questie/Icons/loot_overlay.png")
+slay.overlayTexture:Show()
+slay.texture:SetVertexColor(1, 1, 1, 1) -- UpdateTexture ends on the colour
+assert(s1.over:IsShown() and s1.over:GetTexture():find("loot_overlay", 1, true), "the overlay")
+-- The glow setting off (Questie's handler walks its icons): no glow, and on again.
+local pool = QuestieLoader:ImportModule("QuestieFramePool")
+Questie.db.profile.alwaysGlowMap = false
+pool:UpdateGlowConfig(false, false)
+assert(not s1.glow:IsShown(), "the glow with the setting off")
+Questie.db.profile.alwaysGlowMap = true
+pool:UpdateGlowConfig(false, true)
+assert(s1.glow:IsShown(), "the glow back")
+c:SetMapID(13)
+_, by = shown()
+assert(near(by["slay@651,-434"]:GetWidth(), 16 * 0.75 * 0.9 / 0.9), "smaller on the continent: " .. shown())
+c:SetMapID(37)
+stub.questieRemove(slay)
+stub.questieRemove(done)
 -- Nothing of ours runs on a timer.
 assert(not holder:GetScript("OnUpdate"), "a polling OnUpdate")
 -- Closed, Questie's changes are not drawn; reopened on the same map, drawn afresh.

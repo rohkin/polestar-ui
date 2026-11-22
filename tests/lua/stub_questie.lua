@@ -23,7 +23,7 @@ function hbd:GetZoneCoordinatesFromWorldInstance(x, y, instance, zone)
 	return x, y
 end
 function hbd:GetAzerothWorldMapCoordinatesFromWorld(x, y) return (x + 4000) / 8000, (y + 4000) / 8000 end
-Questie = { db = { profile = { hideIconsOnContinents = false } } }
+Questie = { db = { profile = { hideIconsOnContinents = false, alwaysGlowMap = true, globalScale = 0.75 } } }
 
 -- Questie's HereBeDragons-Pins copy: the registry's writers, as Questie calls them (zone x, y in 0..1).
 function pins:AddWorldMapIconMap(ref, icon, uiMapID, x, y, showFlag)
@@ -40,12 +40,19 @@ function pins:RemoveAllWorldMapIcons(ref) for icon in pairs(self.worldmapPins) d
 -- icon:FakeShow(), icon:SetSize() and its texture's SetTexture/SetVertexColor.
 -- stub.questieReset(): QuestieQuest:SmoothReset (a setting changed): every icon removed and added again.
 local made, args = 0, {}
-function stub.questieIcon(map, x, y, texture, size, hidden, flag)
+function stub.questieIcon(map, x, y, texture, size, hidden, flag, data)
 	made = made + 1
 	local icon = CreateFrame("Button", "QuestieFrame" .. made)
 	icon.texture = icon:CreateTexture(nil, "OVERLAY")
 	icon.texture:SetAllPoints(icon)
 	icon.texture:SetTexture(texture)
+	-- The glow shows only as the icon shows on the stock map (its OnShow); the overlay keeps its own flag.
+	icon.glowTexture = icon:CreateTexture(nil, "OVERLAY", nil, -1)
+	icon.glowTexture:SetTexture("Interface/AddOns/Questie/Icons/glow.blp")
+	icon.glowTexture:Hide()
+	icon.overlayTexture = icon:CreateTexture(nil, "OVERLAY", nil, 1)
+	icon.overlayTexture:Hide()
+	icon.data = data -- { Type, IconScale, ObjectiveData = { Color } }, as Questie's draw calls give it
 	icon:Hide() -- HBD shows it only on the stock map's own zone
 	for _, m in ipairs({ "SetParent", "SetPoint", "ClearAllPoints", "Show", "Hide", "SetScript", "HookScript" }) do
 		icon[m] = function() error("Questie's icon: " .. m .. " from Polestar: UI") end
@@ -55,6 +62,7 @@ function stub.questieIcon(map, x, y, texture, size, hidden, flag)
 	args[icon] = { map, x, y, flag or 3 }
 	pins:AddWorldMapIconMap("Questie", icon, map, x, y, flag or 3)
 	icon:SetSize(size or 16, size or 16)
+	icon:SetFrameLevel(2016 + (data and data.Type == "complete" and 8 or 4)) -- QuestieMap.utils.SetDrawOrder
 	if hidden then icon:FakeHide() end
 	return icon
 end
@@ -73,7 +81,8 @@ stub.questieIcon(37, 0.75, 0.75, ICONS .. "slay.blp", 16, true) -- hidden by Que
 stub.questieIcon(52, 0.4, 0.4, ICONS .. "available.blp") -- Westfall's
 stub.questieIcon(47, 0.5, 0.5, ICONS .. "event.blp", 16, false, -1) -- Duskwood's, on its own map only
 
-local modules = { HBDPins = pins, HBD = hbd }
+-- The glow setting's handler walks Questie's icons (their OnShow, or the glow hidden): nothing of an icon's is called.
+local modules = { HBDPins = pins, HBD = hbd, QuestieFramePool = { UpdateGlowConfig = function() end } }
 QuestieLoader = {}
 function QuestieLoader:ImportModule(name)
 	modules[name] = modules[name] or { private = {} }
