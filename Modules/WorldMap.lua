@@ -22,6 +22,148 @@ local M = {}
 M.overlays = {}
 local function overlays() for _, fn in ipairs(M.overlays) do fn(canvas) end end
 
+-- M.PinMirror(o) -> mirror: a HereBeDragons-Pins registry's world map icons
+-- on our canvas (Addons/Questie.lua, Addons/HereBeDragons.lua). Such an icon
+-- is one frame of its addon's, which the library parents to a pin of the
+-- stock map; ours draws a frame of our own for each icon of the shown map,
+-- under one frame of ours on the canvas. Nothing of the addon's or the stock
+-- map's is touched and no pin is acquired (docs/CLIENT.md, rules 4, 14). It
+-- runs on changes only: the addon file post-hooks what writes the registry
+-- and calls mirror.Changed(icon), which updates that icon alone; changes
+-- while the map is closed are drawn at its next open. The icons are indexed
+-- by continent, so a map change walks its continent's icons, not the
+-- registry (the world map, which may show them all, walks it).
+--   o.name   the holder frame's global name
+--   o.pins   the registry: icon -> row { instanceID, x, y, uiMapID, ... }
+--   o.hbd    its HereBeDragons (mapData[id] = { mapType, parent })
+--   o.spot(icon, row, view) -> x, y in 0..1, or nil when not shown on view.id
+--   o.dress(f, icon, row, view)   paint our frame `f` (size, level, art)
+--   o.make(f)?, o.release(f)?, o.hide()?   a frame made; one taken off; the map hidden
+--   view: canvas, child (its art frame), id, kind (HBD's mapType), mapType
+--     (the client's), w, h, k (the size a stock pin keeps on screen)
+--   mirror.Changed(icon) -> its row; mirror.Update(icon) (as it now is, no
+--   reindex); mirror.Reindex() (the registry walked: first, or after a wipe);
+--   mirror.Repaint() (the drawn ones again); mirror.drawn (icon -> our frame);
+--   mirror.dead (a failure took the mirror off for the session: the addon's
+--   tables are private and may change; never an error in its own call).
+local CONTINENT_MAP = 2 -- Enum.UIMapType.Continent
+local WORLD_MAP = 947
+function M.PinMirror(o)
+	local mirror = { drawn = {}, view = {} }
+	local drawn, v, free = mirror.drawn, mirror.view, {}
+	-- icon -> root, root -> its icons. Root: the continent at or above the
+	-- icon's map, else the map itself; 0 for an icon with no map.
+	local roots, sets = {}, {}
+	local holder, stale
+
+	local function rootOf(mapID)
+		if not mapID then return 0 end
+		local m, data = mapID, o.hbd.mapData[mapID]
+		while data do
+			if data.mapType == CONTINENT_MAP then return m end
+			m = data.parent
+			data = m and o.hbd.mapData[m]
+		end
+		return mapID
+	end
+
+	local function release(icon)
+		local f = drawn[icon]
+		if not f then return end
+		if o.release then o.release(f) end
+		f.psIcon = nil
+		f:Hide()
+		free[#free + 1] = f
+		drawn[icon] = nil
+	end
+
+	local function update(icon)
+		if not (holder and holder:IsVisible()) then stale = true return end
+		local row = o.pins[icon]
+		local x, y
+		if row then x, y = o.spot(icon, row, v) end
+		if not (x and y) then return release(icon) end
+		local f = drawn[icon] or table.remove(free)
+		if not f then
+			f = CreateFrame("Frame", nil, holder)
+			if o.make then o.make(f) end
+		end
+		drawn[icon], f.psIcon = f, icon
+		f:ClearAllPoints()
+		f:SetPoint("CENTER", v.child, "TOPLEFT", x * v.w, -y * v.h)
+		o.dress(f, icon, row, v)
+		f:Show()
+	end
+
+	local function fail()
+		mirror.dead = true
+		if holder then holder:Hide() end
+	end
+	function mirror.Update(icon)
+		if mirror.dead or pcall(update, icon) then return end
+		fail()
+	end
+
+	local function index(icon)
+		local row = o.pins[icon]
+		local root, old = row and rootOf(row.uiMapID), roots[icon]
+		if old ~= root then
+			if old then sets[old][icon] = nil end
+			if root then
+				sets[root] = sets[root] or {}
+				sets[root][icon] = true
+			end
+			roots[icon] = root
+		end
+		return row
+	end
+	function mirror.Changed(icon)
+		if mirror.dead or not icon then return end
+		local ok, row = pcall(index, icon)
+		if not ok then return fail() end
+		mirror.Update(icon)
+		return row
+	end
+	function mirror.Reindex()
+		for icon in pairs(roots) do mirror.Changed(icon) end
+		for icon in pairs(o.pins) do if not roots[icon] then mirror.Changed(icon) end end
+	end
+	function mirror.Repaint() for icon in pairs(drawn) do mirror.Update(icon) end end
+
+	-- The shown map, its size or its zoom changed (or ours opened): another
+	-- map draws its continent's icons afresh, the same map lays the drawn ones out again.
+	local function paint(map)
+		local child = map:GetCanvas()
+		if not holder then
+			holder = CreateFrame("Frame", o.name, child)
+			holder:SetAllPoints(child)
+			holder:SetFrameLevel(2016) -- over the map's art, whatever its children's levels
+			if o.hide then holder:SetScript("OnHide", o.hide) end
+		end
+		local was = v.id
+		v.canvas, v.child, v.id, v.w, v.h = map, child, map:GetMapID(), child:GetWidth(), child:GetHeight()
+		v.kind = o.hbd.mapData[v.id] and o.hbd.mapData[v.id].mapType
+		local info = C_Map.GetMapInfo(v.id)
+		v.mapType = info and info.mapType
+		-- The size a stock pin keeps on screen (HBD's SetScalingLimits(1, 1.0, 1.2), MapCanvasPinMixin:ApplyCurrentScale).
+		v.k = (1 + 0.2 * map:GetCanvasZoomPercent()) * map:GetGlobalPinScale() / map:GetCanvasScale()
+		if v.id == was and not stale then return mirror.Repaint() end
+		stale = false
+		for icon in pairs(drawn) do release(icon) end
+		if v.id == WORLD_MAP then
+			for icon in pairs(o.pins) do update(icon) end
+			return
+		end
+		for icon in pairs(sets[rootOf(v.id)] or {}) do update(icon) end
+		for icon in pairs(sets[0] or {}) do update(icon) end
+	end
+	M.overlays[#M.overlays + 1] = function(map)
+		if mirror.dead or pcall(paint, map) then return end
+		fail()
+	end
+	return mirror
+end
+
 -- The stock world map's providers (WorldMapMixin:AddStandardDataProviders),
 -- by name so one this game lacks is skipped; less the stock map's own (its
 -- event overlay and world quests, Blizzard_WorldMap's) and debug's.

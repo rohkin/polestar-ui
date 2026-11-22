@@ -44,7 +44,14 @@ function Canvas:SetShouldZoomInOnClick() end
 function Canvas:SetShouldPanOnClick() end
 function Canvas:SetShouldNavigateOnClick(on) self.navigateOnClick = on end
 function Canvas:SetShouldZoomInstantly() end
-function Canvas:GetPinFrameLevelsManager() return { AddFrameLevel = function(_, name) self.levels[#self.levels + 1] = name end } end
+-- A level type's frame level: 2000 up, in the order added (an unknown type errors, as the client's asserts).
+function Canvas:GetPinFrameLevelsManager()
+	return { AddFrameLevel = function(_, name) self.levels[#self.levels + 1] = name end,
+		GetValidFrameLevel = function(_, name)
+			for i, l in ipairs(self.levels) do if l == name then return 2000 + i end end
+			error("unknown pin frame level " .. tostring(name))
+		end }
+end
 function Canvas:AddDataProvider(p) self.providers[#self.providers + 1] = p end
 function Canvas:SetMapID(id) if id ~= self.mapID then self.mapID = id; self:OnMapChanged() end end
 function Canvas:GetMapID() return self.mapID end
@@ -80,6 +87,30 @@ function CreateFrame(kind, name, parent, template, ...)
 		art:SetColorTexture(0.18, 0.22, 0.2, 1)
 	end
 	return f
+end
+
+-- stub.withCanvasReads(): the canvas reads a pin mirror needs, as
+-- MapCanvasMixin gives them (for the stubs of addons that draw on the map):
+-- the art frame 1002 by 668, fitted to the 900 by 600 frame (scale 0.9
+-- zoomed out; stub.mapScale, stub.mapZoom).
+function stub.withCanvasReads()
+	if stub.canvasReads then return end
+	stub.canvasReads = true
+	local make = CreateFrame
+	function CreateFrame(kind, name, parent, template, ...)
+		local f = make(kind, name, parent, template, ...)
+		if template == "PolestarUIMapCanvasTemplate" then
+			local child = createFrame("Frame", nil, f.ScrollContainer)
+			child:SetSize(1002, 668)
+			child:SetPoint("TOPLEFT")
+			f.ScrollContainer.Child = child
+			function f:GetCanvas() return child end
+			function f:GetCanvasScale() return stub.mapScale or 0.9 end
+			function f:GetCanvasZoomPercent() return stub.mapZoom or 0 end
+			function f:GetGlobalPinScale() return 1 end
+		end
+		return f
+	end
 end
 
 -- The game's own map: our doors must not open it.

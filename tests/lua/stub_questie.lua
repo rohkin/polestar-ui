@@ -147,21 +147,12 @@ function QuestieLoader:ImportModule(name)
 	return modules[name]
 end
 
--- The canvas reads the mirror needs, as MapCanvasMixin gives them: the art
--- 1002 by 668, fitted to the 900 by 600 frame (scale 0.9 zoomed out).
+stub.withCanvasReads()
+
 local createFrame = CreateFrame
 function CreateFrame(kind, name, parent, template, ...)
 	local f = createFrame(kind, name, parent, template, ...)
-	if template == "PolestarUIMapCanvasTemplate" then
-		local child = createFrame("Frame", nil, f.ScrollContainer)
-		child:SetSize(1002, 668)
-		child:SetPoint("TOPLEFT")
-		f.ScrollContainer.Child = child
-		function f:GetCanvas() return child end
-		function f:GetCanvasScale() return stub.mapScale or 0.9 end
-		function f:GetCanvasZoomPercent() return stub.mapZoom or 0 end
-		function f:GetGlobalPinScale() return 1 end
-	elseif kind == "GameTooltip" and template == "GameTooltipTemplate" then
+	if kind == "GameTooltip" and template == "GameTooltipTemplate" then
 		-- A tooltip of an addon's own, as the game's: its lines and its stock art.
 		for _, m in ipairs({ "SetOwner", "ClearLines", "AddLine", "AddDoubleLine", "SetText" }) do f[m] = GameTooltip[m] end
 		f.lines = {}
