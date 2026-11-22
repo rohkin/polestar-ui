@@ -352,7 +352,7 @@ end
 local function putInBags(slot)
 	if lockedOut(slot) or not GetInventoryItemID("player", slot) then return end
 	ClearCursor()
-	PickupInventoryItem(slot)
+	ns.Pickup(PickupInventoryItem, slot)
 	if not CursorHasItem() then return end
 	for bag = 0, NUM_BAG_SLOTS or 4 do
 		if (C_Container.GetContainerNumFreeSlots(bag) or 0) > 0 then
@@ -369,8 +369,8 @@ local function wear(slot, loc)
 	if lockedOut(slot) then return end
 	local d = EquipmentManager_GetLocationData(loc)
 	ClearCursor()
-	if d.isBags then C_Container.PickupContainerItem(d.bag, d.slot) else PickupInventoryItem(d.slot) end
-	if CursorHasItem() then PickupInventoryItem(slot) end
+	if d.isBags then ns.Pickup(C_Container.PickupContainerItem, d.bag, d.slot) else ns.Pickup(PickupInventoryItem, d.slot) end
+	if CursorHasItem() then ns.Pickup(PickupInventoryItem, slot) end
 end
 
 local function setsChosen() return ns.CharacterPane() == "sets" and ns.CharacterSelectedSet() end
