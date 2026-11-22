@@ -322,4 +322,87 @@ map.overlays[#map.overlays + 1] = function(canvas)
 	dead = true
 	if holder then holder:Hide() end
 end
+
+-- Questie's patrol paths (its waypoint lines), which it draws on the stock
+-- map's canvas alone (WaypointMap.lua). Ours draws the shown map's with
+-- Questie's own renderer (WaypointRenderer.New on our canvas: its frames, its
+-- look and settings), by WaypointMap's rules: a path on its own map only, at
+-- its icon's visibility and fade, each route once (its highlighted copy, else
+-- the most visible). Questie says a path, its visibility or its highlight
+-- changed by calling WaypointMap.Invalidate, post-hooked here: one redraw on
+-- the next frame however many changed at once (Questie's own waits for its
+-- next frame too), none while our map is closed. A route whose line is drawn
+-- keeps it; only its style is set again.
+-- shortcut: a hovered path shows no tooltip (Questie finds the path under the
+-- cursor by reading the cursor every frame); ask before adding that.
+local okWays, ways = pcall(loader.ImportModule, loader, "QuestieWaypoints")
+local okRend, rendMod = pcall(loader.ImportModule, loader, "WaypointRenderer")
+local okWayMap, wayMap = pcall(loader.ImportModule, loader, "WaypointMap")
+if not (okWays and okRend and okWayMap and type(ways) == "table" and type(ways.paths) == "table"
+	and type(ways.WorldMapAlpha) == "function" and type(ways.IsHighlighted) == "function" and type(ways.Color) == "function"
+	and type(rendMod) == "table" and type(rendMod.New) == "function"
+	and type(wayMap) == "table" and type(wayMap.Invalidate) == "function") then return end
+
+local renderer, lineCanvas, queued, linesDead
+local lines = {} -- route -> { view, map, w, h }: its drawn line, and what it was drawn for
+
+local function drawLines()
+	local canvas = lineCanvas
+	if not (canvas and canvas:IsVisible()) then return end
+	local area = canvas:GetCanvas()
+	renderer = renderer or rendMod.New(area)
+	local mapID, lw, lh, scale = canvas:GetMapID(), area:GetWidth(), area:GetHeight(), canvas:GetCanvasScale()
+	local profile = Questie.db.profile
+	local routes = {}
+	if lw > 0 and lh > 0 then
+		for path in pairs(ways.paths) do
+			local alpha = path.uiMapId == mapID and ways.WorldMapAlpha(path)
+			if alpha then
+				local rank = alpha + (ways.IsHighlighted(path) and 2 or 0)
+				local best = routes[path.route]
+				if not best or rank > best.rank then routes[path.route] = { path = path, alpha = alpha, rank = rank } end
+			end
+		end
+	end
+	for route, shown in pairs(routes) do
+		-- The width holds its size on screen; under Questie's icons (2016 up).
+		local style = { thickness = profile.waypointWidth / scale, color = ways.Color(shown.path), alpha = shown.alpha, frameLevel = 2015 }
+		local e = lines[route]
+		if not e or e.map ~= mapID or e.w ~= lw or e.h ~= lh then
+			local points = {}
+			for i, point in ipairs(shown.path.points) do points[i] = { x = point.x * lw / 100, y = point.y * lh / 100 } end
+			e = { view = renderer:Draw(e and e.view, { points }, style), map = mapID, w = lw, h = lh }
+			lines[route] = e
+		else
+			renderer:Restyle(e.view, style)
+		end
+		e.view:Show()
+	end
+	for route, e in pairs(lines) do
+		if not routes[route] then
+			renderer:Release(e.view)
+			lines[route] = nil
+		end
+	end
+end
+
+-- A failure takes the lines off our map for the session, as the icons.
+local function runLines()
+	queued = false
+	if linesDead or pcall(drawLines) then return end
+	linesDead = true
+	if renderer then pcall(renderer.Clear, renderer) end
+end
+
+hooksecurefunc(wayMap, "Invalidate", function()
+	if linesDead or queued or not (lineCanvas and lineCanvas:IsVisible()) then return end
+	queued = true
+	C_Timer.After(0, runLines)
+end)
+
+-- The shown map, its size or its zoom changed, or ours opened (whatever Questie changed while it was closed).
+map.overlays[#map.overlays + 1] = function(canvas)
+	lineCanvas = canvas
+	runLines()
+end
 end)

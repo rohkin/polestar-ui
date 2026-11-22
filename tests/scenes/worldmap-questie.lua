@@ -1,7 +1,7 @@
 --@ title: World Map: Questie's icons
 --@ roots: PolestarUIWorldMap
 --@ stubs: stub_worldmap.lua, stub_questie.lua
--- With Questie loaded, its world map icons for the shown map are mirrored on our canvas (frames of ours, at each icon's spot, size, art and frame level, with its objective glow and overlay; sized as Questie sizes them for the shown kind of map); one Questie hides and another zone's are left out; a new map and a zoom draw them afresh; the continent and Azeroth show every zone's by HBD's show flag, none with Questie's "hide icons on continents"; an icon Questie adds, sizes, hides, fades or removes while the map is open follows at once through post-hooks, that icon alone, with no timer; hovered, an icon shows Questie's tooltip in a tooltip of ours in Polestar's look (never GameTooltip), with the icons round it, its long form on Shift; a click opens the icon's zone on our map, a modified click is the icon's own, a right-click goes out a map; nothing of Questie's is written (the stub errors) and the stock map never opens.
+-- With Questie loaded, its world map icons for the shown map are mirrored on our canvas (frames of ours, at each icon's spot, size, art and frame level, with its objective glow and overlay; sized as Questie sizes them for the shown kind of map); one Questie hides and another zone's are left out; a new map and a zoom draw them afresh; the continent and Azeroth show every zone's by HBD's show flag, none with Questie's "hide icons on continents"; an icon Questie adds, sizes, hides, fades or removes while the map is open follows at once through post-hooks, that icon alone, with no timer; hovered, an icon shows Questie's tooltip in a tooltip of ours in Polestar's look (never GameTooltip), with the icons round it, its long form on Shift; a click opens the icon's zone on our map, a modified click is the icon's own, a right-click goes out a map; Questie's patrol paths of the shown map are drawn on our canvas by its own renderer, each route once, redrawn once a frame as Questie says they changed and never while closed; nothing of Questie's is written (the stub errors) and the stock map never opens.
 stub.pressKey("M")
 local c = PolestarUIWorldMapCanvas
 local holder = PolestarUIQuestiePins
@@ -146,6 +146,64 @@ stub.RunScript(by["slay@576,-384"], "OnMouseUp", "LeftButton")
 assert(c.mapID == 37 and not WorldMapFrame:IsShown(), "a click opens the icon's zone on our map: " .. shown())
 stub.questieRemove(kobold)
 stub.questieRemove(far)
+-- Patrol paths (Questie's waypoint lines): the shown map's, drawn by Questie's own renderer on our canvas, in canvas units, its width held on screen, under the icons; a route two icons share draws once; another map's is left out.
+local walker = stub.questieIcon(37, 0.2, 0.2, I .. "slay.blp", 12, false, 3, { Type = "monster", Name = "Walker", IconScale = 1 })
+local twin = stub.questieIcon(37, 0.2, 0.2, I .. "loot.blp", 12, false, 3, { Type = "item", Name = "Walker", IconScale = 1 })
+local p1 = stub.questiePath(walker, 37, { { x = 20, y = 20 }, { x = 40, y = 50 } }, "m_1:37:1")
+stub.questiePath(twin, 37, { { x = 20, y = 20 }, { x = 40, y = 50 } }, "m_1:37:1")
+local other = stub.questiePath(walker, 52, { { x = 10, y = 10 }, { x = 20, y = 20 } }, "m_1:52:1")
+local R = stub.questieRenderers
+assert(#R == 0 or R[1].drawn == 0, "drawn before the next frame")
+stub.advance(0.05)
+local r = R[1]
+assert(#R == 1 and r.canvas == c:GetCanvas(), "Questie's renderer on our canvas, never the stock map's")
+local function views() local t = {} for v in pairs(r.owned) do if v:IsShown() then t[#t + 1] = v end end return t end
+local v = views()
+assert(#v == 1 and r.drawn == 1, "one line for the shared route, none for another map's: " .. #v)
+local pts = v[1].runs[1]
+assert(near(pts[1].x, 200.4) and near(pts[1].y, 133.6) and near(pts[2].x, 400.8) and near(pts[2].y, 334), "the path in canvas units")
+assert(near(v[1].style.thickness, 3 / 0.9) and v[1].style.frameLevel == 2015 and v[1].style.color[2] == 1, "its style")
+-- Many changes in one frame: one redraw, the drawn line kept (its style alone set again).
+p1.highlighted = true
+for _ = 1, 5 do QuestieLoader:ImportModule("WaypointMap").Invalidate() end
+stub.advance(0.05)
+assert(r.drawn == 1 and views()[1].style.color[1] == 1, "the highlight: restyled, not drawn again")
+p1.highlighted = nil
+-- Zoomed: the same line, thinner in canvas units.
+stub.mapScale = 2.7
+c:OnCanvasScaleChanged()
+assert(r.drawn == 1 and near(views()[1].style.thickness, 3 / 2.7), "zoom")
+stub.mapScale = nil
+c:OnCanvasScaleChanged()
+-- Its icon hidden by Questie, or the setting off: no line.
+walker:FakeHide()
+twin:FakeHide()
+QuestieLoader:ImportModule("WaypointMap").Invalidate()
+stub.advance(0.05)
+assert(#views() == 0, "a hidden icon's path")
+walker:FakeShow()
+twin:FakeShow()
+QuestieLoader:ImportModule("WaypointMap").Invalidate()
+stub.advance(0.05)
+assert(#views() == 1, "shown again")
+-- Another map: its own path, at once.
+c:SetMapID(52)
+v = views()
+assert(#v == 1 and near(v[1].runs[1][1].x, 100.2), "Westfall's path")
+c:SetMapID(37)
+-- Closed: Questie's changes draw nothing; reopened, they are there.
+PolestarUIWorldMap:Hide()
+local drawn = r.drawn
+stub.questiePathGone(p1)
+stub.advance(0.05)
+assert(r.drawn == drawn, "drawn while closed")
+stub.pressKey("M")
+assert(#views() == 1, "the twin's copy of the route after the first is gone")
+for path in pairs(QuestieLoader:ImportModule("QuestieWaypoints").paths) do stub.questiePathGone(path) end
+stub.advance(0.05)
+assert(#views() == 0, "paths left")
+stub.questieRemove(walker)
+stub.questieRemove(twin)
 -- Nothing of ours runs on a timer.
 assert(not holder:GetScript("OnUpdate"), "a polling OnUpdate")
 -- Closed, Questie's changes are not drawn; reopened on the same map, drawn afresh.

@@ -23,7 +23,7 @@ function hbd:GetZoneCoordinatesFromWorldInstance(x, y, instance, zone)
 	return x, y
 end
 function hbd:GetAzerothWorldMapCoordinatesFromWorld(x, y) return (x + 4000) / 8000, (y + 4000) / 8000 end
-Questie = { db = { profile = { hideIconsOnContinents = false, alwaysGlowMap = true, globalScale = 0.75 } } }
+Questie = { db = { profile = { hideIconsOnContinents = false, alwaysGlowMap = true, globalScale = 0.75, waypointMapEnabled = true, waypointWidth = 3 } } }
 
 -- Questie's HereBeDragons-Pins copy: the registry's writers, as Questie calls them (zone x, y in 0..1).
 function pins:AddWorldMapIconMap(ref, icon, uiMapID, x, y, showFlag)
@@ -101,6 +101,41 @@ modules.MapIconTooltip = { ShowOnTooltip = function(self, tooltip, owner, icons)
 	tooltip:_Rebuild()
 	tooltip:Show()
 end }
+-- Questie's patrol paths: its registry (a path: its map, its points in the
+-- map's percent, its route and owner icon), how each shows, and its line
+-- renderer on a canvas (a view: a frame with its points and style). Questie
+-- says a change through WaypointMap.Invalidate.
+-- stub.questiePath(icon, map, points, route) -> the path; stub.questiePathGone(path).
+local ways = { paths = {} }
+function ways.WorldMapAlpha(path) if Questie.db.profile.waypointMapEnabled and not path.owner.hidden then return 1 end end
+function ways.IsHighlighted(path) return path.highlighted or false end
+function ways.Color(path) return path.highlighted and { 1, 1, 0, 1 } or { 0, 1, 0, 1 } end
+modules.QuestieWaypoints = ways
+modules.WaypointMap = { Invalidate = function() stub.questieInvalidated = (stub.questieInvalidated or 0) + 1 end }
+stub.questieRenderers = {}
+modules.WaypointRenderer = { New = function(canvas)
+	local r = { canvas = canvas, owned = {}, drawn = 0 }
+	function r:Restyle(view, style) assert(self.owned[view], "not this renderer's view") view.style = style end
+	function r:Draw(view, runs, style)
+		view = view or CreateFrame("Frame", nil, canvas)
+		self.owned[view], self.drawn = true, self.drawn + 1
+		view.runs = runs
+		view:Hide()
+		self:Restyle(view, style)
+		return view
+	end
+	function r:Release(view) view:Hide() self.owned[view] = nil end
+	function r:Clear() for view in pairs(self.owned) do self:Release(view) end end
+	stub.questieRenderers[#stub.questieRenderers + 1] = r
+	return r
+end }
+function stub.questiePath(icon, map, points, route)
+	local path = { owner = icon, data = icon.data, uiMapId = map, points = points, route = route }
+	ways.paths[path] = true
+	modules.WaypointMap.Invalidate()
+	return path
+end
+function stub.questiePathGone(path) ways.paths[path] = nil modules.WaypointMap.Invalidate() end
 modules.QuestieFrame = { ResetHoverHighlights = function(t)
 	stub.questieUnhovered = t.data
 	for _, e in ipairs(t.data.touchedPins or {}) do e.icon.texture:SetVertexColor(unpack(e.color)) end
