@@ -380,36 +380,37 @@ function H.ShadowColor(look)
 end
 
 -- Polestar's window shadow round region `rel` (default f), as Theme.lua's
--- shadowFor lays it (its softBox): eight slices of Media/UI/shadow on a box
--- `out` units round rel, dropped out / 4, cut at the shape's edge (half
--- strength), each corner reaching out * 6 / 16 into rel (the window's 16, 4
--- and 6, scaled). Textures on `f` only: no rect Edit Mode sees.
+-- shadowFor lays it (its softBox): Media/UI/shadow on a box `out` units
+-- round rel, dropped out / 4, each corner reaching out * 6 / 16 into rel (the
+-- window's 16, 4 and 6, scaled). Polestar's slices run on inside the shape
+-- (half strength at its edge), where an opaque window covers them; a HUD
+-- ground is translucent, so that part showed through it as a darker frame
+-- inside the frame. Ours are cut at rel's edge: the box as a 5 x 5 grid (the
+-- box's edge, rel's edge, the corner's end, on each side), the nine cells
+-- over rel left out. Textures on `f` only: no rect Edit Mode sees.
 local SLICE = 20 / 64
 function H.Shadow(f, rel, out)
 	rel, out = rel or f, out or 16
-	local drop, C, S, parts = out / 4, out * 22 / 16, SLICE, {}
-	local function part(u0, u1, v0, v1)
-		local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
-		t:SetTexture(Theme.Media("shadow"))
-		t:SetTexCoord(u0, u1, v0, v1)
-		parts[#parts + 1] = t
-		return t
+	local drop, inner, parts = out / 4, out * 6 / 16, {}
+	local k = SLICE / (out + inner) -- texture coordinate per unit in a corner
+	-- Grid lines: { rel's side, offset, texture coordinate }, left to right and top to bottom.
+	local xs = { { "LEFT", -out, 0 }, { "LEFT", 0, out * k }, { "LEFT", inner, SLICE },
+		{ "RIGHT", -inner, 1 - SLICE }, { "RIGHT", 0, 1 - out * k }, { "RIGHT", out, 1 } }
+	local ys = { { "TOP", out - drop, 0 }, { "TOP", 0, (out - drop) * k }, { "TOP", -inner - drop, SLICE },
+		{ "BOTTOM", inner - drop, 1 - SLICE }, { "BOTTOM", 0, 1 - (out + drop) * k }, { "BOTTOM", -out - drop, 1 } }
+	for j = 1, 5 do
+		for i = 1, 5 do
+			if i == 1 or i == 5 or j == 1 or j == 5 then
+				local x0, x1, y0, y1 = xs[i], xs[i + 1], ys[j], ys[j + 1]
+				local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+				t:SetTexture(Theme.Media("shadow"))
+				t:SetTexCoord(x0[3], x1[3], y0[3], y1[3])
+				t:SetPoint("TOPLEFT", rel, y0[1] .. x0[1], x0[2], y0[2])
+				t:SetPoint("BOTTOMRIGHT", rel, y1[1] .. x1[1], x1[2], y1[2])
+				parts[#parts + 1] = t
+			end
+		end
 	end
-	local tl, tr, bl, br = part(0, S, 0, S), part(1 - S, 1, 0, S), part(0, S, 1 - S, 1), part(1 - S, 1, 1 - S, 1)
-	for _, t in ipairs({ tl, tr, bl, br }) do t:SetSize(C, C) end
-	tl:SetPoint("TOPLEFT", rel, "TOPLEFT", -out, out - drop)
-	tr:SetPoint("TOPRIGHT", rel, "TOPRIGHT", out, out - drop)
-	bl:SetPoint("BOTTOMLEFT", rel, "BOTTOMLEFT", -out, -out - drop)
-	br:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", out, -out - drop)
-	local function edge(a1, a2, ul, ur, vt, vb)
-		local t = part(ul, ur, vt, vb)
-		t:SetPoint(a1[1], a1[2], a1[3])
-		t:SetPoint(a2[1], a2[2], a2[3])
-	end
-	edge({ "TOPLEFT", tl, "TOPRIGHT" }, { "BOTTOMRIGHT", tr, "BOTTOMLEFT" }, S, 1 - S, 0, S)
-	edge({ "TOPLEFT", bl, "TOPRIGHT" }, { "BOTTOMRIGHT", br, "BOTTOMLEFT" }, S, 1 - S, 1 - S, 1)
-	edge({ "TOPLEFT", tl, "BOTTOMLEFT" }, { "BOTTOMRIGHT", bl, "TOPRIGHT" }, 0, S, S, 1 - S)
-	edge({ "TOPLEFT", tr, "BOTTOMLEFT" }, { "BOTTOMRIGHT", br, "TOPRIGHT" }, 1 - S, 1, S, 1 - S)
 	return parts
 end
 

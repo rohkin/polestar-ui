@@ -127,7 +127,7 @@ stub.advance(0.6)
 local edge = PolestarUIMinimapEdge
 local br, bg, bb = T.Color("windowBorder")
 local lines, shade = regions(edge, "OVERLAY", 7, "white"), regions(edge, "BACKGROUND", -8, "shadow")
-assert(#lines == 4 and #shade == 8, "the minimap's edge or shadow is missing")
+assert(#lines == 4 and #shade == 16, "the minimap's edge or shadow is missing")
 for _, e in ipairs(lines) do
 	local r, g, b = e:GetVertexColor()
 	assert(e:IsShown() and near(r, br) and near(g, bg) and near(b, bb) and (near(e:GetHeight(), 3 * T.Pixel(edge)) or near(e:GetWidth(), 3 * T.Pixel(edge))), "the minimap's edge is not the window border at 3 px")

@@ -91,3 +91,16 @@ for _, r in ipairs({ ses:GetRegions() }) do
 	end
 end
 assert(pills == 3, "the session pill: " .. pills .. " pieces")
+-- The ground's shadow lies outside the container only: its pieces are cut at the edge (under a translucent ground the part inside showed as a darker frame within the frame).
+local shadows = 0
+for _, r in ipairs({ c:GetRegions() }) do
+	if r.kind ~= "FontString" and r:GetTexture() == T.Media("shadow") then
+		local p, q = r.points[1], r.points[2]
+		local function side(s, sign, axis)
+			return p.relPoint:find(s) and q.relPoint:find(s) and p[axis] * sign >= 0 and q[axis] * sign >= 0
+		end
+		assert(p.rel == c and q.rel == c and (side("TOP", 1, "y") or side("BOTTOM", -1, "y") or side("LEFT", -1, "x") or side("RIGHT", 1, "x")), "a shadow piece reaches inside the window")
+		shadows = shadows + 1
+	end
+end
+assert(shadows == 16, "the ground's shadow: " .. shadows .. " pieces")
