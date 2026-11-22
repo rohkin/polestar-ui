@@ -17,6 +17,10 @@ local ZOOMS = { 1.5, 2.25, 3 }
 local QUEST_W = 320
 local f, canvas
 local M = {}
+-- Other addons' drawings on our canvas (Addons/*, docs/addons.md): each
+-- fn(canvas) draws afresh for the shown map, its size and its zoom.
+M.overlays = {}
+local function overlays() for _, fn in ipairs(M.overlays) do fn(canvas) end end
 
 -- The stock world map's providers (WorldMapMixin:AddStandardDataProviders),
 -- by name so one this game lacks is skipped; less the stock map's own (its
@@ -456,6 +460,8 @@ local function build()
 	f.Scroll:Hide()
 	buildCanvas()
 	hooksecurefunc(canvas, "OnMapChanged", function() M.Refresh() end)
+	hooksecurefunc(canvas, "OnCanvasScaleChanged", overlays)
+	hooksecurefunc(canvas, "OnCanvasSizeChanged", overlays)
 	f.psSize = { f:GetWidth(), f:GetHeight() }
 	f.psQuests = ns.QuestLog(f, canvas, QUEST_W)
 	f.psQuests:SetPoint("TOPRIGHT", f.Content, "TOPRIGHT", 0, 0)
@@ -504,6 +510,7 @@ function M.Refresh()
 	local id = canvas:GetMapID()
 	local info = id and C_Map.GetMapInfo(id)
 	if not info then return end
+	overlays()
 	local go = f.psGo
 	go.Label:SetText(info.name)
 	go:SetWidth(math.ceil(go.Label:GetStringWidth()) + 10 + 8 + 12 + 10)

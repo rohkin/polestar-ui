@@ -49,6 +49,8 @@ function Canvas:AddDataProvider(p) self.providers[#self.providers + 1] = p end
 function Canvas:SetMapID(id) if id ~= self.mapID then self.mapID = id; self:OnMapChanged() end end
 function Canvas:GetMapID() return self.mapID end
 function Canvas:OnMapChanged() end
+function Canvas:OnCanvasScaleChanged() end
+function Canvas:OnCanvasSizeChanged() end
 function Canvas:ResetZoom() self.zoomedOut = true end
 -- The player at 41.2, 65.3 in Elwynn (and so nowhere on another map); the
 -- cursor over the map once a scene sets stub.mapCursor = { x, y }.

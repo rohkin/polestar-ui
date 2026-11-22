@@ -57,6 +57,7 @@ Addons\AuctionHouse.lua
 Addons\Baganator.lua
 Addons\Bagnon.lua
 Addons\Immersion.lua
+Addons\Questie.lua
 Addons\TalentsForever.lua
 Addons\WhatsTraining.lua
 Settings.lua
