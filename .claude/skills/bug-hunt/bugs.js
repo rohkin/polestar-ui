@@ -1,7 +1,7 @@
-// node bugs.js <!BugGrabber.lua> [filter=Polestar_UI] [localsMatch]
+// node bugs.js <!BugGrabber.lua> [filter=PolestarUI] [localsMatch]
 // Prints each BugGrabberDB.errors entry whose message+stack contains `filter`, newest info first line.
 const fs = require("fs");
-const [file, filter = "Polestar_UI", showLocals] = process.argv.slice(2);
+const [file, filter = "PolestarUI", showLocals] = process.argv.slice(2);
 if (!file) { console.error("usage: node bugs.js <!BugGrabber.lua> [filter] [localsMatch]"); process.exit(1); }
 const entries = fs.readFileSync(file, "utf8").split(/\r?\n\{\r?\n/).slice(1);
 const get = (e, k) => { const m = e.match(new RegExp('\\["' + k + '"\\] = ("(?:[^"\\\\]|\\\\.)*"|\\d+)')); return m ? m[1] : ""; };

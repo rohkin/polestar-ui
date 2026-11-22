@@ -1,4 +1,4 @@
-package-as: Polestar_UI
+package-as: PolestarUI
 
 manual-changelog:
   filename: CHANGELOG.md

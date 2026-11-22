@@ -77,8 +77,8 @@ function dumpPanel(panel, prelude) {
 	const { emitted } = runAddon({
 		stubs: ['stub_ui.lua', 'stub_ui_local.lua', 'stub_client.lua', 'stub_character.lua', 'stub_unitframes.lua', ...panel.stubs],
 		before: `${prelude}\ndofile(${JSON.stringify(path.join(ROOT, 'tools', 'preview', 'stub.lua'))})`,
-		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, ...LOOKS_ADDON, { name: 'Polestar_UI', dir: ROOT }],
-		saved: panel.saved && { Polestar_UI: panel.saved },
+		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, ...LOOKS_ADDON, { name: 'PolestarUI', dir: ROOT }],
+		saved: panel.saved && { PolestarUI: panel.saved },
 		script: `uistub.install()\nstub.login()\n${panel.script}\nstub.advance(1)\nstub.assertNoErrors()\npreview.emit()`,
 	});
 	const dump = emitted[emitted.length - 1];

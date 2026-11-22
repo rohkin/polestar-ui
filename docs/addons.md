@@ -4,7 +4,7 @@
 a skin of its frames (Baganator), or its data in one of our windows (What's
 Training?, Talents Forever). Every such file:
 
-- loads after every module (the end of `Polestar_UI.toc`) and never names its
+- loads after every module (the end of `PolestarUI.toc`) and never names its
   addon in `## OptionalDeps`: we do not suggest installing those addons
   alongside ours. It wraps its whole body in `ns.AfterLogin(function() ... end)`
   (Core.lua; runs at PLAYER_LOGIN before the modules are enabled), so its

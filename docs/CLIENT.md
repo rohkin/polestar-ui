@@ -570,7 +570,7 @@ icons, the zone name's tooltip).
 **Exception (the user's leave, approved), the cooldown viewers' square sweep:**
 from `Modules/CooldownViewer.lua` only, `Cooldown:SetSwipeTexture(...)` on
 the `Cooldown` child of the items in `EssentialCooldownViewer`,
-`UtilityCooldownViewer` and `BuffIconCooldownViewer` (Polestar_UI's `Media/cooldown-swipe-<size>`, white with a 2-texel clear margin, while
+`UtilityCooldownViewer` and `BuffIconCooldownViewer` (PolestarUI's `Media/cooldown-swipe-<size>`, white with a 2-texel clear margin, while
 our square icons show; given back as the templates' own
 `Interface\HUD\UI-HUD-CoolDownManager-Icon-Swipe` when switched off). The
 game's rounded sweep on our square icon would leave its corners uncovered.

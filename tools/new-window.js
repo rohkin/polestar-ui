@@ -107,7 +107,7 @@ if (!fs.existsSync(path.join(ROOT, doc))) files[doc] = `#### ${Name} (\`${stock}
 for (const [p, text] of Object.entries(files)) fs.writeFileSync(path.join(ROOT, p), text);
 
 // The module line goes before Tooltips (the HUD restyles load last), else at the end.
-const toc = path.join(ROOT, 'Polestar_UI.toc');
+const toc = path.join(ROOT, 'PolestarUI.toc');
 const eol = fs.readFileSync(toc, 'utf8').includes('\r\n') ? '\r\n' : '\n';
 const lines = fs.readFileSync(toc, 'utf8').split(/\r?\n/);
 const entry = "Modules\\" + Name + ".lua";

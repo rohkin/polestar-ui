@@ -14,7 +14,7 @@
 
 local function ours(level)
 	local info = debug.getinfo(level + 1, "S")
-	return info and stub.addonSources[info.source] == "Polestar_UI"
+	return info and stub.addonSources[info.source] == "PolestarUI"
 end
 
 -- A breach errors where it happens, and is kept: Polestar's login and event

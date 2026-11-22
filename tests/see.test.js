@@ -1,6 +1,6 @@
 'use strict';
 // tools/see.js against a made-up game folder (saved variables, BugGrabber's log, a screenshot), and the
-// Polestar_UI_See addon under the client stub.
+// PolestarUI_See addon under the client stub.
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -26,7 +26,7 @@ PolestarUISeeDB = {
 "${T - 5} show merchant", -- [4]
 "${T} mark the \\"Buy\\" tab eats clicks", -- [5]
 },
-["info"] = "build=1.60.1.70338 res=1920x1080\\naddons: Polestar_UI=0.1.0",
+["info"] = "build=1.60.1.70338 res=1920x1080\\naddons: PolestarUI=0.1.0",
 }
 `;
 const BUGS = `
@@ -34,16 +34,16 @@ BugGrabberDB = {
 ["session"] = 343,
 ["errors"] = {
 {
-["message"] = "Interface/AddOns/Polestar_UI/Core.lua:10: old",
+["message"] = "Interface/AddOns/PolestarUI/Core.lua:10: old",
 ["time"] = ${T - 5000},
-["stack"] = "[Interface/AddOns/Polestar_UI/Core.lua]:10: in function 'x'\\n",
+["stack"] = "[Interface/AddOns/PolestarUI/Core.lua]:10: in function 'x'\\n",
 ["session"] = 340,
 ["counter"] = 1,
 },
 {
-["message"] = "Interface/AddOns/Polestar_UI/Modules/Merchant.lua:42: attempt to index local 'row' (a nil value)",
+["message"] = "Interface/AddOns/PolestarUI/Modules/Merchant.lua:42: attempt to index local 'row' (a nil value)",
 ["time"] = ${T - 3},
-["stack"] = "[Interface/AddOns/Polestar_UI/Modules/Merchant.lua]:42: in function 'paint'\\n[Interface/AddOns/!BugGrabber/BugGrabber.lua]:1: in function <x>\\n",
+["stack"] = "[Interface/AddOns/PolestarUI/Modules/Merchant.lua]:42: in function 'paint'\\n[Interface/AddOns/!BugGrabber/BugGrabber.lua]:1: in function <x>\\n",
 ["session"] = 343,
 ["counter"] = 4,
 },
@@ -64,14 +64,14 @@ test('the saved table parses into marks, events and info', () => {
 	assert.deepStrictEqual([db.marks[1].t, db.marks[1].fx, db.marks[1].fy, db.marks[1].note], [T, 0.75, 0.25, 'the "Buy" tab eats clicks']);
 	assert.match(db.marks[1].body, /^combat=false.*\nfocus: PolestarUIMerchant/);
 	assert.strictEqual(db.events.length, 5);
-	assert.strictEqual(db.info.split('\n')[1], 'addons: Polestar_UI=0.1.0');
+	assert.strictEqual(db.info.split('\n')[1], 'addons: PolestarUI=0.1.0');
 });
 
 test('a digest lists the new marks, this session\'s errors and the events since the load, with small images', () => {
 	const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pui-see-'));
 	const sv = path.join(root, 'WTF', 'Account', 'X', 'SavedVariables'), shots = path.join(root, 'Screenshots'), out = path.join(root, 'out');
 	for (const d of [sv, shots, out]) fs.mkdirSync(d, { recursive: true });
-	fs.writeFileSync(path.join(sv, 'Polestar_UI_See.lua'), SAVED);
+	fs.writeFileSync(path.join(sv, 'PolestarUI_See.lua'), SAVED);
 	fs.writeFileSync(path.join(sv, '!BugGrabber.lua'), BUGS);
 	fs.writeFileSync(path.join(out, 'see.json'), JSON.stringify({ marks: [T - 500], session: 342 }));
 	// A fake screenshot stamped a second after the mark, when ffmpeg is here to make and cut it.
@@ -84,8 +84,8 @@ test('a digest lists the new marks, this session\'s errors and the events since 
 		assert.match(text, /### 22:29:10 "the "Buy" tab eats clicks"/);
 		assert.match(text, /stock shown: merchant=MerchantFrame\(mouse\) !!/);
 		assert.doesNotMatch(text, /an old one/);
-		assert.match(text, /22:29:07 x4 Interface\/AddOns\/Polestar_UI\/Modules\/Merchant\.lua:42/);
-		assert.match(text, / {4}\[Polestar_UI\/Modules\/Merchant\.lua\]:42: in function 'paint'/);
+		assert.match(text, /22:29:07 x4 Interface\/AddOns\/PolestarUI\/Modules\/Merchant\.lua:42/);
+		assert.match(text, / {4}\[PolestarUI\/Modules\/Merchant\.lua\]:42: in function 'paint'/);
 		assert.doesNotMatch(text, /Core\.lua:10: old|BugGrabber\.lua\]/);
 		assert.match(text, /- 22:29:08 x1 Interface\/AddOns\/Questie/);
 		assert.match(text, /## Events \(3\)/);
@@ -103,11 +103,11 @@ test('a digest lists the new marks, this session\'s errors and the events since 
 });
 
 test('the See addon marks under the client stub', () => {
-	const file = path.join(__dirname, '..', 'tools', 'see', 'Polestar_UI_See', 'See.lua').replace(/\\/g, '/');
+	const file = path.join(__dirname, '..', 'tools', 'see', 'PolestarUI_See', 'See.lua').replace(/\\/g, '/');
 	const script = `
 Screenshot = function() stub.shot = (stub.shot or 0) + 1 end
-assert(loadfile("${file}"))("Polestar_UI_See", {})
-stub.addonLoaded("Polestar_UI_See")
+assert(loadfile("${file}"))("PolestarUI_See", {})
+stub.addonLoaded("PolestarUI_See")
 stub.fire("PLAYER_ENTERING_WORLD", true, false)
 PolestarUI.Show("spellbook")
 SlashCmdList.POLESTARUISEE("  the tab | eats clicks ")

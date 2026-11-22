@@ -1,9 +1,9 @@
 'use strict';
-// see [--root <_forever_ folder>] [--watch]: turns what the Polestar_UI_See addon recorded (/puisee [note], then
+// see [--root <_forever_ folder>] [--watch]: turns what the PolestarUI_See addon recorded (/puisee [note], then
 // /reload) into one small text file, screenshots/game/digest.md: each new mark's state and note, this session's Lua
 // errors (!BugGrabber.lua, ours with their stack) and the event log; per mark two small images, cut by tools/look.js
 // from the screenshot the mark took: a 640x400 crop round the cursor and the whole screen at 960 px (docs/see.md).
-// PolestarUISeeDB (WTF/Account/*/SavedVariables/Polestar_UI_See.lua, the newest) holds only flat strings:
+// PolestarUISeeDB (WTF/Account/*/SavedVariables/PolestarUI_See.lua, the newest) holds only flat strings:
 //   marks = { "<time()>|<cursor x 0..1>|<cursor y 0..1>|<note>\n<state>" }, events = { "<time()> text" },
 //   info = "...", session = <BugGrabber's session>.
 // --watch polls and writes the digest once per save that has a new mark or new errors of ours (done marks and the
@@ -51,7 +51,7 @@ function parseBugs(text, session) {
 	const all = text.split(/\r?\n\{\r?\n/).slice(1).map((e) => ({ session: Number(get(e, 'session')), message: get(e, 'message'), stack: get(e, 'stack'), count: Number(get(e, 'counter')) || 1, t: Number(get(e, 'time')) }));
 	const want = session > 0 ? session : Math.max(0, ...all.map((e) => e.session));
 	return all.filter((e) => e.session === want).sort((a, b) => a.t - b.t).map((e) => ({
-		message: e.message, count: e.count, t: e.t, ours: /Polestar_UI/.test(e.message + e.stack),
+		message: e.message, count: e.count, t: e.t, ours: /PolestarUI/.test(e.message + e.stack),
 		stack: e.stack.replace(/Interface\/AddOns\//g, '').split('\n').filter((l) => l && !/BugGrabber/.test(l)),
 	}));
 }
@@ -82,7 +82,7 @@ function newest(root, file) {
 // always (write even with nothing new) }. Returns { marks, ours, errors, file } or null (nothing new, or no save).
 function digest(root, o = {}) {
 	const out = o.out || OUT, cut = o.cut === undefined ? look.cut : o.cut;
-	const sv = newest(root, 'Polestar_UI_See.lua');
+	const sv = newest(root, 'PolestarUI_See.lua');
 	if (!sv) return null;
 	const db = parseSaved(fs.readFileSync(sv, 'utf8'));
 	const statePath = path.join(out, 'see.json');
@@ -95,7 +95,7 @@ function digest(root, o = {}) {
 	if (!o.always && !marks.length && !(ours.length && db.session !== state.session)) return null;
 
 	const L = [`# Game digest (${new Date(fs.statSync(sv).mtimeMs).toLocaleString('sv')}, BugGrabber session ${db.session || '?'})`, '', db.info || '(no info line: the addon saw no login)'];
-	const addon = path.join(root, 'Interface', 'AddOns', 'Polestar_UI');
+	const addon = path.join(root, 'Interface', 'AddOns', 'PolestarUI');
 	let linked = false;
 	try { linked = fs.realpathSync(addon) === fs.realpathSync(ROOT); } catch {}
 	if (!linked) L.push(`WARNING: ${addon} is not a link to this checkout: the game ran another copy of Polestar: UI (npm run link).`);
@@ -119,12 +119,12 @@ function digest(root, o = {}) {
 
 	if (!bugs) L.push('', '## Errors', 'No !BugGrabber.lua next to the save.');
 	else {
-		L.push('', `## Errors this session (${bugs.length}; ${ours.length} touch Polestar_UI)`);
+		L.push('', `## Errors this session (${bugs.length}; ${ours.length} touch PolestarUI)`);
 		for (const e of ours.slice(-8)) L.push('', `${clock(e.t)} x${e.count} ${e.message}`, ...e.stack.slice(0, 8).map((l) => '    ' + l));
 		if (ours.length > 8) L.push('', `(${ours.length - 8} older ones of ours left out)`);
 		const rest = bugs.filter((e) => !e.ours);
 		if (rest.length) L.push('', 'Others:', ...rest.slice(-5).map((e) => `- ${clock(e.t)} x${e.count} ${e.message.slice(0, 200)}`));
-		if (bugs.length) L.push('', `Locals: node .claude/skills/bug-hunt/bugs.js "${bugsPath}" Polestar_UI <text in the message>`);
+		if (bugs.length) L.push('', `Locals: node .claude/skills/bug-hunt/bugs.js "${bugsPath}" PolestarUI <text in the message>`);
 	}
 
 	// The events since the last load, the newest 40.
@@ -151,14 +151,14 @@ function main(argv) {
 	const line = (r) => console.log(`SEE ${r.marks} new marks, ${r.ours} errors of ours (${r.errors} in all) -> ${rel(r.file)}`);
 	if (!argv.includes('--watch')) {
 		const r = digest(root, { always: true });
-		if (!r) { console.error(`No Polestar_UI_See.lua under ${path.join(root, 'WTF', 'Account')}: npm run link:see, enable the addon, /puisee, /reload.`); return 1; }
+		if (!r) { console.error(`No PolestarUI_See.lua under ${path.join(root, 'WTF', 'Account')}: npm run link:see, enable the addon, /puisee, /reload.`); return 1; }
 		line(r);
 		return 0;
 	}
-	console.log(`Watching ${path.join(root, 'WTF', 'Account', '*', 'SavedVariables', 'Polestar_UI_See.lua')} (Ctrl+C stops)`);
+	console.log(`Watching ${path.join(root, 'WTF', 'Account', '*', 'SavedVariables', 'PolestarUI_See.lua')} (Ctrl+C stops)`);
 	let seen = 0, last = 0;
 	setInterval(() => {
-		const sv = newest(root, 'Polestar_UI_See.lua');
+		const sv = newest(root, 'PolestarUI_See.lua');
 		if (!sv) return;
 		const m = fs.statSync(sv).mtimeMs;
 		// A tick after the save settles: !BugGrabber.lua is written in the same reload.

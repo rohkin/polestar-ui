@@ -265,7 +265,7 @@ local function hide(v) if stub.inCombat then return stub.secret(v) end return v 
 C_Secrets = C_Secrets or {}
 function C_Secrets.ShouldAurasBeSecret() return (stub.inCombat or stub.aurasSecret) and true or false end
 local function access(name)
-	if C_Secrets.ShouldAurasBeSecret() then error(name .. "(): Auras cannot be accessed when secret while tainted by 'Polestar_UI'", 3) end
+	if C_Secrets.ShouldAurasBeSecret() then error(name .. "(): Auras cannot be accessed when secret while tainted by 'PolestarUI'", 3) end
 end
 
 function C_UnitAuras.GetUnitAuraInstanceIDs(unit, filter, max, rule)

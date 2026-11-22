@@ -1,7 +1,7 @@
 'use strict';
-// shots [--root <_forever_ folder>] [--dry-run] [--watch]: copies the screenshots /puishots took (Polestar_UI_Shots
+// shots [--root <_forever_ folder>] [--dry-run] [--watch]: copies the screenshots /puishots took (PolestarUI_Shots
 // addon) into screenshots/game/<run>/<label>.<ext>, and the same into screenshots/game/latest/. The manifest is
-// PolestarUIShotsDB in WTF/Account/*/SavedVariables/Polestar_UI_Shots.lua (the newest), written on /reload or logout:
+// PolestarUIShotsDB in WTF/Account/*/SavedVariables/PolestarUI_Shots.lua (the newest), written on /reload or logout:
 // run = "<YYYYMMDD-HHMMSS>", shots = { "<time()>|<label>[|failed]", ... }. Each entry takes the
 // WoWScrnShot_MMDDYY_HHMMSS file stamped in its window (see pair). --watch polls the manifest and does each new run once
 // (done runs: screenshots/game/runs.json), printing one "SHOTS <n> files -> <folder>" line per run.
@@ -19,7 +19,7 @@ function manifestPath(root) {
 	const accounts = path.join(root, 'WTF', 'Account');
 	let svs = [];
 	try {
-		svs = fs.readdirSync(accounts).map((a) => path.join(accounts, a, 'SavedVariables', 'Polestar_UI_Shots.lua')).filter((p) => fs.existsSync(p));
+		svs = fs.readdirSync(accounts).map((a) => path.join(accounts, a, 'SavedVariables', 'PolestarUI_Shots.lua')).filter((p) => fs.existsSync(p));
 	} catch {}
 	return svs.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0] || null;
 }
@@ -106,7 +106,7 @@ function main(argv) {
 
 	if (!watch) {
 		const sv = manifestPath(root);
-		if (!sv) { console.error(`No Polestar_UI_Shots.lua under ${path.join(root, 'WTF', 'Account')}; run /puishots, then /reload.`); return 1; }
+		if (!sv) { console.error(`No PolestarUI_Shots.lua under ${path.join(root, 'WTF', 'Account')}; run /puishots, then /reload.`); return 1; }
 		const r = processRun(root, sv, dry);
 		if (!r) { console.error(`${sv} lists no shots.`); return 1; }
 		say(`Manifest: ${sv}${r.info ? `\n  ${r.info}` : ''}`);
@@ -116,7 +116,7 @@ function main(argv) {
 		return r.missing ? 1 : 0;
 	}
 
-	say(`Watching ${path.join(root, 'WTF', 'Account', '*', 'SavedVariables', 'Polestar_UI_Shots.lua')} (Ctrl+C stops)`);
+	say(`Watching ${path.join(root, 'WTF', 'Account', '*', 'SavedVariables', 'PolestarUI_Shots.lua')} (Ctrl+C stops)`);
 	let lastMtime = 0;
 	const tick = () => {
 		const sv = manifestPath(root);

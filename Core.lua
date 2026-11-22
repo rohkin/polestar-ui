@@ -23,6 +23,16 @@ function ns.PolestarTooOld(v)
 end
 ns.tooOld = ns.PolestarTooOld(Polestar.version)
 
+-- Our folder was Polestar_UI until Polestar's rule took the Polestar_* names
+-- for its own suite; an old copy left in AddOns would load beside us.
+local OLD = "Polestar_UI"
+local function oldFolder()
+	local A = C_AddOns or {}
+	local loaded, state = A.IsAddOnLoaded or IsAddOnLoaded, A.GetAddOnEnableState
+	if loaded and loaded(OLD) then return true end
+	return state ~= nil and (state(OLD, UnitName("player")) or 0) > 0
+end
+
 ns.modules, ns.order = {}, {}
 
 -- A module: { Enable = fn (once, at login or when switched on), Show = fn(...),
@@ -84,6 +94,14 @@ Polestar.OnLogin(function()
 	PolestarUIDB.pos = PolestarUIDB.pos or {}
 	PolestarUICharDB = PolestarUICharDB or {}
 	if ns.tooOld then return print(NEEDS) end
+	if oldFolder() then
+		-- Both copies would take the same windows: none of ours starts, the old one is off after /reload.
+		ns.tooOld, NEEDS = true, "Polestar: UI: the old Polestar_UI folder is still installed. Delete Interface\\AddOns\\Polestar_UI, then /reload."
+		local A = C_AddOns or {}
+		local disable = A.DisableAddOn or DisableAddOn
+		if disable then disable(OLD) end
+		return print(NEEDS)
+	end
 	local q = late
 	late = nil
 	for _, fn in ipairs(q) do fn() end

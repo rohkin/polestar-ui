@@ -294,7 +294,7 @@ sel:SetAllPoints(cluster)
 local stockClamp, oursLive = false, false
 local function fromUs(level)
 	local info = debug.getinfo(level + 1, "S")
-	return info and stub.addonSources[info.source] == "Polestar_UI"
+	return info and stub.addonSources[info.source] == "PolestarUI"
 end
 function cluster.SetClampRectInsets(self, l, r, t, b)
 	rawset(self, "clampInsets", { l, r, t, b })

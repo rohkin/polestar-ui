@@ -71,10 +71,14 @@ function expand(addonDir, entries) {
 	return out;
 }
 
-// The TOC's file list (lines that are not blank, comments or ## metadata).
+// The TOC's file list (lines that are not blank, comments or ## metadata). The
+// folder's own <name>.toc, else its only .toc (a checkout under another name).
 function tocEntries(addonDir) {
-	const name = path.basename(addonDir);
-	const toc = path.join(addonDir, `${name}.toc`);
+	let toc = path.join(addonDir, `${path.basename(addonDir)}.toc`);
+	if (!fs.existsSync(toc)) {
+		const tocs = fs.existsSync(addonDir) ? fs.readdirSync(addonDir).filter((f) => f.endsWith('.toc')) : [];
+		if (tocs.length === 1) toc = path.join(addonDir, tocs[0]);
+	}
 	if (!fs.existsSync(toc)) throw new Error(`no TOC at ${path.relative(ROOT, toc)}`);
 	return fs
 		.readFileSync(toc, 'utf8')

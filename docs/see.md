@@ -17,7 +17,7 @@ Dev tooling for a bug the user sees in game: mostly text, small images only when
 An image costs about width x height / 750 tokens; every tool line prints it. A full 1920x1080 screenshot is about
 1,800, and text in it is half size. Read the text first, then the smallest image that answers the question.
 
-## In game: marks (`tools/see/Polestar_UI_See`, `tools/see.js`)
+## In game: marks (`tools/see/PolestarUI_See`, `tools/see.js`)
 
 Setup, once: `npm run link:see`, enable "Polestar: UI See" in the addon list. Keep `npm run see:watch` running (Claude:
 in the background; each digest prints one `SEE ...` line).
@@ -34,7 +34,7 @@ in the background; each digest prints one `SEE ...` line).
      modules off; and the two images' paths (`screenshots/game/see/mark-<HHMMSS>.jpg`, `-full.jpg`), the cursor
      boxed in magenta;
    - the header: client build, resolution, UI scale, scheme and skin, addon versions, nameplate CVars, and a warning
-     when the game's `Polestar_UI` folder is not a link to this checkout;
+     when the game's `PolestarUI` folder is not a link to this checkout;
    - this session's errors from `!BugGrabber.lua`: ours with message, count and 8 stack lines, others one line each
      (locals: the bug-hunt skill's `bugs.js`);
    - the events since the load: load, enter world, combat on/off, `ns.Show`/`ns.Switch` calls, blocked and forbidden

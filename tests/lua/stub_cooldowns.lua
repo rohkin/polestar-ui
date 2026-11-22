@@ -49,7 +49,7 @@ function M.AddMaskTexture(self, m)
 end
 
 -- A Cooldown: its sweep drawn as a texture under the countdown, over the
--- swipe file's opaque part (Polestar_UI's cooldown-swipe-<n>: an n-texel
+-- swipe file's opaque part (PolestarUI's cooldown-swipe-<n>: an n-texel
 -- white square with a 2-texel transparent margin, on an n-unit item; the
 -- preview cannot load it, so white stands in), covering the fraction left
 -- from the top down.

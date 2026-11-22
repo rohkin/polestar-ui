@@ -1,17 +1,18 @@
 'use strict';
-// link / unlink [shots]: a directory junction <AddOns>\Polestar_UI -> this repo, so the game loads the working copy;
-// with `shots`, <AddOns>\Polestar_UI_Shots -> tools/shots/Polestar_UI_Shots (the dev screenshot addon); with `see`,
-// <AddOns>\Polestar_UI_See -> tools/see/Polestar_UI_See (the dev bug-mark addon, docs/see.md).
+// link / unlink [shots]: a directory junction <AddOns>\PolestarUI -> this repo, so the game loads the working copy;
+// with `shots`, <AddOns>\PolestarUI_Shots -> tools/shots/PolestarUI_Shots (the dev screenshot addon); with `see`,
+// <AddOns>\PolestarUI_See -> tools/see/PolestarUI_See (the dev bug-mark addon, docs/see.md).
 // AddOns: $WOW_FOREVER_ADDONS (as Polestar's tools), else the first _forever_ client found on a local drive.
-// Never deletes or overwrites a real folder; unlink removes only a junction or symlink.
+// Never deletes or overwrites a real folder; unlink removes only a junction or symlink, also one under the old
+// name (Polestar_UI, Polestar_UI_Shots, Polestar_UI_See: before the rename, Polestar's Polestar_* rule).
 
 const fs = require('node:fs');
 const path = require('node:path');
 
 const TARGETS = {
-	main: ['Polestar_UI', path.resolve(__dirname, '..')],
-	shots: ['Polestar_UI_Shots', path.resolve(__dirname, 'shots', 'Polestar_UI_Shots')],
-	see: ['Polestar_UI_See', path.resolve(__dirname, 'see', 'Polestar_UI_See')],
+	main: ['PolestarUI', path.resolve(__dirname, '..'), 'Polestar_UI'],
+	shots: ['PolestarUI_Shots', path.resolve(__dirname, 'shots', 'PolestarUI_Shots'), 'Polestar_UI_Shots'],
+	see: ['PolestarUI_See', path.resolve(__dirname, 'see', 'PolestarUI_See'), 'Polestar_UI_See'],
 };
 const isDir = (p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } };
 
@@ -29,16 +30,16 @@ function findAddons(env) {
 
 function run(cmd, which = 'main', env = process.env) {
 	if ((cmd !== 'link' && cmd !== 'unlink') || !TARGETS[which]) { console.error('usage: node tools/link.js link|unlink [shots|see]'); return 2; }
-	const [NAME, REPO] = TARGETS[which];
+	const [NAME, REPO, OLD] = TARGETS[which];
 	const addons = findAddons(env);
 	if (!addons) {
 		console.error('No WoW Forever AddOns folder found. Set it, then open a new terminal:\n  setx WOW_FOREVER_ADDONS "<WoW>\_forever_\Interface\AddOns"');
 		return 1;
 	}
 	const dest = path.join(addons, NAME);
-	let st = null;
-	try { st = fs.lstatSync(dest); } catch {}
+	const st = lstat(dest);
 	if (cmd === 'link') {
+		if (lstat(path.join(addons, OLD))) console.warn(`${path.join(addons, OLD)} (the old name) is still there: both would load; npm run unlink removes a link, delete a real folder yourself.`);
 		if (st) {
 			if (!st.isSymbolicLink()) { console.error(`${dest} is a real folder (a release install?); remove it yourself first. Nothing changed.`); return 1; }
 			let same = false;
@@ -51,7 +52,13 @@ function run(cmd, which = 'main', env = process.env) {
 		console.log(`Linked: ${dest} -> ${REPO}`);
 		return 0;
 	}
-	if (!st) { console.log(`Not linked: ${dest} does not exist.`); return 0; }
+	return Math.max(unlink(dest, st, true), unlink(path.join(addons, OLD), lstat(path.join(addons, OLD)), false));
+}
+
+function lstat(p) { try { return fs.lstatSync(p); } catch { return null; } }
+
+function unlink(dest, st, say) {
+	if (!st) { if (say) console.log(`Not linked: ${dest} does not exist.`); return 0; }
 	if (!st.isSymbolicLink()) { console.error(`${dest} is a real folder, not a link; not removing it.`); return 1; }
 	fs.unlinkSync(dest); // removes the junction itself, never its contents
 	console.log(`Unlinked: ${dest}`);

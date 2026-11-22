@@ -13,7 +13,7 @@ const want = args.find((a) => !a.startsWith("--")) || "patch";
 const git = (c) => execSync("git " + c, { cwd: root, encoding: "utf8" }).trim();
 const fail = (m) => { console.error("release: " + m); process.exit(1); };
 
-const tocFile = path.join(root, "Polestar_UI.toc");
+const tocFile = path.join(root, "PolestarUI.toc");
 const logFile = path.join(root, "CHANGELOG.md");
 const toc = fs.readFileSync(tocFile, "utf8");
 const cur = (toc.match(/^## Version: (\d+)\.(\d+)\.(\d+)\s*$/m) || fail("no ## Version in the .toc")).slice(1).map(Number);
@@ -35,7 +35,7 @@ if (!m) fail('CHANGELOG.md has no "## Unreleased" section');
 if (!/^\s*[-*] /m.test(m[1])) fail('"## Unreleased" has no entries');
 
 console.log(`Release ${version} (from ${cur.join(".")}), tag ${tag}`);
-console.log("Touches: Polestar_UI.toc, CHANGELOG.md\n## " + version + "\n" + m[1].trimEnd() + "\n");
+console.log("Touches: PolestarUI.toc, CHANGELOG.md\n## " + version + "\n" + m[1].trimEnd() + "\n");
 const pushCmd = `git push origin main ${tag}`;
 if (dry) { console.log("Dry run: nothing changed. Real run pushes with:\n  " + pushCmd); process.exit(0); }
 
@@ -43,7 +43,7 @@ if (spawnSync("npm", ["test"], { cwd: root, stdio: "inherit", shell: true }).sta
 
 fs.writeFileSync(tocFile, toc.replace(/^## Version: .*$/m, "## Version: " + version));
 fs.writeFileSync(logFile, log.replace(/^## Unreleased/m, "## " + version));
-git("add -- Polestar_UI.toc CHANGELOG.md");
+git("add -- PolestarUI.toc CHANGELOG.md");
 git(`commit -m "Release ${version}"`);
 git(`tag ${tag}`);
 console.log(`Committed "Release ${version}" and tagged ${tag}.`);

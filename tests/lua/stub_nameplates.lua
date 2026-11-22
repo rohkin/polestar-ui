@@ -70,7 +70,7 @@ local WHITE = "Interface\\Buttons\\WHITE8X8"
 
 local function ours(level)
 	local info = debug.getinfo(level + 1, "S")
-	return info and stub.addonSources[info.source] == "Polestar_UI"
+	return info and stub.addonSources[info.source] == "PolestarUI"
 end
 -- The first addon on the stack, for the CVar record.
 local function addonOnStack()
@@ -121,7 +121,7 @@ function C_CVar.SetCVar(k, v, ...) return SetCVar(k, v, ...) end
 -- The CVars Polestar: UI wrote (it writes none).
 function stub.cvarsWrittenByUs()
 	local list = {}
-	for _, w in ipairs(stub.cvarWrites) do if w.by == "Polestar_UI" then list[#list + 1] = w.name end end
+	for _, w in ipairs(stub.cvarWrites) do if w.by == "PolestarUI" then list[#list + 1] = w.name end end
 	return list
 end
 

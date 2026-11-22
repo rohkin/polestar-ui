@@ -26,7 +26,7 @@ Still early: more windows are on the way. Done so far:
 
 ## Install
 
-Download `Polestar_UI-<version>.zip` from [Releases](https://github.com/rohkin/polestar-ui/releases) (not "Source code"), unzip it into `World of Warcraft/_forever_/Interface/AddOns/`, and restart the game.
+Download `PolestarUI-<version>.zip` from [Releases](https://github.com/rohkin/polestar-ui/releases) (not "Source code"), unzip it into `World of Warcraft/_forever_/Interface/AddOns/`, and restart the game.
 
 ## Use
 

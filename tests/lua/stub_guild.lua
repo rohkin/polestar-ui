@@ -113,7 +113,7 @@ function C_GuildInfo.GetGuildTabardInfo() return { emblemFileID = 1234 } end
 function C_GuildInfo.IsGuildRankAssignmentAllowed(guid, rank) return rank ~= 5 end
 function C_GuildInfo.SetGuildRankOrder(guid, rank) stub.rankSet = { guid, rank } end
 -- Forbidden to addon code (ADDON_ACTION_FORBIDDEN): only the stock note popup may call it.
-function C_GuildInfo.SetNote() error("ADDON_ACTION_FORBIDDEN: C_GuildInfo.SetNote from Polestar_UI", 2) end
+function C_GuildInfo.SetNote() error("ADDON_ACTION_FORBIDDEN: C_GuildInfo.SetNote from PolestarUI", 2) end
 function C_GuildInfo.RemoveFromGuild(guid) stub.removed = guid end
 function C_GuildInfo.Invite(name) stub.guildInvited = name end
 function C_GuildInfo.Leave() stub.left = true end

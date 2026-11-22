@@ -253,7 +253,7 @@ function UseToy(id)
 	for level = 2, 40 do
 		local info = debug.getinfo(level, "S")
 		if not info then break end
-		if stub.addonSources[info.source] == "Polestar_UI" then error("ADDON_ACTION_FORBIDDEN: UseToy from Polestar_UI", 2) end
+		if stub.addonSources[info.source] == "PolestarUI" then error("ADDON_ACTION_FORBIDDEN: UseToy from PolestarUI", 2) end
 	end
 	stub.usedToy = id
 end

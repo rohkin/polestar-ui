@@ -128,7 +128,7 @@ local function info()
 	local meta = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 	local loaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 	local v, np = {}, {}
-	for _, a in ipairs({ "Polestar_UI", "Polestar", "!BugGrabber", "BugSack", "Baganator" }) do
+	for _, a in ipairs({ "PolestarUI", "Polestar", "!BugGrabber", "BugSack", "Baganator" }) do
 		if loaded(a) then v[#v + 1] = a .. "=" .. s(meta(a, "Version")) end
 	end
 	for _, c in ipairs(NAMEPLATE) do

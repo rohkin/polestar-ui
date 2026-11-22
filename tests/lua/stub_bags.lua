@@ -73,7 +73,7 @@ function C_Container.UseContainerItem(bag, slot)
 	for level = 2, 40 do
 		local info = debug.getinfo(level, "S")
 		if not info then break end
-		if stub.addonSources[info.source] == "Polestar_UI" then error("ADDON_ACTION_BLOCKED: UseContainerItem from Polestar_UI", 2) end
+		if stub.addonSources[info.source] == "PolestarUI" then error("ADDON_ACTION_BLOCKED: UseContainerItem from PolestarUI", 2) end
 	end
 	table.insert(stub.used, { bag, slot })
 end
@@ -97,15 +97,15 @@ function C_NewItems.RemoveNewItem(bag, slot) stub.newItems[bag .. ":" .. slot] =
 -- OnHide (UpdateNewItemList), clears its bags' new-item flags. As in the
 -- client, its OnShow/OnHide run only when it becomes visible or stops being
 -- (not under a hidden parent; SetParent runs them too), and one run with
--- Polestar_UI code on the stack is reported: it would run as ours and taint
+-- PolestarUI code on the stack is reported: it would run as ours and taint
 -- the stock bags (docs/CLIENT.md, rules 8 and 19).
 stub.stockShown = {}
 local function guard(name, script)
 	for level = 3, 40 do
 		local info = debug.getinfo(level, "S")
 		if not info then break end
-		if stub.addonSources[info.source] == "Polestar_UI" then
-			return geterrorhandler()(name .. "'s " .. script .. " ran from Polestar_UI code (taints the stock bags)")
+		if stub.addonSources[info.source] == "PolestarUI" then
+			return geterrorhandler()(name .. "'s " .. script .. " ran from PolestarUI code (taints the stock bags)")
 		end
 	end
 end
@@ -258,14 +258,14 @@ function stub.selectEnchant() stub.targeting = true; OpenAllBagsMatchingContext(
 
 -- ContainerFrameItemButtonMixin, as far as our wells reach it. Its methods
 -- live in the button's lookup, not on the button, so a key written over one
--- shows. Addon code (Polestar_UI) writing a key the mixin reads, calling
+-- shows. Addon code (PolestarUI) writing a key the mixin reads, calling
 -- SetBagID, or replacing one of the template's scripts errors: the click
 -- would then run tainted and the client block its use (bags.md, Taint). As
 -- in the live client, the template's own RegisterForClicks does not take on
 -- a button addon code makes: it takes only left-ups until we register.
 local function ours(level)
 	local info = debug.getinfo(level + 1, "S")
-	return info and stub.addonSources[info.source] == "Polestar_UI"
+	return info and stub.addonSources[info.source] == "PolestarUI"
 end
 local Mixin = {}
 function Mixin:GetBagID() return rawget(self, "bagID") or self:GetParent():GetID() end

@@ -1,7 +1,7 @@
 name: Release
 
 # A tag `v<version>` (after the "Release <version>" commit) packages the addon and uploads it to
-# CurseForge. The project id is `## X-Curse-Project-ID` in Polestar_UI.toc; the API key is the
+# CurseForge. The project id is `## X-Curse-Project-ID` in PolestarUI.toc; the API key is the
 # repository secret CF_API_KEY.
 on:
   push:
