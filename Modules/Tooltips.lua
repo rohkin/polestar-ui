@@ -100,12 +100,20 @@ local function paint(tip, on)
 	plate(tip, on)
 end
 
+-- A tooltip of our own (GameTooltipTemplate; Addons/Questie.lua's) in the same look, as the named ones.
+local extra = {}
+function M.Add(tip)
+	extra[#extra + 1] = tip
+	paint(tip, ns.Enabled("tooltips"))
+end
+
 function M.Apply()
 	local on = ns.Enabled("tooltips")
 	for _, name in ipairs(NAMES) do
 		local tip = _G[name]
 		if tip then paint(tip, on) end
 	end
+	for _, tip in ipairs(extra) do paint(tip, on) end
 	for name, role in pairs(FONTS) do
 		local f = _G[name]
 		if f then

@@ -30,6 +30,7 @@ local function tooltipArt(tip)
 	n.Center:SetColorTexture(0.02, 0.02, 0.05, 0.92)
 end
 tooltipArt(GameTooltip)
+stub.tooltipArt = tooltipArt -- for a tooltip a stub makes from GameTooltipTemplate
 GameTooltip.StatusBar = CreateFrame("StatusBar", "GameTooltipStatusBar", GameTooltip)
 GameTooltip.StatusBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-TargetingFrame-BarFill")
 GameTooltip.StatusBar:Hide()

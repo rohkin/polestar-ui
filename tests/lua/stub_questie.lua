@@ -52,7 +52,10 @@ function stub.questieIcon(map, x, y, texture, size, hidden, flag, data)
 	icon.glowTexture:Hide()
 	icon.overlayTexture = icon:CreateTexture(nil, "OVERLAY", nil, 1)
 	icon.overlayTexture:Hide()
-	icon.data = data -- { Type, IconScale, ObjectiveData = { Color } }, as Questie's draw calls give it
+	icon.data = data -- { Type, Name, IconScale, ObjectiveData = { Color } }, as Questie's draw calls give it
+	icon.x, icon.y, icon.AreaID, icon.UiMapID = x * 100, y * 100, map, map
+	-- Its own click (QuestieFrame's OnClick: a chat link, hide the quest, TomTom).
+	icon:SetScript("OnClick", function(self, button) stub.questieClicked = { self, button } end)
 	icon:Hide() -- HBD shows it only on the stock map's own zone
 	for _, m in ipairs({ "SetParent", "SetPoint", "ClearAllPoints", "Show", "Hide", "SetScript", "HookScript" }) do
 		icon[m] = function() error("Questie's icon: " .. m .. " from Polestar: UI") end
@@ -83,6 +86,26 @@ stub.questieIcon(47, 0.5, 0.5, ICONS .. "event.blp", 16, false, -1) -- Duskwood'
 
 -- The glow setting's handler walks Questie's icons (their OnShow, or the glow hidden): nothing of an icon's is called.
 local modules = { HBDPins = pins, HBD = hbd, QuestieFramePool = { UpdateGlowConfig = function() end } }
+-- Questie's tooltip into the tooltip given (MapIconTooltip.ShowOnTooltip): the
+-- hovered icon and the icons given, one line each (the long form with Shift),
+-- built by the _Rebuild it leaves on the tooltip; the hovered quest's icon
+-- tinted until QuestieFrame.ResetHoverHighlights gives its colour back.
+modules.MapIconTooltip = { ShowOnTooltip = function(self, tooltip, owner, icons)
+	stub.questieTip = { icon = self, tooltip = tooltip, owner = owner, icons = icons }
+	tooltip:SetOwner(owner or self, "ANCHOR_CURSOR")
+	self.data.touchedPins = { { icon = self, color = { self.texture:GetVertexColor() } } }
+	self.texture:SetVertexColor(0.6, 1, 1, 1)
+	tooltip._Rebuild = function(t)
+		for _, icon in ipairs(icons or { self }) do t:AddLine(icon.data.Name .. (IsShiftKeyDown() and " (long)" or "")) end
+	end
+	tooltip:_Rebuild()
+	tooltip:Show()
+end }
+modules.QuestieFrame = { ResetHoverHighlights = function(t)
+	stub.questieUnhovered = t.data
+	for _, e in ipairs(t.data.touchedPins or {}) do e.icon.texture:SetVertexColor(unpack(e.color)) end
+	t.data.touchedPins = nil
+end }
 QuestieLoader = {}
 function QuestieLoader:ImportModule(name)
 	modules[name] = modules[name] or { private = {} }
@@ -103,6 +126,13 @@ function CreateFrame(kind, name, parent, template, ...)
 		function f:GetCanvasScale() return stub.mapScale or 0.9 end
 		function f:GetCanvasZoomPercent() return stub.mapZoom or 0 end
 		function f:GetGlobalPinScale() return 1 end
+	elseif kind == "GameTooltip" and template == "GameTooltipTemplate" then
+		-- A tooltip of an addon's own, as the game's: its lines and its stock art.
+		for _, m in ipairs({ "SetOwner", "ClearLines", "AddLine", "AddDoubleLine", "SetText" }) do f[m] = GameTooltip[m] end
+		f.lines = {}
+		if not rawget(f, "NineSlice") then stub.tooltipArt(f) end
+		f.StatusBar = false -- no health bar in the stub (an unset key answers a function)
+		f:Hide()
 	end
 	return f
 end

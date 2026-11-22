@@ -50,6 +50,7 @@ function Canvas:SetMapID(id) if id ~= self.mapID then self.mapID = id; self:OnMa
 function Canvas:GetMapID() return self.mapID end
 function Canvas:OnMapChanged() end
 function Canvas:OnCanvasScaleChanged() end
+function Canvas:NavigateToParentMap() local p = MAPS[self.mapID].parentMapID if p > 0 then self:SetMapID(p) end end
 function Canvas:OnCanvasSizeChanged() end
 function Canvas:ResetZoom() self.zoomedOut = true end
 -- The player at 41.2, 65.3 in Elwynn (and so nowhere on another map); the

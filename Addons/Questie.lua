@@ -3,8 +3,11 @@
 -- (a QuestieLoader module, not the LibStub library) parents to a pin there.
 -- Ours mirrors them: a frame of our own per icon of the shown map (its art,
 -- glow and overlay, at its frame level), under a frame of ours on our canvas, read from that copy's registry and kept up by
--- post-hooks on what changes it (no timer, no rescan). Nothing of Questie's is
--- moved, shown or hidden, the stock map is not touched, and no pin is
+-- post-hooks on what changes it (no timer, no rescan). Hovered, ours shows
+-- Questie's own tooltip in a tooltip frame of ours (never GameTooltip: rule
+-- 15), as Questie's gamepad hover does; clicked, it opens the icon's zone on
+-- our map, or with a modifier runs the icon's own click. Nothing of Questie's
+-- is moved, shown or hidden, the stock map is not touched, and no pin is
 -- acquired (docs/CLIENT.md, rules 4, 14). A no-op without Questie.
 
 local ADDON, ns = ...
@@ -29,7 +32,13 @@ local drawn, free = {}, {} -- icon -> its frame of ours; frames to reuse
 local roots, sets = {}, {}
 local hooked = setmetatable({}, { __mode = "k" })
 -- The shown map; `stale`: Questie changed something while ours was closed.
-local view, id, kind, child, w, h, k, mapScale, stale
+local view, id, kind, child, w, h, k, mapScale, cluster, stale
+-- Questie's tooltip and hover reset, when it has them (else icons without hover).
+local okTip, tipMod = pcall(loader.ImportModule, loader, "MapIconTooltip")
+local okFrame, frameMod = pcall(loader.ImportModule, loader, "QuestieFrame")
+local canTip = okTip and okFrame and type(tipMod) == "table" and type(tipMod.ShowOnTooltip) == "function"
+	and type(frameMod) == "table" and type(frameMod.ResetHoverHighlights) == "function"
+local tip, hovered -- our tooltip; the frame of ours under the mouse
 
 local function rootOf(mapID)
 	if not mapID then return 0 end
@@ -63,9 +72,89 @@ local function spot(icon, d)
 	return hbd:GetAzerothWorldMapCoordinatesFromWorld(d.x, d.y, d.instanceID)
 end
 
+-- The hover ended: our tooltip hidden, and Questie's highlights (the hovered
+-- quest's tinted icons, its path) given back, by the data hovered: the icon
+-- may be another quest's by now (as GamepadMapHover's Leave).
+local function leave()
+	local f = hovered
+	if not f then return end
+	hovered = nil
+	if tip then tip:Hide() end
+	pcall(frameMod.ResetHoverHighlights, { data = f.psData })
+	f.psData = nil
+end
+
+-- Questie's tooltip for the icon under the mouse, in our tooltip: the icon
+-- and the drawn ones round it (its rule: the same zone, within 1, 4 on a
+-- continent or 6 on the world map, in zone coordinates; ours for the shown
+-- map, where Questie reads the stock map's), listed whatever the stock map shows.
+local function enter(f)
+	leave()
+	local icon = f.psIcon
+	if not (canTip and icon and type(icon.data) == "table" and icon.texture) then return end
+	if select(4, icon.texture:GetVertexColor()) == 0 then return end -- faded out: nothing, as Questie
+	if not tip then
+		tip = CreateFrame("GameTooltip", "PolestarUIQuestieTooltip", UIParent, "GameTooltipTemplate")
+		local tips = ns.modules.tooltips
+		if tips and tips.Add then tips.Add(tip) end
+	end
+	local list = { icon }
+	if icon.x and icon.y then
+		for other in pairs(drawn) do
+			if other ~= icon and other.x and other.y and other.AreaID == icon.AreaID and type(other.data) == "table"
+				and math.max(math.abs(other.x - icon.x), math.abs(other.y - icon.y)) < cluster
+				and select(4, other.texture:GetVertexColor()) ~= 0 then
+				list[#list + 1] = other
+			end
+		end
+	end
+	hovered, f.psData = f, icon.data
+	tip:Hide() -- Questie skips a call within 0.05 s of the last while the tooltip shows
+	if not pcall(tipMod.ShowOnTooltip, icon, tip, f, list) then leave() end
+end
+
+-- Shift pressed or let go over an icon: Questie's tooltip drawn again (its
+-- long form), as its own handler does for the stock map's (EventHandler.lua).
+if canTip then
+	Polestar.RegisterEvent("MODIFIER_STATE_CHANGED", function(_, key)
+		if not (hovered and tip and tip:IsShown() and tip._Rebuild and (key == "LSHIFT" or key == "RSHIFT")) then return end
+		pcall(function()
+			tip:Hide()
+			tip:ClearLines()
+			tip:SetOwner(hovered, "ANCHOR_CURSOR")
+			tip:_Rebuild()
+			tip:SetFrameStrata("TOOLTIP")
+			tip:Show()
+		end)
+	end)
+end
+
+-- A click on an icon, as on the stock map: a plain left click opens the
+-- icon's own map when another is shown (ours, where Questie opens the stock
+-- map); with a modifier, the icon's own click (a chat link, hide the quest,
+-- TomTom), which with a modifier down never reads the stock map; a
+-- right-click goes out a map, as on the map under it (plain code: making a
+-- frame pass clicks through is blocked in combat, rule 4).
+local function click(f, button)
+	local icon = f.psIcon
+	if not (icon and view) then return end
+	if button == "RightButton" then
+		view:NavigateToParentMap()
+	elseif button == "LeftButton" then
+		if IsModifierKeyDown() then
+			local handler = icon:GetScript("OnClick")
+			if handler then pcall(handler, icon, button) end
+		elseif icon.UiMapID and icon.UiMapID ~= id and hbd.mapData[icon.UiMapID] then
+			view:SetMapID(icon.UiMapID)
+		end
+	end
+end
+
 local function release(icon)
 	local f = drawn[icon]
 	if not f then return end
+	if hovered == f then leave() end
+	f.psIcon = nil
 	f:Hide()
 	free[#free + 1] = f
 	drawn[icon] = nil
@@ -81,6 +170,10 @@ local function make()
 	f.tex:SetAllPoints(f)
 	f.over = f:CreateTexture(nil, "OVERLAY", nil, 1)
 	f.over:SetAllPoints(f)
+	f:EnableMouse(true)
+	f:SetScript("OnEnter", enter)
+	f:SetScript("OnLeave", leave)
+	f:SetScript("OnMouseUp", click)
 	return f
 end
 
@@ -95,7 +188,6 @@ local function sizeOf(icon, data, profile)
 end
 
 -- One icon drawn, moved, repainted or taken off, as it now is.
--- shortcut: no tooltip or click yet; each a next piece.
 local function update(icon)
 	if not (holder and holder:IsVisible()) then stale = true return end
 	local d = pins.worldmapPins[icon]
@@ -105,7 +197,7 @@ local function update(icon)
 	if tex then x, y = spot(icon, d) end
 	if not (x and y) then return release(icon) end
 	local f = drawn[icon] or table.remove(free) or make()
-	drawn[icon] = f
+	drawn[icon], f.psIcon = f, icon
 	local profile = type(Questie) == "table" and Questie.db and Questie.db.profile
 	local data = type(icon.data) == "table" and icon.data
 	local sw, sh = sizeOf(icon, data, profile)
@@ -200,6 +292,7 @@ local function paint(canvas)
 		holder = CreateFrame("Frame", "PolestarUIQuestiePins", child)
 		holder:SetAllPoints(child)
 		holder:SetFrameLevel(2016) -- where Questie puts its icons (QuestieMap.utils.SetDrawOrder)
+		holder:SetScript("OnHide", leave)
 	end
 	local was = id
 	view, id, w, h = canvas, canvas:GetMapID(), child:GetWidth(), child:GetHeight()
@@ -209,6 +302,7 @@ local function paint(canvas)
 	local info = C_Map.GetMapInfo(id)
 	local mapType = info and info.mapType
 	mapScale = (mapType == 0 or mapType == 1) and 0.85 or mapType == CONTINENT and 0.9 or 1
+	cluster = (mapType == 0 or mapType == 1) and 6 or mapType == CONTINENT and 4 or 1 -- MapIconTooltip's maxDistCluster
 	if id == was and not stale then
 		for icon in pairs(drawn) do update(icon) end
 		return

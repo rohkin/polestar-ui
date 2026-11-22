@@ -1,7 +1,7 @@
 --@ title: World Map: Questie's icons
 --@ roots: PolestarUIWorldMap
 --@ stubs: stub_worldmap.lua, stub_questie.lua
--- With Questie loaded, its world map icons for the shown map are mirrored on our canvas (frames of ours, at each icon's spot, size, art and frame level, with its objective glow and overlay; sized as Questie sizes them for the shown kind of map); one Questie hides and another zone's are left out; a new map and a zoom draw them afresh; the continent and Azeroth show every zone's by HBD's show flag, none with Questie's "hide icons on continents"; an icon Questie adds, sizes, hides, fades or removes while the map is open follows at once through post-hooks, that icon alone, with no timer; nothing of Questie's is written (the stub errors) and the stock map never opens.
+-- With Questie loaded, its world map icons for the shown map are mirrored on our canvas (frames of ours, at each icon's spot, size, art and frame level, with its objective glow and overlay; sized as Questie sizes them for the shown kind of map); one Questie hides and another zone's are left out; a new map and a zoom draw them afresh; the continent and Azeroth show every zone's by HBD's show flag, none with Questie's "hide icons on continents"; an icon Questie adds, sizes, hides, fades or removes while the map is open follows at once through post-hooks, that icon alone, with no timer; hovered, an icon shows Questie's tooltip in a tooltip of ours in Polestar's look (never GameTooltip), with the icons round it, its long form on Shift; a click opens the icon's zone on our map, a modified click is the icon's own, a right-click goes out a map; nothing of Questie's is written (the stub errors) and the stock map never opens.
 stub.pressKey("M")
 local c = PolestarUIWorldMapCanvas
 local holder = PolestarUIQuestiePins
@@ -103,6 +103,49 @@ assert(near(by["slay@651,-434"]:GetWidth(), 16 * 0.75 * 0.9 / 0.9), "smaller on 
 c:SetMapID(37)
 stub.questieRemove(slay)
 stub.questieRemove(done)
+-- Hover: Questie's own tooltip, in a tooltip of ours anchored to our frame, listing the hovered icon and the drawn ones round it (within 1 in zone coordinates on a zone), not a far one; GameTooltip is left alone.
+local I = "Interface/AddOns/Questie/Icons/"
+local kobold = stub.questieIcon(37, 0.30, 0.30, I .. "slay.blp", 12, false, 3, { Type = "monster", Name = "Kobold", IconScale = 1 })
+local candle = stub.questieIcon(37, 0.305, 0.30, I .. "loot.blp", 12, false, 3, { Type = "item", Name = "Candle", IconScale = 1 })
+local far = stub.questieIcon(37, 0.5, 0.6, I .. "event.blp", 12, false, 3, { Type = "event", Name = "Far", IconScale = 1 })
+_, by = shown()
+local fk, fc = by["slay@301,-200"], by["loot@306,-200"]
+assert(fk and fc and fk:IsMouseEnabled(), "the hover icons: " .. shown())
+stub.RunScript(fk, "OnEnter")
+local tip = PolestarUIQuestieTooltip
+assert(tip and tip:IsShown() and tip.owner == fk and tip.anchor == "ANCHOR_CURSOR" and GameTooltip.owner ~= fk, "our tooltip on our frame")
+assert(stub.questieTip.icon == kobold and stub.questieTip.tooltip == tip and stub.questieTip.owner == fk, "Questie's tooltip call")
+assert(table.concat(tip.lines, ",") == "Kobold,Candle", "the hovered icon and its neighbour: " .. table.concat(tip.lines, ","))
+assert(tip.NineSlice.Center:GetAlpha() == 0, "our tooltip in Polestar's look")
+-- Questie tints the hovered quest's icon: ours follows it, and back on leave.
+assert(near((fk.tex:GetVertexColor()), 0.6), "the hover tint")
+-- Shift: Questie's long form, drawn again on the modifier event.
+stub.keys.shift = true
+stub.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
+assert(tip:IsShown() and tip.owner == fk and tip.lines[1] == "Kobold (long)" and #tip.lines == 2, "the long form: " .. table.concat(tip.lines, ","))
+stub.keys.shift = nil
+stub.RunScript(fk, "OnLeave")
+assert(not tip:IsShown() and stub.questieUnhovered == kobold.data and near((fk.tex:GetVertexColor()), 1), "leave: hidden, Questie's highlights given back")
+-- An icon Questie removes under the mouse takes its tooltip with it.
+stub.RunScript(fc, "OnEnter")
+assert(tip:IsShown() and tip.lines[1] == "Candle", "the neighbour's tooltip")
+stub.questieUnhovered = nil
+stub.questieRemove(candle)
+assert(not tip:IsShown() and stub.questieUnhovered, "the tooltip of a removed icon")
+-- Clicks. A plain left click on the icon's own map does nothing; with a modifier it is the icon's own click; a right-click goes out a map, as on the map under it; on the continent a plain click opens the icon's zone on our map, never the stock map.
+stub.RunScript(fk, "OnMouseUp", "LeftButton")
+assert(c.mapID == 37 and not stub.questieClicked, "a plain click on its own map")
+stub.keys.shift = true
+stub.RunScript(fk, "OnMouseUp", "LeftButton")
+assert(stub.questieClicked and stub.questieClicked[1] == kobold and stub.questieClicked[2] == "LeftButton", "the icon's own click")
+stub.keys.shift = nil
+stub.RunScript(fk, "OnMouseUp", "RightButton")
+assert(c.mapID == 13, "right-click out a map")
+_, by = shown()
+stub.RunScript(by["slay@576,-384"], "OnMouseUp", "LeftButton")
+assert(c.mapID == 37 and not WorldMapFrame:IsShown(), "a click opens the icon's zone on our map: " .. shown())
+stub.questieRemove(kobold)
+stub.questieRemove(far)
 -- Nothing of ours runs on a timer.
 assert(not holder:GetScript("OnUpdate"), "a polling OnUpdate")
 -- Closed, Questie's changes are not drawn; reopened on the same map, drawn afresh.
