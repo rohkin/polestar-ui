@@ -118,6 +118,12 @@ words.
   works in combat the same as out. A new unit in a frame snaps it. Stock's
   `AnimatedHealthLossMixin` (player frame) does the maths on health, which
   addon code cannot in combat.
+- Gain (with the damage trail, its mirror): health just gained shows in
+  `success` from the trail's end to the fill's end, over the fill, until the
+  trail catches up (0.4 s hold, then eased). A texture with no value of its
+  own: a frame from the bar's left to the fill's end, clipped from the trail
+  fill's end (`trail.psGain`); on a loss the trail ends past the fill, so it is
+  empty. Incoming heals hang off the fill's end, so the two never overlap.
 - Power cost (the player's frame): while the player casts, the spell's cost
   in the bar's power (`C_Spell.GetSpellPowerCost` on `UNIT_SPELLCAST_START`)
   eats into the power fill from its end in `shade` at 55% (darkened: the
@@ -164,10 +170,11 @@ stand in with the player too, and go back to their units as it closes.
 | Stock | Ours |
 |---|---|
 | Health and power bars, values | ours, from the client's secret values (StatusBar, SetFormattedText, AbbreviateNumbers, UnitHealthPercent) |
-| Status text: `statusText` (always or on mouse-over), `statusTextDisplay` (NUMERIC, PERCENT, BOTH, NONE) | the same CVars: NUMERIC "12.4K / 20.0K", PERCENT "62%", BOTH "12.4K \| 62%" (SetFormattedText, the pipe escaped); NONE (the game's default, with `statusText` 0) is NUMERIC on mouse-over, as stock; a party block always shows its percent. Power text follows them too, off by default (the "Power text" setting): PERCENT "65%", BOTH "2600 | 65%"\| 65%" (`UnitPowerPercent` on `CurveConstants.ScaleTo100`, secret-safe), else the value |
+| Status text: `statusText` (always or on mouse-over), `statusTextDisplay` (NUMERIC, PERCENT, BOTH, NONE) | the same CVars: NUMERIC "12.4K / 20.0K", PERCENT "62%", BOTH "12.4K \| 62%" (SetFormattedText, the pipe escaped); NONE (the game's default, with `statusText` 0) is NUMERIC on mouse-over, as stock; a party block always shows its percent. Power text follows them too, on by default (the "Power text" setting), right-aligned at the health value's x (centred on the power bar on every frame, in its own unclipped frame above both bars; on a slim frame's 4 px strip it overhangs): PERCENT "65%", BOTH "2600 | 65%"\| 65%" (`UnitPowerPercent` on `CurveConstants.ScaleTo100`, secret-safe), else the value |
 | Dead, Ghost, Offline | the health text says so; bar in textMuted |
 | Name, level, `??`, elite/rare/boss dragon | name, level, rank word; the stock skull also shows (Contextual layer) |
 | Portrait | square 3D model (2D game portrait while the unit is out of sight); the setting turns it off. The model loads only for another unit (its GUID; while that is secret, on the events that change the unit), its portrait camera set before `SetUnit` and again on `OnModelLoaded`, kept at alpha 0 until then (a quarter second at most), so the unframed model never shows |
+| Hit text on the portrait (player, pet: `PlayerFrame...HitIndicator.HitText`, `PetHitIndicator`, `CombatFeedback_OnCombatEvent` on `UNIT_COMBAT`) | ours over the portrait's model, centred, in Polestar's number face, outlined: stock's words, colours (magic yellow, heals green, energize blue) and sizes (crit 1.5, glancing/absorb/block/resist 0.75, immune 0.5) on half the frame's height, faded as stock's (0.2 in, 0.7 held, 0.3 out; an OnUpdate only while it shows). The units stock listens to (player and vehicle; pet and player), so a vehicle shows on its frame. Stock gates it on nothing and so does ours (always shown, as on the game's own frames), except with the portrait setting off. The amount is secret: `BreakUpLargeNumbers` into `SetFormattedText`, never compared (a secret amount under ABSORB, BLOCK or RESIST is taken as a full one: the word). The stock pet's text is veiled with its plain frame (rule 16); the player's goes with its hidden Main |
 | Heal prediction, absorbs, heal absorbs | the client's calculator (`CreateUnitHealPredictionCalculator`, `UnitGetDetailedHealPrediction`): incoming heals up to the missing health, shields up to what is still missing after them, heal absorbs up to the health, netted against the heals (stock's maths, done by the client on secrets); the over-absorb and over-heal-absorb end glows from its clamped flags. Without the calculator: the plain totals |
 | Mana cost prediction (player) | the cast's cost eating into the power fill (above) |
 | Threat (glow), combat flash | the hairline's colour; the threat glow is gradient strips outside the frame |
@@ -192,7 +199,7 @@ pulse; the party pets keep the stock look; a boss with no power shows "0"
 under an empty power bar; range fading is none on the stock ones either.
 
 **Settings** (`/pui unitframes`, a small page of ours,
-`PolestarUIUnitFramesOptions`): 3D portraits, Power text (off), Sparkle, Smooth bars, Damage trail, saved in
+`PolestarUIUnitFramesOptions`): 3D portraits, Power text (on), Sparkle, Smooth bars, Damage trail, saved in
 `PolestarUIDB.unitframes`. Its "..." menu has "Use game window".
 
 **Switch:** `/pui unitframes on|off`, live (refused in combat): off hides ours,
@@ -254,7 +261,8 @@ while the game unanchors its frame: dismissed, summoned, a vehicle),
 absorb, smooth bars, the sparkle, a cast's power cost), `unitframes-trail`
 (the damage trail: a loss held then drained, a heal snapping past it, no red
 past the new health on a heal with and without Smooth bars, a maximum change in
-step, a new target snapping, the setting off), `unitframes-glows` (the end glows, the
+step, a new target snapping, the setting off), `unitframes-gain` (the gain
+mid-heal in combat, gone after the trail eases, reduce motion, the setting off), `unitframes-glows` (the end glows, the
 power percent, every frame's roleset, none set again in combat).
 The stub's heal calculator (`CreateUnitHealPredictionCalculator`), the
 eased `SetValue` (`bar.interpolation`), `SetAlphaFromBoolean`, `UnitPowerPercent`, `SetRolesets`/`GetRolesetNames`

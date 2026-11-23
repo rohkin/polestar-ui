@@ -35,7 +35,7 @@ assert(issecretvalue(T.Health:GetValue()), "health handed over as the secret it 
 assert(T.healthText:GetText() == "12.4K || 62%", "health text: " .. tostring(T.healthText:GetText()))
 assert(T.levelText:GetText() == "25+", "level and rank: " .. tostring(T.levelText:GetText()))
 assert(not P.levelText, "no level on the player")
-assert(T.powerText:GetText() == "", "power text off by default")
+assert(T.powerText:GetText() ~= "", "power text on by default, with the health text")
 assert(PolestarUIFocusToT:IsShown(), "a dead target of target still shows (only a dead target hides it)")
 -- The portrait: the model loads again only for another unit, unseen until framed.
 local m, loads = T.portrait.Model, 0

@@ -443,7 +443,10 @@ Out of combat, from our code, only:
   round our pet), emptied with `SetTexture(nil)` and given back with their
   atlas, which the game never sets again; a member's `Texture`, `VehicleTexture`, `Flash`, `Name`,
   `HealthBarContainer`, `ManaBar`, `PartyMemberOverlay.Status`), and a
-  member's `Portrait`, which the game re-alphas at low health, hidden.
+  member's `Portrait`, which the game re-alphas at low health, hidden;
+  the plain frame holding `PetHitIndicator` and `PetName`
+  (`PetHitIndicator:GetParent()`, whose alpha the game never writes; the
+  string's own it writes every frame) faded too: ours shows the hit text.
   Happiness, the party's icons, auras and pets stay the game's. A boss frame
   is veiled as the target's;
 - `SetMouseMotionEnabled(false)` on the faded bars (TextStatusBar,

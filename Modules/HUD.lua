@@ -38,9 +38,14 @@ H.FillTexture = fillTexture
 -- bar's fill covers it wherever both reach. It is drawn only past the bar's
 -- new value (t.psAim, an unseen bar set at once, which holds the track): while
 -- the fill eases up on a heal (Smooth bars) no red shows ahead of it.
+-- Its mirror, the gain (t.psGain, over the fill): health just gained, in
+-- `success`, from the trail's end to the fill's end; on a loss the trail ends
+-- past the fill, so nothing shows. It shrinks as the trail catches up.
 local function paintTrail(t)
 	local r, g, bl = Theme.Color("danger")
 	t:SetStatusBarColor(r, g, bl, t.psOn == false and 0 or 1)
+	r, g, bl = Theme.Color("success")
+	t.psGain:SetVertexColor(r, g, bl, t.psOn == false and 0 or 1)
 end
 
 local TRAIL_OVERLAP = 2 -- UI units: over one physical pixel at any UI scale from 0.5 up
@@ -72,6 +77,20 @@ function H.Bar(parent, trail)
 		clip:SetPoint("TOPLEFT", aim:GetStatusBarTexture(), "TOPRIGHT", -TRAIL_OVERLAP, 0)
 		clip:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
 		clip:SetClipsChildren(true)
+		-- The gain: a clip from the trail's end to the bar's right, holding a
+		-- texture from the bar's left to the fill's end (no value of its own).
+		t:SetStatusBarTexture(fillTexture()) -- the fills exist before they are anchored to
+		b:SetStatusBarTexture(fillTexture())
+		local gclip = CreateFrame("Frame", nil, b)
+		gclip:SetPoint("TOPLEFT", t:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+		gclip:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
+		gclip:SetClipsChildren(true)
+		local gain = CreateFrame("Frame", nil, gclip)
+		gain:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+		gain:SetPoint("BOTTOMRIGHT", b:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+		t.psGain = gain:CreateTexture(nil, "ARTWORK")
+		t.psGain:SetTexture(WHITE)
+		t.psGain:SetAllPoints(gain)
 		t.psAim = aim
 		b.trail = t
 	end

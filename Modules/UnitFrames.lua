@@ -33,7 +33,7 @@ local H = ns.HUD
 
 local M = { noun = "unit frames" }
 local KEY = "unitframes"
-local DEFAULTS = { ground = 0.6, portrait = true, powerText = false, sparkle = true, smooth = true, trail = true }
+local DEFAULTS = { ground = 0.6, portrait = true, powerText = true, sparkle = true, smooth = true, trail = true }
 
 -- The body of a frame on TargetFrameTemplate (the target's, focus's and
 -- bosses'): where Edit Mode lays the target's and focus's Selection box
@@ -67,7 +67,7 @@ local function boss(i) return _G["Boss" .. i .. "TargetFrame"] end
 -- portrait's side.
 local SPECS = {
 	{ unit = "player", name = "PolestarUIPlayerFrame", stock = function() return PlayerFrame end, veil = "system", on = "selection",
-		show = "always", slim = true, height = 40, portrait = true, text = true, side = "LEFT", vehicle = "vehicle" },
+		show = "always", slim = true, height = 40, portrait = true, text = true, side = "LEFT", vehicle = "vehicle", feedback = { "player", "vehicle" } },
 	{ unit = "target", name = "PolestarUITargetFrame", stock = function() return TargetFrame end, veil = "system", on = "selection",
 		show = "watch", slim = true, height = 40, portrait = true, level = true, rank = true, text = true, side = "RIGHT" },
 	{ unit = "focus", name = "PolestarUIFocusFrame", stock = function() return FocusFrame end, veil = "system", on = "selection",
@@ -83,7 +83,7 @@ local SPECS = {
 	-- as the player's, smaller as the stock pet frame is (its portrait 0.6 of the
 	-- player's): 24 tall, small text.
 	{ unit = "pet", name = "PolestarUIPetFrame", stock = function() return PetFrame end, veil = "pet", on = "selection", inset = PET_BODY,
-		show = "watch", slim = true, height = 24, portrait = true, text = true, compact = true, side = "LEFT", vehicle = "player" },
+		show = "watch", slim = true, height = 24, portrait = true, text = true, compact = true, side = "LEFT", vehicle = "player", feedback = { "pet", "player" } },
 }
 for i = 1, 4 do
 	-- The game hides the party frames in a raid (ShouldShowPartyFrames) and
@@ -449,6 +449,81 @@ local function onLeave(self)
 	paint(self)
 end
 
+---------------------------------------------------------------------------
+-- Combat feedback: the damage, heal and miss text the stock player and pet
+-- frames show over their portraits (CombatFeedback.lua, PlayerFrame.lua and
+-- PetFrame.lua on UNIT_COMBAT), on ours.
+---------------------------------------------------------------------------
+
+local FADE_IN, HOLD, FADE_OUT = 0.2, 0.7, 0.3 -- COMBATFEEDBACK_FADEINTIME, _HOLDTIME, _FADEOUTTIME
+
+local function word(k) return (rawget(_G, "CombatFeedbackText") or {})[k] or rawget(_G, k) end
+
+-- The holder's alpha (a string's alpha is its colour's, which a repaint sets),
+-- run only while it shows.
+local function feedbackFade(h)
+	local t = GetTime() - h.start
+	if t >= FADE_IN + HOLD + FADE_OUT then return h:Hide() end
+	h:SetAlpha(t < FADE_IN and t / FADE_IN or t < FADE_IN + HOLD and 1 or 1 - (t - FADE_IN - HOLD) / FADE_OUT)
+end
+
+-- CombatFeedback_OnCombatEvent's text, size and colour. The amount is secret
+-- in combat: never compared, handed through BreakUpLargeNumbers into
+-- SetFormattedText.
+local function feedback(h, _, unit, event, flags, amount, school)
+	local f = h.owner
+	if unit ~= shown(f) or not ns.Enabled(KEY) or not opt("portrait") then return end
+	local size, r, g, b, text, number = 1, 1, 1, 1, nil, false
+	local crit = flags == "CRITICAL"
+	if event == "WOUND" then
+		local clean = ns.Clean(amount)
+		-- shortcut: a secret amount counts as 0 only under ABSORB, BLOCK or RESIST (stock compares it), until the client shows a partial one there.
+		local zero = clean == 0 or (clean == nil and (flags == "ABSORB" or flags == "BLOCK" or flags == "RESIST"))
+		if not zero then
+			number = true
+			size = (crit or flags == "CRUSHING") and 1.5 or flags == "GLANCING" and 0.75 or 1
+			if ns.Clean(school) ~= ((Enum.Damageclass or {}).MaskPhysical or 1) then b = 0 end
+		elseif flags == "ABSORB" or flags == "BLOCK" or flags == "RESIST" then
+			size, text = 0.75, word(flags)
+		else
+			text = word("MISS")
+		end
+	elseif event == "HEAL" or event == "ENERGIZE" then
+		number, size = true, crit and 1.5 or 1
+		if event == "HEAL" then r, b = 0, 0 else r, g, b = 0.41, 0.8, 0.94 end
+	else
+		size = event == "IMMUNE" and 0.5 or event == "BLOCK" and 0.75 or 1
+		text = word(event)
+	end
+	if not number and not text then return end
+	local fs = h.text
+	Theme.SetFace(fs, (Theme.FontSpec("number")), math.floor(f.spec.height / 2 * size + 0.5), "OUTLINE")
+	if number then
+		fs:SetFormattedText(flags == "BLOCK_REDUCED" and rawget(_G, "COMBAT_TEXT_BLOCK_REDUCED") or "%s", BreakUpLargeNumbers(amount))
+	else
+		fs:SetFormattedText("%s", text)
+	end
+	fs:SetTextColor(r, g, b)
+	h.start = GetTime()
+	h:SetAlpha(0)
+	h:Show()
+end
+
+-- Over the portrait's model, centred; the units its stock frame listens to.
+local function feedbackText(f)
+	local h = CreateFrame("Frame", nil, f.portrait)
+	h:SetAllPoints(f.portrait)
+	h:SetFrameLevel(f.portrait.Model:GetFrameLevel() + 2)
+	h:Hide()
+	h.owner = f
+	h.text = H.Text(h, "number", "text")
+	h.text:SetPoint("CENTER", h, "CENTER", 0, 0)
+	h:SetScript("OnUpdate", feedbackFade)
+	h:SetScript("OnEvent", feedback)
+	h:RegisterUnitEvent("UNIT_COMBAT", f.spec.feedback[1], f.spec.feedback[2])
+	f.feedback = h
+end
+
 local function build(spec)
 	-- A secure unit button of our own: left-click targets, right-click opens
 	-- the game's unit menu from secure code (togglemenu: Set Focus and the
@@ -468,6 +543,7 @@ local function build(spec)
 	ClickCastFrames[f] = true
 	f.Ground = H.Ground(f)
 	if spec.portrait then f.portrait = H.Portrait(f, spec.slim) end
+	if spec.feedback then feedbackText(f) end
 	f.Health = H.Bar(f, true)
 	f.Health:SetClipsChildren(true) -- the heal and absorb segments end at the bar's ends
 	if spec.unit == "player" then H.Sparkle(f.Health) end
@@ -511,10 +587,15 @@ local function build(spec)
 			f.healthText:SetPoint("BOTTOMRIGHT", f.Health, "BOTTOMRIGHT", -3, 3)
 		else
 			f.healthText:SetPoint("RIGHT", f.Health, "RIGHT", spec.compact and -2 or -4, 0)
-			-- Slim: on the health bar, as the strip has no room for it.
-			local p = spec.slim and f.Health or f.Power
-			f.powerText = H.Text(p, "small", "textDim")
-			f.powerText:SetPoint("CENTER", p, "CENTER", 0, 0)
+			-- Same right edge as the health value, centred on the power bar (on the slim 4 px
+			-- strip it overhangs). Its own unclipped frame above both bars, so neither the
+			-- bar's clipping nor the health bar hides it.
+			local over = CreateFrame("Frame", nil, f)
+			over:SetAllPoints(f.Power)
+			over:SetFrameLevel(math.max(f.Health:GetFrameLevel(), f.Power:GetFrameLevel()) + 5)
+			f.powerText = H.Text(over, "small", "textDim")
+			f.powerText:SetJustifyH("RIGHT")
+			f.powerText:SetPoint("RIGHT", f.Power, "RIGHT", spec.compact and -2 or -4, 0)
 		end
 	end
 	if spec.party then
@@ -575,6 +656,9 @@ local function veil(f, on)
 	elseif kind == "fade" then
 		stock:SetAlpha(on and 0 or 1)
 	elseif kind == "pet" then
+		-- The plain frame holding only PetHitIndicator and PetName: ours shows the hit text.
+		local hit = rawget(_G, "PetHitIndicator")
+		if hit then hit:GetParent():SetAlpha(on and 0 or 1) end
 		for _, n in ipairs(PET_PARTS) do
 			local r = _G[n]
 			if r then r:SetAlpha(on and 0 or 1) end

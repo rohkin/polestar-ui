@@ -477,6 +477,26 @@ for _, n in ipairs({ "PetFrameHealthBar", "PetFrameManaBar" }) do
 	_G[n] = stub.textStatusBar(PetFrame, false, n)
 end
 PetFrameHappiness = create("Frame", "PetFrameHappiness", PetFrame)
+-- PetHitIndicator in its plain frame (veiled with PetName's).
+PetHitIndicator = create("Frame", nil, PetFrame):CreateFontString("PetHitIndicator")
+
+-- UNIT_COMBAT's amount is secret (UnitDocumentation); BreakUpLargeNumbers
+-- takes a secret and gives one back. stub.combat(unit, event, flags, amount,
+-- school) fires it with the amount secret.
+local breakUp = BreakUpLargeNumbers
+function BreakUpLargeNumbers(v)
+	if held(v) then return stub.secret(BreakUpLargeNumbers(v.v)) end
+	if breakUp then return breakUp(v) end
+	local s = tostring(math.floor(v))
+	while true do
+		local k
+		s, k = s:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+		if k == 0 then return s end
+	end
+end
+function stub.combat(unit, event, flags, amount, school)
+	stub.fire("UNIT_COMBAT", unit, event, flags or "", stub.secret(amount or 0), school or 1)
+end
 
 -- The party (PartyFrame.xml): a stacking system, its members pooled
 -- (PartyMemberFrameTemplate, 120 x 53, `spacing` apart), each shown while its

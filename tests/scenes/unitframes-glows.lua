@@ -45,3 +45,13 @@ stub.fire("GROUP_ROSTER_UPDATE")
 stub.inCombat = false
 stub.fire("PLAYER_REGEN_ENABLED")
 stub.assertNoErrors()
+-- The power text shares the health value's right edge, and follows the Status Text CVar.
+do
+	local _, _, _, hx = P.healthText:GetPoint()
+	local _, rel, _, px = P.powerText:GetPoint()
+		assert(rel == P.Power and P.powerText:GetParent():GetFrameLevel() > P.Health:GetFrameLevel(), "power text on the power bar, above the health")
+	assert(P.powerText:GetJustifyH() == "RIGHT" and hx == px, "power text on the health value's right edge")
+	stub.cvars.statusText = "0"
+	stub.fire("CVAR_UPDATE", "statusText")
+	assert(P.powerText:GetText() == "", "power text follows statusText off")
+end

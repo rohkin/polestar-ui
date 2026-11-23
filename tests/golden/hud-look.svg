@@ -84,6 +84,8 @@
 <clipPath id="p0c2"><rect x="420.62" y="29" width="59.38" height="33"/></clipPath>
 <clipPath id="p0c3"><rect x="68" y="29" width="151" height="33"/></clipPath>
 <clipPath id="p0c4"><rect x="329" y="29" width="151" height="33"/></clipPath>
+<clipPath id="p0c5"><rect x="219" y="29" width="0" height="33"/></clipPath>
+<clipPath id="p0c6"><rect x="422.62" y="29" width="57.38" height="33"/></clipPath>
 
 <mask id="p2m0" maskUnits="userSpaceOnUse" x="67" y="72" width="198" height="198"><rect x="67" y="72" width="198" height="198" fill="#fff"/></mask>
 <linearGradient id="p3g0" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="0.46"/><stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0"/></linearGradient>
@@ -211,6 +213,8 @@
 <g clip-path="url(#p0c4)"><g transform="translate(350.41 49.82) scale(0.005859)" fill="rgb(247,248,253)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="273.07" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-271" x="0"/><use href="#gInter-Mediumttf-915" x="1408"/><use href="#gInter-Mediumttf-852" x="2640"/><use href="#gInter-Mediumttf-1022" x="3432"/><use href="#gInter-Mediumttf-614" x="4577"/><use href="#gInter-Mediumttf-773" x="5780"/></g></g>
 <g clip-path="url(#p0c4)"><g transform="translate(334 50.46) scale(0.005371)" fill="rgb(0,0,0)" fill-opacity="1"><use href="#gInter-Mediumttf-1343" x="0"/><use href="#gInter-Mediumttf-1347" x="1262"/></g></g>
 <g clip-path="url(#p0c4)"><g transform="translate(333 49.46) scale(0.005371)" fill="rgb(255,209,0)" fill-opacity="1" stroke="#000" stroke-opacity="0.95" stroke-width="297.89" stroke-linejoin="round" paint-order="stroke"><use href="#gInter-Mediumttf-1343" x="0"/><use href="#gInter-Mediumttf-1347" x="1262"/></g></g>
+<rect x="68" y="29" width="151" height="33" fill="rgb(107,217,153)" fill-opacity="1" clip-path="url(#p0c5)"/>
+<rect x="329" y="29" width="93.62" height="33" fill="rgb(107,217,153)" fill-opacity="1" clip-path="url(#p0c6)"/>
 <rect x="48" y="148" width="124.8" height="11" fill="rgb(255,179,0)" fill-opacity="1"/>
 <image x="40" y="142" width="8" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAYAAACgR9dcAAAAF0lEQVR4nO3BMQEAAABAMP1Tq+GwsXUJAp8AATLAIREAAAAASUVORK5CYII="/>
 <image x="48" y="142" width="3" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAALCAYAAAC3ZUeVAAAAJElEQVR4nN3HUQYAAAgE0cgS0f2P2/TRJXZ57ITRdPKDo0JjFgN3AEYPcdUVAAAAAElFTkSuQmCC"/>

@@ -1,8 +1,11 @@
 # Changelog
 
-- Quest log: with ForeverQuestTint, quests Forever added now show its marker beside the title, its objective colour and its teal wash on their details in our quest log, and its wash and logo on the quest dialog, following its settings.
 ## Unreleased
+- Unit frames: the power number (mana, rage, energy...) is now on by default, right-aligned at the same spot as the health value on the power bar of every frame, following the same Status Text options.
 
+- Unit frames: health just gained (regeneration, heals) now shows in green ahead of the health bar for a moment, the bar then filling up to it, the mirror of the damage trail; on every health bar with the damage trail, and off with it.
+- Unit frames: damage, heals and misses now show over the player's and pet's portraits, always shown, as on the game's own frames.
+- Quest log: with ForeverQuestTint, quests Forever added now show its marker beside the title, its objective colour and its teal wash on their details in our quest log, and its wash and logo on the quest dialog, following its settings.
 - **The addon folder is now `PolestarUI` (was `Polestar_UI`). Please read before updating.** Polestar treats every `Polestar_*` folder as part of its own suite, and community addons must not use that name; this rename also ends Polestar's "Your install is mixed or incomplete" warning about Polestar: UI. After updating:
   1. Delete the old `Polestar_UI` folder from `World of Warcraft/_forever_/Interface/AddOns/` if it is still there (CurseForge may leave it). While it is installed, Polestar: UI starts nothing, switches the old copy off and asks you in chat to delete it and /reload.
   2. To keep your settings, with the game closed, rename `Polestar_UI.lua` to `PolestarUI.lua` in `WTF/Account/<account>/SavedVariables/`, and the same file in `WTF/Account/<account>/<realm>/<character>/SavedVariables/` for each character. Without this, Polestar: UI starts with its default settings.
