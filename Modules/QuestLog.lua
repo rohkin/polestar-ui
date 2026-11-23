@@ -9,6 +9,10 @@
 -- panel.FilterMenu(owner, root) (a menu generator), panel.PaintFilter(button); panel.OnView() and
 -- panel.OnFilters() are the window's, called as the details open or shut and
 -- a filter changes.
+-- ns.QuestLogTint (set by Addons/ForeverQuestTint.lua; nil without it):
+-- fn(questID) -> nil or { glyph = text, atStart = bool, objective = {r, g, b},
+-- gradient = {r, g, b, alpha, topAlpha, height} }, read at each paint: a
+-- marker beside the list title, objective colour, a wash on the details.
 
 local ADDON, ns = ...
 local W, Theme = Polestar.Widgets, Polestar.Theme
@@ -364,6 +368,11 @@ function ns.QuestLog(win, canvas, width)
 		r.psQuest, r.psTitle = info.questID, info.title
 		questName(r.Name, info)
 		local id = info.questID
+		local x = ns.QuestLogTint and ns.QuestLogTint(id, select(2, r.Name:GetFont()))
+		if x and x.glyph then
+			local t = r.Name:GetText()
+			r.Name:SetText(x.atStart and (x.glyph .. " " .. t) or (t .. " " .. x.glyph))
+		end
 		local done, failed = C_QuestLog.IsComplete(id), C_QuestLog.IsFailed(id)
 		r.Tracked:SetShown(QuestUtils_IsQuestWatched(id))
 		r.Mark:SetShown(done or failed)
@@ -383,6 +392,12 @@ function ns.QuestLog(win, canvas, width)
 		r.Name:SetWidth(textW - 2 * (SLOT + 6))
 		local g = GetCVarBool("showQuestObjectivesInLog") and goals(info) or ""
 		r.Goals:SetText(g)
+		if x and x.objective then
+			W.Uncolor(r.Goals)
+			r.Goals:SetTextColor(unpack(x.objective))
+		else
+			W.Color(r.Goals, "textDim")
+		end
 		r.Goals:SetShown(g ~= "")
 		local h = 8 + math.ceil(r.Name:GetStringHeight()) + (g ~= "" and 4 + math.ceil(r.Goals:GetStringHeight()) or 0) + 10
 		r:SetHeight(h)
@@ -487,6 +502,15 @@ function ns.QuestLog(win, canvas, width)
 	local fline = W.Divider(d.Foot)
 	fline:SetPoint("TOPLEFT", d.Foot, "TOPLEFT", 0, 0)
 	fline:SetPoint("TOPRIGHT", d.Foot, "TOPRIGHT", 0, 0)
+	-- The wash of a marked quest (ns.QuestLogTint): under the scroll's text,
+	-- its alpha fading from the bottom up to `height` of the way, as the
+	-- stock look; a third of the stock strength, as ours is a plain colour
+	-- over a dark ground, not a tinted parchment.
+	d.Glow = CreateFrame("Frame", nil, d)
+	d.Glow:SetPoint("TOPLEFT", d, "TOPLEFT", 1, -(HEAD + 1))
+	d.Glow:SetPoint("BOTTOMRIGHT", d.Foot, "TOPRIGHT", 0, 0)
+	d.Glow.Fade, d.Glow.Flat = d.Glow:CreateTexture(nil, "BACKGROUND"), d.Glow:CreateTexture(nil, "BACKGROUND")
+	d.Glow:Hide()
 	d.Scroll = W.Scroll(d)
 	d.Scroll:SetPoint("TOPLEFT", d, "TOPLEFT", 1, -(HEAD + 1))
 	d.Scroll:SetPoint("BOTTOMRIGHT", d.Foot, "TOPRIGHT", 0, 0)
@@ -594,6 +618,23 @@ function ns.QuestLog(win, canvas, width)
 		local info = C_QuestLog.GetInfo(index) or { questID = id }
 		nCheck = 0
 		questName(d.Title, info)
+		local tint = ns.QuestLogTint and ns.QuestLogTint(id)
+		local wash = tint and tint.gradient
+		d.Glow:SetShown(wash ~= nil)
+		if wash then
+			local r, g, b, a, top, h = unpack(wash)
+			local fade, flat = d.Glow.Fade, d.Glow.Flat
+			fade:ClearAllPoints()
+			fade:SetPoint("BOTTOMLEFT", d.Glow, "BOTTOMLEFT", 0, 0)
+			fade:SetPoint("BOTTOMRIGHT", d.Glow, "BOTTOMRIGHT", 0, 0)
+			fade:SetHeight(math.max(1, (p:GetHeight() - HEAD - 1 - FOOT) * h))
+			flat:ClearAllPoints()
+			flat:SetPoint("TOPLEFT", d.Glow, "TOPLEFT", 0, 0)
+			flat:SetPoint("BOTTOMRIGHT", fade, "TOPRIGHT", 0, 0)
+			fade:SetColorTexture(1, 1, 1, 1)
+			fade:SetGradient("VERTICAL", CreateColor(r, g, b, a * 0.16), CreateColor(r, g, b, top * 0.16))
+			flat:SetColorTexture(r, g, b, top * 0.16)
+		end
 		c.Begin(16 + math.ceil(d.Title:GetStringHeight()))
 		local description, summary = GetQuestLogQuestText()
 		if summary and summary ~= "" then c.text("body", "text", summary, 8) end
@@ -608,6 +649,7 @@ function ns.QuestLog(win, canvas, width)
 			local s, kind, finished = GetQuestLogLeaderBoard(i, index)
 			if kind ~= "spell" and kind ~= "log" then
 				local t = c.text("body", finished and "textMuted" or "textDim", (s and s ~= "") and s or kind, gap, 18)
+				if tint and tint.objective and not finished then W.Uncolor(t); t:SetTextColor(unpack(tint.objective)) end
 				if finished then check(t) end
 				gap = 4
 			end

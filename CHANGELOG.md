@@ -1,5 +1,6 @@
 # Changelog
 
+- Quest log: with ForeverQuestTint, quests Forever added now show its marker beside the title, its objective colour and its teal wash on their details in our quest log, following its settings.
 ## Unreleased
 
 - **The addon folder is now `PolestarUI` (was `Polestar_UI`). Please read before updating.** Polestar treats every `Polestar_*` folder as part of its own suite, and community addons must not use that name; this rename also ends Polestar's "Your install is mixed or incomplete" warning about Polestar: UI. After updating:

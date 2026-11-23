@@ -59,6 +59,8 @@ Addons\Bagnon.lua
 Addons\HereBeDragons.lua
 Addons\Immersion.lua
 Addons\Questie.lua
+Addons\ForeverQuestTintData.lua
+Addons\ForeverQuestTint.lua
 Addons\TalentsForever.lua
 Addons\WhatsTraining.lua
 Settings.lua

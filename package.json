@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node --test --test-reporter=dot \"tests/*.test.js\"",
     "preview": "node tools/preview.js",
+    "sync:fqt": "node tools/sync-fqt.js",
     "link": "node tools/link.js link",
     "unlink": "node tools/link.js unlink",
     "link:shots": "node tools/link.js link shots",
