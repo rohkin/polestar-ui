@@ -194,6 +194,7 @@ local function dress(f, icon, _, v)
 		f.glow:SetSize(sw * k * 1.13, sh * k * 1.13)
 	end
 	f.glow:SetShown(glow and true or false)
+	if ns.FQTQuestieTint then ns.FQTQuestieTint(f, icon) end -- ForeverQuestTint's gradient (Addons/ForeverQuestTint.lua)
 end
 
 mirror = map.PinMirror({ name = "PolestarUIQuestiePins", pins = pins.worldmapPins, hbd = hbd, spot = spot, dress = dress, make = make,
@@ -208,7 +209,8 @@ local function tinted(tex) mirror.Update(tex:GetParent()) end
 local function changed(_, _, icon)
 	if not (mirror.Changed(icon) and not hooked[icon]) or mirror.dead then return end
 	hooked[icon] = true
-	for _, m in ipairs({ "FakeHide", "FakeShow", "SetSize", "SetFrameLevel" }) do
+	-- UpdateTexture too: its art swap, after which ForeverQuestTint records the new art (its hook runs before ours).
+	for _, m in ipairs({ "FakeHide", "FakeShow", "SetSize", "SetFrameLevel", "UpdateTexture" }) do
 		if type(icon[m]) == "function" then hooksecurefunc(icon, m, mirror.Update) end
 	end
 	local tex = icon.texture

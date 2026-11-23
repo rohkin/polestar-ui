@@ -62,6 +62,8 @@ function stub.questieIcon(map, x, y, texture, size, hidden, flag, data)
 	end
 	function icon:FakeHide() self.hidden = true end
 	function icon:FakeShow() self.hidden = false end
+	-- Its art swap (QuestieFrame's UpdateTexture), ending on the colour.
+	function icon:UpdateTexture(path) self.texture:SetTexture(path); self.texture:SetVertexColor(self.texture:GetVertexColor()) end
 	args[icon] = { map, x, y, flag or 3 }
 	pins:AddWorldMapIconMap("Questie", icon, map, x, y, flag or 3)
 	icon:SetSize(size or 16, size or 16)

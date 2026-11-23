@@ -67,6 +67,9 @@ function C_Map.GetBestMapForUnit() return 37 end
 function Canvas:IsMouseOver() return stub.mapCursor ~= nil end
 function Canvas:GetNormalizedCursorPosition() return unpack(stub.mapCursor or { 0, 0 }) end
 function Canvas:RefreshAllDataProviders() self.refreshed = (self.refreshed or 0) + 1 end
+-- MapCanvasMixin:AcquirePin ends on RegisterPin(pin), a pin's release runs UnregisterPin(pin).
+function Canvas:RegisterPin() end
+function Canvas:UnregisterPin() end
 -- The map art's one zoom step, as Forever's art gives it.
 function Canvas:OnFrameSizeChanged() self.ScrollContainer:CreateZoomLevels() end
 local function oneStep(self) self.zoomLevels = { { scale = 0.8, layerIndex = 1 } } end

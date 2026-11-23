@@ -21,3 +21,10 @@ stub.fire("QUEST_GREETING")
 assert(not f.psGlow:IsShown(), "none on a greeting")
 ForeverQuestTintDB.showLogo = true
 stub.fire("QUEST_DETAIL")
+-- The turn-in pages are shorter than the view: the wash still fills it (not just the content's height).
+stub.fire("QUEST_COMPLETE")
+assert(f.psGlow:IsShown(), "wash on the reward page")
+for _, ev in ipairs({ "QUEST_DETAIL", "QUEST_PROGRESS", "QUEST_COMPLETE" }) do
+	stub.fire(ev)
+	assert(f.psGlow:IsShown() and f.psGlow:GetHeight() == f.Content:GetHeight() and f.psGlow:GetWidth() == f.Content:GetWidth(), ev .. ": wash covers the content area edge to edge")
+end

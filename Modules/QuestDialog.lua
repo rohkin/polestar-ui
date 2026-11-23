@@ -278,7 +278,7 @@ function paint()
 	f.psPortraitPaint("questnpc")
 	-- ForeverQuestTint (Addons/): a marked quest's wash over the body and its logo in the band; none on a greeting.
 	local tint = page ~= "greeting" and ns.QuestLogTint and ns.QuestLogTint(GetQuestID())
-	if ns.QuestWash then ns.QuestWash(f.psGlow, tint and tint.gradient or nil, f.Body:GetHeight()) end
+	f.psTint = tint and tint.gradient or nil
 	f.psLogo:SetShown(tint and tint.logo ~= nil)
 	if tint and tint.logo then f.psLogo.Tex:SetTexture(tint.logo) end
 	-- A friendship NPC's standing heads the body (QuestFrame_OnShow).
@@ -325,6 +325,9 @@ function paint()
 	-- An auto-accepted quest is taken, not closed (QuestFrameDetailPanel_OnShow).
 	ns.SetEnabled(f.Close, not (page == "detail" and QuestGetAutoAccept()), "This quest is already yours: press OK.")
 	W.ShellBody(f, c.y + 24)
+	-- The wash fills the whole content area (band to footer, edge to edge), under the scroll frame that carries the text.
+	f.psGlow:SetAllPoints(f.Content)
+	if ns.QuestWash then ns.QuestWash(f.psGlow, f.psTint, f.Content:GetHeight()) end
 end
 
 local function build()
@@ -338,8 +341,8 @@ local function build()
 		selected = function(type, index) return page == "reward" and type == "choice" and index == choice end })
 	W.ShellTabs(f, nil)
 	-- The wash under the body's content (BACKGROUND, below its child frames) and the logo left of the "..." menu.
-	f.psGlow = CreateFrame("Frame", nil, f.Body)
-	f.psGlow:SetAllPoints()
+	f.psGlow = CreateFrame("Frame", nil, f.Content)
+	f.psGlow:SetFrameLevel(f.Content:GetFrameLevel())
 	f.psGlow.Fade, f.psGlow.Flat = f.psGlow:CreateTexture(nil, "BACKGROUND"), f.psGlow:CreateTexture(nil, "BACKGROUND")
 	f.psGlow:Hide()
 	f.psLogo = CreateFrame("Frame", nil, f)
