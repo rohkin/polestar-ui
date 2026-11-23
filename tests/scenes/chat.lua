@@ -1,7 +1,8 @@
 --@ title: Chat
 --@ roots: GeneralDockManager, ChatFrame1, ChatFrame1ButtonFrame, ChatFrameToggleVoiceDeafenButton, ChatFrameToggleVoiceMuteButton, ChatFrame1EditBox, ChatFrame1Tab, ChatFrame2Tab, ChatFrame11Tab, QuickJoinToastButton, PolestarUIChatSocialIcon
 --@ stubs: stub_chat.lua
--- At rest (as the client shows it at login, the IM style's edit box at 0.35): a soft ground and faint outline, no footer, the side icons gone, the tabs' labels dimmed but legible (out of the game's tab fade); the messages and edit box in the game's chat font. A message through a filter and another addon's AddMessage line show; a whisper window (alerting, its conversation icon flat) is restyled; the ground is Polestar's, not the player's chat opacity, and warms on the game's fade-in; the combat log strip when it loads; switched off and on live; the side buttons, scroll bar, grip and scroll-to-bottom button (a press nudges the glyph). Then warm (mouse over) and typing. Beside them: a minimised window, the dock's overflow list, the tab menu (no other menu on the pooled frame), a bubble (never a forbidden one), switched off and on live.
+--@ saved: PolestarUIDB = { chatFade = true }
+-- With "Fade chat when idle" on. At rest (as the client shows it at login, the IM style's edit box at 0.35): a soft ground and faint outline, no footer, the side icons gone, the tabs' labels dimmed but legible (out of the game's tab fade); the messages and edit box in the game's chat font. A message through a filter and another addon's AddMessage line show; a whisper window (alerting, its conversation icon flat) is restyled; the ground is Polestar's, not the player's chat opacity, and warms on the game's fade-in; the combat log strip when it loads; switched off and on live; the side buttons, scroll bar, grip and scroll-to-bottom button (a press nudges the glyph). Then warm (mouse over) and typing. Beside them: a minimised window, the dock's overflow list, the tab menu (no other menu on the pooled frame), a bubble (never a forbidden one), switched off and on live.
 local W = "Polestar" local function ours(f, layer) local n = 0
 for _, r in ipairs({ f:GetRegions() }) do local t = r.GetTexture and r:GetTexture()
 if t and tostring(t):find(W) and r:IsShown() and (not layer or r:GetDrawLayer() == layer) then n = n + 1 end end
@@ -21,19 +22,24 @@ assert(ChatFrameChannelButton.Icon:GetAlpha() == 0, "the side icons shown at res
 assert(ours(ChatFrame1EditBox) == 0 and ChatFrame1EditBox:IsShown(), "a footer at rest (IM style)")
 FCF_FadeInChatFrame(ChatFrame1) stub.advance(0.2) assert(near(fill(ChatFrame1):GetAlpha(), GA), "the ground not full warm") assert(ChatFrameChannelButton.Icon:GetAlpha() == 1, "the side icons hidden warm")
 FCF_FadeOutChatFrame(ChatFrame1) stub.advance(1.1) assert(near(fill(ChatFrame1):GetAlpha(), GA * 0.35), "the ground not back at rest")
--- The mouse on a tab, the game's fade-in not yet run (it waits for a still mouse): warm all the same; the label lit, out of the tab's fade, the wash under it (not over it).
+-- Fade switched off live: warm at once without the mouse (the default); on again, calm.
+PolestarUIDB.chatFade = nil stub.advance(0.2) assert(near(fill(ChatFrame1):GetAlpha(), GA) and ChatFrameChannelButton.Icon:GetAlpha() == 1 and near(ChatFrame2Tab.Text:GetAlpha(), 1), "fading with the option off")
+PolestarUIDB.chatFade = true stub.advance(1.1) assert(near(fill(ChatFrame1):GetAlpha(), GA * 0.35), "not calm with the option on again")
+-- The mouse on a tab, the game's fade-in not yet run (it waits for a still mouse): warm all the same; as the Character window's tabs, the label stays dim, out of the tab's fade, the wash under it (not over it).
 stub.mouseOver = ChatFrame2Tab stub.advance(0.2)
 assert(near(fill(ChatFrame1):GetAlpha(), GA), "the chat cools with the mouse on a tab")
-assert(ChatFrame2Tab.Text:IsIgnoringParentAlpha() and select(1, ChatFrame2Tab.Text:GetTextColor()) == Polestar.Theme.Color("text") and ours(ChatFrame2Tab, "BACKGROUND") == 1 and ours(ChatFrame2Tab, "HIGHLIGHT") == 0, "a hovered tab not lit, or washed over")
+assert(ChatFrame2Tab.Text:IsIgnoringParentAlpha() and select(1, ChatFrame2Tab.Text:GetTextColor()) == Polestar.Theme.Color("textDim") and ours(ChatFrame2Tab, "BACKGROUND") == 1 and ours(ChatFrame2Tab, "HIGHLIGHT") == 0, "a hovered tab not lit, or washed over")
 stub.mouseOver = nil stub.advance(1.1)
-assert(ours(ChatFrame2Tab, "BACKGROUND") == 0 and select(1, ChatFrame2Tab.Text:GetTextColor()) == Polestar.Theme.Color("textMuted"), "the tab still lit")
+assert(ours(ChatFrame2Tab, "BACKGROUND") == 0 and select(1, ChatFrame2Tab.Text:GetTextColor()) == Polestar.Theme.Color("textDim"), "the tab still lit")
 -- At rest the labels stay legible, out of the game's tab fade (0.4 selected, 0.2 others): ours at 0.85 and 0.7, the underline with the label.
 assert(ChatFrame2Tab:GetAlpha() == 0.2 and ChatFrame2Tab.Text:IsIgnoringParentAlpha() and near(ChatFrame2Tab.Text:GetAlpha(), 0.7) and ChatFrame1Tab.Text:IsIgnoringParentAlpha() and near(ChatFrame1Tab.Text:GetAlpha(), 0.85), "the tabs not legible at rest")
--- A window the player made (Guild) docked past the static tabs: the dock lays its tab in its scroll frame, 2px higher and stretched to 90. Its label sits on the header with the others, as far into its tab, the underline as wide as its text.
+-- A window the player made (Guild) docked past the static tabs: the dock lays its tab in its scroll frame, 2px higher and stretched to 90. Its label sits on the header with the others, centred in its tab (as a shell tab's), the underline across the tab's foot.
 local guild = stub.makeChat(4, "Guild") guild:Hide() stub.dockDynamic(ChatFrame4Tab, ChatFrame11Tab) PolestarUI.modules.chat.Apply() FCFTab_UpdateColors(ChatFrame4Tab, true) stub.advance(0.1)
-assert(select(5, ChatFrame4Tab.Text:GetPoint()) == select(5, ChatFrame1Tab.Text:GetPoint()) - 2 and ChatFrame4Tab.Text:GetJustifyH() == "LEFT" and ChatFrame1Tab.Text:GetJustifyH() == "LEFT", "a dynamic tab's label not moved onto the others' line, or centred in its wide tab")
+assert(select(5, ChatFrame4Tab.Text:GetPoint()) == select(5, ChatFrame1Tab.Text:GetPoint()) - 2 and ChatFrame4Tab.Text:GetJustifyH() ~= "LEFT" and ChatFrame1Tab.Text:GetJustifyH() ~= "LEFT", "a dynamic tab's label not moved onto the others' line, or not centred")
 local function bar(t) for _, r in ipairs({ t:GetRegions() }) do if r:GetDrawLayer() == "ARTWORK" and tostring(r:GetTexture()):find(W) then return r end end end
-assert(near(bar(ChatFrame4Tab):GetWidth(), ChatFrame4Tab.Text:GetStringWidth()) and select(5, bar(ChatFrame4Tab):GetPoint(2)) == 3, "the underline not the label's width")
+local function across(t) local b = bar(t) local p1, _, r1, _, y1 = b:GetPoint(1) local p2, _, r2, _, y2 = b:GetPoint(2)
+return p1 == "BOTTOMLEFT" and r1 == "BOTTOMLEFT" and p2 == "BOTTOMRIGHT" and r2 == "BOTTOMRIGHT" and y1 == 0 and y2 == 0 and b:GetHeight() == 2 end
+assert(across(ChatFrame4Tab), "the underline not across the tab's foot")
 FCFTab_UpdateColors(ChatFrame4Tab, false)
 -- The messages and the edit box keep the game's chat font (Polestar's face read poorly there in game).
 local ARIALN = "Fonts\\ARIALN.TTF" -- the stub's ChatFontNormal face
@@ -63,7 +69,9 @@ assert(not PolestarUIChatSocialIcon:IsMouseEnabled(), "the social icon takes the
 assert(select(1, PolestarUIChatSocialIcon:GetSize()) == ChatFrameChannelButton:GetWidth() and PolestarUIChatSocialIcon:GetHeight() == ChatFrameChannelButton:GetHeight() and select(5, PolestarUIChatSocialIcon:GetPoint()) == 2, "the social button not the strip's size and spacing")
 FCF_SetWindowAlpha(ChatFrame1, 0.25)
 FCF_StartAlertFlash(ChatFrame11) assert(styled(11), "the whisper window is not restyled")
-assert(ChatFrame11Tab.glow:IsShown(), "no alert") assert(ChatFrame11Tab.conversationIcon.desaturated and ChatFrame11Tab.conversationIcon:GetVertexColor() == Polestar.Theme.Color("icon"), "the conversation icon not flat in the icon colour") stub.loadCombatLog()
+assert(ChatFrame11Tab.glow:IsShown(), "no alert")
+-- The whisper's tab (made after login, FCF_OpenTemporaryWindow) dressed as the others: Polestar's label face, the underline across its foot when selected.
+FCFTab_UpdateColors(ChatFrame11Tab, true) assert(ChatFrame11Tab.Text:GetFont() == Polestar.Theme.FontSpec("label") and across(ChatFrame11Tab) and bar(ChatFrame11Tab):IsShown(), "the whisper tab not dressed") FCFTab_UpdateColors(ChatFrame11Tab, false) assert(ChatFrame11Tab.conversationIcon.desaturated and ChatFrame11Tab.conversationIcon:GetVertexColor() == Polestar.Theme.Color("icon"), "the conversation icon not flat in the icon colour") stub.loadCombatLog()
 assert(CombatLogQuickButtonFrame_CustomTexture:GetAlpha() == 0 and ours(CombatLogQuickButtonFrame_Custom) == 1, "the combat log strip") PolestarUI.Switch("chat", false) assert(ChatFrame1TopLeftTexture:IsShown() and ChatFrame1Background:GetTexture():find("ChatFrameBackground") and ChatFrame1Tab.Left:GetAlpha() == 1 and ChatFrame1EditBoxMid:GetAlpha() == 1 and ours(ChatFrame1) == 0 and ours(ChatFrame1Tab) == 0 and ours(ChatFrame1EditBox) == 0 and ours(ChatFrame11) == 0 and CombatLogQuickButtonFrame_CustomTexture:GetAlpha() == 1, "not the stock look when off") assert(ChatFrameMenuButton:GetNormalTexture():GetAlpha() == 1 and ChatFrame1.ScrollBar.Track.Thumb.Middle:GetAlpha() == 1 and ChatFrame1.ScrollToBottomButton:GetHighlightTexture():GetAlpha() == 1, "the side buttons not stock when off")
 assert(ChatFrameChannelButton.Icon:GetAlpha() == 1 and not ChatFrameChannelButton.Icon.desaturated and not ChatFrame11Tab.conversationIcon.desaturated, "the stock icons not given back when off")
 assert(ChatFrame1:GetFont() == "Fonts\\ARIALN.TTF" and ChatFrame11:GetFont() == "Fonts\\ARIALN.TTF" and ChatFrame1EditBox.header:GetFont() == "Fonts\\ARIALN.TTF" and not ChatFrame2Tab.Text:IsIgnoringParentAlpha() and ChatFrame2Tab.Text:GetAlpha() == 1, "the game's face and tab fade not back when off")
@@ -73,8 +81,8 @@ ChatFrame2Tab.ActiveMiddle:Show()
 PolestarUI.Switch("chat", true)
 assert(ours(ChatFrame1Tab, "ARTWORK") == 1 and ours(ChatFrame2Tab, "ARTWORK") == 0, "the combat log tab marked selected beside General")
 assert(styled(1) and styled(11), "not restyled when on again")
-local mut = { Polestar.Theme.Color("textMuted") }
-assert(select(1, ChatFrame2Tab.Text:GetTextColor()) == mut[1] and ChatFrame2Tab.Text:GetFont() == Polestar.Theme.FontSpec("small"), "the tab label not in Polestar") local function glyph(b, name) for _, x in ipairs({ b:GetRegions() }) do if tostring(x:GetTexture()):find(name) then return x end end end local function faded(b) return b:GetNormalTexture():GetAlpha() == 0 and b:GetPushedTexture():GetAlpha() == 0 and b:GetHighlightTexture():GetAlpha() == 0 end local bar = ChatFrame1.ScrollBar
+local mut = { Polestar.Theme.Color("textDim") }
+assert(select(1, ChatFrame2Tab.Text:GetTextColor()) == mut[1] and ChatFrame2Tab.Text:GetFont() == Polestar.Theme.FontSpec("label"), "the tab label not in Polestar") local function glyph(b, name) for _, x in ipairs({ b:GetRegions() }) do if tostring(x:GetTexture()):find(name) then return x end end end local function faded(b) return b:GetNormalTexture():GetAlpha() == 0 and b:GetPushedTexture():GetAlpha() == 0 and b:GetHighlightTexture():GetAlpha() == 0 end local bar = ChatFrame1.ScrollBar
 assert(faded(ChatFrameMenuButton) and faded(ChatFrameChannelButton) and faded(ChatFrameToggleVoiceMuteButton) and faded(ChatFrame1.ScrollToBottomButton) and faded(ChatFrame1ResizeButton) and bar.Track.Middle:GetAlpha() == 0 and bar.Track.Thumb.Middle:GetAlpha() == 0 and bar.Back.Texture:GetAlpha() == 0, "the side buttons and scroll bar not restyled")
 assert(glyph(ChatFrameMenuButton, "icon%-talk") and glyph(ChatFrame1ResizeButton, "resize") and not glyph(ChatFrameChannelButton, "icon") and ChatFrameChannelButton.Icon.desaturated, "the icons")
 ChatFrameMenuButton:SetButtonState("PUSHED") ChatFrameChannelButton:Disable() stub.advance(0.1)
@@ -85,8 +93,10 @@ ChatFrameChannelButton:Enable()
 --@ panel
 --@ roots: GeneralDockManager, ChatFrame1, ChatFrame1ButtonFrame, ChatFrameToggleVoiceDeafenButton, ChatFrameToggleVoiceMuteButton, ChatFrame1EditBox, ChatFrame1Tab, ChatFrame2Tab, ChatFrame11Tab, QuickJoinToastButton, PolestarUIChatSocialIcon
 --@ stubs: stub_chat.lua
--- Warm: the mouse over the chat (the game's fade-in): the full ground and its hairline, the tabs' labels lit, the side icons back; still no footer.
+-- Fade off (the default): warm without the mouse: the full ground and its hairline, the tabs' labels full, the side icons shown; still no footer.
 stub.chatSample()
+stub.advance(0.3)
+assert(PolestarUIDB.chatFade == nil and ChatFrameChannelButton.Icon:GetAlpha() == 1 and ChatFrame2Tab.Text:GetAlpha() == 1 and PolestarUIChatSocialIcon:GetAlpha() == 1, "the chat fades by default")
 FCF_FadeInChatFrame(ChatFrame1)
 stub.advance(0.3)
 assert(ChatFrameChannelButton.Icon:GetAlpha() == 1 and ChatFrame1Tab:GetAlpha() == 1 and PolestarUIChatSocialIcon:GetAlpha() == 1, "not warm")
@@ -133,6 +143,15 @@ PolestarUI.Switch("chat", false)
 m, bg = stub.openMenu(ChatFrame1Tab, "MENU_FCF_TAB", { "Rename Window" })
 assert(bub.TopEdge:GetAlpha() == 1 and bub.Tail:GetAlpha() == 1 and ours(bub) == 0 and mini.Left:GetAlpha() == 1 and ours(mini) == 0 and list.NineSlice.TopEdge:GetAlpha() == 1 and ours(list.NineSlice) == 0 and bg:GetAlpha() > 0.9 and ours(m) == 0, "not the stock look when off")
 PolestarUI.Switch("chat", true)
+-- The scroll-to-bottom flash (stock ADD arrow) is faded; our glyph takes the accent while it plays, the icon colour after, and the game's own back when off.
+local stb = ChatFrame1.ScrollToBottomButton
+local function ours_glyph(b) for _, r in ipairs({ b:GetRegions() }) do if r:GetDrawLayer() == "ARTWORK" and tostring(r:GetTexture()):find(W) then return r end end end
+local r0, g0, b0 = Polestar.Theme.Accent()
+ChatFrameUtil.StartFlash(stb.Flash)
+assert(select(4, stb.Flash:GetVertexColor()) == 0 and select(1, ours_glyph(stb):GetVertexColor()) == r0, "the stock flash shows, or the glyph not lit")
+ChatFrameUtil.StopFlash(stb.Flash)
+assert(select(4, stb.Flash:GetVertexColor()) == 0 and stb.Flash:GetAlpha() == 1, "the stock flash shows after the game reset its alpha")
+assert(select(1, ours_glyph(stb):GetVertexColor()) == Polestar.Theme.Color("icon"), "the glyph stays lit")
 m = stub.openMenu(ChatFrame1Tab, "MENU_FCF_TAB", { "Rename Window", "Create New Window", "Settings" })
 assert(bub.TopEdge:GetAlpha() == 0 and ours(bub) == 5 and mini.Left:GetAlpha() == 0 and ours(m) == 5, "not restyled when on again")
 preview.hover = mini

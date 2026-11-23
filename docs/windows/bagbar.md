@@ -2,7 +2,12 @@
 
 The game's bag bar buttons, restyled in place and never rebuilt
 (`Modules/BagBar.lua`), in the action buttons' look (`ns.ButtonLook`,
-[actionbars.md](actionbars.md)) whatever the action bars' switch says.
+[actionbars.md](actionbars.md)) whatever the action bars' switch says;
+a bag slot with no bag (`GetInventoryItemTexture("player", id)` nil, as
+`BaseBagSlotButtonMixin:HasBagEquipped`; a secret answer counts as a bag)
+shows the action bars' empty-slot star, its icon (the game's empty-bag art)
+faded with `SetAlpha`; read on `BAG_UPDATE_DELAYED` (the game's own update
+for the slots) and every repaint, never per frame.
 `BagsBar` is an Edit Mode system: its place, orientation, direction, size
 and slot padding stay the game's (CLIENT.md, rule 17). Clicks (the game's
 bag toggles, which our Bags window follows), drag and drop, equipping a bag

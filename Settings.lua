@@ -8,7 +8,7 @@ local ADDON, ns = ...
 if ns.tooOld then return end
 
 local PAGE, KEY = "Polestar: UI", "polestarui"
-local WINDOWS, HUD = "Windows", "HUD"
+local WINDOWS, HUD, ICONS = "Windows", "HUD", "Icons"
 
 -- Each module's name on the page; one missing here shows its /pui key.
 local LABELS = {
@@ -179,6 +179,58 @@ local function lookControls(group, what)
 	return controls
 end
 
+-- The Icons tab's preview: two buttons of ours (plain Buttons: no action, no
+-- events), a filled one and an empty one (its icon hidden, as the game hides
+-- an empty slot's: Polestar's emblem), in the action bars' own paint
+-- (ns.ButtonLook.paint), so it cannot drift from the bars. Polestar's band
+-- (UI.Preview.Band, there once Polestar_Options draws the page) lays it out
+-- again on every Theme.Refresh, which each look change runs: its ground is a
+-- Polestar painter.
+local SIZE, GAP = 45, 8 -- ActionButtonTemplate's size; the gap between the two
+local function previewButton(parent, empty)
+	local b = CreateFrame("Button", nil, parent)
+	b:SetSize(SIZE, SIZE)
+	b.icon = b:CreateTexture(nil, "BACKGROUND")
+	b.icon:SetAllPoints(b)
+	b.icon:SetTexture("Interface\\Icons\\Spell_Nature_Lightning")
+	b.icon:SetShown(not empty)
+	b.HotKey = b:CreateFontString(nil, "OVERLAY")
+	b.HotKey:SetFont(STANDARD_TEXT_FONT, 12, "OUTLINE")
+	b.HotKey:SetPoint("TOPRIGHT", b, "TOPRIGHT", -1, -3)
+	b.HotKey:SetText(empty and "2" or "1")
+	return b
+end
+
+local function iconsPreview(host)
+	local P, paint = Polestar.UI and Polestar.UI.Preview, ns.ButtonLook.paint
+	if not (P and P.Band) then
+		local f = CreateFrame("Frame", nil, host)
+		local b, e = previewButton(f), previewButton(f, true)
+		b:SetPoint("RIGHT", f, "CENTER", -GAP / 2, 0)
+		e:SetPoint("LEFT", f, "CENTER", GAP / 2, 0)
+		W.Painter(b, function() paint(b, true); paint(e, true) end)
+		function f:Layout() return SIZE + 32 end
+		return f
+	end
+	local f = P.Band(host)
+	local b, e = previewButton(f), previewButton(f, true)
+	f.Button, f.Empty = b, e
+	function f:Content()
+		paint(b, true)
+		paint(e, true)
+		local t = self:TrueScale()
+		return (2 * SIZE + GAP) * t, SIZE * t, function(left, top, k)
+			local g = t * k
+			for i, x in ipairs({ b, e }) do
+				x:SetScale(g)
+				x:ClearAllPoints()
+				x:SetPoint("TOPLEFT", self, "TOPLEFT", P.Snap(x, left / g + (i - 1) * (SIZE + GAP)), P.Snap(x, -top / g))
+			end
+		end
+	end
+	return f
+end
+
 local function register(spec)
 	spec.page, spec.key, spec.icon, spec.order, spec.group = PAGE, KEY, "window", 66, "setup"
 	local ok, err = Polestar.RegisterOptions(spec)
@@ -225,8 +277,7 @@ Polestar.OnLogin(function()
 	-- Frames settings, or with "Override" on the group's own, which start as
 	-- Polestar's (H.Seed). Every change repaints (Theme.Refresh).
 	for _, g in ipairs({ { "frames", "Frames look", "unit frames, cast bars, the damage meter and the minimap" },
-		{ "plates", "Plates look", "nameplates and their cast bars" },
-		{ "icons", "Icons look", "action and bag buttons, the micro menu, buffs and the cooldown viewer's icons" } }) do
+		{ "plates", "Plates look", "nameplates and their cast bars" } }) do
 		register({ tab = HUD, section = g[2], controls = lookControls(g[1], g[3]) })
 		if g[1] == "plates" then register({ tab = HUD, section = "Nameplate cast bars", controls = plateCast() }) end
 	end
@@ -238,11 +289,17 @@ Polestar.OnLogin(function()
 		ufToggle("trail", "Damage trail", "Health just lost stays red for a moment, then drains away."),
 	} })
 	register({ tab = HUD, section = "Chat", controls = {
+		{ kind = "toggle", label = "Fade chat when idle", search = "chat fade, chat background, tabs",
+			help = "On: the chat's background, outline, tabs and side buttons fade back when the mouse leaves it. Off: they stay fully shown. Old messages still fade out as the game does them.",
+			get = function() return PolestarUIDB.chatFade and true or false end,
+			set = function(v) PolestarUIDB.chatFade = v or nil end },
 		{ kind = "toggle", label = "Keep chat across sessions", search = "chat history",
 			help = "Keep each chat window's last lines across /reload and logout, on this computer only (whispers too). Off, they are forgotten at logout.",
 			get = function() return not PolestarUICharDB.chatNoHistory end,
 			set = function(v) PolestarUICharDB.chatNoHistory = v == false or nil end },
 	} })
+	register({ tab = ICONS, section = "Icons look", preview = iconsPreview,
+		controls = lookControls("icons", "action and bag buttons, the micro menu, buffs and the cooldown viewer's icons") })
 end)
 
 -- Opens our page on the tab holding `key`'s toggle (a window's "..." menu).

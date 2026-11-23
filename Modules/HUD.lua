@@ -69,6 +69,14 @@ function H.Bar(parent, trail)
 			s:SetMinMaxValues(0, 1)
 			s:SetValue(0)
 		end
+		-- The red ends TRAIL_OVERLAP short of the trail's value, so a trail level
+		-- with the fill (a regen tick caught up) sits wholly under it: at the same
+		-- value the fill's partly covered end pixel let a red fringe show through.
+		-- aim clips it to the bar, so near empty it never pokes out on the left.
+		t:ClearAllPoints()
+		t:SetPoint("TOPLEFT", b, "TOPLEFT", -TRAIL_OVERLAP, 0)
+		t:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -TRAIL_OVERLAP, 0)
+		aim:SetClipsChildren(true)
 		aim:SetStatusBarTexture(WHITE)
 		aim:SetStatusBarColor(1, 1, 1, 0)
 		-- The clip reaches TRAIL_OVERLAP under the fill's end: a clip edge and a
@@ -82,7 +90,7 @@ function H.Bar(parent, trail)
 		t:SetStatusBarTexture(fillTexture()) -- the fills exist before they are anchored to
 		b:SetStatusBarTexture(fillTexture())
 		local gclip = CreateFrame("Frame", nil, b)
-		gclip:SetPoint("TOPLEFT", t:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+		gclip:SetPoint("TOPLEFT", t:GetStatusBarTexture(), "TOPRIGHT", TRAIL_OVERLAP, 0) -- the trail's true value
 		gclip:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
 		gclip:SetClipsChildren(true)
 		local gain = CreateFrame("Frame", nil, gclip)

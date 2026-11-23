@@ -3,12 +3,13 @@
 --@ stubs: stub_spellbook.lua
 -- Settings.lua registers one page (key polestarui) whose controls keep their state in PolestarUIDB through get/set.
 local ns = PolestarUI
-local controls, sections, in_, subtitle = {}, {}, {}, nil
+local controls, sections, in_, subtitle, previews = {}, {}, {}, nil, {}
 Polestar.Widgets.OnOptionsRegistered(function(spec)
 	if spec.key ~= "polestarui" then return end
 	assert(spec.page == "Polestar: UI" and spec.group == "setup", "page or group")
 	subtitle = subtitle or spec.subtitle
 	sections[spec.tab .. "/" .. spec.section] = true
+	if spec.preview then previews[spec.tab] = spec.preview end
 	for _, c in ipairs(spec.controls) do
 		assert(c.key == nil and ((c.get and c.set) or c.kind == "button"), "a control with a PolestarDB key: " .. tostring(c.label))
 		controls[c.label] = c
@@ -16,7 +17,7 @@ Polestar.Widgets.OnOptionsRegistered(function(spec)
 		in_[spec.section][c.label] = c
 	end
 end)
-for _, s in ipairs({ "Windows/Windows", "Windows/Docking", "HUD/HUD", "HUD/Frames look", "HUD/Plates look", "HUD/Icons look", "HUD/Unit frames", "HUD/Chat" }) do
+for _, s in ipairs({ "Windows/Windows", "Windows/Docking", "HUD/HUD", "HUD/Frames look", "HUD/Plates look", "HUD/Unit frames", "HUD/Chat", "Icons/Icons look" }) do
 	assert(sections[s], "no section " .. s)
 end
 
@@ -76,6 +77,24 @@ assert(not PolestarUIDB.hudLook.icons.override and H.GroundAlpha(H.ICONS) == T.G
 override.set(true)
 assert(PolestarUIDB.hudLook.icons.ground == 0.25, "the override's own values were lost while following")
 override.set(nil)
+-- The Icons tab's pinned preview (Polestar's band; a stand-in here): one button of ours in the action
+-- bars' paint, laid out and painted again on every Icons look change (each runs Theme.Refresh).
+assert(previews.Icons and not previews.HUD and not previews.Windows, "the preview is not the Icons tab's alone")
+local hadUI = Polestar.UI
+Polestar.UI = { Preview = stub.preview }
+local pf = previews.Icons(UIParent)
+Polestar.UI = hadUI
+assert(pf:Layout(400) == 45 + 32 and pf.Button:GetObjectType() == "Button" and pf.Empty:GetObjectType() == "Button", "the preview is not two buttons at their real size")
+local function emblem(b)
+	for _, r in ipairs({ b:GetRegions() }) do if r:IsShown() and tostring(r:GetTexture()):find("emblem", 1, true) then return r end end
+end
+assert(emblem(pf.Empty) and not emblem(pf.Button), "the preview's empty slot has no emblem, or the filled one has")
+local laid = pf.laidOut
+override.set(true)
+icons["Border"].set(2)
+assert(pf.laidOut >= laid + 2, "the preview did not repaint on a look change")
+override.set(nil)
+pf:Hide()
 -- The Frames look's rows as Polestar's page makes them (W.SetDisabledWhen, then psControl): turning the
 -- override on enables every row at once (the page re-checks `disabled` on a setting change only), and each
 -- row writes the frames group's own value, which the painted edge follows.
@@ -139,6 +158,13 @@ keep.set(false)
 assert(PolestarUICharDB.chatNoHistory == true, "history off not saved")
 keep.set(nil)
 assert(PolestarUICharDB.chatNoHistory == nil and keep.get(), "history reset")
+-- Chat fade, account-wide: off by default.
+local fade = controls["Fade chat when idle"]
+assert(fade.get() == false, "chat fades by default")
+fade.set(true)
+assert(PolestarUIDB.chatFade == true and fade.get(), "chat fade not saved")
+fade.set(nil)
+assert(PolestarUIDB.chatFade == nil and not fade.get(), "chat fade reset")
 
 -- Settings... in the window's menu (Polestar's UI is absent in the preview: a stand-in) opens our page on the window's tab.
 local opened

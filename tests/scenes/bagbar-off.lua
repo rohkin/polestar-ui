@@ -33,3 +33,4 @@ end
 assert(MainMenuBarBackpackButton.FreeSlots:GetFont() == font, "the free count's font is not the game's")
 assert(BagsBar.BorderArt:GetAlpha() == 1, "the bar's art is not back")
 for d in BagsBar.HorizontalDividersPool:EnumerateActive() do assert(d:GetAlpha() == 1, "a divider is not back") end
+assert(CharacterBag3Slot.icon:GetAlpha() == 1, "the empty-bag art is not the game's again")

@@ -135,3 +135,25 @@ function CreateFontFamily(name, members)
 	stub.fontFamilies[name] = fam
 	return fam
 end
+
+-- A Button's state, as the client answers it (stub_actionbars.lua tracks it).
+M.GetButtonState = M.GetButtonState or function(self) return self.buttonState or "NORMAL" end
+
+-- Polestar_Options' preview band (UI.Preview.Band), not loaded in the
+-- preview: a stand-in laying f:Content out at k = 1 as the band does, again
+-- on every Theme.Refresh (a painter on it, as the band's ground). A scene
+-- puts it in place: Polestar.UI = { Preview = stub.preview }. f.laidOut counts.
+stub.preview = { Snap = function(_, v) return v end }
+function stub.preview.Band(parent)
+	local f = CreateFrame("Frame", nil, parent)
+	function f:TrueScale() return 1 end
+	function f:Layout(width)
+		self.psWidth = width
+		local _, h, place = self:Content(width)
+		place(0, 16, 1)
+		self.laidOut = (self.laidOut or 0) + 1
+		return h + 32
+	end
+	Polestar.Widgets.Painter(f, function() if f.psWidth then f:Layout(f.psWidth) end end)
+	return f
+end

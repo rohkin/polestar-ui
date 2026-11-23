@@ -25,3 +25,20 @@ stub.advance(0.1)
 stub.openFlyout(ActionButton6, 3)
 stub.advance(0.5)
 assert(styled(SpellFlyoutPopupButton1) and styled(SpellFlyoutPopupButton3), "the flyout's buttons are not restyled")
+-- Empty slots (the game hides an empty slot's icon): Polestar's emblem, faint, in the lighter accent (half way to white); none on a filled one.
+local function logo(b)
+	for _, r in ipairs({ b:GetRegions() }) do
+		if r:IsShown() and tostring(r:GetTexture()):find("emblem", 1, true) then return r end
+	end
+end
+for _, b in ipairs({ ActionButton11, ActionButton12, MultiBarBottomLeftButton3, MultiBarRightButton7, PetActionButton8 }) do
+	local l = logo(b)
+	assert(l, b:GetName() .. ": no emblem in the empty slot")
+	local r, g, bl, a = l:GetVertexColor()
+	local ar, ag, ab = Polestar.Theme.Accent()
+	assert(math.abs(a - 0.05) < 1e-6, b:GetName() .. ": the emblem is not faint")
+	assert(math.abs(r - (ar + 1) / 2) < 1e-6 and math.abs(g - (ag + 1) / 2) < 1e-6 and math.abs(bl - (ab + 1) / 2) < 1e-6, b:GetName() .. ": the emblem is not the lighter accent")
+end
+for _, b in ipairs({ ActionButton1, ActionButton10, MultiBarBottomLeftButton2, PetActionButton1, StanceButton1 }) do
+	assert(not logo(b), b:GetName() .. ": an emblem on a filled slot")
+end

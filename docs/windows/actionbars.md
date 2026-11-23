@@ -26,6 +26,20 @@ stock frame and nothing is moved, sized, shown or hidden.
   under the icon, so an empty slot shown in the grid is a well; Polestar's window border (`H.Edge`: its colour, `windowBorder`, or the accent; its size, the first pixel inside, the rest outward, as Theme.Border lays a window's,
   2 px at most; none with it off, a checked edge still shows) round the
   button; Polestar's window shadow outside it (`H.Shadow`, 6 units); the hover wash.
+- **Empty slots:** the game hides an empty slot's icon (`ActionButton.lua`
+  `Update`, `PetActionBar.lua`), so a slot whose icon is hidden shows Polestar's emblem (`Media/UI/emblem`,
+  white, tinted) of ours centred at 60% of the button (its ink about 45%), in
+  the lighter accent (the accent half way to white: Polestar 0.4.0 has no
+  lighter accent token; its own bright star `emblem-hot` is a fixed gold) at
+  5%. The per-frame driver compares the icon's shown state and repaints on a
+  change (a drop, a page or form swap), in combat too: only our texture's
+  shown state and colour. Hiding empty slots is the game's own Edit Mode
+  setting, per bar, **Always Show Buttons** (unticked: `ActionBarMixin:
+  UpdateShownButtons` hides a button with no action unless its `showgrid`
+  attribute is set, which `ACTIONBAR_SHOWGRID` does while an action is
+  dragged); ours hangs on the button, so it hides and shows with it. No
+  option of ours duplicates it: faded art over a secure button left shown
+  would still take clicks and keep its space.
 - **States:** pressed (a click or its key: the button's state is `PUSHED`)
   the accent wash at 30%; checked (a stance, auto-attack, a spell waiting for
   its target) the accent wash at 15% and the hairline in the accent. No event
@@ -54,7 +68,7 @@ stock frame and nothing is moved, sized, shown or hidden.
 - **Combat:** repainting the look (a theme change) writes only colours and
   alphas on textures; a button the game makes mid-fight (a flyout first
   opened in combat) keeps the game's look until `PLAYER_REGEN_ENABLED`.
-- **Shared look:** `ns.ButtonLook` (`paint(b, shown, lit?)`, `tick(b)`)
+- **Shared look:** `ns.ButtonLook` (`paint(b, shown, lit?, isEmpty?)`: `isEmpty(b)` replaces the hidden-icon test and fades the icon while empty, `tick(b)`)
   hands this look to the bag bar ([bagbar.md](bagbar.md)), which has its own
   switch and driver, so it works with this module off. The micro menu has its
   own look ([micromenu.md](micromenu.md)).

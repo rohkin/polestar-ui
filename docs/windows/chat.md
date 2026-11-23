@@ -8,19 +8,26 @@ window in `CHAT_FRAMES` (the whisper windows as they open), its button frame,
 tab, edit box, scroll bar and buttons, minimised windows, the side buttons,
 the dock's overflow list, the combat log's filter strip, the chat's own
 menus and chat bubbles.
-- **Calm and warm:** at rest the chat is quiet: a soft ground, a faint
-  outline, no footer, the side strip's icons gone, the tabs' labels dimmed
-  but legible.
+- **Calm and warm:** by default the chat is always warm (no fade). With
+  "Fade chat when idle" on (Settings, HUD, Chat; `PolestarUIDB.chatFade`,
+  account-wide, read by the driver each frame, so live) it is quiet at rest:
+  a soft ground, a faint outline, no footer, the side strip's icons gone,
+  the tabs' labels dimmed but legible.
   It turns warm while the game fades it in (the mouse over it, read from
   the window's `hasBeenFaded`), while the mouse is on a tab (any docked tab
   warms the docked windows), on its shown edit box or on the social button,
   or while its edit box is typed in: the full ground and its hairline, the
   side icons back. Ours eases in over 0.15 s
-  (the game's fade-in) and out over 1 s.
+  (the game's fade-in) and out over 1 s. What stays the game's either way:
+  the tabs' own frame alpha (0.4/0.2 at rest: the conversation icon, glow and
+  hover wash follow it), an undocked window's button frame and the scroll
+  bar's fade, and the messages fading after inactivity
+  (`ScrollingMessageFrameMixin:SetFading` writes a Lua key on the stock
+  frame, rule 15: not ours to call).
 - **Ground:** one flat Polestar surface per chat window: one ground (`bg` at
   the Background opacity setting) round the message area, the button strip
   on its side (left or right, as the game puts it; re-placed when it moves)
-  and a 22px tab header above both, no divider. The header's ground and
+  and a 32px tab header (the tab's whole height, as clickable) above both, no divider. The header's ground and
   hairline are on `GeneralDockManager`, under the docked tabs (its
   children, LOW strata): the chat window (frame level 5) draws above the
   docked tabs, so nothing of ours on the window may reach above its ground,
@@ -35,23 +42,26 @@ menus and chat bubbles.
   The game still writes the player's opacity and fades into its own
   (emptied) ground; the player's window colour is kept for when it is
   switched off.
-- **Tabs:** plain text on that header: no box, no ground, the label in
-  Polestar's face (`small`'s) at the game's size (the game sizes a tab to its
-  text once), `textMuted`, the selected one `text` over a 2px accent
-  underline as wide as its label's text. A docked tab that is not static (a
+- **Tabs:** as the Character window's top tabs (Polestar's shell tab, house
+  look): plain text on that header, no box, no ground, the label centred in
+  the tab in Polestar's face (`label`'s) at the game's size (the game sizes a
+  tab to its text once, and an undocked or whisper tab to the width it read
+  then: a larger size would cut the name), `textDim`, the selected one `text`
+  over a 2px accent underline across the tab's whole foot (the band's). A
+  game look's tab art (Polestar_Looks' `Theme.KitTab`) is not drawn: it
+  writes keys on the tab. A docked tab that is not static (a
   window the player made, a whisper's) lies in the dock's scroll frame
   (`FCFDock_UpdateTabs`), a few px above the dock's foot, stretched to 90
-  (`FCFDock_CalculateTabSize`) with its label centred: so every label is
-  left-justified in its text box (which starts at the tab's side padding on
-  every tab) and the label, wash and underline are moved by the tab's foot
+  (`FCFDock_CalculateTabSize`) with its label centred: its label, wash and
+  underline are moved by the tab's foot
   to the dock's (measured by our driver; the tab itself is the dock's and
-  never moved). Switched off, the label's own anchor and justification are
-  back. Label and underline are out of the tab's
+  never moved). Switched off, the label's own anchor is back. A whisper tab
+  made later (`FCF_OpenTemporaryWindow`, post-hooked) is dressed the same. Label and underline are out of the tab's
   fade (`SetIgnoreParentAlpha`; the game's 0.2 left a label unreadable over
   the world): ours fades them, 0.85 selected and 0.7 the others at rest
   (`TAB_REST`), full with the window's warmth (the header's, docked) or
   hovered, times the alpha above the tab (its parent's). A hovered tab: its
-  label `text` on the hover wash, which lies under the label (BACKGROUND, shown by our driver); in the
+  label unchanged (as a shell tab's) on the hover wash, which lies under the label (BACKGROUND, shown by our driver); in the
   HIGHLIGHT layer it drew over the label and washed it out. Which
   tab is selected is the dock's answer (undocked, or
   `FCFDock_GetSelectedWindow`), never the stock Active art, which shows on
@@ -76,8 +86,10 @@ menus and chat bubbles.
   `chevron-right`), else the stock icon (channels, the voice states, speech)
   desaturated and drawn in Polestar's `icon` colour. The side strip's icons
   show only while a shown window is warm. Pressed, the glyph nudges 1px;
-  disabled, it dims to 35%. The alerts (the channel button's flash, scroll
-  to bottom's flash, the overflow pulse) stay the game's.
+  disabled, it dims to 35%. The alerts (the channel button's flash, the
+  overflow pulse) stay the game's. Scroll to bottom's flash (a stock ADD arrow
+  the game plays while the window is scrolled up) is hidden by its vertex colour (the game writes its alpha: `StartFlash` 0, `StopFlash` 1); our glyph takes
+  the accent while it plays (post-hooks on `ChatFrameUtil.StartFlash`/`StopFlash`).
 - **Social button:** the Quick Join button (`QuickJoinToastButton`) shown at
   the foot of the side strip, just above the chat menu button (2px apart, a
   voice button's 27x26, a 15px friend icon `groupfinder-icon-friend` flat in

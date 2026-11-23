@@ -6,7 +6,9 @@
 -- emptied (SetTexture(nil)) but left to the game, which keeps writing its
 -- alpha. Calm at rest: a soft ground, no outline, the side icons gone; warm
 -- (the game's mouse-over fade-in, read from `hasBeenFaded`, or typing): the
--- full ground and its hairline, the side icons back. The tabs', edit box's and buttons'
+-- full ground and its hairline, the side icons back. Calm only with "Fade
+-- chat when idle" on (PolestarUIDB.chatFade); off, the default, always warm.
+-- The tabs', edit box's and buttons'
 -- art faded with SetAlpha; textures of ours added, kept in a weak table by
 -- frame (on the chat's menus, through the menu's own compositor). No
 -- key is written on a stock frame, nothing is moved, sized or reparented.
@@ -65,7 +67,8 @@ end
 -- Nothing of ours on the window reaches above its ground: the window (frame
 -- level 5) draws above the docked tabs, children of GeneralDockManager (LOW
 -- strata, a level or two), so a ground of ours there covered the tabs.
-local HEADER = 22 -- a tab's visible band: the bottom 22 of its 32, the label centred in it
+local HEADER = 32 -- a tab's band: all of its 32 (its whole clickable area), the label centred in it
+local LABEL_LIFT = 5 -- the stock label sits 5 low (CENTER 0,-5: centred in the old 22 band)
 local PAD = 6 -- room left of the text when the button strip is on the right
 
 -- The button frame's ground sits 1px off the window's, level with it, on
@@ -137,8 +140,9 @@ local function header()
 	l.paint = nil
 end
 
--- A tab as plain text: no box, no ground, the label muted, the selected one
--- in the text colour over a 2px accent underline as wide as its label; the
+-- A tab as the Character window's top tabs (Polestar's shell tab): plain
+-- text centred in it, no box, no ground, the label textDim, the selected one
+-- in the text colour over a 2px accent underline across the tab's foot; the
 -- hover wash. A tab the game colours (a whisper's) keeps its label colour;
 -- its conversation icon is drawn flat in Polestar's icon colour. The tabs' own
 -- fade (0.4 selected, 0.2 others at rest) stays the game's. The new-message
@@ -146,7 +150,8 @@ end
 -- label, glow and icon colours; its hook paints ours over them. The label and
 -- underline are out of the tab's fade (SetIgnoreParentAlpha: the game's 0.2
 -- left a label unreadable over the world); the driver fades them itself,
--- legible at rest (TAB_REST), full while the chat is warm or the tab hovered.
+-- legible at rest (TAB_REST, only with the fade on), full while the chat is
+-- warm or the tab hovered.
 local TAB_REST = { [true] = 0.85, [false] = 0.7 } -- the selected tab, the others
 local function paintTab(t, l, selected)
 	local on = ns.Enabled("chat")
@@ -156,7 +161,7 @@ local function paintTab(t, l, selected)
 	local icon = t.conversationIcon
 	if icon then icon:SetDesaturated(on) end
 	if on then
-		if not c then t.Text:SetTextColor(Theme.Color((selected or l.over) and "text" or "textMuted")) end
+		if not c then t.Text:SetTextColor(Theme.Color(selected and "text" or "textDim")) end
 		t.glow:SetVertexColor(Theme.Accent())
 		if icon then icon:SetVertexColor(Theme.Color("icon")) end
 	else
@@ -185,32 +190,30 @@ end
 -- A docked tab the dock lays out in its scroll frame (a window the player
 -- made, past the static General and Combat Log: FCFDock_UpdateTabs) sits a
 -- few px off the dock's foot and is stretched to 90 (FCFDock_CalculateTabSize)
--- with its label centred in it: ours sits a little high, past a wider gap.
--- So every label is left-justified (in its text box, which starts at the
--- tab's side padding on each tab) and the label, wash and underline are
--- moved by `dy`, the tab's foot to the dock's, so all sit on the header. The
--- underline is as wide as the label's text. Repainted by the driver.
+-- with its label centred in it: it sits a little high. So the label, wash
+-- and underline are moved by `dy`, the tab's foot to the dock's, so all sit
+-- on the header. Repainted by the driver.
 local function placeTab(t, l, dy)
 	l.dy = dy
 	local a = l.at
 	t.Text:ClearAllPoints()
-	t.Text:SetPoint(a[1], a[2], a[3], a[4], a[5] + dy)
+	t.Text:SetPoint(a[1], a[2], a[3], a[4], a[5] + LABEL_LIFT + dy)
 	l.hover:ClearAllPoints()
 	l.hover:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, dy)
 	l.hover:SetPoint("TOPRIGHT", t, "TOPRIGHT", 0, HEADER - 32 + dy)
 end
 
--- The label in Polestar's face at the game's size: the game sizes a tab to
--- its text once, so a larger size would cut the name short.
+-- The label in Polestar's face (the shell tabs' `label`) at the game's size:
+-- the game sizes a tab to its text once, so a larger size would cut the name short.
 local function tab(t)
 	local l = look(t, function()
 		-- The hover wash under the label (BACKGROUND, shown by the driver): in
 		-- the HIGHLIGHT layer it drew over the label and washed it out.
 		local l = { tab = true, bar = tex(t, "ARTWORK"), hover = tex(t, "BACKGROUND"), font = { t.Text:GetFont() },
-			at = { t.Text:GetPoint(1) }, justify = t.Text:GetJustifyH() }
-		-- The underline: under the label's text only, 3px off the band's foot.
-		l.bar:SetPoint("LEFT", t.Text, "LEFT", 0, 0)
-		l.bar:SetPoint("BOTTOM", l.hover, "BOTTOM", 0, 3)
+			at = { t.Text:GetPoint(1) } }
+		-- The underline: across the band's foot, as a shell tab's.
+		l.bar:SetPoint("BOTTOMLEFT", l.hover, "BOTTOMLEFT", 0, 0)
+		l.bar:SetPoint("BOTTOMRIGHT", l.hover, "BOTTOMRIGHT", 0, 0)
 		l.bar:SetHeight(2)
 		return l
 	end)
@@ -219,15 +222,14 @@ local function tab(t)
 	for _, k in ipairs(TAB) do t[k]:SetAlpha(on and 0 or 1) end
 	l.bar:SetVertexColor(Theme.Accent())
 	l.hover:SetVertexColor(Theme.Wash("hover"))
-	l.over, l.alpha, l.barW = nil, nil, nil -- the driver repaints the hover, the fade and the underline's width
+	l.over, l.alpha = nil, nil -- the driver repaints the hover and the fade
 	l.hover:Hide()
 	t.Text:SetIgnoreParentAlpha(on)
 	l.bar:SetIgnoreParentAlpha(true)
 	t.Text:SetAlpha(1)
-	t.Text:SetJustifyH(on and "LEFT" or l.justify or "CENTER")
 	placeTab(t, l, 0) -- the driver measures the offset
 	local f = l.font
-	Theme.SetFace(t.Text, on and (Theme.FontSpec("small")) or f[1], f[2], f[3] or "")
+	Theme.SetFace(t.Text, on and (Theme.FontSpec("label")) or f[1], f[2], f[3] or "")
 	paintTab(t, l, selectedTab(t))
 end
 
@@ -347,6 +349,18 @@ local function paintState(b, l)
 	l.state = s
 	l.glyph:SetPoint("CENTER", b, "CENTER", 0, s == "PUSHED" and -1 or 0)
 	l.dim = s == "DISABLED" and 0.35 or 1
+end
+
+-- The scroll-to-bottom button's flash (an ADD arrow the game plays while the
+-- window is scrolled up: ChatFrameMixin:OnUpdate) is hidden by its vertex
+-- colour (black, clear: nothing under ADD), not its alpha: StartFlash and
+-- StopFlash write that (0, 1), and the animation drives it. Our glyph takes
+-- the accent while it plays instead.
+local function scrollFlash(b)
+	local l, fl = looks[b], b.Flash
+	if not l or not fl then return end
+	if ns.Enabled("chat") then fl:SetVertexColor(0, 0, 0, 0) else fl:SetVertexColor(1, 1, 1, 1) end
+	l.glyph:SetVertexColor(Theme.Color("icon"))
 end
 
 -- The buttons left of the first window (FloatingChatFrame.xml,
@@ -836,6 +850,7 @@ function M.Apply()
 			iconButton(f.buttonFrame.minimizeButton, "chevron-down", 12)
 			iconButton(f.ResizeButton, "resize", 10)
 			iconButton(f.ScrollToBottomButton, "chevron-down", 12)
+			scrollFlash(f.ScrollToBottomButton)
 			scrollbar(f.ScrollBar)
 			minimized(_G[name .. "Minimized"])
 		end
@@ -861,6 +876,8 @@ function M.Enable()
 	driver = CreateFrame("Frame", nil, UIParent)
 	local scan = 0
 	driver:SetScript("OnUpdate", function(_, elapsed)
+		-- Off (the default): always warm; on, calm at rest (Settings, "Fade chat when idle").
+		local fading = PolestarUIDB.chatFade
 		-- New bubbles, a few times a second (no event says one opened).
 		scan = scan + elapsed
 		if scan >= 0.1 then
@@ -882,7 +899,7 @@ function M.Enable()
 					or (f.isDocked and dockTab) or (tab and tab:IsVisible() and tab:IsMouseOver())
 					or (f == ChatFrame1 and social and social.hit:IsVisible() and social.hit:IsMouseOver())
 					or (f == ChatFrame1 and copyButton and copyButton:IsVisible() and copyButton.Button:IsMouseOver())
-				local w = hot and math.min(1, l.warm + elapsed / FADE_IN) or math.max(0, l.warm - elapsed / FADE_OUT)
+				local w = (hot or not fading) and math.min(1, l.warm + elapsed / FADE_IN) or math.max(0, l.warm - elapsed / FADE_OUT)
 				l.warm = w
 				if w ~= l.paint or l.docked ~= f.isDocked then
 					l.paint, l.docked = w, f.isDocked
@@ -910,7 +927,7 @@ function M.Enable()
 					l.mark:SetAlpha(a)
 				end
 			end
-			-- A hovered tab: the wash under its label, the label lit. Label and
+			-- A hovered tab: the wash under its label. Label and
 			-- underline faded by ours: legible at rest, full while warm (its
 			-- window's warmth, the header's when docked) or hovered, under any
 			-- fade above the tab (its parent's alpha).
@@ -927,11 +944,6 @@ function M.Enable()
 				local dock, bottom = _G.GeneralDockManager, f:GetBottom()
 				local dy = win and win.isDocked and bottom and dock:GetBottom() and math.floor((dock:GetBottom() - bottom) * 10 + 0.5) / 10 or 0
 				if dy ~= l.dy then placeTab(f, l, dy) end
-				local bw = f.Text:GetStringWidth()
-				if bw ~= l.barW then
-					l.barW = bw
-					l.bar:SetWidth(math.max(1, math.min(bw, f.Text:GetWidth() > 0 and f.Text:GetWidth() or bw)))
-				end
 				local rest = TAB_REST[l.sel and true or false]
 				local w = over and 1 or wl and wl.paint or 0
 				local a = (rest + (1 - rest) * w) * (f:GetParent():GetEffectiveAlpha() or 1)
@@ -950,6 +962,18 @@ function M.Enable()
 		end
 	end)
 	-- A new whisper window (a new frame the first time), a tab selected.
+	if ChatFrameUtil and ChatFrameUtil.StartFlash then
+		local function glyph(region, on)
+			local b = region:GetParent()
+			local l = looks[b]
+			if l and l.glyph and region == b.Flash and ns.Enabled("chat") then
+				region:SetVertexColor(0, 0, 0, 0) -- again: the game just wrote its alpha
+				if on then l.glyph:SetVertexColor(Theme.Accent()) else l.glyph:SetVertexColor(Theme.Color("icon")) end
+			end
+		end
+		hooksecurefunc(ChatFrameUtil, "StartFlash", function(region) glyph(region, true) end)
+		hooksecurefunc(ChatFrameUtil, "StopFlash", function(region) glyph(region, false) end)
+	end
 	hooksecurefunc("FCF_OpenTemporaryWindow", function() if ns.Enabled("chat") then M.Apply() end end)
 	-- A window minimised (its minimised frame made the first time).
 	hooksecurefunc("FCF_MinimizeFrame", function(f) if ns.Enabled("chat") then minimized(_G[f:GetName() .. "Minimized"]) end end)

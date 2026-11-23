@@ -16,3 +16,6 @@ end
 local ours = 0
 for _, r in ipairs({ ActionButton1:GetRegions() }) do if r:IsShown() and tostring(r:GetTexture()):find("white", 1, true) then ours = ours + 1 end end
 assert(ours == 0, "our textures still show")
+local emblems = 0
+for _, r in ipairs({ ActionButton12:GetRegions() }) do if r:IsShown() and tostring(r:GetTexture()):find("emblem", 1, true) then emblems = emblems + 1 end end
+assert(emblems == 0, "the emblem still shows in an empty slot")

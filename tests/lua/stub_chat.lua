@@ -220,6 +220,11 @@ local dock = CreateFrame("Frame", "GeneralDockManager", UIParent)
 dock:SetFrameStrata("LOW")
 dock:SetFrameLevel(1)
 
+-- The game plays the scroll-to-bottom flash through these (ChatFrameUtil.lua).
+ChatFrameUtil = ChatFrameUtil or {}
+function ChatFrameUtil.StartFlash(region) region:SetAlpha(0) region:Show() end
+function ChatFrameUtil.StopFlash(region) region:SetAlpha(1) region:Hide() end
+
 local tabs = {}
 local function makeTab(id, text)
 	local t = CreateFrame("Button", "ChatFrame" .. id .. "Tab", dock)

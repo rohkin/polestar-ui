@@ -7,7 +7,9 @@
 -- highlight is faded and lights our accent instead (while our Bags window
 -- shows, when it is on: the parked stock bags never light it). The game
 -- re-sets the hover's alpha with every icon (UpdateTextures), so the driver
--- fades it again. Nothing is written on a stock frame; switched off, live,
+-- fades it again. A bag slot with no bag shows the empty slot's star (as the
+-- action bars) over its faded empty-bag art, repainted on BAG_UPDATE_DELAYED,
+-- the event the game updates the slots on. Nothing is written on a stock frame; switched off, live,
 -- everything is the game's again.
 
 local ADDON, ns = ...
@@ -18,6 +20,9 @@ local BUTTONS = { "MainMenuBarBackpackButton", "CharacterBag0Slot", "CharacterBa
 	"CharacterBag3Slot", "CharacterReagentBag0Slot", "KeyRingButton" }
 
 local started, driver
+-- The slots that hold a bag (their ID is the inventory slot: BaseBagSlotButtonMixin:HasBagEquipped).
+local SLOTS = { CharacterBag0Slot = true, CharacterBag1Slot = true, CharacterBag2Slot = true,
+	CharacterBag3Slot = true, CharacterReagentBag0Slot = true }
 
 local function on() return ns.Enabled("bagbar") end
 
@@ -41,6 +46,13 @@ local function dividers(a)
 	end
 end
 
+-- No bag in the slot (a secret answer counts as a bag).
+local function noBag(b)
+	if not SLOTS[b:GetName() or ""] then return false end
+	local t = GetInventoryItemTexture("player", b:GetID())
+	return not (issecretvalue and issecretvalue(t)) and t == nil
+end
+
 local function each(fn)
 	for _, n in ipairs(BUTTONS) do
 		local b = rawget(_G, n)
@@ -52,7 +64,7 @@ function M.Apply()
 	if not started then return end
 	local shown = on()
 	each(function(b)
-		ns.ButtonLook.paint(b, shown, lit)
+		ns.ButtonLook.paint(b, shown, lit, noBag)
 		local h = rawget(b, "SlotHighlightTexture")
 		if h then h:SetAlpha(shown and 0 or 1) end
 		local hl = b:GetHighlightTexture()
@@ -82,6 +94,7 @@ function M.Enable()
 	-- Edit Mode's Size scales the bar: the hairlines one pixel again.
 	EventRegistry:RegisterCallback("EditMode.Exit", M.Apply, M)
 	Polestar.RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", M.Apply)
+	Polestar.RegisterEvent("BAG_UPDATE_DELAYED", M.Apply)
 	Theme.OnChanged(function() if on() then M.Apply() end end, true)
 	M.Apply()
 end

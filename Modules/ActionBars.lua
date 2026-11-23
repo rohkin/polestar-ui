@@ -7,7 +7,8 @@
 -- hover faded, the checked glow emptied (its alpha the game writes), the
 -- icon unmasked and cropped square, and textures of ours added: a ground, a
 -- 1px hairline, the hover wash, an accent wash while pressed or checked and
--- an accent hairline while checked. The key, count and macro name in
+-- an accent hairline while checked, and Polestar's emblem faint in an empty
+-- slot (its icon hidden: the game hides it with no action). The key, count and macro name in
 -- Polestar's faces at the game's sizes and colours, the key and count
 -- outlined (the count is never read: secret in combat). The equipped item's
 -- green border, the flash, the spell alerts, cooldowns and the bar art (end
@@ -63,6 +64,9 @@ local function look(b)
 	l.fill:SetAllPoints(b)
 	l.wash:SetAllPoints(b)
 	l.hover:SetAllPoints(b)
+	l.logo = b:CreateTexture(nil, "ARTWORK")
+	l.logo:SetTexture(Theme.Media("emblem"))
+	l.logo:SetPoint("CENTER", b, "CENTER")
 	for _, f in ipairs(FONTS) do
 		local fs = rawget(b, f[1])
 		if fs then l.fonts[#l.fonts + 1] = { fs = fs, role = f[2], flags = f[3], dot = f[4], stock = { fs:GetFont() } } end
@@ -105,6 +109,29 @@ local function paintState(b, l)
 	if checked then H.PaintTint(l.edges, true, LOOK, r, g, bl, 1) else H.PaintEdge(l.edges, true, LOOK) end
 end
 
+-- Empty (the game hides the icon of a slot with no action): Polestar's emblem, faint, in the
+-- lighter accent: the accent half way to white (Polestar 0.4.0 has no lighter accent token; its
+-- own bright star, emblem-hot, is a fixed light gold), so it follows every scheme and skin.
+-- A caller's own test (`l.isEmpty`: the bag bar's slot with no bag, whose icon shows the game's
+-- empty-bag art) is read only when painted (the caller's events); its icon is then faded.
+local LOGO = 0.6 -- of the button: the emblem's ink is 32 of its 44px box, so about 45% of the slot
+local LIGHT, FAINT = 0.5, 0.05 -- the mix toward white; the alpha
+local function paintLogo(b, l, shown)
+	if l.isEmpty then
+		l.empty = l.isEmpty(b) and true or false
+		l.icon:SetAlpha(shown and l.empty and 0 or 1)
+	else
+		l.empty = not l.icon:IsShown()
+	end
+	if shown and l.empty then
+		local r, g, bl = Theme.Accent()
+		local s = (b:GetWidth() or 0) * LOGO
+		l.logo:SetSize(s, s)
+		l.logo:SetVertexColor(r + (1 - r) * LIGHT, g + (1 - g) * LIGHT, bl + (1 - bl) * LIGHT, FAINT)
+	end
+	l.logo:SetShown(shown and l.empty)
+end
+
 local function fade(a, ...)
 	for i = 1, select("#", ...) do
 		local t = select(i, ...)
@@ -112,10 +139,11 @@ local function fade(a, ...)
 	end
 end
 
-local function paint(b, shown, lit)
+local function paint(b, shown, lit, isEmpty)
 	local l = look(b)
 	if not l then return end
 	l.lit = lit or l.lit
+	l.isEmpty = isEmpty or l.isEmpty
 	local a = shown and 0 or 1
 	for _, k in ipairs(SLOT) do fade(a, rawget(b, k)) end
 	fade(a, b:GetNormalTexture(), b:GetPushedTexture(), b:GetHighlightTexture())
@@ -136,14 +164,17 @@ local function paint(b, shown, lit)
 	l.fill:SetShown(shown)
 	l.hover:SetShown(shown)
 	H.PaintShadow(l.shadow, shown, nil, LOOK)
+	paintLogo(b, l, shown)
 	if shown then paintState(b, l) else l.wash:Hide(); ns.PaintHairlines(l.edges, false, 0, 0, 0, 0) end
 end
 
--- One restyled button's states, each frame: pressed, checked, the range dot.
+-- One restyled button's states, each frame: pressed, checked, empty, the range dot.
 local function tick(b)
 	local l = looks[b]
 	if not (l and l.square and b:IsVisible()) then return end
 	if (b:GetButtonState() == "PUSHED") ~= l.pushed or isChecked(b, l) ~= l.isChecked then paintState(b, l) end
+	-- A slot given or emptied of its action (a drag, a page or form swap: the game shows or hides its icon).
+	if not l.isEmpty and l.icon:IsShown() == l.empty then paintLogo(b, l, true) end
 	-- An item button's new icon resets its coords (SetItemButtonTexture: SetTexCoord(0, 1, 0, 1)).
 	-- (Coords come back as float32: compared loosely.)
 	if math.abs((l.icon:GetTexCoord() or 0) - CROP) > 1e-3 then l.icon:SetTexCoord(CROP, 1 - CROP, CROP, 1 - CROP) end
@@ -154,7 +185,7 @@ local function tick(b)
 end
 
 -- The look for other stock item buttons (the bag bar), whatever this
--- module's switch: paint(b, shown, lit?) and tick(b) from the caller's driver.
+-- module's switch: paint(b, shown, lit?, isEmpty?) and tick(b) from the caller's driver.
 ns.ButtonLook = { paint = paint, tick = tick }
 
 -- Every button there is now: the bars' (by name) and the zone ability's.

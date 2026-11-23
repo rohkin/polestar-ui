@@ -33,3 +33,19 @@ stub.advance(0.1)
 assert(PolestarUIBags:IsShown(), "the backpack's click does not open our bags")
 stub.advance(0.05)
 for _, b in ipairs(stub.bagButtons) do assert(lit(b), b:GetName() .. " is not lit with our bags open") end
+-- A bag slot with no bag (the game's empty-bag art in its icon): that art faded under the empty slot's
+-- star, as on the action bars; a bag put in (BAG_UPDATE_DELAYED) takes it away, taken out brings it back.
+local function star(b)
+	for _, r in ipairs({ b:GetRegions() }) do
+		if r:IsShown() and tostring(r:GetTexture()):find("emblem", 1, true) then return r end
+	end
+end
+assert(star(CharacterBag3Slot) and CharacterBag3Slot.icon:GetAlpha() == 0, "the empty bag slot has no star, or shows the game's empty-bag art")
+assert(math.abs(select(4, star(CharacterBag3Slot):GetVertexColor()) - 0.05) < 1e-6, "the bag slot's star is not as faint as the action bars'")
+for _, b in ipairs({ MainMenuBarBackpackButton, CharacterBag0Slot, CharacterReagentBag0Slot, KeyRingButton }) do
+	assert(not star(b) and b.icon:GetAlpha() == 1, b:GetName() .. ": a star on a slot with a bag")
+end
+stub.bagEquip(CharacterBag3Slot, true)
+assert(not star(CharacterBag3Slot) and CharacterBag3Slot.icon:GetAlpha() == 1, "the star stayed after a bag was put in")
+stub.bagEquip(CharacterBag3Slot, false)
+assert(star(CharacterBag3Slot) and CharacterBag3Slot.icon:GetAlpha() == 0, "no star after the bag was taken out")

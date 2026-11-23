@@ -67,6 +67,23 @@ local SLOTS = {
 	{ "KeyRingButton", -2, 30, { 0.5, 0.5, 0.5 } },
 }
 stub.bagButtons = {}
+-- The bags equipped, by inventory slot (a bag slot's ID: CharacterBag0Slot 31 .. the reagent bag 35);
+-- the fourth bag slot (34) empty, its icon the game's empty-bag art (PaperDollItemSlotButton_Update:
+-- backgroundTextureName, shown). stub.bagEquip(b, on): a bag put in or taken out, then BAG_UPDATE_DELAYED.
+stub.bagEquipped = { [31] = true, [32] = true, [33] = true, [35] = true }
+local invTexture = GetInventoryItemTexture
+function GetInventoryItemTexture(unit, id)
+	if id >= 31 and id <= 35 then return stub.bagEquipped[id] and 133639 or nil end
+	return invTexture and invTexture(unit, id)
+end
+local EMPTY = { 0.16, 0.16, 0.18 }
+function stub.bagEquip(b, on, c)
+	stub.bagEquipped[b:GetID()] = on or nil
+	c = on and (c or { 0.55, 0.4, 0.25 }) or EMPTY
+	b.icon:SetColorTexture(c[1], c[2], c[3], 1)
+	stub.bagSetTexture(b)
+	stub.fire("BAG_UPDATE_DELAYED")
+end
 
 function stub.bagUpdateTextures(b)
 	b:GetNormalTexture():SetAtlas("ui-hud-actionbar-iconframe-bags")
@@ -86,10 +103,11 @@ function stub.bagHighlight(b, shown) b.SlotHighlightTexture:SetShown(shown) end
 for i, s in ipairs(SLOTS) do
 	local b = CreateFrame("Button", s[1], bar)
 	b:SetSize(s[3], s[3])
-	b:SetID(s[2])
+	b:SetID(s[2] >= 1 and 30 + s[2] or s[2])
 	b.icon = color(b, "BORDER", 0, 0, 0, 1)
 	b.icon:SetAllPoints(b)
-	if s[4] then b.icon:SetColorTexture(s[4][1], s[4][2], s[4][3], 1) else b.icon:Hide() end
+	local c = s[4] or EMPTY
+	b.icon:SetColorTexture(c[1], c[2], c[3], 1)
 	masked(b.icon)
 	b.SquareMask = b:CreateMaskTexture()
 	b.SquareMask:SetAllPoints(b)

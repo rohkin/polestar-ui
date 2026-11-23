@@ -22,6 +22,7 @@ already do. A reset (the page's or a section's) calls `set(nil)`: our default.
 | Unit frames: 3D portraits, power text, sparkle, smooth bars, damage trail | `PolestarUIDB.unitframes` | the unit frames module's `Option(k)` / `SetOption(k, v)` when it exports them; until then the defaults are copied in `Settings.lua` and a change applies after /reload |
 | Nameplate cast bars: Cast bar icon (off), Cast bar height (6-16, 10) | `PolestarUIDB.nameplates` (`castIcon`, `castHeight`; nil: the default) | the nameplates module's `Option(k)` / `SetOption(k, v)`, applied live to every plate |
 | Keep chat across sessions | `PolestarUICharDB.chatNoHistory` | read by Chat at logout and login |
+| Fade chat when idle (off) | `PolestarUIDB.chatFade` (nil: no fade) | read by Chat's driver each frame (live) |
 
 ## Layout
 
@@ -30,7 +31,17 @@ Page "Polestar: UI" (key `polestarui`, group `setup`, icon `window`):
 - Windows tab: Windows (one toggle per window module, the Baganator skin
   included), Docking.
 - HUD tab: HUD (one toggle per module with a `noun`: unit frames, chat,
-  tooltips, minimap, bars...), Frames look, Plates look, Nameplate cast bars, Icons look (Frames: unit frames, cast bars, the damage meter, the minimap; Plates: nameplates and their cast bars; Icons: action and bag buttons, the micro menu, buffs, the cooldown viewer), Unit frames, Chat.
+  tooltips, minimap, bars...), Frames look, Plates look, Nameplate cast bars (Frames: unit frames, cast bars, the damage meter, the minimap; Plates: nameplates and their cast bars), Unit frames, Chat.
+- Icons tab: Icons look (action and bag buttons, the micro menu, buffs, the
+  cooldown viewer), with a pinned live preview (`spec.preview`): Polestar's
+  band (`Polestar.UI.Preview.Band`, there once Polestar_Options draws the
+  page; without it a plain frame with `:Layout`) holding two plain Buttons of
+  ours (no action, no events, never secure) at their real size, a filled one
+  and an empty one (its icon hidden: the empty slot's emblem), painted by the
+  action bars' own `ns.ButtonLook.paint` (Modules/ActionBars.lua), so it
+  cannot drift from the bars. Every look change runs `Theme.Refresh`, and the
+  band's ground is a Polestar painter: it lays the button out and paints it
+  again then, and on Polestar's own theme and skin changes.
   Polestar 0.4.0's colour control is keyed to a PolestarDB setting only (no get/set), so the border colour is a dropdown.
 
 The unit frames' own small page (`/pui unitframes`) stays; both write the same
@@ -58,7 +69,7 @@ Polestar."
 ## Tests
 
 `tests/scenes/settings.lua` (registration, every control's get/set round trip
-and reset, each HUD look group following Polestar's or overriding it, the reload note, the menu item), `settings-mover.lua` (the Bags
+and reset, each HUD look group following Polestar's or overriding it, the Icons tab's preview built on a stand-in band (`stub.preview`, tests/lua/stub_client.lua) and laid out again on a look change, the reload note, the menu item), `settings-mover.lua` (the Bags
 mover's get/set/reset over `PolestarUIDB.pos`), `settings-old.lua` (the
 version guard). The preview loads only Polestar's Core and Theme, so
 `Polestar.UI` and `Polestar.Movers` are stand-ins there.

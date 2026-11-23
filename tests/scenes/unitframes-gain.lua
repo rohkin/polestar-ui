@@ -37,6 +37,19 @@ stub.units.player.health = 1500
 stub.fire("UNIT_HEALTH", "player")
 assert(v(t) == 1500, "reduce motion: the trail with the fill, no gain")
 Polestar.Set("ui.reduceMotion", false)
+-- A regen tick (Smooth on), the trail caught up level with the fill: the red
+-- ends inside the fill, never at its edge (a red fringe there in game), and
+-- the bar clips it on the left; the gain still starts at the trail's value.
+stub.units.player.health = 1510
+stub.fire("UNIT_HEALTH", "player")
+stub.advance(0.5)
+assert(B.interpolation == Enum.StatusBarInterpolation.ExponentialEaseOut and v(t) == 1510 and v(B) == 1510, "the trail level with the fill")
+local w, x = 200, {} -- any bar width: the anchors decide
+for _, p in ipairs(t.points) do x[p.point] = p.x; assert(p.rel == B, "the trail hangs off the bar") end
+local redEnd = x.TOPLEFT + (w + x.BOTTOMRIGHT - x.TOPLEFT) * 1510 / 2000
+assert(redEnd <= w * 1510 / 2000 - 1, "no red at the fill's end: " .. redEnd .. " vs " .. w * 1510 / 2000)
+assert(t.psAim.clips and t:GetParent():GetParent() == t.psAim, "the red clipped to the bar")
+assert(clip.points[1].x == -x.BOTTOMRIGHT, "the gain from the trail's value")
 -- The drawn state: mid-gain, 900 to 1600 of 2000.
 stub.units.player.health = 900
 stub.fire("UNIT_HEALTH", "player")
