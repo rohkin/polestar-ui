@@ -18,7 +18,7 @@ local LABELS = {
 	social = "Social", auction = "Auction house", guild = "Guild", macros = "Macros", inspect = "Inspect",
 	collections = "Collections", groupfinder = "Group finder", bags = "Bags", baganator = "Baganator skin",
 	unitframes = "Unit frames", minimap = "Minimap", actionbars = "Action bars", bagbar = "Bag bar", micromenu = "Micro menu", auras = "Buffs and debuffs",
-	castbars = "Cast bars", cooldownviewer = "Cooldown viewer", resourcedisplay = "Personal resource display",
+	castbars = "Cast bars", statusbars = "Experience and reputation bars", cooldownviewer = "Cooldown viewer", resourcedisplay = "Personal resource display",
 	nameplates = "Nameplates", damagemeter = "Damage meter", tooltips = "Tooltips", chat = "Chat",
 }
 

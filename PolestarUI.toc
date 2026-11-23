@@ -41,6 +41,7 @@ Modules\BagBar.lua
 Modules\MicroMenu.lua
 Modules\Auras.lua
 Modules\CastBars.lua
+Modules\StatusBars.lua
 Modules\CooldownViewer.lua
 Modules\ResourceDisplay.lua
 Modules\Nameplates.lua

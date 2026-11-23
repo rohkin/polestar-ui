@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Experience and reputation bars: the game's status bars now wear Polestar's HUD look in place (a dark track, the fill in the scheme's violet, blue while rested, a thin outline and shadow, thin ticks for the game's dividers, the text in Polestar's face), still placed and sized by Edit Mode, with the game's tooltips, text option and animations; `/pui statusbars` switches them off live. The reputation bar takes the watched faction's standing: red while hostile or unfriendly, yellow while neutral, green from friendly up; the other bars keep a plain colour for now.
 - Unit frames: the power number (mana, rage, energy...) is now on by default, right-aligned at the same spot as the health value on the power bar of every frame, following the same Status Text options.
 
 - Unit frames: health just gained (regeneration, heals) now shows in green ahead of the health bar for a moment, the bar then filling up to it, the mirror of the damage trail; on every health bar with the damage trail, and off with it.
