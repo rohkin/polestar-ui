@@ -60,7 +60,27 @@ ns.QuestLogTint = function(id, size)
 	if not ns.FQTMarked(id) then return end
 	local t = { glyph = glyph(size), atStart = cfg("markerAtStart") and true or false }
 	if cfg("objectiveTint") then t.objective = { rgb(cfg("objectiveUseTint") and cfg("tint") or cfg("objectiveColor")) } end
+	if cfg("showLogo") then t.logo = "Interface/AddOns/ForeverQuestTint/Media/ForeverLogo.tga" end
 	if cfg("showTint") then t.gradient = { rgb(cfg("tint")) } ; t.gradient[4], t.gradient[5], t.gradient[6] = cfg("alpha"), cfg("topAlpha"), cfg("height") end
 	return t
+end
+
+-- The wash on a holder frame with .Fade and .Flat textures (quest log details, quest dialog body): `wash` is
+-- tint.gradient, `h` the holder's height; a third of the stock alpha (ours is a plain colour on a dark ground).
+ns.QuestWash = function(holder, wash, h)
+	holder:SetShown(wash ~= nil)
+	if not wash then return end
+	local r, g, b, a, top, hh = unpack(wash)
+	local fade, flat = holder.Fade, holder.Flat
+	fade:ClearAllPoints()
+	fade:SetPoint("BOTTOMLEFT", holder, "BOTTOMLEFT", 0, 0)
+	fade:SetPoint("BOTTOMRIGHT", holder, "BOTTOMRIGHT", 0, 0)
+	fade:SetHeight(math.max(1, h * hh))
+	flat:ClearAllPoints()
+	flat:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, 0)
+	flat:SetPoint("BOTTOMRIGHT", fade, "TOPRIGHT", 0, 0)
+	fade:SetColorTexture(1, 1, 1, 1)
+	fade:SetGradient("VERTICAL", CreateColor(r, g, b, a * 0.16), CreateColor(r, g, b, top * 0.16))
+	flat:SetColorTexture(r, g, b, top * 0.16)
 end
 end)

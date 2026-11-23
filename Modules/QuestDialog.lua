@@ -276,6 +276,11 @@ function paint()
 	-- a 520 band beside its tools, heads the body as on the World Map's details.
 	W.ShellTitle(f, ns.Clean(UnitName("questnpc")) or "")
 	f.psPortraitPaint("questnpc")
+	-- ForeverQuestTint (Addons/): a marked quest's wash over the body and its logo in the band; none on a greeting.
+	local tint = page ~= "greeting" and ns.QuestLogTint and ns.QuestLogTint(GetQuestID())
+	if ns.QuestWash then ns.QuestWash(f.psGlow, tint and tint.gradient or nil, f.Body:GetHeight()) end
+	f.psLogo:SetShown(tint and tint.logo ~= nil)
+	if tint and tint.logo then f.psLogo.Tex:SetTexture(tint.logo) end
 	-- A friendship NPC's standing heads the body (QuestFrame_OnShow).
 	f.psFriend.Paint()
 	if f.psFriend:IsShown() then c.y = 24 + 32 end
@@ -332,6 +337,18 @@ local function build()
 	c = ns.QuestRewards(f.Body, { x = f.psPad, width = f.BodyWidth, tip = tileTip, click = tileClick,
 		selected = function(type, index) return page == "reward" and type == "choice" and index == choice end })
 	W.ShellTabs(f, nil)
+	-- The wash under the body's content (BACKGROUND, below its child frames) and the logo left of the "..." menu.
+	f.psGlow = CreateFrame("Frame", nil, f.Body)
+	f.psGlow:SetAllPoints()
+	f.psGlow.Fade, f.psGlow.Flat = f.psGlow:CreateTexture(nil, "BACKGROUND"), f.psGlow:CreateTexture(nil, "BACKGROUND")
+	f.psGlow:Hide()
+	f.psLogo = CreateFrame("Frame", nil, f)
+	f.psLogo:SetFrameLevel(f:GetFrameLevel() + 20)
+	f.psLogo:SetSize(28, 28)
+	f.psLogo:SetPoint("RIGHT", f.psMenu, "LEFT", -8, 0)
+	f.psLogo.Tex = f.psLogo:CreateTexture(nil, "OVERLAY")
+	f.psLogo.Tex:SetAllPoints()
+	f.psLogo:Hide()
 	f.psPortraitPaint = ns.NpcPortrait(f)
 	f.psFriend = ns.FriendshipBar(f.Body)
 	f.psFriend:SetPoint("TOPLEFT", f.Body, "TOPLEFT", f.psPad, -24)

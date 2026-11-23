@@ -620,21 +620,7 @@ function ns.QuestLog(win, canvas, width)
 		questName(d.Title, info)
 		local tint = ns.QuestLogTint and ns.QuestLogTint(id)
 		local wash = tint and tint.gradient
-		d.Glow:SetShown(wash ~= nil)
-		if wash then
-			local r, g, b, a, top, h = unpack(wash)
-			local fade, flat = d.Glow.Fade, d.Glow.Flat
-			fade:ClearAllPoints()
-			fade:SetPoint("BOTTOMLEFT", d.Glow, "BOTTOMLEFT", 0, 0)
-			fade:SetPoint("BOTTOMRIGHT", d.Glow, "BOTTOMRIGHT", 0, 0)
-			fade:SetHeight(math.max(1, (p:GetHeight() - HEAD - 1 - FOOT) * h))
-			flat:ClearAllPoints()
-			flat:SetPoint("TOPLEFT", d.Glow, "TOPLEFT", 0, 0)
-			flat:SetPoint("BOTTOMRIGHT", fade, "TOPRIGHT", 0, 0)
-			fade:SetColorTexture(1, 1, 1, 1)
-			fade:SetGradient("VERTICAL", CreateColor(r, g, b, a * 0.16), CreateColor(r, g, b, top * 0.16))
-			flat:SetColorTexture(r, g, b, top * 0.16)
-		end
+		if ns.QuestWash then ns.QuestWash(d.Glow, wash, p:GetHeight() - HEAD - 1 - FOOT) end
 		c.Begin(16 + math.ceil(d.Title:GetStringHeight()))
 		local description, summary = GetQuestLogQuestText()
 		if summary and summary ~= "" then c.text("body", "text", summary, 8) end
