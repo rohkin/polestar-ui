@@ -111,6 +111,7 @@ Polestar.OnLogin(function()
 			ns.modules[key].Enable()
 		end
 	end
+	if ns.WatchStock then ns.WatchStock() end
 end)
 
 -- Ends the shown tooltip with a hint of what the player can do here, in
@@ -1907,6 +1908,7 @@ function ns.Switch(key, on)
 	if InCombatLockdown() then return say("windows cannot switch in combat; try again after it.") end
 	if on and blocked(key) then return end
 	PolestarUIDB.modules[key] = on
+	if ns.WatchStock then ns.WatchStock() end
 	if on and not m.psStarted then
 		m.psStarted = true
 		m.Enable()
@@ -2051,10 +2053,18 @@ if not Polestar.GamepadUI() then
 		if fr and fr:IsShown() then return say(key .. ": Polestar's window from the next time it opens.") end
 		ns.Show(key)
 	end
-	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
+	-- A stock frame says nothing we may hook when it shows or moves (rule 10),
+	-- so this runs each frame, but only while some window is the game's:
+	-- ns.WatchStock (login, ns.Switch) starts it; a pass with none off, out of
+	-- combat (the buttons hidden), stops it.
+	local watcher = CreateFrame("Frame", nil, UIParent)
+	local function tick(self)
+		local any = false
 		for _, key in ipairs(ns.order) do
 			local m, b = ns.modules[key], stockButtons[key]
-			local fr = PolestarUIDB and not ns.Enabled(key) and not m.blockedBy and m.stock and m.stock()
+			local on = PolestarUIDB and not ns.Enabled(key) and not m.blockedBy and m.stock
+			any = any or on
+			local fr = on and m.stock()
 			local k = fr and fr:IsVisible() and fr:GetTop() and fr:GetEffectiveScale() / UIParent:GetEffectiveScale()
 			if InCombatLockdown() then
 				if b then b:Hide() end
@@ -2098,7 +2108,12 @@ if not Polestar.GamepadUI() then
 				b.psSecure:Hide()
 			end
 		end
-	end)
+		if not any and not InCombatLockdown() then self:SetScript("OnUpdate", nil) end
+	end
+	function ns.WatchStock()
+		watcher:SetScript("OnUpdate", tick)
+		return watcher
+	end
 
 	-- /pui opens our settings; /pui help lists the windows and whether each is
 	-- Polestar's; /pui <window> on|off switches it, /pui <window> opens ours.

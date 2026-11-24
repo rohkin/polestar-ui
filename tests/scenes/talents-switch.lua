@@ -64,6 +64,10 @@ assert(PolestarUIDB.modules.talents == false and lastSaid():find("combat"), "swi
 SlashCmdList.POLESTARUI("talents on")
 assert(PolestarUIDB.modules.talents == true and stub.overrides["N"], "/pui talents on")
 SlashCmdList.POLESTARUI("character off")
+-- The stock-window watch runs only while a window is the game's.
+local watch = PolestarUI.WatchStock()
+stub.advance(0.1)
+assert(watch:GetScript("OnUpdate"), "a window off: no stock-window watch")
 ToggleCharacter()
 assert(not (PolestarUICharacter and PolestarUICharacter:IsShown()), "character off: the toggle opened ours")
 SlashCmdList.POLESTARUI("character on")
@@ -79,3 +83,5 @@ assert(#said == 1 + #PolestarUI.order and list:find("/pui opens the settings", 1
 SlashCmdList.POLESTARUI("crafting on")
 stub.pressKey("N")
 assert(f:IsShown(), "on again: the key opens ours")
+stub.advance(0.1)
+assert(not watch:GetScript("OnUpdate"), "every window on: the stock-window watch still runs")
