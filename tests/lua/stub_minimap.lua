@@ -114,6 +114,7 @@ stub.mailSenders = {}
 function stub.newMail(senders)
 	stub.mailSenders = senders or {}
 	mail:SetShown(senders ~= nil)
+	stub.fire("UPDATE_PENDING_MAIL")
 end
 function MinimapMailFrameUpdate()
 	GameTooltip:AddLine(#stub.mailSenders > 0 and "You have mail from:" or "You have unread mail")

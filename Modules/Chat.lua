@@ -850,15 +850,23 @@ function M.Enable()
 	-- from its hasBeenFaded, or its edit box typed in), follows the edit box's
 	-- focus, and shows the side strip's icons while a shown window is warm.
 	driver = CreateFrame("Frame", nil, UIParent)
-	local scan = 0
+	-- New bubbles: no event says one opened, but only a message said aloud
+	-- shows one, so the scan runs a few times a second for a second after one.
+	local scan, listen = 0, 0
+	for _, e in ipairs({ "CHAT_MSG_SAY", "CHAT_MSG_YELL", "CHAT_MSG_PARTY", "CHAT_MSG_PARTY_LEADER",
+		"CHAT_MSG_MONSTER_SAY", "CHAT_MSG_MONSTER_YELL", "CHAT_MSG_MONSTER_PARTY" }) do
+		Polestar.RegisterEvent(e, function() listen = 1 end)
+	end
 	driver:SetScript("OnUpdate", function(_, elapsed)
 		-- Off (the default): always warm; on, calm at rest (Settings, "Fade chat when idle").
 		local fading = PolestarUIDB.chatFade
-		-- New bubbles, a few times a second (no event says one opened).
-		scan = scan + elapsed
-		if scan >= 0.1 then
-			scan = 0
-			bubbles()
+		if listen > 0 then
+			listen = listen - elapsed
+			scan = scan + elapsed
+			if scan >= 0.1 then
+				scan = 0
+				bubbles()
+			end
 		end
 		local warmest, docked, dockTab = 0, 0, false
 		for _, name in ipairs(CHAT_FRAMES) do

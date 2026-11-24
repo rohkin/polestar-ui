@@ -17,6 +17,19 @@ LibDBIcon10_Bagnon:Show()
 stub.advance(0.6)
 assert(not LibDBIcon10_Bagnon:IsVisible(), "a re-shown addon button shows with the flyout shut")
 assert(math.abs(LibDBIcon10_Bagnon:GetWidth() * LibDBIcon10_Bagnon:GetScale() - 18) < 0.01, "a docked button is not 18 across")
+-- No polling: the flyout follows its buttons' Show/Hide at once, with the flyout shut; fixed, with no invite, the edge runs no OnUpdate.
+local docked = { LibDBIcon10_Bagnon, LibDBIcon10_Details, WeakAurasMinimapButton }
+for _, b in ipairs(docked) do b:Hide() end
+assert(not PolestarUIMinimapEdge:GetScript("OnUpdate"), "the edge polls with nothing to follow")
+assert(PolestarUI.modules.minimap.clockTicker(), "no clock ticker while the map shows")
+local plug
+for _, c in ipairs({ PolestarUIMinimapEdge:GetChildren() }) do
+	local p, _, _, x, y = c:GetPoint(1)
+	if p == "BOTTOMRIGHT" and x == -4 and y == 4 then plug = c end
+end
+assert(plug and not plug:IsShown(), "the addons icon stays with every addon button hidden")
+for _, b in ipairs(docked) do b:Show() end
+assert(plug:IsShown(), "the addons icon not back with an addon button shown")
 local function label(s)
 	for _, r in ipairs({ PolestarUIMinimapEdge:GetRegions() }) do if r:GetObjectType() == "FontString" and r:GetText() == s then return r end end
 end
@@ -68,10 +81,12 @@ stub.RunScript(cal, "OnClick")
 assert(stub.calendar[1] == "toggle", "the corner's calendar does not toggle the calendar")
 stub.invites = 2
 stub.fire("CALENDAR_UPDATE_PENDING_INVITES")
+assert(PolestarUIMinimapEdge:GetScript("OnUpdate"), "the invite glow does not pulse")
 stub.RunScript(cal, "OnEnter")
 assert(GameTooltip.lines[1] == GAMETIME_TOOLTIP_CALENDAR_INVITES, "no pending invite line on the calendar")
 stub.RunScript(cal, "OnClick")
 assert(stub.calendar[2] == "show", "a pending invite does not show the calendar")
+assert(not PolestarUIMinimapEdge:GetScript("OnUpdate"), "the edge still polls after the invite was seen")
 stub.RunScript(mail, "OnEnter")
 assert(GameTooltip.lines[2] == "Thrall" and GameTooltip.lines[3] == "Jaina", "the mail tooltip does not list its senders")
 stub.newMail(nil)

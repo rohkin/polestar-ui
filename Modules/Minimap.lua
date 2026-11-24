@@ -43,6 +43,7 @@ local stockFonts = setmetatable({}, { __mode = "k" }) -- font string -> { path, 
 local taken = setmetatable({}, { __mode = "k" }) -- addon button -> where it was
 local edge, north, dock, zoneLabel, clockLabel, addons
 local clamp -- the screen clamp to the map's edges (below)
+local restack -- the flyout laid again when an addon shows or hides its button (below)
 local corner = {} -- the corners' icons of ours: { b = ours, at = its corner, stock = function() -> the game's }
 local INSET = 4 -- a corner icon's, the zone's and the clock's distance from the map's edge
 local SHADOW = 10 -- the shadow's reach round the map (H.Shadow)
@@ -246,6 +247,17 @@ end
 -- The calendar's pending invites as GameTimeFrame_Refresh counts them: a new
 -- one lights it while the calendar is shut; a click or none left puts it out.
 local invites = { seen = 0, on = false }
+
+-- Frame by frame only while there is something to follow: N while the map
+-- turns (GetPlayerFacing sends no event) and the invite glow's pulse.
+local function step()
+	placeNorth()
+	if invites.on then corner.glow:SetAlpha(0.5 + 0.5 * math.cos(GetTime() * math.pi)) end
+end
+local function pulse()
+	if edge then edge:SetScript("OnUpdate", (GetCVarBool("rotateMinimap") or invites.on) and step or nil) end
+end
+
 local function readInvites()
 	local n = C_Calendar and C_Calendar.GetNumPendingInvites and C_Calendar.GetNumPendingInvites() or 0
 	local cal = rawget(_G, "CalendarFrame")
@@ -255,6 +267,7 @@ local function readInvites()
 		invites.on, invites.seen = false, 0
 	end
 	if corner.glow then corner.glow:SetShown(invites.on) end
+	pulse()
 end
 
 local function calendarTip(b)
@@ -280,6 +293,7 @@ local function calendarClick()
 		if Calendar_Show then Calendar_Show() end
 		invites.on, invites.seen = false, 0
 		corner.glow:Hide()
+		pulse()
 	elseif not DISALLOW_FRAME_TOGGLING then
 		ToggleCalendar()
 	end
@@ -354,6 +368,7 @@ local function paintEdge()
 	H.PaintShadow(looks[edge].shadow, true, 1)
 	lastFacing = nil
 	if edge:IsShown() then placeNorth() end
+	pulse()
 end
 
 -- The dock: addon buttons, never a stock one. A Blizzard frame's global is
@@ -369,8 +384,13 @@ local function addonButton(c)
 	return w >= 14 and w <= 40 and h >= 14 and h <= 40
 end
 
+local hooked = setmetatable({}, { __mode = "k" }) -- addon button -> its Show/Hide hooked (restack)
 local function take(b)
 	if not b or taken[b] then return end
+	if not hooked[b] then
+		hooked[b] = true
+		for _, m in ipairs({ "Show", "Hide", "SetShown" }) do hooksecurefunc(b, m, restack) end
+	end
 	local t = { parent = b:GetParent(), scale = b:GetScale(), level = b:GetFrameLevel(), points = {} }
 	for i = 1, b:GetNumPoints() do t.points[i] = { b:GetPoint(i) } end
 	taken[b] = t
@@ -461,17 +481,14 @@ local function layout()
 end
 
 -- A button shown or hidden by its addon (no event says so): the flyout laid
--- again. From the edge's OnUpdate (the flyout is hidden while shut, and a
--- hidden frame runs none).
-local function watch(elapsed)
-	dock.wait = (dock.wait or 0) + elapsed
-	if dock.wait < 0.5 then return end
-	dock.wait = 0
+-- again, from a post-hook on that button's Show, Hide and SetShown (take;
+-- an addon's button, never a stock one), while the flyout is shut too.
+function restack(b)
+	if not (taken[b] and shaped()) then return end
 	local names = {}
-	for b in pairs(taken) do if b:IsShown() then names[#names + 1] = b:GetName() end end
+	for t in pairs(taken) do if t:IsShown() then names[#names + 1] = t:GetName() end end
 	table.sort(names)
 	local key = table.concat(names, ",")
-	placeCorner()
 	if key ~= shownKey then
 		shownKey = key
 		layout()
@@ -611,6 +628,7 @@ local function menuLook(menu)
 	if on() then ns.MenuLook(menu, 7) end
 end
 
+local dayTicker
 function M.Apply()
 	if not started then return end
 	mask()
@@ -619,6 +637,10 @@ function M.Apply()
 	paintEdge()
 	paintDock()
 	paintHeader()
+	-- The calendar's day, every 30 s while ours paints it (no event says the day turned).
+	if rawget(_G, "GameTimeFrame") and on() ~= (dayTicker ~= nil) then
+		if dayTicker then dayTicker:Cancel() dayTicker = nil else dayTicker = C_Timer.NewTicker(30, paintDay) end
+	end
 end
 
 function M.Enable()
@@ -633,12 +655,25 @@ function M.Enable()
 	buildEdge()
 	buildCorner()
 	buildFlyout()
-	edge:SetScript("OnUpdate", function(_, elapsed)
+	-- The clock ticks only while our map shows it.
+	local clockTicker
+	local function clockOn(run)
+		if run and not clockTicker then
+			paintClock()
+			clockTicker = C_Timer.NewTicker(1, paintClock)
+		elseif not run and clockTicker then
+			clockTicker:Cancel()
+			clockTicker = nil
+		end
+	end
+	edge:SetScript("OnShow", function() clockOn(true) end)
+	edge:SetScript("OnHide", function() clockOn(false) end)
+	M.clockTicker = function() return clockTicker end -- for the scenes
+	CVarCallbackRegistry:RegisterCallback("rotateMinimap", function()
+		maskLater()
 		placeNorth()
-		watch(elapsed)
-		if invites.on then corner.glow:SetAlpha(0.5 + 0.5 * math.cos(GetTime() * math.pi)) end
-	end)
-	CVarCallbackRegistry:RegisterCallback("rotateMinimap", maskLater, M)
+		pulse()
+	end, M)
 	Polestar.RegisterEvent("PLAYER_ENTERING_WORLD", function()
 		maskLater()
 		-- Addons make their minimap buttons at login or after it.
@@ -653,7 +688,10 @@ function M.Enable()
 	for _, e in ipairs({ "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED" }) do
 		Polestar.RegisterEvent(e, paintZone)
 	end
-	C_Timer.NewTicker(1, paintClock)
+	-- The mail indicator, shown or hidden by the game on this event (in no set order with ours).
+	for _, e in ipairs({ "UPDATE_PENDING_MAIL", "PLAYER_ENTERING_WORLD" }) do
+		Polestar.RegisterEvent(e, function() C_Timer.After(0, placeCorner) end)
+	end
 	for _, e in ipairs({ "CALENDAR_UPDATE_PENDING_INVITES", "PLAYER_ENTERING_WORLD" }) do
 		Polestar.RegisterEvent(e, readInvites)
 	end
@@ -668,9 +706,9 @@ function M.Enable()
 	for _, tag in ipairs(MENUS) do
 		Menu.ModifyMenu(tag, function(_, root) root:AddMenuAcquiredCallback(menuLook) end)
 	end
-	if rawget(_G, "GameTimeFrame") then C_Timer.NewTicker(30, paintDay) end
 	Theme.OnChanged(function() if on() then M.Apply() end end, true)
 	M.Apply()
+	clockOn(edge:IsVisible())
 end
 
 ns.Module("minimap", M)

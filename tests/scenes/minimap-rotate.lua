@@ -8,6 +8,7 @@ stub.minimapEdit({ rotate = true })
 assert(not square(), "the stub's game callback did not run after ours")
 stub.advance(0.1)
 assert(square(), "not square again after the game's rotation callback")
+assert(PolestarUIMinimapEdge:GetScript("OnUpdate"), "N does not follow the facing while the map turns")
 assert(MinimapCompassTexture:GetAlpha() == 0 and MinimapCompassTextureUnderlay:IsShown() and MinimapCompassTextureUnderlay:GetAlpha() == 0, "the pointer ring shows")
 local n
 for _, r in ipairs({ PolestarUIMinimapEdge:GetRegions() }) do if r:GetObjectType() == "FontString" and r:GetText() == "N" then n = r end end

@@ -21,6 +21,7 @@ assert(MinimapCluster.ZoneTextButton:IsMouseMotionEnabled() and AddonCompartment
 local p1 = { bagnon:GetPoint(1) }
 assert(bagnon:GetParent() == Minimap and p1[1] == "CENTER" and p1[2] == Minimap and math.abs(p1[4] - math.cos(math.rad(200)) * 104) < 0.01 and math.abs(p1[5] - math.sin(math.rad(200)) * 104) < 0.01, "a button is not back where it was")
 assert(WeakAurasMinimapButton:GetParent() == Minimap and not PolestarUIMinimapDock:IsShown() and not PolestarUIMinimapEdge:IsShown(), "the dock or border still shows")
+assert(not PolestarUI.modules.minimap.clockTicker(), "the clock still ticks with the map off")
 assert(select(1, MinimapCluster:GetClampRectInsets()) == 0 and select(3, MinimapCluster:GetClampRectInsets()) == 0, "the screen clamp is not Edit Mode's again")
 --@ panel
 --@ roots: MinimapCluster, AddonCompartmentFrame, GameTimeFrame, TimeManagerClockButton
