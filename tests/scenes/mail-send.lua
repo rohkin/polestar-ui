@@ -100,6 +100,10 @@ assert(sendBtn:IsEnabled() and send.COD:IsEnabled(), "Send or COD off with To, a
 assert(tostring(f.Subtitle:GetText()) == "2 of 12 attachments." and not send.COD.psTip, "the status: " .. tostring(f.Subtitle:GetText()))
 -- Dropped on the page: the first free well.
 stub.cursor = stub.mailItem("Thorium Bar", 12359, 133221, 5, 1)
+stub.targeting = true
+stub.RunScript(send, "OnMouseUp")
+stub.targeting = false
+assert(not stub.sendItems[3], "dropped while a spell waits for its item")
 stub.RunScript(send, "OnMouseUp")
 assert(stub.sendItems[3] and stub.sendItems[3][1] == "Thorium Bar", "a drop on the page not attached")
 assert(tostring(send.Postage.psParts[3].text:GetText()) == "90", "postage")

@@ -695,7 +695,7 @@ local function buildSend()
 	send.Subject:SetScript("OnEnterPressed", function() send.Body:SetFocus() end)
 	send.Body:SetScript("OnTabPressed", function() send.To:SetFocus() end)
 	-- An item dropped anywhere on the page goes in the first free well.
-	local function drop() if CursorHasItem() then ClickSendMailItemButton() end end
+	local function drop() if CursorHasItem() then ns.Pickup(ClickSendMailItemButton) end end
 	send:EnableMouse(true)
 	send:SetScript("OnMouseUp", drop)
 	send.Body.Well:HookScript("OnMouseUp", drop)

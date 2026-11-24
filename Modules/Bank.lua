@@ -49,7 +49,7 @@ local function pickupNow(w)
 		return ask({ title = "Deposit a refundable item?", text = "Once in the Warband bank, it can no longer be sold back for a refund.",
 			action = "Deposit", onCancel = ClearCursor, onAccept = function()
 				local now = C_Cursor.GetCursorItem()
-				if now and C_Item.GetItemGUID(now) == guid then C_Container.PickupContainerItem(w.psBag, w.psSlot) end
+				if now and C_Item.GetItemGUID(now) == guid then ns.Pickup(C_Container.PickupContainerItem, w.psBag, w.psSlot) end
 			end })
 	end
 	C_Container.PickupContainerItem(w.psBag, w.psSlot)

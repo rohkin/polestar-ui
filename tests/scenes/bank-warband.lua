@@ -27,6 +27,13 @@ stub.RunScript(wells[3], "OnClick", "LeftButton")
 assert(PolestarModal:IsShown() and not stub.picked, "placed without asking")
 PolestarModal.Box.Cancel:Click()
 assert(not stub.held and not stub.picked, "cancel left it on the cursor, or placed it")
+-- A spell waiting for its item by the time it is accepted: nothing placed.
+stub.held = { guid = "g1", refundable = true }
+stub.RunScript(wells[3], "OnReceiveDrag")
+stub.targeting = true
+PolestarModal.Box.Action:Click()
+stub.targeting = false
+assert(not stub.picked, "placed while a spell waits for its item")
 stub.held = { guid = "g1", refundable = true }
 stub.RunScript(wells[3], "OnReceiveDrag")
 PolestarModal.Box.Action:Click()
