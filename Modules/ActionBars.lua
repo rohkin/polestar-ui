@@ -207,7 +207,7 @@ end
 local watched = setmetatable({}, { __mode = "k" })
 local function watch(f)
 	if not f or watched[f] or InCombatLockdown() then return end
-	watched[f] = CreateFrame("Frame", nil, f)
+	watched[f] = Polestar.CreateFrameUnder("Frame", nil, f)
 	watched[f]:SetScript("OnShow", function() C_Timer.After(0, dressNew) end)
 end
 

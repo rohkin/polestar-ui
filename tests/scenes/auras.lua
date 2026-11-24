@@ -58,3 +58,10 @@ local function polls(file)
 end
 -- No poll: the repaint after an event ran once and cleared itself.
 assert(polls("Auras.lua") == 0, "the aura repaint is still running")
+-- Another unit's auras (a raid's) start no repaint of the player's buttons; the player's do.
+stub.fire("UNIT_AURA", "raid5")
+assert(polls("Auras.lua") == 0, "another unit's aura repaints the player's buttons")
+stub.fire("UNIT_AURA", "player")
+assert(polls("Auras.lua") == 1, "the player's aura starts no repaint")
+stub.advance(0.05)
+assert(polls("Auras.lua") == 0, "the aura repaint is still running")

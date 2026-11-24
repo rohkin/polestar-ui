@@ -314,7 +314,9 @@ function M.Enable()
 		-- Combat starting: the veil lifts now, while it still may.
 		if event == "PLAYER_REGEN_DISABLED" then fighting = true; veilRows() elseif event == "PLAYER_REGEN_ENABLED" then fighting = false end
 		if event == "UNIT_AURA" then paintRows(unit) else paintRows() end
-		soon()
+		-- Only the units painted here: the player's (or vehicle's) buttons and the target's and focus's veil (auras
+		-- turned secret with no event of its own); a raid's or the nameplates' UNIT_AURA would repaint every frame.
+		if event ~= "UNIT_AURA" or unit == "player" or unit == "vehicle" or unit == "target" or unit == "focus" then soon() end
 	end)
 	EventRegistry:RegisterCallback("EditMode.Enter", soon, M)
 	EventRegistry:RegisterCallback("EditMode.Exit", soon, M)
