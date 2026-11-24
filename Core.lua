@@ -1572,6 +1572,28 @@ local function bindKeys()
 	end
 end
 
+-- Our secure overlay over one micro button: its place, layer and visibility.
+local function microDoor(module, micro, o)
+	local on = ns.Enabled(module) and micro:IsVisible() and micro:IsEnabled()
+	if on then
+		local k = micro:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		local x, y, w, h = micro:GetLeft() * k, micro:GetBottom() * k, micro:GetWidth() * k, micro:GetHeight() * k
+		if x ~= o.psX or y ~= o.psY or w ~= o:GetWidth() or h ~= o:GetHeight() then
+			o.psX, o.psY = x, y
+			o:ClearAllPoints()
+			o:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+			o:SetSize(w, h)
+		end
+	end
+	-- Above the micro button, wherever Edit Mode or the bar puts it.
+	if on and (o:GetFrameStrata() ~= micro:GetFrameStrata() or o:GetFrameLevel() <= micro:GetFrameLevel()) then
+		o:SetFrameStrata(micro:GetFrameStrata())
+		o:SetFrameLevel(micro:GetFrameLevel() + 10)
+	end
+	o:SetShown(on)
+end
+
+local microDoors, microDriver = {}
 function ns.Doors(module, name, actions, micro, onMicro)
 	for action, fn in pairs(actions) do
 		local b = CreateFrame("Button", "PolestarUI" .. name .. action, UIParent)
@@ -1604,25 +1626,13 @@ function ns.Doors(module, name, actions, micro, onMicro)
 	-- Enable() of the micro button was then blocked in combat (docs/CLIENT.md,
 	-- rule 10). A driver places it over the button by position, out of combat
 	-- only (a secure button cannot be shown or moved in combat).
-	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
+	microDoors[#microDoors + 1] = { module = module, micro = micro, o = o }
+	if microDriver then return end
+	-- One driver for every door: no hook tells us the micro bar moved (Edit Mode, the bar's layout).
+	microDriver = CreateFrame("Frame", nil, UIParent)
+	microDriver:SetScript("OnUpdate", function()
 		if InCombatLockdown() then return end
-		local on = ns.Enabled(module) and micro:IsVisible() and micro:IsEnabled()
-		if on then
-			local k = micro:GetEffectiveScale() / UIParent:GetEffectiveScale()
-			local x, y, w, h = micro:GetLeft() * k, micro:GetBottom() * k, micro:GetWidth() * k, micro:GetHeight() * k
-			if x ~= o.psX or y ~= o.psY or w ~= o:GetWidth() or h ~= o:GetHeight() then
-				o.psX, o.psY = x, y
-				o:ClearAllPoints()
-				o:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
-				o:SetSize(w, h)
-			end
-		end
-		-- Above the micro button, wherever Edit Mode or the bar puts it.
-		if on and (o:GetFrameStrata() ~= micro:GetFrameStrata() or o:GetFrameLevel() <= micro:GetFrameLevel()) then
-			o:SetFrameStrata(micro:GetFrameStrata())
-			o:SetFrameLevel(micro:GetFrameLevel() + 10)
-		end
-		o:SetShown(on)
+		for _, d in ipairs(microDoors) do microDoor(d.module, d.micro, d.o) end
 	end)
 end
 
@@ -1970,15 +1980,21 @@ local function gameWindowDoor()
 	o:SetScript("OnLeave", row("OnLeave"))
 	o:Hide()
 	-- Over the menu's row while it shows; out of combat only (a secure button
-	-- cannot move or hide in combat; its macro does nothing there).
-	CreateFrame("Frame", nil, UIParent):SetScript("OnUpdate", function()
+	-- cannot move or hide in combat; its macro does nothing there). Runs only
+	-- while a window menu is open (ns.WindowMenu starts it): the first pass
+	-- with no row, out of combat, hides the button and stops.
+	o.psDriver = CreateFrame("Frame", nil, UIParent)
+	o.psTick = function(self)
 		if InCombatLockdown() then return end
 		local menu, r = PolestarMenu
 		for _, x in ipairs(menu and menu:IsVisible() and menu.rows or {}) do
 			if x:IsVisible() and x.psItem == o.psItem then r = x end
 		end
 		o.psRow = r
-		if not (r and r:GetLeft()) then return o:Hide() end
+		if not (r and r:GetLeft()) then
+			o:Hide()
+			return self:SetScript("OnUpdate", nil)
+		end
 		local k = r:GetEffectiveScale() / UIParent:GetEffectiveScale()
 		o:ClearAllPoints()
 		o:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", r:GetLeft() * k, r:GetBottom() * k)
@@ -1986,7 +2002,7 @@ local function gameWindowDoor()
 		o:SetFrameStrata(menu:GetFrameStrata())
 		o:SetFrameLevel(r:GetFrameLevel() + 5)
 		o:Show()
-	end)
+	end
 	return o
 end
 
@@ -2014,6 +2030,7 @@ function ns.WindowMenu(f, key, options)
 			gameDoor = gameDoor or gameWindowDoor()
 			gameDoor.psKey, gameDoor.psItem = key, item
 			gameDoor:SetAttribute("macrotext", "/click [nocombat] " .. micro:GetName())
+			gameDoor.psDriver:SetScript("OnUpdate", gameDoor.psTick)
 		end
 		W.ShowMenu(self, items, #items > 1 and { minWidth = 200 } or nil)
 	end, 14)

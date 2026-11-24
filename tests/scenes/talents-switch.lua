@@ -53,6 +53,7 @@ assert(not f:IsShown() and PolestarUIDB.modules.talents == false and not stub.ov
 assert(PlayerSpellsFrame:IsShown() and PlayerSpellsFrame.TalentsFrame:IsShown() and not PolestarMenu:IsShown(), "off: the game's window did not open in its place")
 stub.advance(0.1)
 assert(not g:IsShown(), "the secure button stayed after the menu closed")
+assert(not g.psDriver:GetScript("OnUpdate"), "the menu closed: its secure button's driver still runs")
 stub.advance(0.1)
 assert(not PolestarUITalentsMicro:IsShown(), "off: overlay still over the micro button")
 stub.pressKey("N")
