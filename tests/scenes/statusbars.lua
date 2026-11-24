@@ -1,23 +1,35 @@
 --@ title: Experience and reputation bars
 --@ roots: MainStatusTrackingBarContainer, SecondaryStatusTrackingBarContainer
 --@ stubs: stub_statusbars.lua
--- The game's status tracking bars restyled in place: the experience bar (62%) in the main container, a reputation bar in the second (Edit Mode's "Show status bar 2"), the game's xpBarText option on. After login the game fades each container in from alpha 0 (5 to 8 s in the client): ours shows at once and follows the container again once the fade-in ends (and through a fade-out). The game's ground, fill, frame art and dividers faded where they are; under each bar a frame of ours: a track, a fill hung on the game's fill (so it follows the value with nothing read), a 1px hairline, a hairline tick on each of the 19 dividers. The experience fill is the scheme's violet, the mana blue while rested (the game's blue fill); the reputation bar by the watched faction's standing (friendly: success green), its track tinted in it at 30%. The experience bar's track wears Polestar's header band (the sky and its stars, Theme.Band) at 70%, cropped 1:1 to the thin bar from the band's middle rows; the ticks at half the edge's alpha. The text keeps its size in Polestar's number face, outlined. Every other kind of bar is dressed too, hidden with it.
+-- The game's status tracking bars restyled in place: the experience bar (62%) in the main container, a reputation bar in the second (Edit Mode's "Show status bar 2"), the game's xpBarText option on. After login the game fades each container in from alpha 0 (5 to 8 s in the client): ours shows at once and follows the container again once the fade-in ends (and through a fade-out). The game's ground, fill, frame art and dividers faded where they are; under each bar a frame of ours: a track, a fill hung on the game's fill (so it follows the value with nothing read), a 1px hairline, a hairline tick on each of the 19 dividers. The experience fill is Polestar's blue (the HUD's default fill), the same while rested; the reputation bar by the watched faction's standing (friendly: success green), its track tinted in it at 30%. The experience bar as the game's in Polestar's look: a see-through black track (the scheme's shade at 40%), a solid Polestar-blue fill wearing the header's stars (band-stars in the star token at 60%, cropped 1:1 from the band's middle rows) over the fill only, clipped to it so they never slide; the ticks at least 30% and the outline at least 50% of the border colour's alpha. Rested experience: the game's prediction and pip faded, ours past the fill in the portal violet at 40% with a hairline at its end. The text keeps its size in Polestar's number face, outlined. Every other kind of bar is dressed too, hidden with it.
+-- Every region (and frame) of f and its descendants: ours are spread over a few frames.
+local function regionsOf(f, out)
+	out = out or {}
+	for _, r in ipairs({ f:GetRegions() }) do out[#out + 1] = r end
+	for _, c in ipairs({ f:GetChildren() }) do regionsOf(c, out) end
+	return out
+end
+local function framesOf(f, out)
+	out = out or {}
+	for _, c in ipairs({ f:GetChildren() }) do out[#out + 1] = c; framesOf(c, out) end
+	return out
+end
 local T = Polestar.Theme
 local Main, Second = MainStatusTrackingBarContainer, SecondaryStatusTrackingBarContainer
 local XP, REP = 4, 1
 local function ours(bar)
 	for _, f in ipairs({ bar:GetChildren() }) do
-		if f ~= bar.StatusBar and f ~= bar.OverlayFrame and f ~= rawget(bar, "ExhaustionTick") then return f end
+		if f ~= bar.StatusBar and f ~= bar.OverlayFrame and f ~= rawget(bar, "ExhaustionTick") and f ~= rawget(bar, "Tick") then return f end
 	end
 end
 local function fillOf(bar)
-	for _, r in ipairs({ ours(bar):GetRegions() }) do
+	for _, r in ipairs(regionsOf(ours(bar))) do
 		if r.points[1] and r.points[1].rel == bar.StatusBar:GetStatusBarTexture() then return r end
 	end
 end
 local function ticks(bar)
 	local n = 0
-	for _, r in ipairs({ ours(bar):GetRegions() }) do
+	for _, r in ipairs(regionsOf(ours(bar))) do
 		local p = r.points[1]
 		if p and p.rel and Main.HorizontalDividersPool.activeObjects[p.rel] and r:IsShown() then n = n + 1 end
 	end
@@ -69,7 +81,7 @@ assert(ours(rep):GetFrameLevel() > rep.StatusBar:GetFrameLevel(), "ours is not o
 assert(is(rep, "success"), "a friendly faction is not green")
 -- Its track tinted in the standing's colour (the game's green ground); the experience bar's not.
 local function tintOf(bar)
-	for _, r in ipairs({ ours(bar):GetRegions() }) do
+	for _, r in ipairs(regionsOf(ours(bar))) do
 		local l, sub = r:GetDrawLayer()
 		if l == "BACKGROUND" and sub == 2 then return r end
 	end
@@ -108,17 +120,64 @@ assert(xp.StatusBar:GetStatusBarTexture():GetAlpha() == 0 and xp.StatusBar.Backg
 assert(Main.BarFrameTexture:GetAlpha() == 0, "the game's frame art shows")
 for d in Main.HorizontalDividersPool:EnumerateActive() do assert(d.BarDividerTexture:GetAlpha() == 0, "a divider shows") end
 assert(ticks(xp) == 19, "not a tick on every divider")
-local band
-for _, r in ipairs({ ours(xp):GetRegions() }) do if rawget(r, "psStars") then band = r end end
-assert(band and band:IsShown() and band:GetAlpha() == 0.7, "the experience track has no header band")
-local _, x1, y0, y1 = unpack(band.texCoord)
-assert(near(x1, 1) and near(y0, 23 / 128) and near(y1, 37 / 128), "the band is not cropped 1:1 to the bar")
-local rb
-for _, r in ipairs({ ours(Second.bars[REP]):GetRegions() }) do if rawget(r, "psStars") then rb = r end end
-assert(not rb, "a band on the reputation bar")
+-- The experience track a see-through black (the scheme's shade at 40%);
+-- ticks at least 30% and the outline at least 50% of the border colour's alpha.
+do
+	local track
+	for _, r in ipairs(regionsOf(ours(xp))) do
+		local l, sub = r:GetDrawLayer()
+		if l == "BACKGROUND" and (sub or 0) == 0 and r.points[1] and r.points[1].point == "TOPLEFT" and r.points[1].rel == ours(xp) and r.points[2] then track = track or r end
+	end
+	local r, g, b, a = track:GetVertexColor()
+	local sr, sg, sb = T.Color("shade")
+	assert(near(r, sr) and near(g, sg) and near(b, sb) and near(a, 0.4), "the experience track is not the see-through shade at 40%")
+	for _, t in ipairs(regionsOf(ours(xp))) do
+		local p = t.points and t.points[1]
+		if p and Main.HorizontalDividersPool.activeObjects[p.rel] then assert(select(4, t:GetVertexColor()) >= 0.3, "a tick fainter than 30%") end
+	end
+end
+-- The fill, its stars and the rested preview inside the outline: under a frame clipped to the
+-- bar less the outline's inner pixel on every side (so at 0% and 100% the outline stays whole);
+-- the ticks over them.
+do
+	local box, px = ours(xp), T.Pixel(ours(xp))
+	local inner
+	for _, f in ipairs(framesOf(box)) do if f.clips and f.points[1] and f.points[1].rel == box then inner = f end end
+	assert(inner and near(inner.points[1].x, px) and near(inner.points[1].y, -px) and near(inner.points[2].x, -px) and near(inner.points[2].y, px), "no clip one pixel inside the outline")
+	local function under(r, f)
+		local p = r:GetParent()
+		while p do if p == f then return true end p = p:GetParent() end
+	end
+	assert(under(fillOf(xp), inner), "the fill is not inside the outline's clip")
+	stub.setXP(10000, 10000)
+	assert(under(fillOf(xp), inner) and fillOf(xp).points[2].rel == xp.StatusBar:GetStatusBarTexture(), "at 100% the fill is not clipped inside the outline")
+	stub.setXP(6200, 10000)
+end
+-- The stars over the fill only: a frame clipped to the fill (its corners on the game's fill)
+-- holding a frame as wide as the bar with the band-stars art, cropped 1:1, in the star token at 60%.
+-- No sky band on the track; none on the reputation bar.
+local function starsOf(bar)
+	for _, clip in ipairs(framesOf(ours(bar))) do
+		local holder = clip:GetChildren()
+		local t = holder and holder:GetRegions()
+		if t and tostring(t:GetTexture()):find("band%-stars") then return clip, holder, t end
+	end
+end
+do
+	local clip, holder, stars = starsOf(xp)
+	local fill = xp.StatusBar:GetStatusBarTexture()
+	assert(clip and clip.clips and clip.points[1].rel == fill and clip.points[2].rel == fill, "the stars are not clipped to the fill")
+	assert(holder.points[1].rel == ours(xp) and stars:IsVisible(), "the stars do not span the bar")
+	local _, x1, y0, y1 = unpack(stars.texCoord)
+	assert(near(x1, 1) and near(y0, 23 / 128) and near(y1, 37 / 128), "the stars are not cropped 1:1 to the bar")
+	local sr, sg, sb, sa = T.Color("star")
+	assert(near(select(4, stars:GetVertexColor()), (sa or 1) * 0.6), "the stars are not at 60%")
+	for _, r in ipairs(regionsOf(ours(xp))) do assert(not rawget(r, "psStars"), "a sky band on the experience track") end
+	assert(not starsOf(Second.bars[REP]), "stars on the reputation bar")
+end
 local r, g, b = fillOf(xp):GetVertexColor()
-local vr, vg, vb = T.Color("dungeon")
-assert(near(r, vr) and near(g, vg) and near(b, vb), "the experience fill is not violet")
+local vr, vg, vb = PolestarUI.HUD.FillColor("player")
+assert(near(r, vr) and near(g, vg) and near(b, vb), "the experience fill is not Polestar's blue (the HUD's default fill)")
 local path, size, flags = xp.OverlayFrame.Text:GetFont()
 assert(path == (T.FontSpec("number")) and size == 12 and flags == "OUTLINE", "the text is not in Polestar's number face at the game's size")
 assert(xp.OverlayFrame.Text:IsShown(), "xpBarText on: the text is hidden")
@@ -128,14 +187,43 @@ for kind, bar in pairs(Main.bars) do
 	assert(ours(bar):IsVisible() == (kind == XP), "kind " .. kind .. ": ours does not follow the bar's visibility")
 end
 assert(ours(Second.bars[REP]):IsVisible(), "the second container's reputation bar is not dressed")
--- Rested: the game's blue fill; ours in the mana blue. Then normal again, with more experience.
+-- Rested: the game turns its fill blue; ours stays Polestar's blue (the rested preview says it).
 stub.setRestState(1)
 r, g, b = fillOf(xp):GetVertexColor()
-vr, vg, vb = T.Color("npc")
-assert(near(r, vr) and near(g, vg) and near(b, vb), "rested: the fill is not blue")
+assert(near(r, vr) and near(g, vg) and near(b, vb), "rested: the fill changed colour")
 stub.setRestState(2)
+-- Rested experience (seen in game: the game's prediction and pip showed through and over ours):
+-- both faded; ours from the fill's end to the prediction's end in the portal violet at 40%, 1px lines
+-- along its top and at its end; gone with no rest.
+stub.setRested(2500)
+local rest
+for _, r in ipairs(regionsOf(ours(xp))) do
+	local p = r.points and r.points[3]
+	if p and p.rel == xp.ExhaustionLevelFillBar then rest = r end
+end
+assert(xp.ExhaustionLevelFillBar:IsShown() and xp.ExhaustionLevelFillBar:GetAlpha() == 0, "the game's rested prediction shows")
+assert(xp.ExhaustionTick:IsShown() and xp.ExhaustionTick.Normal:GetAlpha() == 0 and xp.ExhaustionTick.Highlight:GetAlpha() == 0, "the game's pip shows")
+assert(rest and rest:IsShown() and rest.points[1].rel == xp.StatusBar:GetStatusBarTexture(), "no rested segment from the fill's end")
+do
+	local r, g, b, a = rest:GetVertexColor()
+	local tr, tg, tb = T.Color("dungeon")
+	assert(near(r, tr) and near(g, tg) and near(b, tb) and near(a, 0.4), "the rested segment is not the portal violet at 40%")
+end
+do
+	local top
+	for _, r in ipairs(regionsOf(ours(xp))) do
+		local p = r.points and r.points[1]
+		if p and p.rel == rest and p.point == "TOPLEFT" then top = r end
+	end
+	local a = top and select(4, top:GetVertexColor())
+	assert(top and top:IsShown() and a == 1, "no full-colour line along the rested segment's top")
+end
+stub.setRested(nil)
+assert(not rest:IsShown(), "no rest: the rested segment shows")
+stub.setRested(2500)
+assert(rest:IsShown(), "rested again: no segment")
 stub.setXP(6200, 10000)
 r = fillOf(xp):GetVertexColor()
-assert(near(r, (T.Color("dungeon"))), "normal again: the fill is not violet")
+assert(near(r, vr), "normal again: the fill is not Polestar's blue")
 assert(xp.StatusBar:GetStatusBarTexture():GetAlpha() == 0, "the game's fill shows after its new atlas")
 stub.advance(0.1)

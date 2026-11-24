@@ -29,32 +29,47 @@ tooltips and the gain and level-up effects all stay the game's.
   the game's gain flare and level-up flash now go under ours. Each bar is
   also painted again in the frame the game shows it (`HookScript("OnShow")` on
   the bar: a widget script hook, no Lua key written): a track (`bg` at the Frames group's
-  ground alpha), a fill hung on the game's fill texture's corners (it follows
+  ground alpha; the experience bar's see-through black, `shade` at 40%, `XP_TRACK`), a fill hung on the game's fill texture's corners (it follows
   the value as the game eases it, with no value or size read: rule 3), a 1px
-  hairline and the window shadow (`H.PaintEdge`, `H.PaintShadow`, the Frames
-  look group), and a hairline tick (the edge's colour at half its alpha,
-  `TICK_ALPHA` 0.5) hung on each live divider (Edit Mode's Size moves them;
+  outline and the window shadow (`H.Edge`'s colour and size, its alpha at
+  least `EDGE_MIN` 0.5, hidden with Polestar's border off; `H.PaintShadow`,
+  the Frames look group), and a 1px tick (the same colour, its alpha at least
+  `TICK_MIN` 0.3: the house border's 0.1 vanished on the dark track) hung on
+  each live divider (Edit Mode's Size moves them;
   ours follow).
-- **Stars (experience bar):** the track wears Polestar's header band,
-  `Theme.Band` (the sky, tinted `sky`, and its stars, `star`; the skin's own
-  `band`/`bandStars` art; painted clear with the band off; Polestar repaints
-  it on every theme change), over the track and under the fill, at 70%
-  (`STARS_ALPHA`). Cropped 1:1 as `ns.Compact` crops a window's band:
+- **Experience bar as the game's, in Polestar's look:** a see-through black
+  track (`shade` at 40%, `XP_TRACK`: the world shows through a little, as on
+  the game's bar) and a solid fill in Polestar's blue wearing the header
+  band's stars (the band-stars art, the skin's `bandStars`, in the `star`
+  token at 60%, `STAR_OVER`; hidden with Polestar's band off, as
+  `Theme.Band` paints them; repainted with every theme change). The stars
+  show over the fill only: they sit on a frame as wide as the whole bar,
+  inside a frame clipped to the fill (its corners hung on the game's fill,
+  as our fill), so the fill reveals them as it grows and nothing slides or
+  stretches. Cropped 1:1 as `ns.Compact` crops a window's band:
   `Theme.BandCoords(w, h, 23)` (rows 23 to 23 + h, the middle of a compact
   header), from the bar's own size (set by Edit Mode), read out of combat
   and never while secret, again on our frame's `OnSizeChanged` (a resize in
   Edit Mode) and each repaint. Wider than the band's 1,024 (the default
-  1,189): `BandCoords` clamps at its edge, so the band stretches about 16% across, as a
-  wide window's band does.
+  1,189): `BandCoords` clamps at its edge, so the stars stretch about 16%
+  across, as a wide window's band does.
+- **Inside the outline:** the outline's first pixel lies inside the bar
+  (`ns.PaintHairlines`; a thicker border grows outward). The fill, its stars
+  and the rested preview are on a frame clipped to the bar less that pixel
+  on every side, so the outline shows whole at 0% and at 100%; the ticks and
+  marks sit on a frame over them. Polestar's quest XP band (ours on its
+  frame) is set one pixel in at the top and bottom; its right end is
+  already 2 in.
 - **Faded (SetAlpha):** the StatusBar's fill, `Background`, `Underlay`,
   `Overlay`; `BarFrameTexture`; each divider's `BarDividerTexture`. The fill
   is asked again on each repaint (`GetStatusBarTexture`): a new texture
   object would be followed and faded.
 - **Text:** `OverlayFrame.Text` in Polestar's `number` face, outlined, at the
   game's size (`H.Face`); when it shows stays the game's.
-- **Colours:** experience: the scheme's violet (`dungeon`; the game's
-  purple), the mana blue (`npc`) while rested (`GetRestState()` 1, the game's
-  blue fill). Reputation: the watched faction's standing
+- **Colours:** experience: Polestar's blue, the HUD's default fill as on
+  the unit frames (`H.FillColor`: the header band's `sky`, or the class
+  colour with Polestar's "Class colour"), the same while rested (the game
+  turns its fill blue then; ours leaves that to the rested preview). Reputation: the watched faction's standing
   (`C_Reputation.GetWatchedFactionData().reaction`, as
   `ReputationStatusBarMixin:Update` reads it): 1-3 (hated, hostile,
   unfriendly) `danger`, 4 (neutral) `warning`, 5 and up `success`; a secret
@@ -68,9 +83,68 @@ tooltips and the gain and level-up effects all stay the game's.
   `PLAYER_LEVEL_UP`, `UPDATE_EXHAUSTION`, `PLAYER_UPDATE_RESTING`,
   `UPDATE_FACTION`, `MAJOR_FACTION_RENOWN_LEVEL_CHANGED`, `EDIT_MODE_LAYOUTS_UPDATED`, `EditMode.Exit`,
   `Theme.OnChanged`. Which bar shows needs none: ours are its children.
-- **Not yet (later steps):** the rested segment and tick (the game's
-  `ExhaustionLevelFillBar` is now under ours, so unseen; its pip, MEDIUM strata, still shows), reputation colours for friendship, renown and paragon, the other kinds' colours, combat
-  checks. Click to open Reputation: an extra after parity.
+- **Rested experience:** the game's prediction (`ExhaustionLevelFillBar`,
+  from the bar's left to the experience plus the rest, sized, shown and
+  hidden by `ExhaustionTickMixin:UpdateTickPosition`) and its pip
+  (`ExhaustionTick`'s `Normal` and `Highlight`) are faded with SetAlpha; the
+  pip keeps its mouse and the game's rest tooltip. Ours: from our fill's end
+  (the game's fill's corners) to the prediction's right edge, the bar's full
+  height, the portal violet (`dungeon`: apart from the blue fill and the
+  green quest XP) at 40% (`REST_ALPHA`), a 1px line along its top and a hairline at its end
+  in the full colour; shown while the game's prediction is (no rest, the
+  maximum level, XP off: hidden), read on the rest events and with every
+  refade. Seen in game before: the game's prediction (green-grey) showed
+  through our track and its pip over our fill.
+- **Reputation, every state** (`repColor`, as `ReputationStatusBarMixin:Update`
+  picks its atlas): renown (`C_Reputation.IsMajorFaction`) and a major
+  faction's paragon in the game's blue (`npc`: the game draws them with its
+  rested blue), a friendship (`C_GossipInfo.GetFriendshipReputation`) in
+  `success` whatever its reaction (the game draws every friendship at
+  reaction 5), a normal faction's paragon by its reaction, the rest by
+  reaction. The track's tint follows. A paragon reward pending overfills
+  the game's bar; ours follows its fill. Watching none: the game hides the
+  bar, ours with it; watching one again: dressed in the frame it shows
+  (OnShow), recoloured on `UPDATE_FACTION`. "Show status bar 2" and the
+  maximum level (the experience bar goes, reputation takes the main
+  container) need nothing of their own: every bar of both containers is
+  dressed.
+- **The other kinds:** honor (the game's orange-red) in `place`; artifact,
+  azerite and house favour (the game's one artifact-power gold) in `quest`;
+  a token a scheme lacks: the game's hue calmed halfway to `textMuted`. The
+  artifact bar's pip (`Tick`: the power for its next trait) faded as the
+  rest's, marked by a 2 px accent line of ours while the game shows it; its
+  mouse and tooltip the game's. All six exist on Forever (seen in game),
+  though .ref loads four for mainline only.
+- **Combat:** nothing here is protected (the bars are not secure; ours
+  are plain frames and textures). Every value read (the standing, renown,
+  friendship, the rest state) goes through `ns.Clean`: secret, the last
+  colour stays; no geometry is read in combat (the stars' crop waits).
+- **The click:** a left-click on the reputation bar opens our Character
+  window on Reputation (`ns.modules.character.Toggle("ReputationFrame")`,
+  its own toggle, as its key door calls it); with our Character window off
+  it does nothing (the stock bar has no click, and showing the stock window
+  from our code would taint it: CLIENT.md rule 8). `HookScript("OnMouseUp")`
+  on the stock bar: a script hook, no key written.
+- **Polestar's "Completed quest XP"** (Polestar 0.4.2's `QoL/QuestXP.lua`,
+  option `qol.questXPOverlay`, on by default; not in 0.4.0, so
+  feature-detected: `Polestar.QoL.QuestXP` and its `frame`): a frame of
+  Polestar's under the game's XP bar, over its StatusBar, with a sage band
+  from the XP fill to the XP the quests ready to hand in will give (masked by
+  the game's fill atlas, inset 2), a copy of the game's pip on the rest tick,
+  and "+1 level" above. Drawn for the game's bar, it showed over ours in the
+  game's look (the "grey-green band" and "+1 level" in game). While ours is
+  on: its band emptied (SetTexture(nil): a SetAlpha(0) did not hold in game, the probe read alpha 1 again; Polestar sets its texture only once) and ours drawn on the same span at the bar's full inner
+  height, flat, in `success` at 40% (`QUEST_ALPHA`, with 1px lines along its bottom and at its end: the green Polestar's
+  sage stands for, apart from our blue fill and violet rested preview); its pip copy
+  faded; its label in Polestar's `label` face, outlined, in `success`. Off:
+  all of it Polestar's again (its texture and the label's colour as read when first found).
+  Hooks, on Polestar's own objects only: `hooksecurefunc(frame.Tint,
+  "SetShown")` (its local draw ends every redraw with it) and
+  `hooksecurefunc(Polestar.QoL.XPMark, "Bar")` (every refresh calls it
+  first; the frame is made on the first refresh with quest XP, so the next
+  frame looks for it, until found). Polestar's band inset (2) is undone by
+  constant offsets (a `shortcut:` in the code). Its tooltip on the bar stays
+  Polestar's.
 - **The fade-in after login:** a container starts at alpha 0 and the game
   fades it in (`FadeInAnimation`: alpha 0 to 1 in 0.5 s on the container,
   from `StatusTrackingBarContainerMixin:FadeIn`, from `SetShownBar`, from the
@@ -110,5 +184,5 @@ tooltips and the gain and level-up effects all stay the game's.
   the game's art until `EditMode.Exit`.
 - **Switch:** `/pui statusbars on|off`, live; Settings, HUD. Off by default
   with the gamepad UI.
-- **Scenes:** `statusbars`, `statusbars-editmode`, `statusbars-off`
+- **Scenes:** `statusbars`, `statusbars-editmode`, `statusbars-off`, `statusbars-rep`, `statusbars-kinds`, `statusbars-questxp` (with `tests/lua/stub_questxp.lua`)
   (`tests/lua/stub_statusbars.lua`, every stock frame and region guarded).

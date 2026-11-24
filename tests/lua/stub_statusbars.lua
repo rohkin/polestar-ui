@@ -16,9 +16,10 @@
 --   stub.showStatusBar(container, kind)   kind nil: none (the container hides)
 --   stub.setXP(cur, max)                  then PLAYER_XP_UPDATE
 --   stub.setRestState(id)                 1 rested (the game's blue fill), 2 normal; UPDATE_EXHAUSTION
+--   stub.setRested(amount)               rested experience (GetXPExhaustion; nil: none), then UPDATE_EXHAUSTION
 --   stub.statusBarSize(container, pct)    Edit Mode's Size: the container, its bars and dividers laid again
 --   stub.hoverStatusBar(bar, on)          the bar's OnEnter/OnLeave (its text)
---   stub.watchFaction(reaction)           the watched faction's standing (1-8), then UPDATE_FACTION; the rep bar shows in the second container from the start
+--   stub.watchFaction(reaction, o?)      the watched faction (o: name, factionID, major, friend, paragon; nil: none), then UPDATE_FACTION; the rep bar shows in the second container from the start
 --   stub.finishStatusFade(c?)          the fade-in (or out) each container plays ends (from login a fade-in plays)
 --   stub.fadeOutStatusBar(c)           the game fades a container out (a bar switch)
 
@@ -38,7 +39,8 @@ stub.xp = { cur = 6200, max = 10000, rest = 2 }
 function UnitXP() return stub.xp.cur end
 function UnitXPMax() return stub.xp.max end
 function GetRestState() return stub.xp.rest, stub.xp.rest == 1 and "Rested" or "Normal", stub.xp.rest == 1 and 2 or 1 end
-function GetXPExhaustion() return nil end
+stub.xp.exhaustion = nil -- rested experience (stub.setRested)
+function GetXPExhaustion() return stub.xp.exhaustion end
 stub.cvars.xpBarText = stub.cvars.xpBarText or "0"
 
 local function color(f, layer, sub, c, a)
@@ -96,9 +98,31 @@ local function makeBar(c, kind)
 		bar.ExhaustionLevelFillBar:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
 		bar.ExhaustionLevelFillBar:SetSize(0, 11)
 		bar.ExhaustionLevelFillBar:Hide()
-		bar.ExhaustionTick = CreateFrame("Button", nil, bar)
-		bar.ExhaustionTick:SetSize(10, 14)
-		bar.ExhaustionTick:Hide()
+		local tick = CreateFrame("Button", nil, bar)
+		tick:SetFrameStrata("MEDIUM")
+		tick:SetSize(10, 14)
+		tick.Normal = color(tick, "ARTWORK", 0, { 0.9, 0.75, 0.4 })
+		tick.Normal:SetAllPoints(tick)
+		tick:SetNormalTexture(tick.Normal)
+		tick.Highlight = color(tick, "HIGHLIGHT", 0, { 1, 1, 1 }, 0.5)
+		tick.Highlight:SetAllPoints(tick)
+		tick:SetHighlightTexture(tick.Highlight)
+		tick:Hide()
+		bar.ExhaustionTick = tick
+	end
+	if kind == KINDS.Artifact then
+		-- ArtifactStatusBarTemplate's Tick (ArtifactTickMixin: the power for the next trait).
+		local tick = CreateFrame("Button", nil, bar)
+		tick:SetFrameStrata("MEDIUM")
+		tick:SetSize(10, 14)
+		tick.Normal = color(tick, "ARTWORK", 0, { 0.9, 0.75, 0.4 })
+		tick.Normal:SetAllPoints(tick)
+		tick:SetNormalTexture(tick.Normal)
+		tick.Highlight = color(tick, "HIGHLIGHT", 0, { 1, 1, 1 }, 0.5)
+		tick.Highlight:SetAllPoints(tick)
+		tick:SetHighlightTexture(tick.Highlight)
+		tick:SetPoint("CENTER", bar, "LEFT", 600, 0)
+		bar.Tick = tick
 	end
 	bar:Hide()
 	return bar
@@ -232,13 +256,24 @@ manager:SetScript("OnEvent", updateBarVisuals)
 stub.faction = { name = "Stormwind", factionID = 72, reaction = 5, currentReactionThreshold = 3000, nextReactionThreshold = 9000, currentStanding = 5400 }
 C_Reputation = C_Reputation or {}
 C_Reputation.GetWatchedFactionData = function() return stub.faction end
+-- A renown faction (major), a friendship (friend); the paragon of either.
+C_Reputation.IsMajorFaction = function(id) return stub.faction and stub.faction.factionID == id and stub.faction.major == true end
+C_Reputation.IsFactionParagonForCurrentPlayer = function(id) return stub.faction and stub.faction.factionID == id and stub.faction.paragon == true end
+C_GossipInfo = C_GossipInfo or {}
+local friendship = C_GossipInfo.GetFriendshipReputation
+C_GossipInfo.GetFriendshipReputation = function(id)
+	if stub.faction and stub.faction.factionID == id then return { friendshipFactionID = stub.faction.friend and id or 0 } end
+	if friendship then return friendship(id) end
+	return { friendshipFactionID = 0 }
+end
 local REACTION = { [1] = { 0.8, 0.13, 0.13 }, [2] = { 0.8, 0.13, 0.13 }, [3] = { 0.75, 0.27, 0 }, [4] = { 0.9, 0.7, 0 } }
 local function setRepBar(bar)
 	local sb, f = bar.StatusBar, stub.faction
+	if not f then return end
 	sb:SetMinMaxValues(0, f.nextReactionThreshold - f.currentReactionThreshold)
 	sb:SetValue(f.currentStanding - f.currentReactionThreshold)
 	bar.OverlayFrame.Text:SetText(("%s %d / %d"):format(f.name, f.currentStanding - f.currentReactionThreshold, f.nextReactionThreshold - f.currentReactionThreshold))
-	sb.pendingBarTexture, sb.pendingWait = REACTION[f.reaction] or REP_GREEN, 0.1
+	sb.pendingBarTexture, sb.pendingWait = (not (f.major or f.friend) and REACTION[stub.reveal(f.reaction)]) or (f.major and XP_RESTED) or REP_GREEN, 0.1
 end
 local function applyPending(sb, elapsed)
 	if not sb.pendingBarTexture then return end
@@ -300,6 +335,33 @@ function stub.setXP(cur, max)
 	xpBars(setXPBar)
 	stub.fire("PLAYER_XP_UPDATE", "player")
 end
+-- ExhaustionTickMixin:UpdateTickPosition (its frame registered before ours):
+-- the prediction from the bar's left to the experience plus the rest
+-- (clamped to the bar), shown with rest below the maximum level; the pip at its end.
+local function updateTick(bar)
+	local fillBar, tick = bar.ExhaustionLevelFillBar, bar.ExhaustionTick
+	local rest = stub.xp.exhaustion
+	if not rest or rest <= 0 then
+		tick:Hide()
+		fillBar:Hide()
+		return
+	end
+	local w = bar:GetWidth()
+	local x = math.max(0, math.min(1, (stub.xp.cur + rest) / stub.xp.max)) * w
+	fillBar:SetWidth(x)
+	fillBar:Show()
+	tick:ClearAllPoints()
+	tick:SetPoint("CENTER", bar, "LEFT", x, 0)
+	tick:Show()
+end
+local tickEvents = CreateFrame("Frame")
+for _, e in ipairs({ "PLAYER_XP_UPDATE", "UPDATE_EXHAUSTION", "PLAYER_LEVEL_UP", "PLAYER_ENTERING_WORLD" }) do tickEvents:RegisterEvent(e) end
+tickEvents:SetScript("OnEvent", function() xpBars(updateTick) end)
+function stub.setRested(amount)
+	stub.xp.exhaustion = amount
+	stub.fire("UPDATE_EXHAUSTION")
+end
+
 function stub.setRestState(id)
 	stub.xp.rest = id
 	xpBars(setXPBar)
@@ -327,8 +389,20 @@ function stub.setCVar(cvar, value)
 end
 
 -- A watched faction: the reputation bar in the second container (Edit Mode's "Show status bar 2").
-function stub.watchFaction(reaction)
-	stub.faction.reaction = reaction
+-- watchFaction(reaction, o): o = { name, factionID, major, friend, paragon };
+-- watchFaction(nil): no faction watched (the scene hides the rep bar's container).
+function stub.watchFaction(reaction, o)
+	if reaction == nil and o == nil then
+		stub.faction = nil
+		stub.fire("UPDATE_FACTION")
+		return
+	end
+	stub.faction = stub.faction or { name = "Stormwind", factionID = 72, currentReactionThreshold = 3000, nextReactionThreshold = 9000, currentStanding = 5400 }
+	local f = stub.faction
+	f.reaction = reaction
+	o = o or {}
+	f.name, f.factionID = o.name or f.name, o.factionID or f.factionID
+	f.major, f.friend, f.paragon = o.major, o.friend, o.paragon
 	for _, c in ipairs(containers) do setRepBar(c.bars[KINDS.Reputation]) end
 	stub.fire("UPDATE_FACTION")
 end
@@ -345,6 +419,13 @@ for _, c in ipairs(containers) do
 		if rawget(bar, "ExhaustionLevelFillBar") then
 			stub.guard(bar.ExhaustionLevelFillBar, nil, "ExhaustionLevelFillBar")
 			stub.guard(bar.ExhaustionTick, CALLS, "ExhaustionTick")
+			stub.guard(bar.ExhaustionTick.Normal, nil, "ExhaustionTick.Normal")
+			stub.guard(bar.ExhaustionTick.Highlight, nil, "ExhaustionTick.Highlight")
+		end
+		if rawget(bar, "Tick") then
+			stub.guard(bar.Tick, CALLS, "the artifact bar's Tick")
+			stub.guard(bar.Tick.Normal, nil, "Tick.Normal")
+			stub.guard(bar.Tick.Highlight, nil, "Tick.Highlight")
 		end
 		stub.guard(sb, CALLS, "a status bar's StatusBar")
 		stub.guard(bar, CALLS, "a status tracking bar")

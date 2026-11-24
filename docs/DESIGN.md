@@ -289,7 +289,7 @@ hidden):
 | Micro menu (`MicroMenuContainer`, `MicroMenu`, the micro buttons) | high | built | [windows/micromenu.md](windows/micromenu.md) |
 | Player buffs and debuffs (`BuffFrame`, `DebuffFrame`) | medium | built, with the target's and focus's rows under our unit frames | [windows/auras.md](windows/auras.md) |
 | Cast bars: player, target, focus (`PlayerCastingBarFrame`, `TargetFrameSpellBar`, `FocusFrameSpellBar`) | high | built | [windows/castbars.md](windows/castbars.md) |
-| Experience and reputation bars (`MainStatusTrackingBarContainer`, `SecondaryStatusTrackingBarContainer`: experience, reputation, honor, artifact, azerite, house favour) | medium | building (step 2: the look, experience colours) | [windows/statusbars.md](windows/statusbars.md) |
+| Experience and reputation bars (`MainStatusTrackingBarContainer`, `SecondaryStatusTrackingBarContainer`: experience, reputation, honor, artifact, azerite, house favour) | medium | built | [windows/statusbars.md](windows/statusbars.md) |
 | Cooldown Viewer: essential, utility, tracked buffs and bars (`EssentialCooldownViewer`, `UtilityCooldownViewer`, `BuffIconCooldownViewer`, `BuffBarCooldownViewer`) | high | built | [windows/cooldowns.md](windows/cooldowns.md) |
 | Personal Resource Display (`PersonalResourceDisplayFrame`) | medium | built | [windows/resource.md](windows/resource.md) |
 | Nameplates: enemy and friendly (`NamePlateDriverFrame`, each plate's pooled `UnitFrame`; forbidden plates untouched) | high | built | [windows/nameplates.md](windows/nameplates.md) |

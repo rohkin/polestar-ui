@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1248" height="90" viewBox="0 0 1248 90">
+<title>Experience and reputation bars: honor, artifact, azerite, house favour; Edit Mode with each</title>
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="80%"><stop offset="0" stop-color="#2a2e36"/><stop offset="1" stop-color="#121418"/></radialGradient>
+
+<clipPath id="p0c0"><rect x="30" y="47" width="1187" height="12"/></clipPath>
+<clipPath id="p0c1"><rect x="30" y="30" width="1187" height="12"/></clipPath>
+</defs>
+<rect width="100%" height="100%" fill="url(#bg)"/>
+<g transform="translate(0 0)">
+<image x="21" y="40" width="8" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAYAAACgR9dcAAAAF0lEQVR4nO3BMQEAAABAMP1Tq+GwsXUJAp8AATLAIREAAAAASUVORK5CYII="/>
+<image x="29" y="40" width="3" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAALCAYAAAC3ZUeVAAAAJElEQVR4nN3HUQYAAAgE0cgS0f2P2/TRJXZ57ITRdPKDo0JjFgN3AEYPcdUVAAAAAElFTkSuQmCC"/>
+<image x="32" y="40" width="1183" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAALCAYAAABlNU3NAAAAJklEQVR4nO3NsREAAAjCQBuscf9lxSGwIndfp1JKLwHSJrgBZUy4+Q0DFePx79sAAAAASUVORK5CYII="/>
+<image x="1215" y="40" width="3" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAALCAYAAAC3ZUeVAAAAJklEQVR4nNXKQQYAAAhE0SER0f2P26dlJ5jhbcaX+TLwzkGjLpAWBY8ARohvth4AAAAASUVORK5CYII="/>
+<image x="1218" y="40" width="8" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAYAAACgR9dcAAAAF0lEQVR4nO3BMQEAAABAMP1Tq+GwsXUJAp8AATLAIREAAAAASUVORK5CYII="/>
+<image x="21" y="46" width="8" height="5" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAJCAYAAADtj3ZXAAAAaElEQVR4nJ3QOwqFQAxG4f9yCYiioIKCj0JQLLTQysL978szgwuY8cBXhoToe/bTt+yPVPH5wQy14nKnuo1u0AbFZQlK9JgVnj83R4sJm8LzWyuMWHEqLNP7pObduuNSWP7kAh0WHLgfN7gD2EDweMkAAAAASUVORK5CYII="/>
+<image x="1218" y="46" width="8" height="5" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAJCAYAAADtj3ZXAAAAYklEQVR4nJ3QOwqAMBCE4RUZkIiCCgo+CkGx0EIrC+9/L/8iB0gy8LW7s2tmyiw9csgtLepQJg7Q7Ae4hBO0YUKDwuKiEysGVJH19eDAgjZyu15cfnvvn2eB0YcbO0bUodV/5rgD2M3u+wsAAAAASUVORK5CYII="/>
+<image x="21" y="51" width="8" height="8" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAYCAYAAAAlBadpAAAASElEQVR4nO3UIQ7AIBBE0TVb3fqiAQ2acP9T8S0JCYvC7CRPfjtimype/IgoaGKbPvgQkFDRxbYpzh5v57HH23l8LT4+wOX1DupCFlenyl5FAAAAAElFTkSuQmCC"/>
+<image x="1218" y="51" width="8" height="8" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAYCAYAAAAlBadpAAAAR0lEQVR4nO3UIQ7AIBBE0TFb3fpWFzRowv1PxVdYNhjMTvLktyPJGgp+vLhh8s06KhI+PLjk24xzxK5FHPFyER+Jtw5w+3oHpv4WVzqmzOkAAAAASUVORK5CYII="/>
+<image x="21" y="59" width="8" height="1" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAACCAYAAACHSIaUAAAAMUlEQVR4nI3DIQ4AIAhAUTZHcjMabAabgUbg/vficwPe9qRHBxcPH40hPVonNy8/PQFACwGdEM1bAwAAAABJRU5ErkJggg=="/>
+<image x="1218" y="59" width="8" height="1" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAACCAYAAACHSIaUAAAAMElEQVR4nI3DIQoAIBAAwQW5JBgNNoPNYDP4/3+5T7iBAeL5eHm4uZAT19vT3dVkfIYjAZ0P/4mUAAAAAElFTkSuQmCC"/>
+<image x="21" y="60" width="8" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAASCAYAAACEnoQPAAAAVklEQVR4nO3POwqAMBBF0ScSkIiFWliohSBYWLn/zXkdN5BJlSIXTjsfpRc6TNhx4VF6ocWABQdu+bLtI1ac8hUaRMzY5M/O7/8BWdmAqPy+F2q1YnsBPCMCPMURut0AAAAASUVORK5CYII="/>
+<image x="29" y="60" width="3" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAASCAYAAACTvBTGAAAAbklEQVR4nNXLMQtFYBTG8VO3t27drmKgyKDIwEApgwxKFhkMJt//e/ifnMVH8NRveZ5zRMQNmLHhwKllh9GGFbuWtQ36MWHRMkeFFv09ikuQobSvRksfEVIbCy2/+CNAiFjuuI+NP3jyjLODF+cCKM0Hd0SOyiQAAAAASUVORK5CYII="/>
+<image x="32" y="60" width="1183" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAYAAABB7B6eAAAAYElEQVR4nO3NIQ6AMBBE0TWLLr5oii66wTboBkvK/e/AbHqFjttJnp0vIvpCh2+yPr5FGzwkzQIVbpJqgQIXSbFAhpMkW2CHBMdkaXyLRthIogUCrCTBAgoLCb59Ph99P9M8MCe3mxBjAAAAAElFTkSuQmCC"/>
+<image x="1215" y="60" width="3" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAASCAYAAACTvBTGAAAAbUlEQVR4nN3KMQqEQAxA0cASWFhW0EJBsRAUCy0UBAuxEMRGLCysvP89/GHmFAYeTP5ERPTGhQMrJosndh9mDBY3LO7CgrbilxE9GpQWO/erNQpkFiu/5EgQWkwRI8IfX4sBfm7Rj7ixh8pr5gE4JQd3zA24qwAAAABJRU5ErkJggg=="/>
+<image x="1218" y="60" width="8" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAASCAYAAACEnoQPAAAAVklEQVR4nO3OMQqAMBBE0RFZEMVCLSzUQhAsrLz/5fwJ2GfTBfLhlcuOJHtx48CMTunZgxMrRrRKzy5smJxfQ7ZjQY9GvuLh4Jz7Fz/mHIbcU2u1EvoApQsCPFuo2/kAAAAASUVORK5CYII="/>
+<rect x="29" y="46" width="1189" height="14" fill="rgb(24,29,45)" fill-opacity="0.94"/>
+<rect x="29" y="46" width="1189" height="1" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="29" y="59" width="1189" height="1" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="29" y="47" width="1" height="12" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="1217" y="47" width="1" height="12" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<image x="21" y="23" width="8" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAYAAACgR9dcAAAAF0lEQVR4nO3BMQEAAABAMP1Tq+GwsXUJAp8AATLAIREAAAAASUVORK5CYII="/>
+<image x="29" y="23" width="3" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAALCAYAAAC3ZUeVAAAAJElEQVR4nN3HUQYAAAgE0cgS0f2P2/TRJXZ57ITRdPKDo0JjFgN3AEYPcdUVAAAAAElFTkSuQmCC"/>
+<image x="32" y="23" width="1183" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAALCAYAAABlNU3NAAAAJklEQVR4nO3NsREAAAjCQBuscf9lxSGwIndfp1JKLwHSJrgBZUy4+Q0DFePx79sAAAAASUVORK5CYII="/>
+<image x="1215" y="23" width="3" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAALCAYAAAC3ZUeVAAAAJklEQVR4nNXKQQYAAAhE0SER0f2P26dlJ5jhbcaX+TLwzkGjLpAWBY8ARohvth4AAAAASUVORK5CYII="/>
+<image x="1218" y="23" width="8" height="6" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAALCAYAAACgR9dcAAAAF0lEQVR4nO3BMQEAAABAMP1Tq+GwsXUJAp8AATLAIREAAAAASUVORK5CYII="/>
+<image x="21" y="29" width="8" height="5" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAJCAYAAADtj3ZXAAAAaElEQVR4nJ3QOwqFQAxG4f9yCYiioIKCj0JQLLTQysL978szgwuY8cBXhoToe/bTt+yPVPH5wQy14nKnuo1u0AbFZQlK9JgVnj83R4sJm8LzWyuMWHEqLNP7pObduuNSWP7kAh0WHLgfN7gD2EDweMkAAAAASUVORK5CYII="/>
+<image x="1218" y="29" width="8" height="5" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAJCAYAAADtj3ZXAAAAYklEQVR4nJ3QOwqAMBCE4RUZkIiCCgo+CkGx0EIrC+9/L/8iB0gy8LW7s2tmyiw9csgtLepQJg7Q7Ae4hBO0YUKDwuKiEysGVJH19eDAgjZyu15cfnvvn2eB0YcbO0bUodV/5rgD2M3u+wsAAAAASUVORK5CYII="/>
+<image x="21" y="34" width="8" height="8" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAYCAYAAAAlBadpAAAASElEQVR4nO3UIQ7AIBBE0TVb3fqiAQ2acP9T8S0JCYvC7CRPfjtimype/IgoaGKbPvgQkFDRxbYpzh5v57HH23l8LT4+wOX1DupCFlenyl5FAAAAAElFTkSuQmCC"/>
+<image x="1218" y="34" width="8" height="8" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAYCAYAAAAlBadpAAAAR0lEQVR4nO3UIQ7AIBBE0TFb3fpWFzRowv1PxVdYNhjMTvLktyPJGgp+vLhh8s06KhI+PLjk24xzxK5FHPFyER+Jtw5w+3oHpv4WVzqmzOkAAAAASUVORK5CYII="/>
+<image x="21" y="42" width="8" height="1" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAACCAYAAACHSIaUAAAAMUlEQVR4nI3DIQ4AIAhAUTZHcjMabAabgUbg/vficwPe9qRHBxcPH40hPVonNy8/PQFACwGdEM1bAwAAAABJRU5ErkJggg=="/>
+<image x="1218" y="42" width="8" height="1" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAACCAYAAACHSIaUAAAAMElEQVR4nI3DIQoAIBAAwQW5JBgNNoPNYDP4/3+5T7iBAeL5eHm4uZAT19vT3dVkfIYjAZ0P/4mUAAAAAElFTkSuQmCC"/>
+<image x="21" y="43" width="8" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAASCAYAAACEnoQPAAAAVklEQVR4nO3POwqAMBBF0ScSkIiFWliohSBYWLn/zXkdN5BJlSIXTjsfpRc6TNhx4VF6ocWABQdu+bLtI1ac8hUaRMzY5M/O7/8BWdmAqPy+F2q1YnsBPCMCPMURut0AAAAASUVORK5CYII="/>
+<image x="29" y="43" width="3" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAASCAYAAACTvBTGAAAAbklEQVR4nNXLMQtFYBTG8VO3t27drmKgyKDIwEApgwxKFhkMJt//e/ifnMVH8NRveZ5zRMQNmLHhwKllh9GGFbuWtQ36MWHRMkeFFv09ikuQobSvRksfEVIbCy2/+CNAiFjuuI+NP3jyjLODF+cCKM0Hd0SOyiQAAAAASUVORK5CYII="/>
+<image x="32" y="43" width="1183" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAYAAABB7B6eAAAAYElEQVR4nO3NIQ6AMBBE0TWLLr5oii66wTboBkvK/e/AbHqFjttJnp0vIvpCh2+yPr5FGzwkzQIVbpJqgQIXSbFAhpMkW2CHBMdkaXyLRthIogUCrCTBAgoLCb59Ph99P9M8MCe3mxBjAAAAAElFTkSuQmCC"/>
+<image x="1215" y="43" width="3" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAASCAYAAACTvBTGAAAAbUlEQVR4nN3KMQqEQAxA0cASWFhW0EJBsRAUCy0UBAuxEMRGLCysvP89/GHmFAYeTP5ERPTGhQMrJosndh9mDBY3LO7CgrbilxE9GpQWO/erNQpkFiu/5EgQWkwRI8IfX4sBfm7Rj7ixh8pr5gE4JQd3zA24qwAAAABJRU5ErkJggg=="/>
+<image x="1218" y="43" width="8" height="10" preserveAspectRatio="none" opacity="0.6" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAASCAYAAACEnoQPAAAAVklEQVR4nO3OMQqAMBBE0RFZEMVCLSzUQhAsrLz/5fwJ2GfTBfLhlcuOJHtx48CMTunZgxMrRrRKzy5smJxfQ7ZjQY9GvuLh4Jz7Fz/mHIbcU2u1EvoApQsCPFuo2/kAAAAASUVORK5CYII="/>
+<rect x="29" y="29" width="1189" height="14" fill="rgb(24,29,45)" fill-opacity="0.94"/>
+<rect x="29" y="29" width="1189" height="1" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="29" y="42" width="1189" height="1" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="29" y="30" width="1" height="12" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="1217" y="30" width="1" height="12" fill="rgb(255,255,255)" fill-opacity="0.5"/>
+<rect x="29" y="46" width="475.6" height="14" fill="rgb(245,173,133)" fill-opacity="1" clip-path="url(#p0c0)"/>
+<rect x="29" y="29" width="475.6" height="14" fill="rgb(255,214,115)" fill-opacity="1" clip-path="url(#p0c1)"/>
+<rect x="88.6" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="148.2" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="207.8" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="267.4" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="327" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="386.6" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="446.2" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="505.8" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="565.4" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="625" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="684.6" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="744.2" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="803.8" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="863.4" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="923" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="982.6" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="1042.2" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="1101.8" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="1161.4" y="48.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="628" y="31" width="2" height="10" fill="rgb(230,186,102)" fill-opacity="1"/>
+<rect x="88.6" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="148.2" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="207.8" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="267.4" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="327" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="386.6" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="446.2" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="505.8" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="565.4" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="625" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="684.6" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="744.2" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="803.8" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="863.4" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="923" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="982.6" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="1042.2" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="1101.8" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+<rect x="1161.4" y="31.5" width="1" height="10" fill="rgb(255,255,255)" fill-opacity="0.3"/>
+</g>
+</svg>
