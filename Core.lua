@@ -1648,12 +1648,10 @@ end
 -- after, as the stock window did. `o.events = { show, hide }`: game events
 -- that open and close it too (a route stopped in `o.internal`), for a client
 -- that sends only those; when both routes fire it opens and closes once.
--- Off waits for /reload: routed back from our code, the stock window would
--- open tainted. Call it from the module's Enable.
+-- Call it from the module's Enable.
 function ns.Interaction(key, types, o)
 	-- The preview loads the interaction manager only in NPC scenes.
 	if not RegisterPlayerInteraction then return end
-	ns.modules[key].reloadOff = true
 	for _, e in ipairs(o.internal or {}) do GameEvent.UnregisterInternalEvent(e) end
 	local hooked, ended
 	local info = {

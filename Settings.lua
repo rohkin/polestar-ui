@@ -294,7 +294,7 @@ Polestar.OnLogin(function()
 			get = function() return PolestarUIDB.chatFade and true or false end,
 			set = function(v) PolestarUIDB.chatFade = v or nil end },
 		{ kind = "toggle", label = "Keep chat across sessions", search = "chat history",
-			help = "Keep each chat window's last lines across /reload and logout, on this computer only (whispers too). Off, they are forgotten at logout.",
+			help = ns.CHAT_HISTORY_HELP,
 			get = function() return not PolestarUICharDB.chatNoHistory end,
 			set = function(v) PolestarUICharDB.chatNoHistory = v == false or nil end },
 	} })

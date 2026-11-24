@@ -61,7 +61,7 @@ end
 local function box(l, on, r, g, b, a)
 	l.fill:SetVertexColor(r, g, b, a)
 	l.fill:SetShown(on)
-	ns.PaintHairlines(l.edges, on, Theme.Color("border"))
+	ns.HUD.PaintEdge(l.edges, on, ns.HUD.FRAMES) -- the HUD Frames look's edge
 end
 
 -- A font string in a Polestar role at its own size and in a token; off, as it was.

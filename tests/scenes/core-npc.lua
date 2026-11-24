@@ -4,7 +4,7 @@
 -- The NPC windows' shared parts on a test window. ns.Interaction: the stock route stopped (TRAINER_SHOW opens nothing), the interaction opens ours and the bags, never the stock window; the player closing ours ends the interaction once, the game ending it closes ours without ending it again, the bags close with it; docked, a bag addon's own bags (shown with ShowUIPanel, no panel) push it nowhere; off waits for /reload. ns.SubjectBlock heads the sidebar; W.ShellTabs switches its pages. ns.ItemGrid with ns.PaintItem shows the backpack (C_Container): quality borders from uncommon up, stack counts, a locked item desaturated, an unusable one red. ns.Money writes coins as the game does (units at zero left out), in a colour token.
 local ns, W = PolestarUI, Polestar.Widgets
 local T = Enum.PlayerInteractionType
-local M, f, tab, grid, money = {}, nil, "buy", nil, {}
+local M, f, tab, grid, money = { reloadOff = true }, nil, "buy", nil, {}
 ns.Module("testnpc", M)
 
 local function paint()

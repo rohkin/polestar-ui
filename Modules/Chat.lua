@@ -606,6 +606,7 @@ local DIM, GREY = 0.6, 0.2
 local CAP = 500
 local HIDDEN = "(hidden: the game keeps this line secret)"
 
+ns.CHAT_HISTORY_HELP = "Keep each chat window's last lines across /reload and logout, on this computer only (whispers too). Off, they are forgotten at logout." -- the switch's help here and in Settings.lua
 local function keeping() return not PolestarUICharDB.chatNoHistory end
 
 -- The permanent windows by index (a whisper window's index is not the
@@ -760,7 +761,7 @@ local function buildCopy()
 	f.Measure:Hide()
 	-- The history's switch and its clear button.
 	f.Keep = W.Switch(f, keeping, function(v) PolestarUICharDB.chatNoHistory = not v or nil end,
-		"Keep each chat window's last lines across /reload and logout, on this computer only (whispers too). Off, they are forgotten at logout.")
+		ns.CHAT_HISTORY_HELP)
 	f.Keep:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PAD - 4, 14)
 	f.KeepLabel = W.Text(f, "label", "text")
 	f.KeepLabel:SetPoint("LEFT", f.Keep, "RIGHT", 6, 0)
