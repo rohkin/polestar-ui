@@ -40,8 +40,8 @@ local ENCHANT_LINE = Enum and Enum.TooltipDataLineType and Enum.TooltipDataLineT
 local function enchantText(id)
 	local data = C_TooltipInfo and C_TooltipInfo.GetInventoryItem("player", id)
 	for _, line in ipairs(data and data.lines or {}) do
-		local text = line.type == ENCHANT_LINE and line.leftText
-		if text and not (issecretvalue and issecretvalue(text)) then
+		local text = line.type == ENCHANT_LINE and ns.Clean(line.leftText)
+		if text then
 			local pre = ENCHANTED_TOOLTIP_LINE and ENCHANTED_TOOLTIP_LINE:match("^(.-)%%s")
 			if pre and pre ~= "" and text:sub(1, #pre) == pre then text = text:sub(#pre + 1) end
 			return text
@@ -137,7 +137,7 @@ local function paintSlot(s, up)
 	-- In combat the times may be secret (docs/CLIENT.md, rule 3): the sweep runs on.
 	if not InCombatLockdown() then
 		local start, dur, on = GetInventoryItemCooldown("player", id)
-		if icon and start and not (issecretvalue and (issecretvalue(start) or issecretvalue(dur))) and on and on ~= 0 and dur > 0 then
+		if icon and start and ns.Clean(start) and ns.Clean(dur) and on and on ~= 0 and dur > 0 then
 			s.psCooldown:SetCooldown(start, dur)
 		else
 			s.psCooldown:Clear()
@@ -843,15 +843,15 @@ end
 -- PaperDollFrame_SetLevel writes it (RAID_CLASS_COLORS' colorStr).
 function levelLine(level)
 	local class, token, classID = UnitClass("player")
-	local function paint(text) return ns.ClassText(token, text) end
+	local color = ns.ClassText(token, ""):match("|c(%x+)") or "ffffffff" -- the format globals take the colour code
 	local eff = UnitEffectiveLevel and UnitEffectiveLevel("player") or level
 	local lv = eff ~= level and (EFFECTIVE_LEVEL_FORMAT or "%d (%d)"):format(eff, level) or tostring(level)
 	local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization and C_SpecializationInfo.GetSpecialization()
 	if spec and C_SpecializationInfo.IsSpecSelectionEnabled and C_SpecializationInfo.IsSpecSelectionEnabled(classID) then
 		local _, name = C_SpecializationInfo.GetSpecializationInfo(spec, false, false, nil, UnitSex("player"))
-		if name and name ~= "" then return ("Level %s %s"):format(lv, paint(name .. " " .. class)) end
+		if name and name ~= "" then return (PLAYER_LEVEL or "Level %s |c%s%s %s|r"):format(lv, color, name, class) end
 	end
-	return ("Level %s %s"):format(lv, paint(class))
+	return (PLAYER_LEVEL_NO_SPEC or "Level %s |c%s%s|r"):format(lv, color, class)
 end
 
 -- The band's status: how many worn items have lost durability.

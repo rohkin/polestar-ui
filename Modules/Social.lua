@@ -1185,7 +1185,7 @@ local function refresh()
 	if page == "allies" and not alliesOn() then page = "friends" end
 	if page ~= "raid" then raidInfo = false end
 	local lists = { friends = friends(), ignored = ignored(), allies = alliesOn() and allies() or {}, requests = requests() }
-	local me = keep("player", UnitName("player")) or ""
+	local me = ns.PlayerText(UnitName) or ""
 	W.Color(f.psDot, statusColor())
 	local st, n = f.psStatus, 0
 	local filtered = filterSets[page] ~= nil
@@ -1296,7 +1296,7 @@ function M.Enable()
 	local function bnet()
 		if f and f:IsShown() then return refresh() end
 		friends()
-		keep("player", UnitName("player"))
+		ns.PlayerText(UnitName)
 	end
 	for _, ev in ipairs({ "BN_FRIEND_INFO_CHANGED", "BN_FRIEND_LIST_SIZE_CHANGED", "BN_CONNECTED" }) do Polestar.RegisterEvent(ev, bnet) end
 end

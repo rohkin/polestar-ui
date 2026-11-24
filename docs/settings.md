@@ -23,6 +23,9 @@ already do. A reset (the page's or a section's) calls `set(nil)`: our default.
 | Nameplate cast bars: Cast bar icon (off), Cast bar height (6-16, 10) | `PolestarUIDB.nameplates` (`castIcon`, `castHeight`; nil: the default) | the nameplates module's `Option(k)` / `SetOption(k, v)`, applied live to every plate |
 | Keep chat across sessions | `PolestarUICharDB.chatNoHistory` | read by Chat at logout and login |
 | Fade chat when idle (off) | `PolestarUIDB.chatFade` (nil: no fade) | read by Chat's driver each frame (live) |
+| Auction house list sorts | `PolestarUIDB.auctionSorts[context]` (two `{sortOrder, reverseSort}` at most, the last clicked first; nil: the stock defaults) | Auction.lua `sorts(ctx)`, written by the column clicks; no settings control |
+| World map: side panel page, full screen | `PolestarUIDB.mapQuests` (`"quests"`, `"legend"`, or nil), `PolestarUIDB.mapFull` (true or nil) | WorldMap.lua `setPanel`/`setFull`, restored at login; no settings control |
+| Recently crafted recipes (newest first, per character) | `PolestarUICharDB.recentRecipes` | Crafting.lua `recent()`/`remember(id)`; no settings control |
 
 ## Layout
 
