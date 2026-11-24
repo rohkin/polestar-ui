@@ -89,12 +89,15 @@ HUD kit (`ns.HUD`, `Modules/HUD.lua`; takes secret values, follows every scheme 
 - `H.SetValue(b, v, smooth?)` (a bar's value; `smooth` eases the fill through StatusBarInterpolation, takes secrets, segments and sparkle ride along; snaps under Reduce motion), `H.SetTrack(b, a)` (the track in `bg` at alpha `a`), `H.FillColor(unit, classed?)` (default fill: the band's `sky`, or the unit's class colour with "Class colour" or `classed`; `sky` while the class is secret).
 - `H.Sparkle(b)` (the header band's stars on a bar's fill, `b.Sparkle`), `H.SizeSparkle(b, w, h)` (from clean layout numbers; skipped under 24 high), `H.PaintSparkle(b, on)`; `H.Framed(m)` (a portrait model's camera: zoom and distance 1).
 - `H.GROUPS` (`frames`, `plates`, `icons`), `H.COLORS` (named swatches `white`, `black`, `gold`, `silver`), `H.GLOW` (8 px a tinted edge's glow reaches), `H.THREAT_ALPHA` (0.65, the threat edge's alpha).
+- `H.Tex(f, layer, sub, file?)`: a white texture (`file`: another Theme.Media name); `H.Fade(a, ...)`: alpha on each region given; `H.HealColor(r, g, b, a)`: the fill lightened for incoming heals (returns a last: pass it to `SetVertexColor`).
 - `H.Face(fontString, role, on)` (a stock font string in Polestar's face, outlined, at the game's size; off gives it back), `H.FillTexture()`.
 - `H.ClassColor(unit)` (nil while secret), `H.UnitColor(unit)` (theme accent, class colour with Polestar's "Class colour", danger/warning by reaction), `H.PowerColor(unit)`.
 - Frames of ours on UIParent take the stock equivalent's roleset (`SetRolesets`, out of combat, once; unit frames 'unitFrames').
 Values
 - `ns.SkillModifier(d)` (`Modules/CharacterPages.lua`): a skill line's bonus, Defense's with its gear bonus; none or the last clean one while secret.
 - `ns.PlayerText(fn)`: the player's name (`UnitName`, `UnitPVPName`) as last read out of combat.
+- `ns.Say(msg)`: a chat line prefixed "Polestar: UI".
+- `ns.ClassText(token, text)`: `text` in its class colour (`RAID_CLASS_COLORS[token]`) lifted by `Theme.Legible`, as a `|cff..|r` string; plain for no or a secret token.
 - `ns.Clean(v)`: nil if secret (combat). `ns.Num(v)`: 0 if secret. `ns.GridCell(list)`: smallest grid step of positions (sorts the list).
 - `Settings.lua` (`docs/settings.md`): our page in Polestar's settings (`Polestar.RegisterOptions`, key `polestarui`), every control get/set over PolestarUIDB; `ns.ShowSettings(key?)` opens it on that module's tab.
 Slash: `/pui` opens settings (the page subtitle shows the version), `/pui help` lists windows and commands, `/pui <key> [on|off]`, `/pui dock on|off`.

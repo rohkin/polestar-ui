@@ -33,11 +33,7 @@ local looks = setmetatable({}, { __mode = "k" }) -- stock frame -> its textures 
 local M = { noun = "chat" }
 local driver
 
-local function tex(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 local hairline, paintLine = ns.Hairlines, ns.PaintHairlines
 

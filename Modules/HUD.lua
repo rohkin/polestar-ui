@@ -206,6 +206,24 @@ end
 -- numbers.
 local SPARK = { x0 = 655, x1 = 945, y0 = 12, y1 = 76, minH = 24, fade = 0.25 }
 
+-- A white texture on `f` (`file`: another Theme.Media name).
+function H.Tex(f, layer, sub, file)
+	local t = f:CreateTexture(nil, layer, nil, sub)
+	t:SetTexture(Theme.Media(file or "white"))
+	return t
+end
+
+-- Alpha `a` on every region given (nils skipped).
+function H.Fade(a, ...)
+	for i = 1, select("#", ...) do
+		local t = select(i, ...)
+		if t then t:SetAlpha(a) end
+	end
+end
+
+-- The fill colour lightened, for incoming heals; `a` passes through (call it last).
+function H.HealColor(r, g, b, a) return r + (1 - r) * 0.45, g + (1 - g) * 0.45, b + (1 - b) * 0.45, a end
+
 function H.Sparkle(b)
 	local function tex()
 		local t = b:CreateTexture(nil, "ARTWORK", nil, 7)

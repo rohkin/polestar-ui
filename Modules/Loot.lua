@@ -75,11 +75,6 @@ local function masterMenu()
 		if name then players[#players + 1] = { index = i, name = name, class = class or "", className = className } end
 	end
 	table.sort(players, function(a, b) if a.class == b.class then return a.name < b.name end return a.class < b.class end)
-	local function colored(text, className)
-		local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[className]
-		if not c then return text end
-		return ("|c%s%s|r"):format(c.colorStr or ("ff%02x%02x%02x"):format(c.r * 255, c.g * 255, c.b * 255), text)
-	end
 	MenuUtil.CreateContextMenu(r, function(_, root)
 		root:SetTag("MENU_GROUP_LOOT")
 		root:CreateTitle(MASTER_LOOTER or "Master Looter")
@@ -88,9 +83,9 @@ local function masterMenu()
 		for _, p in ipairs(players) do
 			if IsInRaid() and p.class ~= class then
 				class = p.class
-				list = assign:CreateButton(colored(p.class, p.className), function() end)
+				list = assign:CreateButton(ns.ClassText(p.className, p.class), function() end)
 			end
-			list:CreateButton(colored(p.name, p.className), function() give(slot, p) end)
+			list:CreateButton(ns.ClassText(p.className, p.name), function() give(slot, p) end)
 		end
 		root:CreateButton(REQUEST_ROLL or "Request Roll", function() DoMasterLootRoll(slot) end)
 	end)

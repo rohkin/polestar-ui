@@ -575,8 +575,7 @@ local function craftersMenu(b)
 	else
 		for i = 1, select(3, GetGuildRecipeInfoPostQuery()) or 0 do
 			local name, full, cls, online = GetGuildRecipeMember(i)
-			local c = online and cls and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cls]
-			items[#items + 1] = { text = c and c.colorStr and ("|c%s%s|r"):format(c.colorStr, name) or name, disabled = not online,
+			items[#items + 1] = { text = online and cls and ns.ClassText(cls, name) or name, disabled = not online,
 				onClick = function() ChatFrameUtil.SendTell(full) end }
 		end
 		if #items == 0 then items[1] = { text = "No one in your guild knows it.", disabled = true } end

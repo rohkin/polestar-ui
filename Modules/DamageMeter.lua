@@ -36,11 +36,7 @@ local function usable(f)
 	return f and not (f.IsForbidden and f:IsForbidden()) and f or nil
 end
 
-local function white(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local white = ns.HUD.Tex
 
 local function showGround(g, shown)
 	g.fill:SetShown(shown)

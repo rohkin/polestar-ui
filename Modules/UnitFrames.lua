@@ -304,7 +304,7 @@ local function paint(f, snap)
 	if f.Health.psSpark then H.PaintSparkle(f.Health, opt("sparkle")) end
 	-- Incoming heals: the fill's own colour, lighter, continuing it.
 	local heals, absorbs, over, healAbsorbs, overHeal = prediction(unit)
-	f.Heal:SetStatusBarColor(r + (1 - r) * 0.45, g + (1 - g) * 0.45, b + (1 - b) * 0.45, 0.7)
+	f.Heal:SetStatusBarColor(H.HealColor(r, g, b, 0.7))
 	f.Heal:SetMinMaxValues(0, max)
 	f.Heal:SetValue(heals)
 	f.Absorb:SetMinMaxValues(0, max)

@@ -14,7 +14,7 @@ stub.inspectReady("target")
 local f = PolestarUIInspect
 assert(f:IsShown() and not InspectFrame:IsShown(), "ours not shown, or the stock one opened")
 assert(f.Title:GetText() == "Aldric-Silvermoon", "title: " .. tostring(f.Title:GetText()))
-assert(f.psSubtitle == "Level 60 |cfff48cbaPaladin|r", "level line: " .. f.psSubtitle)
+assert(f.psSubtitle:find("^Level 60 |cff%x%x%x%x%x%xPaladin|r$"), "level line: " .. f.psSubtitle)
 assert(f.psPages.gear.Model.modelUnit == "target" and not f.psPages.gear.Logo:IsShown(), "model")
 -- The top tabs: the stock mode tabs, each with its own icon; no sidebar, no rail.
 local tabs = f.tabButtons

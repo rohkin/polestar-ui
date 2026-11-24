@@ -35,11 +35,7 @@ local started, driver, ping
 
 local function on() return ns.Enabled("micromenu") end
 
-local function tex(f, layer, sub, file)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media(file or "white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 -- The stock plate inside a button (UI-HUD-MicroMenu-ButtonBG-Up, centred,
 -- about 24x33 on a 32x40 button): the layout overlaps the buttons
@@ -144,12 +140,7 @@ local function paintPing()
 	ping:SetVertexColor(Theme.Color(ms > MEDIUM and "danger" or ms > LOW and "warning" or "success"))
 end
 
-local function fade(a, ...)
-	for i = 1, select("#", ...) do
-		local t = select(i, ...)
-		if t then t:SetAlpha(a) end
-	end
-end
+local fade = H.Fade
 
 local function paint(b, shown)
 	local l = look(b)

@@ -71,7 +71,8 @@ function ns.Enabled(key)
 	return v
 end
 
-local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
+function ns.Say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
+local say = ns.Say
 
 -- Says why a blocked module stays off; true when it is.
 local function blocked(key)
@@ -617,6 +618,14 @@ end
 function ns.Clean(v)
 	if v == nil or (issecretvalue and issecretvalue(v)) then return nil end
 	return v
+end
+
+-- A class name (or any text) in its class colour, lifted to stay legible on the ground (Theme.Legible); plain when `token` is no class or secret.
+function ns.ClassText(token, text)
+	local c = ns.Clean(token) and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
+	if not c then return text end
+	local r, g, b = Polestar.Theme.Legible(c.r, c.g, c.b)
+	return ("|cff%02x%02x%02x%s|r"):format(r * 255 + 0.5, g * 255 + 0.5, b * 255 + 0.5, text)
 end
 
 -- A number the client may hand over secret in combat (docs/CLIENT.md, rule 3): 0 when it is.
@@ -1195,7 +1204,7 @@ function ns.QuestRewards(parent, o)
 		t.psKind, t.psType, t.psIndex = kind, type, index
 		t.Icon:SetTexture(icon)
 		-- One the player cannot use, red as on the stock button.
-		if usable == false then t.Icon:SetVertexColor(0.9, 0, 0) else t.Icon:SetVertexColor(1, 1, 1) end
+		if usable == false then t.Icon:SetVertexColor(Theme.Color("danger")) else t.Icon:SetVertexColor(1, 1, 1) end
 		t.Name:SetText(name or RETRIEVING_ITEM_INFO or "")
 		t.Count:SetText(type == "required" and count or (count and count > 1 and count or ""))
 		-- The name in its quality colour, lifted; the border raw from uncommon up.

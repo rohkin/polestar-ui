@@ -58,8 +58,7 @@ local function redraw() if f and f:IsShown() then G.Paint() end end
 -- The subject leads the subtitle: "Level 42 Mage".
 local function subject()
 	local class, token = UnitClass("player")
-	local c = token and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
-	local name = c and c.colorStr and ("|c%s%s|r"):format(c.colorStr, class) or class or ""
+	local name = class and ns.ClassText(token, class) or ""
 	return ("Level %d %s"):format(UnitLevel("player") or 0, name)
 end
 

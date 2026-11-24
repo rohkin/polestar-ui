@@ -21,7 +21,7 @@ EFFECTIVE_LEVEL_FORMAT = "%d (%d)"
 PolestarUI.RefreshCharacter()
 -- The stock sheet's title (UnitPVPName) and its level line, the class in its colour.
 assert(PolestarUICharacter.Title:GetText() == "Testchar", "title: " .. PolestarUICharacter.Title:GetText())
-assert(PolestarUICharacter.psSubtitle:find("^Level 20 %(24%) |cffc69b6dWarrior|r · "), "level: " .. PolestarUICharacter.psSubtitle)
+assert(PolestarUICharacter.psSubtitle:find("^Level 20 %(24%) |cff%x%x%x%x%x%xWarrior|r · "), "level: " .. PolestarUICharacter.psSubtitle)
 UnitEffectiveLevel = nil
 PolestarUI.RefreshCharacter()
 -- The top tabs wear the stock mode tabs' icons: the portrait, the faction's honor icon.

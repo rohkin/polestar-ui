@@ -49,18 +49,14 @@ local SHADOW = 10 -- the shadow's reach round the map (H.Shadow)
 local zoneName = "" -- the last zone name read out of combat
 local blocked, started
 
-local function say(msg) print("|cffe6ba66Polestar: UI|r " .. msg) end
+local say = ns.Say
 local function on() return ns.Enabled("minimap") end
 -- The map's own look (square, ring, border, N, dock): not while another addon owns the shape.
 local function shaped() return on() and not blocked end
 
 local function shape() return shaped() and "SQUARE" or "ROUND" end
 
-local function tex(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 -- Four hairlines round region `r`, on frame `f` (over the map: OVERLAY).
 local function hairline(f, r) return ns.Hairlines(f, r, function() return tex(f, "OVERLAY", 7) end) end

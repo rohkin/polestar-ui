@@ -45,11 +45,7 @@ local driver, started
 
 local function on() return ns.Enabled("actionbars") end
 
-local function tex(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 local function look(b)
 	local l = looks[b]
@@ -132,12 +128,7 @@ local function paintLogo(b, l, shown)
 	l.logo:SetShown(shown and l.empty)
 end
 
-local function fade(a, ...)
-	for i = 1, select("#", ...) do
-		local t = select(i, ...)
-		if t then t:SetAlpha(a) end
-	end
-end
+local fade = H.Fade
 
 local function paint(b, shown, lit, isEmpty)
 	local l = look(b)

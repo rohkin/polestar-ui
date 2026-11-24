@@ -128,7 +128,7 @@ local function paintSlot(s, up)
 	if not icon then
 		s.Icon:SetVertexColor(Polestar.Theme.Color("textMuted"))
 	elseif GetInventoryItemBroken("player", id) or GetInventoryItemEquippedUnusable("player", id) then
-		s.Icon:SetVertexColor(0.9, 0, 0)
+		s.Icon:SetVertexColor(Polestar.Theme.Color("danger"))
 	else
 		s.Icon:SetVertexColor(1, 1, 1)
 	end
@@ -843,8 +843,7 @@ end
 -- PaperDollFrame_SetLevel writes it (RAID_CLASS_COLORS' colorStr).
 function levelLine(level)
 	local class, token, classID = UnitClass("player")
-	local color = RAID_CLASS_COLORS[token] and RAID_CLASS_COLORS[token].colorStr
-	local function paint(text) return color and ("|c%s%s|r"):format(color, text) or text end
+	local function paint(text) return ns.ClassText(token, text) end
 	local eff = UnitEffectiveLevel and UnitEffectiveLevel("player") or level
 	local lv = eff ~= level and (EFFECTIVE_LEVEL_FORMAT or "%d (%d)"):format(eff, level) or tostring(level)
 	local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization and C_SpecializationInfo.GetSpecialization()

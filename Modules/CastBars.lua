@@ -45,11 +45,7 @@ local function stock(spec)
 	if bar and not (bar.IsForbidden and bar:IsForbidden()) then return bar end
 end
 
-local function tex(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 local function look(bar)
 	local l = looks[bar]

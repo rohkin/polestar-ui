@@ -54,11 +54,7 @@ local function bars(f)
 	}
 end
 
-local function tex(bar, layer, sub)
-	local t = bar:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(WHITE)
-	return t
-end
+local tex = ns.HUD.Tex
 
 local function look(spec)
 	local bar = spec.bar
@@ -133,7 +129,7 @@ local function paint(f, spec, l)
 		-- IsShown is a plain boolean; ns.Clean in case the client ever hands it secret (then hidden).
 		s.tex:SetShown(ns.Clean(s.stock:IsShown()) and true or false)
 		if s.kind == "heal" then -- the unit frames' heal: the fill lightened
-			s.tex:SetVertexColor(r + (1 - r) * 0.45, g + (1 - g) * 0.45, b + (1 - b) * 0.45, 0.7)
+			s.tex:SetVertexColor(H.HealColor(r, g, b, 0.7))
 		elseif s.kind == "absorb" then
 			local ar, ag, ab = Theme.Color("text")
 			s.tex:SetVertexColor(ar, ag, ab, 0.55)

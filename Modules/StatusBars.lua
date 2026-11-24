@@ -77,11 +77,7 @@ local hooked = {}
 
 local started
 
-local function tex(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 -- A token of the player's theme, else the game's own hue calmed halfway to
 -- textMuted (as H.PowerColor).

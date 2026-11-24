@@ -326,7 +326,7 @@ local function levelLine()
 	elseif level and eff and eff ~= level then
 		lv = (EFFECTIVE_LEVEL_FORMAT or "%d (%d)"):format(eff, level)
 	end
-	local color = RAID_CLASS_COLORS[token] and RAID_CLASS_COLORS[token].colorStr or "ffffffff"
+	local color = ns.ClassText(token, ""):match("|c(%x+)") or "ffffffff" -- the format globals take the colour code
 	local spec = C_SpecializationInfo and C_SpecializationInfo.GetInspectSpecialization and clean(C_SpecializationInfo.GetInspectSpecialization(unit))
 	local specName = spec and spec ~= 0 and GetSpecializationInfoByID and clean((select(2, GetSpecializationInfoByID(spec, UnitSex(unit)))))
 	if specName and specName ~= "" and specName ~= class then

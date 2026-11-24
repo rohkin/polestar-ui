@@ -220,12 +220,7 @@ local function paintRows(n, width)
 		r.psInfo = e
 		r:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -(i - 1) * (ROW_H + ROW_GAP))
 		ns.NameText(r.Name, "body", e.fullName)
-		local c = ns.Clean(e.filename) and RAID_CLASS_COLORS[e.filename]
-		local class = e.classStr or ""
-		if c then
-			local cr, cg, cb = Theme.Legible(c.r, c.g, c.b)
-			class = ("|cff%02x%02x%02x%s|r"):format(math.floor(cr * 255), math.floor(cg * 255), math.floor(cb * 255), class)
-		end
+		local class = ns.ClassText(e.filename, e.classStr or "")
 		r.Sub:SetText(("Level %d %s %s"):format(e.level or 0, e.raceStr or "", class))
 		r.Area:SetText(e.area or "")
 		r.Guild:SetText(e.fullGuildName or "")

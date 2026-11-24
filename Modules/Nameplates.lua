@@ -67,11 +67,7 @@ local function opt(k)
 	return v
 end
 
-local function tex(f, layer, sub)
-	local t = f:CreateTexture(nil, layer, nil, sub)
-	t:SetTexture(Theme.Media("white"))
-	return t
-end
+local tex = ns.HUD.Tex
 
 -- The plate's UnitFrame, if the client lets us touch it (rawget: parentKeys, never methods).
 local function frameOf(plate)
@@ -315,7 +311,7 @@ local function colour(uf, l)
 	end
 	local r, g, b = H.UnitColor(unit)
 	H.SetBarColor(l.bar, r, g, b)
-	l.heal:SetStatusBarColor(r + (1 - r) * 0.45, g + (1 - g) * 0.45, b + (1 - b) * 0.45, 0.7)
+	l.heal:SetStatusBarColor(H.HealColor(r, g, b, 0.7))
 	local target, focus = ns.Clean(UnitIsUnit(unit, "target")), ns.Clean(UnitIsUnit(unit, "focus"))
 	local dr, dg, db = Theme.Color("bg")
 	l.dim:SetVertexColor(dr, dg, db, DIM)

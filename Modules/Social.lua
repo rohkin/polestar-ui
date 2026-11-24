@@ -44,11 +44,7 @@ end
 -- "Lvl 24 Paladin", the class in its colour (legible) as the stock card
 -- writes it; `file` nil leaves the class plain (offline).
 local function detail(level, class, file)
-	local c = file and class and RAID_CLASS_COLORS[file]
-	if c then
-		local r, g, b = Theme.Legible(c.r, c.g, c.b)
-		class = ("|cff%02x%02x%02x%s|r"):format(r * 255 + 0.5, g * 255 + 0.5, b * 255 + 0.5, class)
-	end
+	class = class and ns.ClassText(file, class)
 	return level and level > 0 and ("Lvl %d %s"):format(level, class or "") or ""
 end
 
