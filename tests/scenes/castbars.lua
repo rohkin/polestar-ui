@@ -67,3 +67,15 @@ stub.cast("target", { name = "Shadow Bolt", time = 3, elapsed = 0.6, locked = tr
 stub.advance(0.2)
 assert(#stub.errors == 0 and t.name:GetText() == "Shadow Bolt" and t.time:GetText() == "2.4" and t.fill:GetHeight() == 20, "a cast in combat: " .. tostring(stub.errors[1]))
 stub.inCombat = false
+local function polls(file)
+	local n = 0
+	for _, f in ipairs(stub.frames) do
+		local fn = f:GetScript("OnUpdate")
+		if fn and f:IsVisible() and debug.getinfo(fn, "S").source:find(file, 1, true) then n = n + 1 end
+	end
+	return n
+end
+-- No driver polls: only the box of a shown bar paints each frame (it runs only while its bar shows).
+local shown = 0
+for _, b in ipairs({ PlayerCastingBarFrame, TargetFrameSpellBar, FocusFrameSpellBar }) do if b:IsVisible() then shown = shown + 1 end end
+assert(polls("CastBars.lua") == shown, "cast bar OnUpdates: " .. polls("CastBars.lua") .. " for " .. shown .. " shown bars")

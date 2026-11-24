@@ -48,3 +48,13 @@ stub.updateAuras()
 stub.advance(0.2)
 assert(same(D[1], poison:GetRGB()), "the hairline did not follow the button's new aura")
 assert(not D[3]:IsShown(), "an empty button shows")
+local function polls(file)
+	local n = 0
+	for _, f in ipairs(stub.frames) do
+		local fn = f:GetScript("OnUpdate")
+		if fn and f:IsVisible() and debug.getinfo(fn, "S").source:find(file, 1, true) then n = n + 1 end
+	end
+	return n
+end
+-- No poll: the repaint after an event ran once and cleared itself.
+assert(polls("Auras.lua") == 0, "the aura repaint is still running")

@@ -104,3 +104,16 @@ for _, r in ipairs({ c:GetRegions() }) do
 	end
 end
 assert(shadows == 16, "the ground's shadow: " .. shadows .. " pieces")
+local function polls(file)
+	local n = 0
+	for _, f in ipairs(stub.frames) do
+		local fn = f:GetScript("OnUpdate")
+		if fn and f:IsVisible() and debug.getinfo(fn, "S").source:find(file, 1, true) then n = n + 1 end
+	end
+	return n
+end
+-- The repaint runs only while the meter shows (its driver is under it).
+assert(polls("DamageMeter.lua") == 1, "no repaint while shown")
+DamageMeter:Hide()
+assert(polls("DamageMeter.lua") == 0, "a repaint runs while the meter is hidden")
+DamageMeter:Show()

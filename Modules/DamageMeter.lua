@@ -486,10 +486,12 @@ function M.Enable()
 			end)
 		end
 	end
-	driver = CreateFrame("Frame", nil, UIParent)
-	-- Each frame while the meter shows: windows 2+ and rows are made as the
-	-- player opens them and as sources appear, and the game sets the rows'
-	-- art and the ground's alpha again on its own changes.
+	-- Each frame while the meter shows (under it, rule 17: so only then):
+	-- windows 2+ and rows are made as the player opens them and as sources
+	-- appear, and the game sets the rows' art and the ground's alpha again on
+	-- its own changes (its ScrollBox, tickers and mouse-over: no event, and no
+	-- callback of ours may sit on its objects, rule 15).
+	driver = Polestar.CreateFrameUnder("Frame", nil, usable(rawget(_G, "DamageMeter")) or UIParent)
 	driver:SetScript("OnUpdate", update)
 	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end, true)
 	M.Apply()

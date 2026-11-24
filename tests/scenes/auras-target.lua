@@ -93,5 +93,9 @@ stub.fire("UNIT_AURA", "target")
 stub.advance(0.2)
 assert(stockAuras(TargetFrame):GetAlpha() == 1 and order(T) == "", "secret out of combat: " .. order(T))
 stub.aurasSecret = false
+-- No poll: the client's restriction change says it (then the next frame).
 stub.advance(0.2)
+assert(stockAuras(TargetFrame):GetAlpha() == 1, "the veil came back with no event")
+stub.fire("ADDON_RESTRICTION_STATE_CHANGED")
+stub.advance(0.05)
 assert(stockAuras(TargetFrame):GetAlpha() == 0 and order(T) == "1,5,3,4", "not veiled again once no longer secret: " .. order(T))

@@ -168,7 +168,11 @@ end
 function M.Enable()
 	if not frame() then return end
 	started = true
-	driver = CreateFrame("Frame", nil, UIParent)
+	-- Under the display (rule 17: a frame of ours under it), so the per-frame
+	-- repaint runs only while it shows: the game writes the faded textures'
+	-- alpha and the segments' shown state on its own updates, which no event
+	-- or hook of ours may follow.
+	driver = Polestar.CreateFrameUnder("Frame", nil, frame())
 	driver:SetScript("OnUpdate", update)
 	Theme.OnChanged(function() if ns.Enabled(KEY) then M.Apply() end end, true)
 	M.Apply()

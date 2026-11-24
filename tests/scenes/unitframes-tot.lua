@@ -19,3 +19,20 @@ stub.cvars.showTargetOfTarget = "1"
 stub.fire("CVAR_UPDATE", "showTargetOfTarget")
 stub.unitWatch()
 assert(PolestarUITargetToT:IsShown(), "option on")
+local function polls(file)
+	local n = 0
+	for _, f in ipairs(stub.frames) do
+		local fn = f:GetScript("OnUpdate")
+		if fn and f:IsVisible() and debug.getinfo(fn, "S").source:find(file, 1, true) then n = n + 1 end
+	end
+	return n
+end
+-- The target of target's redraw runs only while it shows.
+assert(polls("UnitFrames.lua") >= 1, "the target of target is not redrawn")
+stub.cvars.showTargetOfTarget = "0"
+stub.fire("CVAR_UPDATE", "showTargetOfTarget")
+stub.unitWatch()
+assert(polls("UnitFrames.lua") == 0, "a redraw runs with no target of target shown")
+stub.cvars.showTargetOfTarget = "1"
+stub.fire("CVAR_UPDATE", "showTargetOfTarget")
+stub.unitWatch()

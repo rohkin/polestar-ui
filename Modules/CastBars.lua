@@ -180,18 +180,28 @@ local function paint(spec, bar, l)
 	end
 end
 
+-- Each bar's look, made (and dressed) once its fill exists; the driver
+-- retries each frame only while one is still missing. A made bar is painted
+-- each frame by its own box (a child of the bar: it runs only while the bar
+-- shows, so only while a cast or Edit Mode's sample is up).
 local function update()
+	local missing = false
 	for _, spec in ipairs(BARS) do
 		local bar = stock(spec)
 		if bar then
 			local fresh = not looks[bar]
 			local l = look(bar)
-			if l then
-				if fresh then dress(bar, l, true) end
-				if bar:IsVisible() then paint(spec, bar, l) else l.iconSet = nil end
+			if l and fresh then dress(bar, l, true) end
+			if l and not l.watched then
+				l.watched = true
+				l.box:SetScript("OnUpdate", function() paint(spec, bar, l) end)
+				l.box:SetScript("OnHide", function() l.iconSet = nil end)
 			end
+			if l and bar:IsVisible() then paint(spec, bar, l) end
+			missing = missing or not l
 		end
 	end
+	if not missing then driver:SetScript("OnUpdate", nil) end
 end
 
 -- A smaller look for another module's bar (a nameplate's): `o.height` (the

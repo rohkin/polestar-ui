@@ -282,34 +282,45 @@ function M.Apply()
 	paintRows()
 end
 
--- The game deals the auras over its buttons again on every change (an aura
--- gained or lost, the collapse arrow, Edit Mode's examples, which also set
--- the duration's font again) and no hook may sit on them (rule 17): the
--- shown buttons are painted again ten times a second.
-local wait = 0
-local function update(_, elapsed)
-	wait = wait + elapsed
-	if wait < 0.1 then return end
-	wait = 0
-	-- The unit frames switched on or off, or combat ended: the game's target
-	-- and focus auras veiled or given back.
+-- The game deals the auras over its buttons again on its own updates and
+-- no hook may sit on them (rule 17): the shown buttons are painted again the
+-- frame after each event its frames update on (BuffFrame.lua:
+-- AuraFrameEventListenerMixin, BuffFrameMixin:OnEvent; Edit Mode's examples,
+-- which also set the duration's font again). The collapse arrow and the
+-- hidden buffs' timer only re-deal buffs over buff buttons (temporary
+-- enchants come first), which changes nothing painted. The driver's
+-- OnUpdate is set by soon() and clears itself after one pass.
+local function flush(self)
+	self:SetScript("OnUpdate", nil)
+	-- The unit frames switched on or off, combat ended, auras no longer
+	-- secret: the game's target and focus auras veiled or given back.
 	veilRows()
 	if not ns.Enabled(KEY) then return end
 	each(function(b, f) if b:IsVisible() then paint(b, f, true) end end)
 end
+local function soon() if driver then driver:SetScript("OnUpdate", flush) end end
+
+local EVENTS = { "UNIT_AURA", "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED",
+	"WEAPON_ENCHANT_CHANGED", "WEAPON_SLOT_CHANGED", "GROUP_ROSTER_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "PLAYER_ENTERING_WORLD",
+	"EDIT_MODE_LAYOUTS_UPDATED", "ADDON_RESTRICTION_STATE_CHANGED" }
 
 function M.Enable()
 	if not rawget(_G, "BuffFrame") then return end
 	started = true
 	driver = CreateFrame("Frame", nil, UIParent)
-	driver:SetScript("OnUpdate", update)
-	for _, e in ipairs({ "UNIT_AURA", "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED" }) do driver:RegisterEvent(e) end
+	-- pcall: an event this client may not know (ADDON_RESTRICTION_STATE_CHANGED: auras secret or no longer).
+	for _, e in ipairs(EVENTS) do pcall(driver.RegisterEvent, driver, e) end
 	driver:SetScript("OnEvent", function(_, event, unit)
 		-- Combat starting: the veil lifts now, while it still may.
 		if event == "PLAYER_REGEN_DISABLED" then fighting = true; veilRows() elseif event == "PLAYER_REGEN_ENABLED" then fighting = false end
 		if event == "UNIT_AURA" then paintRows(unit) else paintRows() end
+		soon()
 	end)
-	Theme.OnChanged(function() paintRows() end)
+	EventRegistry:RegisterCallback("EditMode.Enter", soon, M)
+	EventRegistry:RegisterCallback("EditMode.Exit", soon, M)
+	-- The unit frames switched on or off: our rows stand in or the game's come back.
+	hooksecurefunc(ns, "Switch", soon)
+	Theme.OnChanged(function() paintRows(); soon() end)
 	M.Apply()
 end
 

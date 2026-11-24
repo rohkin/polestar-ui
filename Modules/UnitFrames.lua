@@ -544,6 +544,18 @@ local function build(spec)
 	f.Ground = H.Ground(f)
 	if spec.portrait then f.portrait = H.Portrait(f, spec.slim) end
 	if spec.feedback then feedbackText(f) end
+	-- A target of target has no events of its own (UNIT_TARGET only says it
+	-- changed): redrawn five times a second while it shows, as the stock ones
+	-- are (TargetFrame's OnUpdate); a child of ours, so hidden with it.
+	if spec.tot then
+		local tick, wait = CreateFrame("Frame", nil, f), 0
+		tick:SetScript("OnUpdate", function(_, dt)
+			wait = wait + dt
+			if wait < 0.2 then return end
+			wait = 0
+			paint(f)
+		end)
+	end
 	f.Health = H.Bar(f, true)
 	f.Health:SetClipsChildren(true) -- the heal and absorb segments end at the bar's ends
 	if spec.unit == "player" then H.Sparkle(f.Health) end
@@ -947,21 +959,14 @@ local function onEvent(_, event, unit, _, spellID)
 	end
 end
 
--- The targets of target have no events of their own: redrawn five times a
--- second, as the stock ones are (TargetFrame's OnUpdate). While Edit Mode is
--- open, ours follow the stock boxes the player drags, and stand in for the
--- frames Edit Mode shows with no unit.
-local elapsed = 0
-local function onUpdate(_, dt)
+-- While Edit Mode is open (the driver's OnUpdate, set only then), ours
+-- follow the stock boxes the player drags, and stand in for the frames Edit
+-- Mode shows with no unit.
+local function onUpdate()
 	if editing and not InCombatLockdown() then
 		for _, f in ipairs(frames) do preview(f) end
 		place()
 	end
-	elapsed = elapsed + dt
-	if elapsed < 0.2 then return end
-	elapsed = 0
-	if byUnit.targettarget then paint(byUnit.targettarget) end
-	if byUnit.focustarget then paint(byUnit.focustarget) end
 end
 
 function M.Enable()
@@ -975,13 +980,14 @@ function M.Enable()
 			driver:RegisterUnitEvent(e, "player")
 		end
 		driver:SetScript("OnEvent", onEvent)
-		driver:SetScript("OnUpdate", onUpdate)
 		EventRegistry:RegisterCallback("EditMode.Enter", function()
 			editing = ns.Enabled(KEY)
-			onUpdate(nil, 0)
+			driver:SetScript("OnUpdate", editing and onUpdate or nil)
+			onUpdate()
 		end, M)
 		EventRegistry:RegisterCallback("EditMode.Exit", function()
 			editing = false
+			driver:SetScript("OnUpdate", nil)
 			if not ns.Enabled(KEY) or InCombatLockdown() then return end
 			for _, f in ipairs(frames) do preview(f) end
 			place()

@@ -26,6 +26,11 @@ assert(not PlayerFrame:IsMouseEnabled() and PlayerFrame:IsShown(), "stock frame 
 -- Closing Edit Mode keeps them where they were left.
 stub.exitEditMode()
 assert(not PlayerFrame.Selection:IsShown() and on(P, PlayerFrame), "placed on close")
+-- Edit Mode closed: its per-frame placing stops (the driver, a frame of no parent).
+for _, f in ipairs(stub.frames) do
+	local fn = f:GetScript("OnUpdate")
+	assert(not (fn and f:GetParent() == nil and debug.getinfo(fn, "S").source:find("UnitFrames.lua", 1, true)), "the Edit Mode placing still runs")
+end
 -- Another layout (switched in Edit Mode's dropdown): ours take its places.
 stub.applyLayout({ [PlayerFrame] = { 260, 760, 1 }, [FocusFrame] = { 900, 400, 0.8 } })
 stub.advance(0.1)

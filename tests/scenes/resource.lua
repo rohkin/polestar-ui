@@ -46,3 +46,16 @@ stub.advance(0.1)
 assert(not h.pinned[hb.totalAbsorb]:IsShown() and not p.pinned[pb.ManaCostPredictionBar]:IsShown(), "a segment stayed after the game's hid")
 stub.prd({ heal = 250, otherHeal = 150, absorb = 300, cost = 600 })
 stub.advance(0.1)
+local function polls(file)
+	local n = 0
+	for _, f in ipairs(stub.frames) do
+		local fn = f:GetScript("OnUpdate")
+		if fn and f:IsVisible() and debug.getinfo(fn, "S").source:find(file, 1, true) then n = n + 1 end
+	end
+	return n
+end
+-- The repaint runs only while the display shows (its driver is under it).
+assert(polls("ResourceDisplay.lua") == 1, "no repaint while shown")
+PersonalResourceDisplayFrame:Hide()
+assert(polls("ResourceDisplay.lua") == 0, "a repaint runs while the display is hidden")
+PersonalResourceDisplayFrame:Show()
