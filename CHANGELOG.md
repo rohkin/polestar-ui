@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fixed: buying from a vendor now takes the vendor's batch (right-click buys one, the shift-click picker steps in batches) instead of a whole stack.
 - Fixed: a Lua error (secret number, tainted by PolestarUI) when opening a second damage meter dropdown; the damage meter, chat and minimap menu looks are now drawn on a frame of ours instead of through the game menu's own textures.
 - Experience bar: Polestar's "Completed quest XP" (the XP of quests ready to hand in, and "+1 level") now matches the bar: a see-through green band at the bar's full height with thin lines along its bottom and end instead of the game-style inset band and pip, the label in Polestar's font.
 - Experience and reputation bars: the experience bar is now a solid Polestar-blue fill with the header's stars on a see-through black track, inside a clear outline, with clearer ticks; rested experience shows in Polestar's look (a see-through violet band past the fill, thin lines along its top and end) instead of the game's grey prediction and pip; renown factions are blue, friendships green, paragon factions by their standing; honor, artifact, azerite and house favour bars each wear their colour; a left-click on the reputation bar opens the Character window's Reputation page; Edit Mode, the second status bar, the maximum level, combat and switching off (`/pui statusbars off`) all keep working.

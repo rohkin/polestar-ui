@@ -59,7 +59,7 @@ assert(not PolestarMenu:IsShown() and not w.Search:IsShown(), "Enter left the dr
 rows[1]:Click("LeftButton")
 assert(stub.bought[1][1] == 1 and stub.bought[1][2] == nil, "a click buys one")
 rows[2]:Click("RightButton")
-assert(stub.bought[2][1] == 2 and stub.bought[2][2] == 1000, "a right-click buys a stack")
+assert(stub.bought[2][1] == 2 and stub.bought[2][2] == nil, "a right-click buys one purchase, as stock")
 stub.keys.shift = true
 rows[1]:Click("LeftButton")
 stub.keys.shift = false
@@ -88,6 +88,15 @@ stub.keys.shift = false
 for _, c in ipairs({ PolestarModal.Box:GetChildren() }) do local m = rawget(c, "More"); if m and c:IsShown() then for _ = 1, 9 do m:Click() end end end
 PolestarModal.Box.Action:Click()
 assert(stub.bought[6][1] == 9 and stub.bought[6][2] == 4, "not capped by the cost items held")
+-- Sold five at a time (stack of 20): the stepper starts at one purchase (5 items), not the max stack.
+stub.wares[1][6] = 5
+stub.keys.shift = true
+rows[1]:Click("LeftButton")
+stub.keys.shift = false
+assert(PolestarModal:IsShown(), "no stepper for a batch ware")
+PolestarModal.Box.Action:Click()
+assert(stub.bought[7][1] == 1 and stub.bought[7][2] == 5, "the stepper did not default to one purchase of 5: " .. tostring(stub.bought[7][2]))
+stub.wares[1][6] = 1
 -- The visit ends with our dialog open: it goes too.
 rows[5]:Click("LeftButton")
 stub.endInteraction(T.Merchant)
@@ -97,10 +106,10 @@ stub.interact(T.Merchant)
 -- Selling: a held item dropped on a row or the window.
 stub.cursorItem = true
 stub.RunScript(rows[3], "OnReceiveDrag")
-assert(stub.sold == 1 and #stub.bought == 6, "a dropped item not sold")
+assert(stub.sold == 1 and #stub.bought == 7, "a dropped item not sold")
 stub.cursorItem = true
 rows[3]:Click("LeftButton")
-assert(stub.sold == 2 and #stub.bought == 6, "a click with a held item bought")
+assert(stub.sold == 2 and #stub.bought == 7, "a click with a held item bought")
 -- A refundable one: asked, then refunded, never sold.
 stub.cursorItem, stub.refund = true, { money = 0, itemCount = 0, currencyCount = 1, refundSeconds = 7000, hasEnchants = false }
 stub.RunScript(rows[3], "OnReceiveDrag")

@@ -107,10 +107,11 @@ local function howMany(i)
 			end
 		end
 	end
+	most = math.floor(most / per) -- the stepper counts purchases of `per` items, as the stock split does
 	if most < 2 then return end
 	stepper = stepper or ns.Stepper(UIParent, { get = function() return stepN end, set = function(n) stepN = n end, max = function() return stepMax end })
 	stepN, stepMax = 1, most
-	ask({ title = ("Buy %s"):format(it.name or ""), text = "How many?", action = "Buy", onAccept = function() buy(i, stepN) end }, stepper)
+	ask({ title = ("Buy %s"):format(it.name or ""), text = "How many?", action = "Buy", onAccept = function() buy(i, stepN * per) end }, stepper)
 	stepper.Paint()
 end
 
@@ -172,7 +173,7 @@ local function click(r, button)
 	elseif back(r) then
 		BuybackItem(i)
 	else
-		buy(i, button == "RightButton" and GetMerchantItemMaxStack(i) or nil)
+		buy(i) -- either button buys one purchase, as the stock right-click does
 	end
 end
 

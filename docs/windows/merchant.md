@@ -29,9 +29,10 @@ label; gone when the plan is empty).
   tooltip (`SetMerchantCostItem`), danger when not affordable; stack size
   "×5", stock left or "Sold out"; red when unusable (never an heirloom), faded
   when sold out or an heirloom already owned; the quest bang on a ware that
-  starts a quest. Click buys one (`BuyMerchantItem`), shift-click asks how
-  many (a stepper in `W.Modal`, capped by the money and the cost items held),
-  right-click buys a stack, ctrl-click previews, a drag picks it up (never
+  starts a quest. Click or right-click buys one purchase, the vendor's batch
+  (`BuyMerchantItem`, e.g. 5); shift-click asks how many batches (a stepper in
+  `W.Modal` in steps of the batch, capped by the money and the cost items
+  held; buys `stepN * batch`), ctrl-click previews, a drag picks it up (never
   one that asks first, nor while a spell waits for its item); tooltip
   `GameTooltip:SetMerchantItem` ending with the clicks and selling as a hint,
   the game's buy cursor. The stock confirms
