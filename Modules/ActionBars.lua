@@ -78,7 +78,7 @@ end
 -- (a box), so the dot keeps the game's face. The game compares this text too.
 local function dotted(fs)
 	local t = fs:GetText()
-	return RANGE_INDICATOR ~= nil and t ~= nil and not (issecretvalue and issecretvalue(t)) and t == RANGE_INDICATOR
+	return RANGE_INDICATOR ~= nil and ns.Clean(t) == RANGE_INDICATOR
 end
 
 local function setFace(f, shown)

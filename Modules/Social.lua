@@ -23,7 +23,7 @@ local rows, groups = {}, {}
 -- player's name): the last one read clean under `key` (docs/CLIENT.md, rule 3).
 local known = {}
 local function keep(key, v)
-	if v ~= nil and not (issecretvalue and issecretvalue(v)) then known[key] = v end
+	if ns.Clean(v) ~= nil then known[key] = v end
 	return known[key]
 end
 

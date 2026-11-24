@@ -298,7 +298,7 @@ local function matches(spell, def)
 	if query == "" then return true end
 	if hidePassives and spell and C_Spell.IsSpellPassive(spell) then return false end
 	local function has(text)
-		return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:lower():find(query, 1, true)
+		return type(ns.Clean(text)) == "string" and text:lower():find(query, 1, true)
 	end
 	return has(def and def.overrideName) or (spell and (has(C_Spell.GetSpellName(spell)) or has(C_Spell.GetSpellDescription(spell)))) or false
 end

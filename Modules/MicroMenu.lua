@@ -82,11 +82,15 @@ local function look(b)
 	return l
 end
 
--- Our window behind this door is open (ns.Doors sets m.micro; Character too).
-local function ours(b)
+-- The micro buttons whose window of ours is open (ns.Doors sets m.micro;
+-- Character too), read once per pass over the buttons.
+local open = {}
+local function readOpen()
+	wipe(open)
 	for key, m in pairs(ns.modules) do
-		if m.micro == b and m.psFrame and m.psFrame:IsShown() and ns.Enabled(key) then return true end
+		if m.micro and m.psFrame and m.psFrame:IsShown() and ns.Enabled(key) then open[m.micro] = true end
 	end
+	return open
 end
 
 local function pulse(b)
@@ -94,8 +98,8 @@ local function pulse(b)
 	return f and f:IsShown() and f:GetAlpha() or 0
 end
 
-local function paintState(b, l)
-	local active = b:GetButtonState() == "PUSHED" or ours(b) or false
+local function paintState(b, l, opened)
+	local active = b:GetButtonState() == "PUSHED" or (opened or readOpen())[b] or false
 	local hover = b:IsMouseOver() and true or false
 	local flash = pulse(b)
 	l.active, l.hovered, l.flash = active, hover, flash
@@ -191,10 +195,11 @@ end
 -- States no event tells (hover, the pulse, a window opening), each frame; the latency each second.
 local wait = 0
 local function update(_, elapsed)
+	local opened = readOpen()
 	for b, l in pairs(looks) do
-		if b:IsVisible() and ((b:GetButtonState() == "PUSHED" or ours(b) or false) ~= l.active
+		if b:IsVisible() and ((b:GetButtonState() == "PUSHED" or opened[b] or false) ~= l.active
 			or (b:IsMouseOver() and true or false) ~= l.hovered or pulse(b) ~= l.flash) then
-			paintState(b, l)
+			paintState(b, l, opened)
 		end
 	end
 	if ping then placePing() end

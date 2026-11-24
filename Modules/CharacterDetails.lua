@@ -70,7 +70,7 @@ local function detailView(holder, nChecks)
 		r.Label:SetText(label)
 		W.Color(r.Label, enabled and (color or "text") or "textMuted")
 		r.Box:SetChecked(checked and true or false)
-		r.Box:SetAlpha(enabled and 1 or 0.45)
+		ns.SetEnabled(r.Box, enabled)
 		r:Show()
 	end
 	-- Starts a paint: the column empty, the bar and checkboxes hidden.

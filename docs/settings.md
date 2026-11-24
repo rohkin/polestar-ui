@@ -26,6 +26,10 @@ already do. A reset (the page's or a section's) calls `set(nil)`: our default.
 | Auction house list sorts | `PolestarUIDB.auctionSorts[context]` (two `{sortOrder, reverseSort}` at most, the last clicked first; nil: the stock defaults) | Auction.lua `sorts(ctx)`, written by the column clicks; no settings control |
 | World map: side panel page, full screen | `PolestarUIDB.mapQuests` (`"quests"`, `"legend"`, or nil), `PolestarUIDB.mapFull` (true or nil) | WorldMap.lua `setPanel`/`setFull`, restored at login; no settings control |
 | Recently crafted recipes (newest first, per character) | `PolestarUICharDB.recentRecipes` | Crafting.lua `recent()`/`remember(id)`; no settings control |
+| Character: folded stat categories | `PolestarUIDB.statsFolded[name]` (true: folded; every character) | Character.lua `folded()`, written by a category head's click; no settings control |
+| Character: stats and details drawer put away | `PolestarUIDB.hideStats` (true or nil: shown; every character) | Character.lua `statsShown()`, written by the window menu's "Show stats"/"Show details"; cleared when a row is chosen for the details (CharacterPages.lua `choose`); no settings control |
+| Group Finder: last page | `PolestarUIDB.groupFinderPage` (a page key; nil: `"listing"`) | GroupFinder.lua `M.Show`, the page opened when none is asked for; no settings control |
+| Collections: last page | `PolestarUIDB.collectionsPage` (a page key; nil: `"mounts"`, or the first page the client lets show) | Collections.lua `pick(key)`, written by `M.Show`; no settings control |
 
 ## Layout
 

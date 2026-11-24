@@ -769,7 +769,7 @@ local function paintNode(b, config, n)
 	b.Icon:SetAlpha(on and 1 or n.meetsEdgeRequirements and 0.75 or 0.4)
 	local q = tree.query
 	local function has(text)
-		return type(text) == "string" and not (issecretvalue and issecretvalue(text)) and text:lower():find(q, 1, true)
+		return type(ns.Clean(text)) == "string" and text:lower():find(q, 1, true)
 	end
 	local match = q == "" or has(name) or (spell and has(C_Spell.GetSpellDescription(spell))) or false
 	b:SetAlpha(match and 1 or 0.25)

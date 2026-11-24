@@ -21,7 +21,9 @@ local closing -- the game closed the trade skill itself
 -- A trade skill was opened: TRADE_SKILL_SHOW can come before its data, as
 -- the stock window allows for; ours then opens on the list's first update.
 local wanted
-local M = {}
+-- Off waits for /reload: routing TRADE_SKILL_SHOW back to the stock window
+-- from our code would open it from tainted code (docs/CLIENT.md, rule 11).
+local M = { reloadOff = true }
 local heads, rows, tiles = {}, {}, {}
 local refresh
 
@@ -1046,9 +1048,6 @@ function M.Enable()
 end
 
 -- The stock window, for the button that switches back to ours (Core.lua).
--- Off waits for /reload: routing TRADE_SKILL_SHOW back to the stock window
--- from our code would open it from tainted code (docs/CLIENT.md, rule 11).
 function M.stock() return ProfessionsFrame and not (ProfessionsFrame.BookPage and ProfessionsFrame.BookPage:IsShown()) and ProfessionsFrame end
-M.reloadOff = true
 
 ns.Module("crafting", M)

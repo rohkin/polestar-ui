@@ -109,7 +109,7 @@ end
 local lastFacing
 local function placeNorth()
 	local f = GetCVarBool("rotateMinimap") and GetPlayerFacing and GetPlayerFacing()
-	if not f or (issecretvalue and issecretvalue(f)) then
+	if not ns.Clean(f) then
 		north:Hide()
 		lastFacing = nil
 		return
