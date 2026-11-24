@@ -57,3 +57,12 @@ local r, g, b = h.Label:GetTextColor()
 assert(art:GetAlpha() == 1 and not plated() and r == 1 and g == 0.82 and b == 0, "not the stock plate when off")
 PolestarUI.Switch("tooltips", true)
 assert(plated(), "the plate not restyled when on again")
+-- The edge follows the HUD Frames look: its override's colour while on, Polestar's again off (restored before the render).
+local function tipEdge() for _, t in ipairs({ GameTooltip.NineSlice:GetRegions() }) do local l, s = t:GetDrawLayer()
+if l == "BORDER" and s == 7 and t:IsShown() then return t:GetVertexColor() end end end
+PolestarUIDB.hudLook = { frames = { override = true, border = true, borderSize = 1, borderColor = "white", hairline = 1 } }
+Polestar.Theme.Refresh()
+local er, eg, eb, ea = tipEdge()
+assert(er == 1 and eg == 1 and eb == 1 and ea == 1, "the tooltip edge does not take the Frames override's colour")
+PolestarUIDB.hudLook = nil
+Polestar.Theme.Refresh()

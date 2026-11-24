@@ -12,6 +12,7 @@
 
 local ADDON, ns = ...
 local Theme = Polestar.Theme
+local H = ns.HUD
 
 local NAMES = { "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2", "ItemRefShoppingTooltip1",
 	"ItemRefShoppingTooltip2", "EmbeddedItemTooltip", "GameNoHeaderTooltip", "GameSmallHeaderTooltip" }
@@ -64,7 +65,7 @@ local function paintGround(l, on)
 	local r, g, b = groundRGB()
 	l.fill:SetVertexColor(r, g, b, 1)
 	l.fill:SetShown(on)
-	ns.PaintHairlines(l.edges, on, Theme.Color("border"))
+	H.PaintEdge(l.edges, on, H.FRAMES) -- the HUD Frames look's edge
 end
 
 -- The comparison's "Equipped" plate (ShoppingTooltipTemplate's CompareHeader,

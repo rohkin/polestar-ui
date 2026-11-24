@@ -325,7 +325,7 @@ local function paintWindow(w)
 	if a ~= l.alpha then
 		l.alpha = a
 		H.PaintGround(l.ground, a)
-		local r, g, b, ba = Theme.Color("border")
+		local _, r, g, b, ba = H.Edge(H.FRAMES) -- the header seam in the Frames look's edge colour
 		ns.PaintHairlines({ l.line }, true, r, g, b, ba)
 	end
 	faceTexts(w, l)

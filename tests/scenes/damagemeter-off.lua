@@ -11,6 +11,17 @@ stub.damage({
 stub.advance(0.1)
 PolestarUI.Switch("damagemeter", false)
 PolestarUI.Switch("damagemeter", true)
+-- The header seam follows the HUD Frames look: its override's colour while on (restored).
+local seam
+for _, c in ipairs({ DamageMeterSessionWindow1:GetChildren() }) do for _, t in ipairs({ c:GetRegions() }) do local l, s = t:GetDrawLayer()
+if l == "BORDER" and s == 7 and tostring(t:GetTexture()):find("white", 1, true) then seam = t end end end
+assert(seam, "no header seam")
+PolestarUIDB.hudLook = { frames = { override = true, border = true, borderSize = 1, borderColor = "white", hairline = 1 } }
+Polestar.Theme.Refresh()
+local sr, sg, sb = seam:GetVertexColor()
+assert(sr == 1 and sg == 1 and sb == 1, "the damage meter seam does not take the Frames override's colour")
+PolestarUIDB.hudLook = nil
+Polestar.Theme.Refresh()
 stub.advance(0.1)
 local w = DamageMeterSessionWindow1
 local c = w.MinimizeContainer

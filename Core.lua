@@ -1409,11 +1409,13 @@ function ns.PaintHairlines(e, on, r, g, b, a, n)
 	end
 end
 
--- Polestar's window ground on texture `fill`: bg at the player's Background
--- opacity, times `k` (0.85 for the tooltip look: 0.80 at the default 0.94).
+-- Polestar's window ground on texture `fill`: bg at the HUD Frames look's
+-- Background opacity (ns.HUD.GroundAlpha, HUD.lua loads after this file),
+-- times `k` (0.85 for the tooltip look: 0.80 at the default 0.94).
 function ns.PaintGround(fill, on, k)
 	local r, g, b = Polestar.Theme.Color("bg")
-	fill:SetVertexColor(r, g, b, Polestar.Theme.GroundAlpha() * (k or 1))
+	local H = ns.HUD
+	fill:SetVertexColor(r, g, b, H.GroundAlpha(H.FRAMES) * (k or 1))
 	fill:SetShown(on)
 end
 
@@ -1445,8 +1447,7 @@ function ns.MenuLook(menu, foot)
 	s:SetFrameLevel(menu:GetFrameLevel())
 	s.fill:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, foot or 0)
 	ns.PaintGround(s.fill, true)
-	local r, g, b, a = Polestar.Theme.Color("border")
-	ns.PaintHairlines(s.edges, true, r, g, b, a)
+	ns.HUD.PaintEdge(s.edges, true, ns.HUD.FRAMES) -- the HUD Frames look's edge
 	for _, t in ipairs(s.pieces) do t:Hide(); t:ClearAllPoints() end
 	s.used = 0
 	s:Show()

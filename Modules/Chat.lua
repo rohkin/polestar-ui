@@ -35,7 +35,10 @@ local driver
 
 local tex = ns.HUD.Tex
 
+local H = ns.HUD
 local hairline, paintLine = ns.Hairlines, ns.PaintHairlines
+-- Our edges and grounds wear the HUD Frames look (H.FRAMES: Polestar's Frames settings, or its override).
+local function edge(e, on) H.PaintEdge(e, on, H.FRAMES) end
 
 -- A frame never restyled has nothing to give back.
 local function look(f, make)
@@ -96,7 +99,7 @@ local function panel(f)
 	bare(f.buttonFrame, on)
 	place(f, l)
 	ns.PaintGround(l.fill, on)
-	paintLine(l.edges, on, Theme.Color("border"))
+	edge(l.edges, on)
 	l.paint = nil -- the driver repaints the warmth
 end
 
@@ -106,8 +109,8 @@ end
 -- own edges carry the outline round both). The header's foot never is.
 local function paintWarm(l, w)
 	local k = REST + (1 - REST) * w
-	l.fill:SetAlpha(Theme.GroundAlpha() * k)
-	local r, g, b, a = Theme.Color("border")
+	l.fill:SetAlpha(H.GroundAlpha(H.FRAMES) * k)
+	local _, r, g, b, a = H.Edge(H.FRAMES)
 	for i, t in ipairs(l.edges) do
 		local open = i == 1 and l.win and l.win.isDocked or i == 2 and l.dock
 		t:SetVertexColor(r, g, b, open and 0 or (a or 1) * k)
@@ -132,7 +135,7 @@ local function header()
 	if not l then return end
 	local on = ns.Enabled("chat")
 	ns.PaintGround(l.fill, on)
-	paintLine(l.edges, on, Theme.Color("border"))
+	edge(l.edges, on)
 	l.paint = nil
 end
 
@@ -413,7 +416,7 @@ local function minimized(m)
 	for _, k in ipairs(MINI) do m[k]:SetAlpha(on and 0 or 1) end
 	l.fill:SetVertexColor(Theme.Color("panel"))
 	l.fill:SetShown(on)
-	paintLine(l.edges, on, Theme.Color("border"))
+	edge(l.edges, on)
 	l.hover:SetVertexColor(Theme.Wash("hover"))
 	l.hover:SetShown(on)
 	iconButton(_G[m:GetName() .. "MaximizeButton"], "chevron-up", 12)
@@ -435,7 +438,7 @@ local function overflow()
 	local on = ns.Enabled("chat")
 	ns.FadeNine(list.NineSlice, on and 0 or 1)
 	ns.PaintGround(l.fill, on)
-	paintLine(l.edges, on, Theme.Color("border"))
+	edge(l.edges, on)
 end
 
 -- The chat's own menus (Blizzard_Menu, by their tags): a tab's right-click
@@ -469,7 +472,7 @@ local function bubble(f, on)
 	ns.FadeNine(f, on and 0 or 1)
 	f.Tail:SetAlpha(on and 0 or 1)
 	ns.PaintGround(l.fill, on, 0.85)
-	paintLine(l.edges, on, Theme.Color("border"))
+	edge(l.edges, on)
 end
 
 local function bubbles()

@@ -161,3 +161,12 @@ assert(select(1, ours_glyph(stb):GetVertexColor()) == Polestar.Theme.Color("icon
 m = stub.openMenu(ChatFrame1Tab, "MENU_FCF_TAB", { "Rename Window", "Create New Window", "Settings" })
 assert(bub.TopEdge:GetAlpha() == 0 and ours(bub) == 5 and mini.Left:GetAlpha() == 0 and oursMenu(m) == 5, "not restyled when on again")
 preview.hover = mini
+-- The window's edge follows the HUD Frames look: its override's colour while on (restored before the render).
+local function chatEdge() for _, t in ipairs({ ChatFrame1:GetRegions() }) do local l, s = t:GetDrawLayer()
+if l == "BORDER" and s == 7 and tostring(t:GetTexture()):find(W) then return t end end end
+PolestarUIDB.hudLook = { frames = { override = true, border = true, borderSize = 1, borderColor = "white", hairline = 1 } }
+Polestar.Theme.Refresh() stub.advance(0.2)
+local cr, cg, cb = chatEdge():GetVertexColor()
+assert(cr == 1 and cg == 1 and cb == 1, "the chat edge does not take the Frames override's colour")
+PolestarUIDB.hudLook = nil
+Polestar.Theme.Refresh() stub.advance(0.2)
