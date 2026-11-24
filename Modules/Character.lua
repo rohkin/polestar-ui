@@ -200,8 +200,7 @@ local function slotClick(s, button)
 	-- Shift-right-click (EXPANDITEM): the game's socketing window.
 	if link and IsModifiedClick("EXPANDITEM") then return SocketInventoryItem(s:GetID()) end
 	if link and IsModifiedClick() and HandleModifiedItemClick(link) then return end
-	if button ~= "LeftButton" or SpellIsTargeting() then return end
-	PickupInventoryItem(s:GetID())
+	if button == "LeftButton" then ns.Pickup(PickupInventoryItem, s:GetID()) end
 end
 
 -- Using a worn item (right-click) and applying an enchant, kit or stone to
@@ -992,7 +991,7 @@ function M.Enable()
 	end
 	Polestar.RegisterEvent("PLAYER_ENTERING_WORLD", changed)
 	-- Polestar hidden or back: its bag upgrade marks go or return.
-	if Polestar.On then Polestar.On("POLESTAR_HIDDEN", changed) end
+	Polestar.On("POLESTAR_HIDDEN", changed)
 	-- The stock sheet's stat events (PaperDollFrame_OnLoad).
 	for _, e in ipairs({ "UNIT_STATS", "UNIT_RANGEDDAMAGE", "UNIT_RANGED_ATTACK_POWER", "UNIT_ATTACK", "UNIT_SPELL_HASTE",
 		"UNIT_RESISTANCES", "UNIT_DAMAGE", "UNIT_ATTACK_SPEED", "UNIT_MAXHEALTH", "UNIT_AURA", "UNIT_LEVEL" }) do

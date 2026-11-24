@@ -24,7 +24,7 @@ local rows, rows2 = {}, {} -- the greeting's lists: current quests, available qu
 local function marks()
 	local Q = Polestar.QoL
 	local R = Q and Q.Rewards
-	if not (R and R.ReadChoices and R.Rank and Q.On and Q.On("rewardHighlight")) or (Polestar.Hidden and Polestar.Hidden()) then return {} end
+	if not (R and R.ReadChoices and R.Rank and Q.On and Q.On("rewardHighlight")) or Polestar.Hidden() then return {} end
 	local list, complete, priced = R.ReadChoices(false)
 	local best = #list >= 2 and complete and R.Rank(list)[1]
 	local top = 0
@@ -467,10 +467,8 @@ function M.Enable()
 		Polestar.RegisterEvent(e, refresh)
 	end
 	-- Polestar's verdicts and its mark setting redraw the marks.
-	if Polestar.On then
-		for _, msg in ipairs({ "GEAR_UPDATED", "SETTING_CHANGED", "POLESTAR_HIDDEN" }) do
-			Polestar.On(msg, refresh)
-		end
+	for _, msg in ipairs({ "GEAR_UPDATED", "SETTING_CHANGED", "POLESTAR_HIDDEN" }) do
+		Polestar.On(msg, refresh)
 	end
 end
 

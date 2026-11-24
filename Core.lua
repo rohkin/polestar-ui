@@ -1356,7 +1356,7 @@ function ns.FadeNine(holder, a)
 end
 
 -- Four hairlines round region `rel` (top, bottom, left, right): white
--- textures on frame `f`, or what `make()` returns (a pooled menu's AttachTexture).
+-- textures on frame `f`, or what `make()` returns (the caller's own, in another layer).
 local EDGES = { { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }
 function ns.Hairlines(f, rel, make)
 	local e = {}

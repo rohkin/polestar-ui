@@ -7,7 +7,7 @@ through `ns.Doors`, and like the stock toggle only from the first legacy
 point. `TOGGLEACHIEVEMENT` (which Forever routes to the challenges) opens ours
 on Challenges; challenge links (`ShowLegacyChallenge`) stay the game's.
 - **Shell:** the compact grid (`ns.Compact`), 760 wide (was 1088 with the
-  rail and sidebar) and about 600 tall (was 720). No sidebar: the sections are
+  rail and sidebar) and 560 tall (was 720). No sidebar: the sections are
   a slim 48px icon rail (`ns.GameRail`, `slim`; Rewards, Challenges, Tree)
   with the stock tabs' game icons, the Legacy emblem on the rail's head, and
   each label and what the page is for in the rail tooltip. The tab row shows

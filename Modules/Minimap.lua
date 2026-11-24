@@ -610,7 +610,7 @@ local function paintHeader()
 end
 
 -- The tracking and compartment menus (Blizzard_Menu, pooled): the chat's
--- chat's menu look (ns.MenuLook; docs/CLIENT.md, rule 15).
+-- menu look (ns.MenuLook; docs/CLIENT.md, rule 15).
 local function menuLook(menu)
 	if on() then ns.MenuLook(menu, 7) end
 end
