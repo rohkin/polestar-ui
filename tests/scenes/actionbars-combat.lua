@@ -5,7 +5,9 @@
 stub.inCombat = true
 Polestar.Theme.Refresh()
 assert(ActionButton1.NormalTexture:GetAlpha() == 0, "a theme change in combat lost the look")
+stub.cascadeVisibility = true
 stub.openFlyout(ActionButton6, 2)
+stub.cascadeVisibility = false
 stub.advance(0.5)
 assert(SpellFlyoutPopupButton1.NormalTexture:GetAlpha() == 1 and SpellFlyoutPopupButton1.icon.mask ~= nil, "a new button was restyled in combat")
 stub.inCombat = false

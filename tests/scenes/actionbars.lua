@@ -22,8 +22,11 @@ assert(select(3, ActionButton1.HotKey:GetFont()) == "OUTLINE" and select(3, Acti
 assert(ActionButton8.Border:IsShown() and select(4, ActionButton8.Border:GetVertexColor()) == 0.5 and ActionButton8.Border:GetAlpha() == 1, "the equipped border is not the game's")
 ActionButton4:SetButtonState("PUSHED")
 stub.advance(0.1)
+-- The flyout's show (seen by a frame of ours on it, as the client cascades it) restyles its new buttons the next frame.
+stub.cascadeVisibility = true
 stub.openFlyout(ActionButton6, 3)
-stub.advance(0.5)
+stub.cascadeVisibility = false
+stub.advance(0.05)
 assert(styled(SpellFlyoutPopupButton1) and styled(SpellFlyoutPopupButton3), "the flyout's buttons are not restyled")
 -- Empty slots (the game hides an empty slot's icon): Polestar's emblem, faint, in the lighter accent (half way to white); none on a filled one.
 local function logo(b)

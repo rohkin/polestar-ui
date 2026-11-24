@@ -196,6 +196,21 @@ local function each(fn)
 	if c then for _, b in ipairs({ c:GetChildren() }) do fn(b) end end
 end
 
+-- New buttons out of combat: the game makes a flyout's and the zone ability's
+-- when their frame first shows (from the frame's own code, the same moment or
+-- just after), so a hidden frame of ours on each says when (rule 17: a frame
+-- of ours under it, nothing written on it); the end of combat (M.Apply) does
+-- any made mid-fight.
+local function dressNew()
+	if started and on() and not InCombatLockdown() then each(function(b) if not looks[b] then paint(b, true) end end) end
+end
+local watched = setmetatable({}, { __mode = "k" })
+local function watch(f)
+	if not f or watched[f] or InCombatLockdown() then return end
+	watched[f] = CreateFrame("Frame", nil, f)
+	watched[f]:SetScript("OnShow", function() C_Timer.After(0, dressNew) end)
+end
+
 function M.Apply()
 	if not started then return end
 	local shown = on()
@@ -203,19 +218,13 @@ function M.Apply()
 		-- A button not yet restyled waits for the end of combat.
 		if looks[b] or not InCombatLockdown() then paint(b, shown) end
 	end)
+	watch(rawget(_G, "SpellFlyout"))
+	watch(rawget(_G, "ZoneAbilityFrame"))
 	driver:SetShown(shown)
 end
 
--- New buttons out of combat (a flyout's, the zone ability's: the game makes
--- them when they are first needed), and the pressed and checked states (no
--- event says a key pressed a button).
-local scan = 0
-local function update(_, elapsed)
-	scan = scan + elapsed
-	if scan >= 0.25 then
-		scan = 0
-		if not InCombatLockdown() then each(function(b) if not looks[b] then paint(b, true) end end) end
-	end
+-- The pressed and checked states, each frame (no event says a key pressed a button).
+local function update()
 	for b in pairs(looks) do tick(b) end
 end
 

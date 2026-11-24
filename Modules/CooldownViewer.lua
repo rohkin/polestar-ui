@@ -135,13 +135,20 @@ local function dressNew(size, c, ...)
 	return dressNew(size, ...)
 end
 
--- Each frame: items the game acquired since (a relayout, a new aura, Edit
+-- Each frame: items the game made since (a relayout, a new aura, Edit
 -- Mode's samples), dressed before they have shown long. Mid-fight too: only
--- textures and faces on plain frames, nothing read.
+-- textures and faces on plain frames, nothing read. A viewer's pool only
+-- grows (released items come back dressed), so its children are walked only
+-- when their count changed. shortcut: still a per-frame count check (no
+-- event or hook rule 17 allows says the pool grew).
+local seen = {} -- viewer -> its child count when last walked
 local function update()
 	for _, name in ipairs(VIEWERS) do
 		local v = rawget(_G, name)
-		if v and v:IsVisible() then dressNew(SIZES[name], v:GetChildren()) end
+		if v and v:IsVisible() and v:GetNumChildren() ~= seen[v] then
+			seen[v] = v:GetNumChildren()
+			dressNew(SIZES[name], v:GetChildren())
+		end
 	end
 end
 
