@@ -610,25 +610,9 @@ local function paintHeader()
 end
 
 -- The tracking and compartment menus (Blizzard_Menu, pooled): the chat's
--- menu look through the menu's own compositor (docs/CLIENT.md, rule 15).
+-- chat's menu look (ns.MenuLook; docs/CLIENT.md, rule 15).
 local function menuLook(menu)
-	if not on() then return end
-	for _, r in ipairs({ menu:GetRegions() }) do r:SetAlpha(0) end
-	local function piece(layer, sub, r, g, b, a)
-		local t = menu:AttachTexture()
-		t:SetTexture(Theme.Media("white"))
-		t:SetDrawLayer(layer, sub)
-		t:SetVertexColor(r, g, b, a)
-		return t
-	end
-	local r, g, b = Theme.Color("bg")
-	local fill = piece("BACKGROUND", -8, r, g, b, Theme.GroundAlpha())
-	fill:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
-	fill:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 7)
-	local px = Theme.Pixel(menu)
-	for i, t in ipairs(ns.Hairlines(menu, fill, function() return piece("BORDER", 7, Theme.Color("border")) end)) do
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
+	if on() then ns.MenuLook(menu, 7) end
 end
 
 function M.Apply()

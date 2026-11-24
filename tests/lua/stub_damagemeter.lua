@@ -431,7 +431,20 @@ if not stub.openMenu then
 	local modifiers, menu, attached, items = {}, nil, {}, {}
 	Menu = { ModifyMenu = function(tag, fn) modifiers[tag] = modifiers[tag] or {}; table.insert(modifiers[tag], fn) end }
 	-- The compositor: an attached region, freed (and set to its defaults) when the menu closes.
+	-- AttachTexture from our code writes the compositor's lists and the shared
+	-- texture pool tainted: the menu code that walks them next runs as ours
+	-- (s526: the session menu's generator on secret durations). Reported.
+	local function attachGuard()
+		for level = 2, 40 do
+			local info = debug.getinfo(level, "S")
+			if not info then break end
+			if stub.addonSources[info.source] == "PolestarUI" then
+				return geterrorhandler()("AttachTexture called from PolestarUI code (taints the menu's compositor)")
+			end
+		end
+	end
 	local function attach(f, kind)
+		attachGuard()
 		local t = kind == "FontString" and f:CreateFontString(nil, "ARTWORK", GameFontHighlight) or f:CreateTexture(nil, "ARTWORK", nil, 7)
 		table.insert(attached, t)
 		return t
@@ -445,7 +458,10 @@ if not stub.openMenu then
 		end
 		for _, f in ipairs(items) do f:Hide() end
 		attached, items = {}, {}
+		local c = stub.cascadeVisibility
+		stub.cascadeVisibility = true -- as the client: what is on the menu hides with it
 		menu:Hide()
+		stub.cascadeVisibility = c
 	end
 	-- An item's description: { text, radio, check, selected, submenu, divider }; the game's initializers
 	-- (ButtonInitializer, MenuVariants.CreateRadio/CreateCheckbox/CreateSubmenuArrow/CreateDivider), then those added.
@@ -529,6 +545,7 @@ if not stub.openMenu then
 		for k, d in ipairs(descs) do
 			local item = CreateFrame(d.o.divider and "Frame" or "Button", nil, menu)
 			item.AttachTexture = function(self) return attach(self) end
+			item:SetFrameLevel(menu:GetFrameLevel() + 20) -- the client lays items 20 levels over the menu
 			item:SetPoint("TOPLEFT", menu, "TOPLEFT", style2 and 3 or 8, (style2 and -6 or -8) - (k - 1) * 20)
 			item:SetSize(144, 20)
 			table.insert(items, item)

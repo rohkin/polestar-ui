@@ -580,6 +580,18 @@ end
 -- ground (MenuStyle1: common-dropdown-bg 10 out, 3 above and below, at
 -- 92.5%). What is attached (AttachTexture) is freed when the menu closes.
 local modifiers, menu, attached = {}, nil, {}
+-- AttachTexture from our code writes the compositor's lists and the shared
+-- texture pool tainted: the menu code that walks them next runs as ours
+-- (s526: the session menu's generator on secret durations). Reported.
+local function attachGuard()
+	for level = 2, 40 do
+		local info = debug.getinfo(level, "S")
+		if not info then break end
+		if stub.addonSources[info.source] == "PolestarUI" then
+			return geterrorhandler()("AttachTexture called from PolestarUI code (taints the menu's compositor)")
+		end
+	end
+end
 Menu = { ModifyMenu = function(tag, fn) modifiers[tag] = modifiers[tag] or {}; table.insert(modifiers[tag], fn) end }
 function stub.closeMenu()
 	if not menu then return end
@@ -588,7 +600,10 @@ function stub.closeMenu()
 		for i, r in ipairs(menu.regions) do if r == t then table.remove(menu.regions, i) break end end
 	end
 	attached = {}
+	local c = stub.cascadeVisibility
+	stub.cascadeVisibility = true -- as the client: what is on the menu hides with it
 	menu:Hide()
+	stub.cascadeVisibility = c
 end
 function stub.openMenu(owner, tag, labels)
 	stub.closeMenu()
@@ -602,6 +617,7 @@ function stub.openMenu(owner, tag, labels)
 		menu = CreateFrame("Frame", "StubMenu", UIParent)
 		menu:SetFrameStrata("FULLSCREEN_DIALOG")
 		menu.AttachTexture = function(self)
+			attachGuard()
 			local t = self:CreateTexture(nil, "ARTWORK")
 			table.insert(attached, t)
 			return t
@@ -616,11 +632,16 @@ function stub.openMenu(owner, tag, labels)
 	bg:SetColorTexture(0.1, 0.1, 0.1, 1)
 	bg:SetAlpha(0.925)
 	for _, fn in ipairs(root.callbacks) do fn(menu) end
+	-- Each label on an item frame of its own, 20 levels over the menu (as the client lays them).
 	for i, text in ipairs(labels) do
-		local fs = menu:CreateFontString(nil, "ARTWORK", GameFontHighlight)
-		fs:SetPoint("TOPLEFT", menu, "TOPLEFT", 8, -8 - (i - 1) * 20)
+		local item = CreateFrame("Frame", nil, menu)
+		item:SetFrameLevel(menu:GetFrameLevel() + 20)
+		item:SetPoint("TOPLEFT", menu, "TOPLEFT", 8, -8 - (i - 1) * 20)
+		item:SetSize(134, 20)
+		local fs = item:CreateFontString(nil, "ARTWORK", GameFontHighlight)
+		fs:SetPoint("TOPLEFT", item, "TOPLEFT", 0, 0)
 		fs:SetText(text)
-		table.insert(attached, fs)
+		table.insert(attached, item)
 	end
 	menu:Show()
 	return menu, bg, root

@@ -369,8 +369,15 @@ covers the tabs: header art goes on the dock.
 The game's menus (Blizzard_Menu) are pooled frames every menu shares, and a
 menu frame refuses `CreateTexture`. Restyle one only by its tag
 (`Menu.ModifyMenu`, then the root's `AddMenuAcquiredCallback`), with art
-added through the menu's own `AttachTexture`: the pool frees it and resets
-what was faded when the menu closes, so no other menu inherits it. Chat
+on a frame of our own on the menu (`ns.MenuLook`, `ns.MenuPiece`), hidden
+with it, so no other menu inherits it; what was faded is reset by the pool
+when the menu closes. Never call the menu's or an item's `AttachTexture`
+from our code: it writes the compositor's lists and the shared texture
+pool tainted, and the menu code that walks them next runs as ours (s526:
+opening a second damage meter menu closed the first and ran the session
+menu's generator tainted, "numeric conversion on a secret number" on its
+durations). Read an item's pieces by index (`item.leftTexture1`): the
+compositor keeps them in its own table, where `rawget` finds none. Chat
 bubbles come only from `C_ChatBubbles.GetAllChatBubbles()`, which leaves out
 the forbidden ones (every bubble in an instance); never touch a frame whose
 `IsForbidden()` is true.

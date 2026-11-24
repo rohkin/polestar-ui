@@ -1407,6 +1407,54 @@ function ns.PaintGround(fill, on, k)
 	fill:SetShown(on)
 end
 
+-- A game menu (Blizzard_Menu, pooled frames every menu shares) in our look;
+-- call from a tag's root:AddMenuAcquiredCallback. The style's ground (a
+-- compositor attachment, reset when the menu closes) is faded; ours is on a
+-- frame of our own on the menu, under its items (they sit 20 levels up),
+-- hidden with the menu so the next menu on that frame is the game's. Never
+-- the menu's AttachTexture: its compositor lists and the shared texture
+-- pool, written from our code, taint the menu code that walks them next
+-- (closing one menu by opening another ran the session menu's generator
+-- tainted: secret durations, s526; rule 15). `foot`: how far above the
+-- menu's foot ours ends. `ns.MenuPiece(menu)`: a texture of ours on it.
+local menuSkins = setmetatable({}, { __mode = "k" })
+function ns.MenuLook(menu, foot)
+	local s = menuSkins[menu]
+	if not s then
+		s = CreateFrame("Frame", nil, menu)
+		s:SetAllPoints(menu)
+		s:SetScript("OnHide", s.Hide) -- the menu closed: shown again only by a tagged menu
+		s.fill = s:CreateTexture(nil, "BACKGROUND", nil, -8)
+		s.fill:SetTexture(Polestar.Theme.Media("white"))
+		s.fill:SetPoint("TOPLEFT", s, "TOPLEFT", 0, 0)
+		s.edges = ns.Hairlines(s, s.fill)
+		s.pieces, s.used = {}, 0
+		menuSkins[menu] = s
+	end
+	for _, r in ipairs({ menu:GetRegions() }) do r:SetAlpha(0) end
+	s:SetFrameLevel(menu:GetFrameLevel())
+	s.fill:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, foot or 0)
+	ns.PaintGround(s.fill, true)
+	local r, g, b, a = Polestar.Theme.Color("border")
+	ns.PaintHairlines(s.edges, true, r, g, b, a)
+	for _, t in ipairs(s.pieces) do t:Hide(); t:ClearAllPoints() end
+	s.used = 0
+	s:Show()
+end
+
+function ns.MenuPiece(menu)
+	local s = menuSkins[menu]
+	if not (s and s:IsShown()) then return end
+	s.used = s.used + 1
+	local t = s.pieces[s.used]
+	if not t then
+		t = s:CreateTexture(nil, "ARTWORK", nil, 7)
+		s.pieces[s.used] = t
+	end
+	t:Show()
+	return t
+end
+
 -- The model well's backdrop (docs/DESIGN.md, "Model Well"): Polestar's glow
 -- texture in `shade` at 60%, fading out towards the edges, no border.
 function ns.ModelShade(holder, layer)

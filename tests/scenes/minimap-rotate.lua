@@ -27,5 +27,5 @@ stub.advance(0.1)
 local m, bg = stub.openMenu(MinimapCluster.Tracking.Button, "MENU_MINIMAP_TRACKING", { "Find Herbs", "Find Minerals", "Flight Master" })
 assert(bg:GetAlpha() == 0, "the tracking menu's stock ground shows")
 local ours = 0
-for _, r in ipairs({ m:GetRegions() }) do if r:IsShown() and r ~= bg and r.GetTexture and tostring(r:GetTexture()):find("Polestar") then ours = ours + 1 end end
+for _, c in ipairs({ m:GetChildren() }) do if c:IsShown() then for _, r in ipairs({ c:GetRegions() }) do if r:IsShown() and r.GetTexture and tostring(r:GetTexture()):find("Polestar") then ours = ours + 1 end end end end -- ns.MenuLook: a frame of ours on the menu
 assert(ours == 5, "the tracking menu is not restyled: " .. ours)

@@ -124,8 +124,8 @@ of ours under the `Minimap` (`Polestar.CreateFrameUnder`).
   the game's sizes and colours. No stock header button is moved. The
   coordinate text is never read (secret in combat).
 - **Menus:** the tracking and addon compartment menus (`MENU_MINIMAP_TRACKING`,
-  `MENU_ADDON_COMPARTMENT`) in the chat's menu look, by tag, through the
-  menu's own compositor (rule 15).
+  `MENU_ADDON_COMPARTMENT`) in the chat's menu look, by tag (`ns.MenuLook`,
+  rule 15).
 - **Not changed:** the instance difficulty banner, the
   queue status eye and the zoom buttons (icons and states, no frame art to
   fade); the stock buttons on the backdrop (`ExpansionLandingPageMinimapButton`,

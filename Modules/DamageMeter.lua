@@ -395,31 +395,13 @@ function M.Apply()
 end
 
 -- The meter's menus (Blizzard_Menu, by their tags, as Chat.lua's): the
--- pooled menu frame's style ground faded on acquire and ours attached with
--- the menu's own AttachTexture, which the pool frees (and the fade resets)
--- when the menu closes, so no other menu inherits it (rule 15). The value:
--- how far above the menu's foot ours ends (MenuStyle1 pads its items 8 at
--- the top, 15 at the foot; the session menu's MenuStyle2 is even).
+-- menu look of ns.MenuLook (Core.lua, rule 15). The value: how far above
+-- the menu's foot ours ends (MenuStyle1 pads its items 8 at the top, 15 at
+-- the foot; the session menu's MenuStyle2 is even).
 local MENUS = { MENU_DAMAGE_METER_WINDOW_TRACKED_TYPE = 7, MENU_DAMAGE_METER_WINDOW_SETTINGS = 7, MENU_DAMAGE_METER_SESSIONS = 0 }
 
 local function menuLook(menu, foot)
-	if not ns.Enabled(KEY) then return end
-	for _, t in ipairs({ menu:GetRegions() }) do t:SetAlpha(0) end -- on acquire: only the style's ground
-	local function piece(layer, sub, r, g, b, a)
-		local t = menu:AttachTexture()
-		t:SetTexture(Theme.Media("white"))
-		t:SetDrawLayer(layer, sub)
-		t:SetVertexColor(r, g, b, a)
-		return t
-	end
-	local r, g, b = Theme.Color("bg")
-	local fill = piece("BACKGROUND", -8, r, g, b, Theme.GroundAlpha())
-	fill:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
-	fill:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, foot)
-	local px = Theme.Pixel(menu)
-	for i, t in ipairs(ns.Hairlines(menu, fill, function() return piece("BORDER", 7, Theme.Color("border")) end)) do
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
+	if ns.Enabled(KEY) then ns.MenuLook(menu, foot) end
 end
 
 -- A menu item, after the game's initializers built it (AddInitializer: the
@@ -427,15 +409,15 @@ end
 -- game's pieces are the item's compositor attachments, made fresh for this
 -- item (MenuVariants.CreateRadio/CreateCheckbox: leftTexture1, and
 -- leftTexture2 when selected; CreateSubmenuArrow: arrow; CreateHighlight:
--- highlight); ours are attached the same way. On close the compositor sets
--- every attachment back to its defaults (SetToDefaults) and frees it, so the
--- pooled item a later menu gets is the game's. Only pieces this item's
--- description says were made are touched (a key left from an earlier use
--- could name a texture now in another menu).
-local function itemLook(item, desc)
-	if not ns.Enabled(KEY) or not item.AttachTexture then return end
+-- highlight), its keys in the compositor's table for this use only (read
+-- by index: rawget finds none in game); faded, they are set back to their
+-- defaults when the menu closes. Ours are pieces of the menu's look
+-- (ns.MenuPiece, under the items), hidden with the menu.
+local function itemLook(item, desc, menu)
+	if not ns.Enabled(KEY) then return end
 	local function piece(icon, size, token, a)
-		local t = item:AttachTexture()
+		local t = ns.MenuPiece(menu)
+		if not t then return end
 		t:SetTexture(Theme.Media(icon))
 		t:SetSize(size, size)
 		t:SetDrawLayer("ARTWORK", 7)
@@ -447,9 +429,11 @@ local function itemLook(item, desc)
 		-- A divider (MenuVariants.CreateDivider, its one texture): a hairline instead.
 		for _, t in ipairs({ item:GetRegions() }) do
 			if t:GetObjectType() == "Texture" and t:IsShown() then
+				local line = ns.MenuPiece(menu)
+				if not line then return end
 				t:SetAlpha(0)
-				local line = item:AttachTexture()
 				line:SetTexture(Theme.Media("white"))
+				line:SetSize(0, 0)
 				line:SetPoint("LEFT", t, "LEFT", 0, 0)
 				line:SetPoint("RIGHT", t, "RIGHT", 0, 0)
 				line:SetHeight(Theme.Pixel(item))
@@ -460,9 +444,9 @@ local function itemLook(item, desc)
 		return
 	end
 	local radio, check = desc:IsRadio(), desc:IsCheckbox()
-	local slot = (radio or check) and rawget(item, "leftTexture1")
+	local slot = (radio or check) and item.leftTexture1
 	if slot then
-		local on2 = rawget(item, "leftTexture2")
+		local on2 = item.leftTexture2
 		slot:SetAlpha(0)
 		if on2 then on2:SetAlpha(0) end
 		-- A ring or a box in the border token; selected, the accent dot or tick.
@@ -473,14 +457,14 @@ local function itemLook(item, desc)
 			mark:SetPoint("CENTER", back, "CENTER", 0, 0)
 		end
 	end
-	local arrow = desc:CanOpenSubmenu() and rawget(item, "arrow")
+	local arrow = desc:CanOpenSubmenu() and item.arrow
 	if arrow then
 		arrow:SetAlpha(0)
 		piece(Theme.Icon("chevron-right"), 10, "icon"):SetPoint("CENTER", arrow, "CENTER", 0, 0)
 	end
 	-- The hover: the game shows it and writes its alpha (1, or 0.4 when
 	-- disabled), so it is recoloured in place, its colour carrying ours.
-	local hl = rawget(item, "highlight")
+	local hl = item.highlight
 	if hl then
 		local r, g, b, a = Theme.Wash("hover")
 		hl:SetColorTexture(r, g, b, a)

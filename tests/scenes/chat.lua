@@ -122,18 +122,21 @@ assert(ChatFrameChannelButton.Icon:GetAlpha() == 1, "not warm while typing")
 local W = "Polestar" local function ours(f, layer) local n = 0
 for _, r in ipairs({ f:GetRegions() }) do local t = r.GetTexture and r:GetTexture()
 if t and tostring(t):find(W) and r:IsShown() and (not layer or r:GetDrawLayer() == layer) then n = n + 1 end end
-return n end FCF_MinimizeFrame(stub.makeChat(3, "Trade"), "LEFT")
+return n end
+-- A menu's look is on a frame of ours on it (ns.MenuLook).
+local function oursMenu(m) local n = 0 for _, c in ipairs({ m:GetChildren() }) do if c:IsShown() then n = n + ours(c) end end return n end
+FCF_MinimizeFrame(stub.makeChat(3, "Trade"), "LEFT")
 local mini = ChatFrame3Minimized
 assert(mini.Left:GetAlpha() == 0 and mini.HighlightMiddle:GetAlpha() == 0 and ours(mini, "BACKGROUND") == 1 and ChatFrame3MinimizedMaximizeButton:GetNormalTexture():GetAlpha() == 0 and ours(ChatFrame3MinimizedMaximizeButton, "ARTWORK") == 1, "the minimised window not restyled")
 stub.openOverflow()
 local list = GeneralDockManagerOverflowButtonList
 assert(list.NineSlice.TopEdge:GetAlpha() == 0 and list.NineSlice.Center:GetAlpha() == 0 and ours(list.NineSlice) == 5 and GeneralDockManagerOverflowButton:GetHighlightTexture():GetAlpha() == 1, "the overflow list not restyled, or its pulse faded")
 local m, bg = stub.openMenu(ChatFrame1Tab, "MENU_UNIT_SELF", { "Set Focus" })
-assert(bg:GetAlpha() > 0.9 and ours(m) == 0, "a menu not the chat's restyled")
+assert(bg:GetAlpha() > 0.9 and oursMenu(m) == 0, "a menu not the chat's restyled")
 m, bg = stub.openMenu(ChatFrame1Tab, "MENU_FCF_TAB", { "Rename Window" })
-assert(bg:GetAlpha() == 0 and ours(m) == 5, "the tab menu not restyled")
+assert(bg:GetAlpha() == 0 and oursMenu(m) == 5, "the tab menu not restyled")
 m, bg = stub.openMenu(ChatFrame1Tab, "MENU_UNIT_SELF", { "Set Focus" })
-assert(bg:GetAlpha() > 0.9 and ours(m) == 0, "ours left on the pooled menu frame")
+assert(bg:GetAlpha() > 0.9 and oursMenu(m) == 0, "ours left on the pooled menu frame")
 local bub = stub.chatBubble("StubBubble", "Anyone selling Runecloth?", 330, 330)
 local inst = stub.chatBubble("StubBubbleForbidden", "In a dungeon", 330, 400, true)
 stub.advance(0.2)
@@ -141,7 +144,7 @@ assert(bub.TopEdge:GetAlpha() == 0 and bub.Center:GetAlpha() == 0 and bub.Tail:G
 assert(inst.TopEdge:GetAlpha() == 1 and ours(inst) == 0, "a forbidden bubble touched")
 PolestarUI.Switch("chat", false)
 m, bg = stub.openMenu(ChatFrame1Tab, "MENU_FCF_TAB", { "Rename Window" })
-assert(bub.TopEdge:GetAlpha() == 1 and bub.Tail:GetAlpha() == 1 and ours(bub) == 0 and mini.Left:GetAlpha() == 1 and ours(mini) == 0 and list.NineSlice.TopEdge:GetAlpha() == 1 and ours(list.NineSlice) == 0 and bg:GetAlpha() > 0.9 and ours(m) == 0, "not the stock look when off")
+assert(bub.TopEdge:GetAlpha() == 1 and bub.Tail:GetAlpha() == 1 and ours(bub) == 0 and mini.Left:GetAlpha() == 1 and ours(mini) == 0 and list.NineSlice.TopEdge:GetAlpha() == 1 and ours(list.NineSlice) == 0 and bg:GetAlpha() > 0.9 and oursMenu(m) == 0, "not the stock look when off")
 PolestarUI.Switch("chat", true)
 -- The scroll-to-bottom flash (stock ADD arrow) is faded; our glyph takes the accent while it plays, the icon colour after, and the game's own back when off.
 local stb = ChatFrame1.ScrollToBottomButton
@@ -153,5 +156,5 @@ ChatFrameUtil.StopFlash(stb.Flash)
 assert(select(4, stb.Flash:GetVertexColor()) == 0 and stb.Flash:GetAlpha() == 1, "the stock flash shows after the game reset its alpha")
 assert(select(1, ours_glyph(stb):GetVertexColor()) == Polestar.Theme.Color("icon"), "the glyph stays lit")
 m = stub.openMenu(ChatFrame1Tab, "MENU_FCF_TAB", { "Rename Window", "Create New Window", "Settings" })
-assert(bub.TopEdge:GetAlpha() == 0 and ours(bub) == 5 and mini.Left:GetAlpha() == 0 and ours(m) == 5, "not restyled when on again")
+assert(bub.TopEdge:GetAlpha() == 0 and ours(bub) == 5 and mini.Left:GetAlpha() == 0 and oursMenu(m) == 5, "not restyled when on again")
 preview.hover = mini

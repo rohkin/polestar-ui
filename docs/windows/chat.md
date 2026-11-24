@@ -169,8 +169,8 @@ menus and chat bubbles.
 - **Menus:** the tab menu, a channel name's menu and the chat menu button's
   (submenus too), by their tags (`MENU_FCF_TAB`, `MENU_CHAT_FRAME_CHANNEL`,
   `MENU_CHAT_SHORTCUTS`): the style's ground faded, Polestar's ground and
-  hairline attached through the menu's compositor (`AttachTexture`), which
-  frees them as the menu closes. Rows, text and highlights stay the game's;
+  hairline on a frame of ours on the menu (`ns.MenuLook`), hidden as the
+  menu closes (never its `AttachTexture`: CLIENT.md rule 15). Rows, text and highlights stay the game's;
   every other menu (they share pooled frames) stays the game's.
 - **Bubbles:** outside instances, chat bubbles in the tooltip look (the
   ground a touch more see-through, the hairline), border and tail faded. In

@@ -444,32 +444,12 @@ end
 
 -- The chat's own menus (Blizzard_Menu, by their tags): a tab's right-click
 -- menu, a channel name's, the chat menu button's (its submenus share the
--- callback). Menu frames are pooled and shared by every menu in the game,
--- so nothing of ours stays on one: our ground and hairline are attached
--- through the menu's compositor (AttachTexture, the API's own way to add
--- art), which frees them, and resets the style's art we faded, when the
--- menu closes. No other menu is touched.
+-- callback). Menu frames are pooled and shared by every menu in the game:
+-- ns.MenuLook (Core.lua). No other menu is touched.
 local MENUS = { "MENU_FCF_TAB", "MENU_CHAT_FRAME_CHANNEL", "MENU_CHAT_SHORTCUTS" }
+-- The items sit 8 in from the top and 15 from the bottom (MenuStyle1's inset): 8 all round.
 local function menuLook(menu)
-	if not ns.Enabled("chat") then return end
-	-- On acquire the menu's only regions are its style's ground (MenuStyle1: common-dropdown-bg, 10 out).
-	fadeArt(true, menu:GetRegions())
-	local function piece(layer, sub, r, g, b, a)
-		local t = menu:AttachTexture()
-		t:SetTexture(Theme.Media("white"))
-		t:SetDrawLayer(layer, sub)
-		t:SetVertexColor(r, g, b, a)
-		return t
-	end
-	local r, g, b = Theme.Color("bg")
-	local fill = piece("BACKGROUND", -8, r, g, b, Theme.GroundAlpha())
-	-- The items sit 8 in from the top and 15 from the bottom (MenuStyle1's inset): 8 all round.
-	fill:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
-	fill:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 7)
-	local px = Theme.Pixel(menu)
-	for i, t in ipairs(hairline(menu, fill, function() return piece("BORDER", 7, Theme.Color("border")) end)) do
-		if i <= 2 then t:SetHeight(px) else t:SetWidth(px) end
-	end
+	if ns.Enabled("chat") then ns.MenuLook(menu, 7) end
 end
 
 -- Chat bubbles (ChatBubbleTemplate, a NineSlice panel inside each bubble)
