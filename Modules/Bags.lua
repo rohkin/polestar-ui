@@ -23,8 +23,9 @@ local holders, wells = {}, {} -- per bag: the holder frame (its ID the bag), its
 local newItems = {} -- "bag:slot" of new items, kept past a stock close (it clears the flags)
 local opener -- the frame that opened ours (the stock FRAME_THAT_OPENED_BAGS), by name
 local made = 0
+local laid, laidBags = {}, 0 -- the grid as last laid out: each bag's slot count, how many bags
 local M = {}
-local paint
+local relayout
 
 local function combined() return GetCVar("combinedBags") ~= "0" end
 
@@ -103,6 +104,29 @@ local function makeWell(bag, slot)
 	return w
 end
 
+-- A slot's cooldown sweep; an item that cannot be used yet (enable 0) greys. Returns whether it greyed.
+-- A slot known `empty` is cleared, and so is one whose item has no cooldown
+-- (CooldownFrame_Set clears on a 0 duration): a sort moves the item away and
+-- the well keeps its Cooldown frame, so nothing else ends the old sweep.
+local function paintCooldown(w, empty)
+	local start, duration, enable = C_Container.GetContainerItemCooldown(w.psBag, w.psSlot)
+	start, duration, enable = ns.Clean(start), ns.Clean(duration), ns.Clean(enable)
+	if empty then
+		CooldownFrame_Clear(w.Cooldown)
+	elseif start and duration then
+		CooldownFrame_Set(w.Cooldown, start, duration, enable)
+	end
+	local grey = not empty and enable == 0
+	if grey then w.Icon:SetVertexColor(0.4, 0.4, 0.4) end
+	return grey
+end
+
+-- The search dims what does not match.
+-- The frame's own SetAlpha: the template's (ItemButtonMixin) fades only its parts, none of them ours.
+local function paintSearch(w, it)
+	UIParent.SetAlpha(w, it and ns.Clean(it.isFiltered) and 0.25 or 1)
+end
+
 -- One slot as the stock bags show it: icon, quality, count, locked, search
 -- miss, quest mark, cooldown, new. Values the client may hand over secret in
 -- combat are read clean (docs/CLIENT.md, rule 3). Returns the item, if any.
@@ -110,13 +134,10 @@ local function paintSlot(w)
 	local bag, slot = w.psBag, w.psSlot
 	local it = C_Container.GetContainerItemInfo(bag, slot)
 	ns.PaintItem(w, it and { icon = it.iconFileID, quality = ns.Clean(it.quality), count = ns.Num(it.stackCount), desat = ns.Clean(it.isLocked) })
-	-- The frame's own SetAlpha: the template's (ItemButtonMixin) fades only its parts, none of them ours.
-	UIParent.SetAlpha(w, it and ns.Clean(it.isFiltered) and 0.25 or 1)
+	paintSearch(w, it)
 	local q = it and C_Container.GetContainerItemQuestInfo(bag, slot)
 	w:UpdateQuestItem(q and q.isQuestItem, q and q.questID, q and q.isActive)
-	local start, duration, enable = C_Container.GetContainerItemCooldown(bag, slot)
-	if it and ns.Clean(start) and ns.Clean(duration) then CooldownFrame_Set(w.Cooldown, start, duration, ns.Clean(enable)) end
-	if it and ns.Clean(enable) == 0 then w.Icon:SetVertexColor(0.4, 0.4, 0.4) end
+	w.psGrey = paintCooldown(w, not it)
 	local k = key(bag, slot)
 	if it and C_NewItems.IsNewItem(bag, slot) then newItems[k] = true end
 	if not it then newItems[k] = nil end
@@ -124,20 +145,26 @@ local function paintSlot(w)
 	return it
 end
 
--- Lays every shown bag's wells out in the grid; returns the free and total
--- slots of the backpack and equipped bags (the stock count's).
-local function layout()
+-- Paints every shown bag's slots and returns the free and total slots of the
+-- backpack and equipped bags (the stock count's). `place` lays the wells out
+-- in the grid first; without it they stay where they are (the caller knows
+-- the grid still fits: `fits`).
+local function layout(place)
 	local i, free, total = 0, 0, 0
+	if place then laid, laidBags = {}, 0 end
 	for g, bags in ipairs(groups()) do
 		if g > 1 and i % COLS > 0 then i = i + COLS - i % COLS end
 		for _, bag in ipairs(bags) do
 			holder(bag)
-			local n = numSlots(bag)
+			local n = place and numSlots(bag) or laid[bag]
+			if place then laid[bag], laidBags = n, laidBags + 1 end
 			for slot = 1, n do
 				local w = wells[bag][slot] or makeWell(bag, slot)
-				w:ClearAllPoints() -- the template anchors itself BOTTOMRIGHT of its parent
-				w:SetPoint("TOPLEFT", grid, "TOPLEFT", (i % COLS) * (SIZE + GAP), -math.floor(i / COLS) * (SIZE + GAP))
-				w:Show()
+				if place then
+					w:ClearAllPoints() -- the template anchors itself BOTTOMRIGHT of its parent
+					w:SetPoint("TOPLEFT", grid, "TOPLEFT", (i % COLS) * (SIZE + GAP), -math.floor(i / COLS) * (SIZE + GAP))
+					w:Show()
+				end
 				i = i + 1
 				local it = paintSlot(w)
 				if g == 1 then
@@ -145,12 +172,37 @@ local function layout()
 					if not it then free = free + 1 end
 				end
 			end
-			for slot = n + 1, #wells[bag] do wells[bag][slot]:Hide() end
+			if place then for slot = n + 1, #wells[bag] do wells[bag][slot]:Hide() end end
 		end
 	end
-	-- Never 0 high (docs/CLIENT.md, rule 12).
-	grid:SetHeight(math.max(1, math.ceil(i / COLS) * (SIZE + GAP) - GAP))
+	if place then
+		-- A bag no longer shown (the keyring switched off).
+		for bag, row in pairs(wells) do
+			if not laid[bag] then for _, w in pairs(row) do w:Hide() end end
+		end
+		-- Never 0 high (docs/CLIENT.md, rule 12).
+		grid:SetHeight(math.max(1, math.ceil(i / COLS) * (SIZE + GAP) - GAP))
+	end
 	return free, total
+end
+
+-- The grid is still the bags': the same bags, each with as many slots.
+local function fits()
+	local n = 0
+	for _, bags in ipairs(groups()) do
+		for _, bag in ipairs(bags) do
+			n = n + 1
+			if laid[bag] ~= numSlots(bag) then return false end
+		end
+	end
+	return n == laidBags
+end
+
+-- The shown wells, without asking the client anything.
+local function eachWell(fn)
+	for bag, n in pairs(laid) do
+		for slot = 1, n do fn(wells[bag][slot]) end
+	end
 end
 
 ---------------------------------------------------------------------------
@@ -193,14 +245,14 @@ local function menu()
 	local on = combined()
 	return { { text = on and "Separate bags" or "Combine bags", onClick = function()
 		SetCVar("combinedBags", on and "0" or "1")
-		paint()
+		relayout()
 	end } }
 end
 
 local function build()
 	-- As wide as the grid needs: its columns, the compact pad (ns.Compact's) each side, the frame's 2px edge.
 	local width = GRID_W + 2 * (W.SHELL.pad - 8) + 2
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = width, height = 400, searchPlaceholder = "Search the bags",
+	f = ns.Shell(NAME, { width = width, height = 400, searchPlaceholder = "Search the bags",
 		onSearch = function(text) C_Container.SetItemSearch(text or "") end })
 	ns.Float(f, "Bags")
 	ns.WindowMenu(f, "bags", menu)
@@ -236,23 +288,38 @@ local function build()
 	Polestar.CloseOnEscape(NAME)
 end
 
-function paint()
-	local free, total = layout()
-	paintStrip()
-	ns.SetMoney(money, GetMoney())
+local function title(free, total)
 	local who = ns.PlayerText(UnitName)
 	local sub = ("%d of %d free."):format(free, total)
 	W.ShellTitle(f, "Bags", who and (who .. " · " .. sub) or sub)
+end
+
+-- Everything: the grid laid out, the window sized to it, the footer. On open,
+-- when a bag comes or goes (BAG_CONTAINER_UPDATE) and from the menu.
+function relayout()
+	local free, total = layout(true)
+	paintStrip()
+	ns.SetMoney(money, GetMoney())
+	title(free, total)
 	local h = TOP + grid:GetHeight() + 24
 	f:SetHeight(math.min(MAX_H, f.psHead + f.psTabsH + f.psFootH + h + 2))
 	ns.Footer(f, { { label = "Clean up", onClick = cleanUp } }, {}) -- after the height: it lays the view out
 	W.ShellBody(f, h)
 end
 
+-- The contents only: every slot where it is, the equipped bags, the free
+-- count. A bag's slots no longer its wells: laid out again.
+local function repaint()
+	if not fits() then return relayout() end
+	local free, total = layout()
+	paintStrip()
+	title(free, total)
+end
+
 local function open()
 	if (f and f:IsShown()) or not ContainerFrame_AllowedToOpenBags() then return end
 	if not f then build() end
-	paint()
+	relayout()
 	f:Show()
 end
 
@@ -375,10 +442,31 @@ function M.Enable()
 	-- Not CloseBag/CloseBackpack: CloseAllBags calls them past its own opener
 	-- check (the stock one's), which need not be ours.
 	hooksecurefunc("CloseAllBags", function(frame) asked("close", frame) end)
-	for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BAG_CONTAINER_UPDATE", "ITEM_LOCK_CHANGED", "BAG_UPDATE_COOLDOWN", "INVENTORY_SEARCH_UPDATE",
-		"BAG_NEW_ITEMS_UPDATED", "QUEST_ACCEPTED", "UNIT_QUEST_LOG_CHANGED", "PLAYER_MONEY", "PLAYER_REGEN_ENABLED" }) do
-		Polestar.RegisterEvent(e, function() if f and f:IsShown() then paint() end end)
+	-- Each event repaints only what it changed, as the stock ContainerFrame: a
+	-- sort fires ITEM_LOCK_CHANGED twice a moved slot (one well each) and
+	-- BAG_UPDATE_DELAYED once the bags settled (every slot, no layout).
+	local function on(e, fn)
+		Polestar.RegisterEvent(e, function(_, ...) if f and f:IsShown() then fn(...) end end)
 	end
+	on("BAG_CONTAINER_UPDATE", function() relayout() end)
+	for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BAG_NEW_ITEMS_UPDATED", "QUEST_ACCEPTED", "PLAYER_REGEN_ENABLED" }) do on(e, function() repaint() end) end
+	on("UNIT_QUEST_LOG_CHANGED", function(unit) if unit == "player" then repaint() end end)
+	-- An equipped item's lock names no slot.
+	on("ITEM_LOCK_CHANGED", function(bag, slot)
+		local w = slot and laid[bag] and slot <= laid[bag] and wells[bag][slot]
+		if w then paintSlot(w) end
+	end)
+	on("BAG_UPDATE_COOLDOWN", function()
+		eachWell(function(w)
+			local was = w.psGrey
+			w.psGrey = paintCooldown(w) -- an emptied slot's cooldown reads 0: cleared too
+			if was and not w.psGrey then w.Icon:SetVertexColor(1, 1, 1) end -- usable again (ns.PaintItem's colour)
+		end)
+	end)
+	on("INVENTORY_SEARCH_UPDATE", function()
+		eachWell(function(w) paintSearch(w, C_Container.GetContainerItemInfo(w.psBag, w.psSlot)) end)
+	end)
+	on("PLAYER_MONEY", function() ns.SetMoney(money, GetMoney()) end)
 	M.ready = true
 	park()
 end

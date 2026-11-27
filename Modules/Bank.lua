@@ -17,6 +17,8 @@ local TOP = 48 -- the first row (bag slots label, money) is above
 
 local f, grid, strip, money
 local shown -- the shown bank type (bags), or the shown tab's container ID (tabs)
+local cur = {} -- as last painted: the bank type (t), its label, its containers' signature (sig)
+local at = {} -- the shown wells, by container and slot
 local M = { reloadOff = true } -- ns.Interaction: hiding the stock window ends the interaction
 local paint, buy
 
@@ -128,16 +130,32 @@ local function wire(w)
 	w.psGlow:Hide()
 end
 
+-- The search dims what does not match.
+local function paintSearch(w, it)
+	w:SetAlpha(it and it.isFiltered and 0.25 or 1)
+end
+
+-- A slot's cooldown sweep. A slot known `empty` is cleared, and so is one
+-- whose item has no cooldown (CooldownFrame_Set clears on a 0 duration): a
+-- sort moves the item away and the well keeps its Cooldown frame.
+local function paintCooldown(w, empty)
+	if not CooldownFrame_Set then return end -- the preview's bank scenes without it
+	local start, duration, on = C_Container.GetContainerItemCooldown(w.psBag, w.psSlot)
+	if empty then
+		CooldownFrame_Clear(w.psCooldown)
+	elseif ns.Clean(start) and ns.Clean(duration) then
+		CooldownFrame_Set(w.psCooldown, start, duration, ns.Clean(on))
+	end
+end
+
 local function paintSlot(w)
 	local it = C_Container.GetContainerItemInfo(w.psBag, w.psSlot)
 	ns.PaintItem(w, it and { icon = it.iconFileID, quality = it.quality, count = it.stackCount, desat = it.isLocked })
-	-- The search dims what does not match.
-	w:SetAlpha(it and it.isFiltered and 0.25 or 1)
+	paintSearch(w, it)
 	local q = it and C_Container.GetContainerItemQuestInfo(w.psBag, w.psSlot)
 	w.psQuest:SetShown(q ~= nil and (q.questID ~= nil or q.isQuestItem))
 	if q then w.psQuest:SetTexture(q.questID and not q.isActive and TEXTURE_ITEM_QUEST_BANG or TEXTURE_ITEM_QUEST_BORDER) end
-	local start, duration, on = C_Container.GetContainerItemCooldown(w.psBag, w.psSlot)
-	if CooldownFrame_Set and it and ns.Clean(start) and ns.Clean(duration) then CooldownFrame_Set(w.psCooldown, start, duration, on) end
+	paintCooldown(w, not it)
 	return it
 end
 
@@ -275,7 +293,7 @@ end
 
 local function build()
 	CHAR, ACCT = Enum.BankType.Character, Enum.BankType.Account
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, searchPlaceholder = "Search the bank",
+	f = ns.Shell(NAME, { width = 560, height = 560, searchPlaceholder = "Search the bank",
 		onSearch = function(text) C_Container.SetItemSearch(text or "") end })
 	ns.Dock(f)
 	ns.WindowMenu(f, "bank")
@@ -339,19 +357,45 @@ local function navigation()
 	return curType, curLabel
 end
 
-function paint()
-	local t, label = navigation()
-	ns.SetMoney(money, GetMoney())
-	local bags = bagMode()
+-- The containers a bank shows: every bought bag of it, or the one tab. Also
+-- its bought bags or tabs, why it is locked, and a signature of what the
+-- layout hangs on (the containers and their slot counts).
+local function contents(t)
 	local locked = t and C_Bank.FetchBankLockedReason(t)
 	local data = t and not locked and C_Bank.FetchPurchasedBankTabData(t) or {}
-	-- The containers shown: every bought bag of the bank, or the one tab.
-	local containers = {}
-	if bags then
+	local containers, sig = {}, { tostring(locked), #data }
+	if bagMode() then
 		for _, d in ipairs(data) do containers[#containers + 1] = d.ID end
 	elseif shown and not locked then
 		containers[1] = shown
 	end
+	for _, id in ipairs(containers) do sig[#sig + 1] = id .. ":" .. C_Container.GetContainerNumSlots(id) end
+	return containers, data, locked, table.concat(sig, " ")
+end
+
+-- The banker leads the subtitle, then the free slots and the money held.
+local function title(free, total)
+	local t = cur.t
+	local banker = ns.Clean(UnitName("npc"))
+	local sub = total > 0 and ("%d of %d free."):format(free, total) or cur.label and "Nothing here yet." or "No bank to show."
+	if t and C_Bank.DoesBankTypeSupportMoneyTransfer(t) then sub = sub .. " Holds " .. ns.Coins(C_Bank.FetchDepositedMoney(t)) .. "." end
+	W.ShellTitle(f, cur.label or "Bank", banker and (banker .. " · " .. sub) or sub)
+end
+
+-- The hovered slot's item may have moved: its secure action follows.
+local function rehover()
+	local over = PolestarUIBankSlot
+	if over and over:IsShown() and not InCombatLockdown() then overlay(over.psTarget) end
+end
+
+-- Everything: tabs, layout, footer. On open, a tab, and the tab, setting and
+-- money events.
+function paint()
+	local t, label = navigation()
+	ns.SetMoney(money, GetMoney())
+	local bags = bagMode()
+	local containers, data, locked, sig = contents(t)
+	cur.t, cur.label, cur.sig = t, label, sig
 	local byNum = {}
 	for i, d in ipairs(data) do byNum[i] = d end
 	local y = TOP
@@ -368,12 +412,15 @@ function paint()
 	local total = 0
 	for _, id in ipairs(containers) do total = total + C_Container.GetContainerNumSlots(id) end
 	local wells, k, free = grid.Layout(total), 0, 0
+	at = {}
 	for _, id in ipairs(containers) do
+		at[id] = {}
 		for slot = 1, C_Container.GetContainerNumSlots(id) do
 			k = k + 1
 			local w = wells[k]
 			wire(w)
 			w.psBag, w.psSlot, w.psType = id, slot, t
+			at[id][slot] = w
 			if not paintSlot(w) then free = free + 1 end
 		end
 	end
@@ -383,11 +430,7 @@ function paint()
 	local first = t and not locked and #data == 0 and C_Bank.CanPurchaseBankTab(t) and C_Bank.FetchNextPurchasableBankTabData(t)
 	f.psNote:SetShown(locked ~= nil or first ~= nil)
 	f.psNote:SetText(locked and lockedText(locked) or first and first.purchasePromptBody or "")
-	local banker = ns.Clean(UnitName("npc"))
-	local sub = total > 0 and ("%d of %d free."):format(free, total) or label and "Nothing here yet." or "No bank to show."
-	if t and C_Bank.DoesBankTypeSupportMoneyTransfer(t) then sub = sub .. " Holds " .. ns.Coins(C_Bank.FetchDepositedMoney(t)) .. "." end
-	-- The banker leads the subtitle.
-	W.ShellTitle(f, label or "Bank", banker and (banker .. " · " .. sub) or sub)
+	title(free, total)
 	-- The footer: buy a bag slot, clean up, the money moves, deposit all.
 	local left, right, gates = {}, {}, {}
 	if t and not locked then
@@ -414,9 +457,37 @@ function paint()
 		ns.SetEnabled(b, not g or g[1], g and g[2])
 	end
 	W.ShellBody(f, math.max(y + grid:GetHeight(), f.psNote:IsShown() and TOP + f.psNote:GetStringHeight() or 0) + 24)
-	-- The hovered slot's item may have moved: its secure action follows.
-	local over = PolestarUIBankSlot
-	if over and over:IsShown() and not InCombatLockdown() then overlay(over.psTarget) end
+	rehover()
+end
+
+-- The contents only: every slot where it is, the bag slots, the free count.
+-- Containers come or gone, or a slot count changed: everything.
+local function repaint()
+	local _, data, _, sig = contents(cur.t)
+	if sig ~= cur.sig then return paint() end
+	if strip:IsShown() then paintBags(cur.t, data) end
+	local free, total = 0, 0
+	for _, row in pairs(at) do
+		for _, w in pairs(row) do
+			total = total + 1
+			if not paintSlot(w) then free = free + 1 end
+		end
+	end
+	title(free, total)
+	rehover()
+end
+
+-- A sort sends BAG_UPDATE a bag at every step, and no BAG_UPDATE_DELAYED for
+-- the bank is promised (the stock panel does not wait for one): one repaint a
+-- frame, as the stock panel's MarkDirty.
+local dirty
+local function later()
+	if dirty then return end
+	dirty = true
+	C_Timer.After(0, function()
+		dirty = nil
+		if f:IsShown() then repaint() end
+	end)
 end
 
 function M.Show()
@@ -430,11 +501,31 @@ end
 function M.Enable()
 	ns.Interaction("bank", { Enum.PlayerInteractionType.Banker, Enum.PlayerInteractionType.CharacterBanker, Enum.PlayerInteractionType.AccountBanker },
 		{ frame = NAME, close = function() C_Bank.CloseBankFrame() end, bags = true })
-	for _, e in ipairs({ "BANK_TABS_CHANGED", "BANK_TAB_SETTINGS_UPDATED", "BAG_UPDATE", "BAG_CONTAINER_UPDATE", "ITEM_LOCK_CHANGED",
-		"INVENTORY_SEARCH_UPDATE", "PLAYER_MONEY", "ACCOUNT_MONEY", "PLAYERBANKSLOTS_CHANGED", "PLAYER_ACCOUNT_BANK_TAB_SLOTS_CHANGED",
-		"BAG_UPDATE_COOLDOWN" }) do
-		Polestar.RegisterEvent(e, function() if f and f:IsShown() then paint() end end)
+	-- Each event repaints only what it changed, as the stock BankPanel.
+	local function on(e, fn)
+		Polestar.RegisterEvent(e, function(_, ...) if f and f:IsShown() then fn(...) end end)
 	end
+	for _, e in ipairs({ "BANK_TABS_CHANGED", "BANK_TAB_SETTINGS_UPDATED", "BAG_CONTAINER_UPDATE", "PLAYER_MONEY", "ACCOUNT_MONEY" }) do on(e, function() paint() end) end
+	-- The bank's containers and its bag slots; the player's own bags are the Bags window's.
+	on("BAG_UPDATE", function(bag)
+		if at[bag] or bag == Enum.BagIndex.Characterbanktab or bag == Enum.BagIndex.Accountbanktab then later() end
+	end)
+	on("PLAYERBANKSLOTS_CHANGED", later)
+	on("PLAYER_ACCOUNT_BANK_TAB_SLOTS_CHANGED", later)
+	on("ITEM_LOCK_CHANGED", function(bag, slot)
+		local w = slot and at[bag] and at[bag][slot]
+		if w then paintSlot(w) end
+	end)
+	on("INVENTORY_SEARCH_UPDATE", function()
+		for _, row in pairs(at) do
+			for _, w in pairs(row) do paintSearch(w, C_Container.GetContainerItemInfo(w.psBag, w.psSlot)) end
+		end
+	end)
+	on("BAG_UPDATE_COOLDOWN", function()
+		for _, row in pairs(at) do
+			for _, w in pairs(row) do paintCooldown(w) end
+		end
+	end)
 end
 
 -- The stock window, for the button that switches back to ours (Core.lua).

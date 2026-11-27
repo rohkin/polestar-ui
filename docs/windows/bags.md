@@ -83,8 +83,19 @@ Made with the `stock-to-polestar` skill.
   overlays, Polestar's upgrade arrow, step glow and quest mark. The split is
   the template's stock `StackSplitFrame` (decided); no search sync with the
   Bank (decided).
+- **Updates:** each event repaints only what it changed, as the stock
+  ContainerFrame (a sort used to lay the whole window out on every one):
+  `ITEM_LOCK_CHANGED(bag, slot)` its one well; `BAG_UPDATE_DELAYED`,
+  `BAG_NEW_ITEMS_UPDATED`, `QUEST_ACCEPTED`, `UNIT_QUEST_LOG_CHANGED`
+  (player) and `PLAYER_REGEN_ENABLED` the contents (`repaint`: every slot
+  where it is, the equipped bags, the free count); `BAG_UPDATE_COOLDOWN` the
+  cooldowns, `INVENTORY_SEARCH_UPDATE` the dimming, `PLAYER_MONEY` the money.
+  The layout, window height and footer (`relayout`) only on open, on
+  `BAG_CONTAINER_UPDATE`, from the menu, and when a repaint finds a bag's
+  slot count is no longer its wells'.
 - **Scenes:** `bags`, `bags-barclick`, `bags-combat`, `bags-npc`,
-  `bags-targeting`, `bags-off`, and the second `auction-bags` panel.
+  `bags-targeting`, `bags-off`, `bags-sort` (the events of a sort, by item
+  reads counted), and the second `auction-bags` panel.
 
 ## Plan: the player's bags -> Polestar
 
@@ -120,7 +131,7 @@ when combined, one per bag when not), reagent bag, keyring. It hides when
 none is open.
 
 ### Layout
-- **Shell:** `W.Shell(NAME, { scalePath = "ui.menuScale", width = 484, searchPlaceholder = "Search the bags", onSearch })`,
+- **Shell:** `ns.Shell(NAME, { width = 484, searchPlaceholder = "Search the bags", onSearch })`,
   `ns.WindowMenu(f, "bags", options)`, `ns.Plain(f)`, `ns.Compact(f)`,
   `Polestar.CloseOnEscape(NAME)`. The grid is Bank's (11 columns, 36px wells,
   4 apart), so as wide as the grid needs: 484 = 436 + 2 × 24 pad + 2 edge (computed from COLS, SIZE, GAP; no scrollbar gutter, it sits in the pad). Height fits the rows, at most 600; past that

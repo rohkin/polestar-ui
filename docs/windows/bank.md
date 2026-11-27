@@ -48,4 +48,14 @@ itself) and bag slots to put more in.
   right-click into the bank is the stock bag button's code: it deposits into
   `BankFrame:GetActiveBankType()` and warns of refunds only while the stock
   bank shows, so with ours it cannot pick the Warband bank or warn.
+- **Updates:** as the stock BankPanel: `ITEM_LOCK_CHANGED(bag, slot)` paints its
+  one well; `BAG_UPDATE` of a shown container or the bank's bag slots,
+  `PLAYERBANKSLOTS_CHANGED` and `PLAYER_ACCOUNT_BANK_TAB_SLOTS_CHANGED` one
+  repaint of the contents a frame (the stock `MarkDirty`; the stock panel
+  waits for no `BAG_UPDATE_DELAYED`, so neither does ours), which lays
+  everything out only if a container came, went or changed size;
+  `BAG_UPDATE_COOLDOWN` the cooldowns, `INVENTORY_SEARCH_UPDATE` the dimming.
+  Tabs, layout and footer only on open, a tab, `BANK_TABS_CHANGED`,
+  `BANK_TAB_SETTINGS_UPDATED`, `BAG_CONTAINER_UPDATE` and the money events.
+  Scene `bank-sort`.
 - **Tests:** `stub_bank.lua` (bags, bag slots, `C_Container` slots, `C_Bank`, the cursor); scenes `bank` (grid, the banker's portrait, bag slots, overlay type `item` and the secure target on the hovered slot, none in combat, nothing picked up while targeting, Clean up), `bank-warband` (money, Withdraw off with its reason, the refund prompt, the lock), `bank-buy-tab` (bag slots, the first purchase, the tab layout).

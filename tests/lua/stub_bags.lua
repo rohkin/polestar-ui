@@ -17,7 +17,11 @@ function C_ActionBar.ShouldShowKeyring() return true end
 function IsAccountSecured() return true end
 EditModeUtil = EditModeUtil or {}
 function EditModeUtil:GetRightActionBarWidth() return 0 end
-function CooldownFrame_Set(cd, start, duration, enable) cd.psStub = { start, duration, enable } end
+-- As Blizzard_FrameXMLUtil/Cooldown.lua: no running cooldown clears the sweep.
+function CooldownFrame_Clear(cd) cd.psStub = nil end
+function CooldownFrame_Set(cd, start, duration, enable)
+	if enable and enable ~= 0 and start > 0 and duration > 0 then cd.psStub = { start, duration, enable } else CooldownFrame_Clear(cd) end
+end
 
 -- The bags: slot = { icon, quality, count, locked, extra } (extra: quest,
 -- cooldown = { start, duration, enable }, filtered). Slot counts per bag.
