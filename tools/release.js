@@ -3,6 +3,7 @@
 // Does what the "Release 0.0.5" commit did: toc Version, "## Unreleased" -> "## <version>", commit, lightweight tag v<version>.
 const { execSync, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const root = path.join(__dirname, "..");
@@ -37,7 +38,9 @@ if (!/^\s*[-*] /m.test(m[1])) fail('"## Unreleased" has no entries');
 console.log(`Release ${version} (from ${cur.join(".")}), tag ${tag}`);
 console.log("Touches: PolestarUI.toc, CHANGELOG.md\n## " + version + "\n" + m[1].trimEnd() + "\n");
 const pushCmd = `git push origin main ${tag}`;
-if (dry) { console.log("Dry run: nothing changed. Real run pushes with:\n  " + pushCmd); process.exit(0); }
+const notesFile = path.join(os.tmpdir(), `polestarui-notes-${version}.md`);
+const ghCmd = `gh release create ${tag} --title ${version} --notes-file "${notesFile}" --latest`;
+if (dry) { console.log("Dry run: nothing changed. Real run pushes with:\n  " + pushCmd + "\nthen creates the GitHub release with:\n  " + ghCmd); process.exit(0); }
 
 if (spawnSync("npm", ["test"], { cwd: root, stdio: "inherit", shell: true }).status !== 0) fail("npm test failed");
 
@@ -47,5 +50,8 @@ git("add -- PolestarUI.toc CHANGELOG.md");
 git(`commit -m "Release ${version}"`);
 git(`tag ${tag}`);
 console.log(`Committed "Release ${version}" and tagged ${tag}.`);
-if (push) { execSync(pushCmd, { cwd: root, stdio: "inherit" }); }
-else console.log("Push with:\n  " + pushCmd);
+if (push) {
+	execSync(pushCmd, { cwd: root, stdio: "inherit" });
+	fs.writeFileSync(notesFile, m[1].trim() + "\n");
+	execSync(ghCmd, { cwd: root, stdio: "inherit" });
+} else console.log("Push with:\n  " + pushCmd + "\nthen:\n  " + ghCmd + "  (notes: this version's CHANGELOG section)");
