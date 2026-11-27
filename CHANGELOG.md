@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1
 - Chat, damage meter and player frame: they now look like Polestar windows: the starry header band and accent rim over the chat tabs and the meter header, the rim on the player frame, and a window shadow round the chat. A chat window pulled off the dock gets its own header. All follow Polestar's Header band, Rim and Shadow settings; "Fade chat when idle" fades them too.
 - Settings: Chat, Damage meter and Unit frames each have their own tab, where "Override Polestar's look" sets the starlit band, accent rim, border, shadow and background opacity for that element alone. Off (the default), they follow the Frames look as before. The unit frame and chat options moved there from the HUD tab.
 - Bags, Bank: Clean up no longer stutters, and a cooldown timer no longer stays on the slot an item left.
