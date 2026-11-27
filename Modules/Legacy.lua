@@ -909,7 +909,7 @@ local function build()
 	-- One search box, for the page shown: the challenges, or the tree's talents.
 	-- No sidebar: the sections are a slim icon rail, the trees top tabs and the
 	-- categories a column of the Challenges page.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 760, height = 560, sidebar = 0, rail = true, searchPlaceholder = "Search", onSearch = function(text)
+	f = ns.Shell(NAME, { width = 760, height = 560, sidebar = 0, rail = true, searchPlaceholder = "Search", onSearch = function(text)
 		text = text or ""
 		if section == "tree" then
 			if tree.query == text:lower() then return end

@@ -9,6 +9,16 @@ if ns.tooOld then return end
 
 local PAGE, KEY = "Polestar: UI", "polestarui"
 local WINDOWS, HUD, ICONS = "Windows", "HUD", "Icons"
+-- The elements with a tab of their own (their options and their own look,
+-- ns.HUD's CHAT, METER and UNITS): module key (its hudLook group too), tab,
+-- what the look's help calls them, what its band and rim are.
+local ELEMENTS = {
+	{ "unitframes", "Unit frames", "unit frames", "The header band's stars over the player's health bar (with Sparkle on).", "The accent line along the top of the player's frame, with its light." },
+	{ "chat", "Chat", "chat windows", "The starlit band behind the chat tabs.", "The accent line along the top of the chat's tab header, with its light." },
+	{ "damagemeter", "Damage meter", "damage meter's windows", "The starlit band behind each window's header.", "The accent line along the top of each window, with its light." },
+}
+local OWN_TAB = {}
+for _, e in ipairs(ELEMENTS) do OWN_TAB[e[1]] = e[2] end
 
 -- Each module's name on the page; one missing here shows its /pui key.
 local LABELS = {
@@ -100,7 +110,9 @@ end
 
 -- One HUD look group's controls (PolestarUIDB.hudLook[group]), as Polestar's
 -- Frames tab offers them for its windows. Shown as followed while off.
-local function lookControls(group, what)
+-- `el` (an ELEMENTS row): one element's own look over the Frames look, with
+-- the window head's band and rim.
+local function lookControls(group, what, el)
 	local H = ns.HUD
 	local function db() PolestarUIDB.hudLook = PolestarUIDB.hudLook or {}; return PolestarUIDB.hudLook end
 	local function own() local o = db()[group]; return o and o.override and o or nil end
@@ -118,7 +130,8 @@ local function lookControls(group, what)
 	local function pct(v) return math.floor((tonumber(v) or 0) * 100 + 0.5) end
 	local controls = {
 		{ kind = "toggle", label = "Override Polestar's look", search = "hud border, shadow, background, " .. what,
-			help = "Off: the " .. what .. " wear Polestar's own Frames settings (border, shadow, background opacity). On: the settings below, for these alone.",
+			help = el and "Off: the " .. what .. " wear the Frames look (the HUD tab): Polestar's own settings, or that look's override. On: the settings below, for these alone."
+				or "Off: the " .. what .. " wear Polestar's own Frames settings (border, shadow, background opacity). On: the settings below, for these alone.",
 			get = function() return not following() end,
 			set = function(v)
 				local d = db()
@@ -140,7 +153,15 @@ local function lookControls(group, what)
 		controls[#controls + 1] = c
 	end
 	local borderOff = function() local o = own(); return o and o.border == false end
-	local get, set = field("border", function(v) return v ~= false end)
+	local get, set
+	if el then
+		get, set = field("band", function(v) return v ~= false end)
+		add({ kind = "toggle", label = "Starlit band", search = "band, header band, stars, sky", help = el[4], get = get, set = set })
+		get, set = field("rim", function(v) return v ~= false end)
+		add({ kind = "toggle", label = "Accent rim", search = "rim, gold line, accent line", help = el[5] .. " Polestar's own skin only.",
+			disabled = function() return Polestar.Theme.SkinKey() ~= "polestar" end, get = get, set = set })
+	end
+	get, set = field("border", function(v) return v ~= false end)
 	add({ kind = "toggle", label = "Window border", search = "border, edge, outline", help = "The line round each of them.", get = get, set = set })
 	get, set = field("borderSize", function(v) return tonumber(v) or 1 end)
 	add({ kind = "slider", label = "Border", min = 1, max = 4, step = 1, format = "%d px", search = "border thickness, border size",
@@ -276,19 +297,19 @@ Polestar.OnLogin(function()
 	-- The HUD's look, per group (ns.HUD: Edge, ShadowColor, GroundAlpha): Polestar's
 	-- Frames settings, or with "Override" on the group's own, which start as
 	-- Polestar's (H.Seed). Every change repaints (Theme.Refresh).
-	for _, g in ipairs({ { "frames", "Frames look", "unit frames, cast bars, the damage meter and the minimap" },
+	for _, g in ipairs({ { "frames", "Frames look", "cast bars, the minimap, tooltips and (unless overridden on their own tabs) the unit frames, chat and the damage meter" },
 		{ "plates", "Plates look", "nameplates and their cast bars" } }) do
 		register({ tab = HUD, section = g[2], controls = lookControls(g[1], g[3]) })
 		if g[1] == "plates" then register({ tab = HUD, section = "Nameplate cast bars", controls = plateCast() }) end
 	end
-	register({ tab = HUD, section = "Unit frames", controls = {
+	register({ tab = OWN_TAB.unitframes, section = "Unit frames", controls = {
 		ufToggle("portrait", "3D portraits", "The unit's model in a square beside the bars."),
 		ufToggle("powerText", "Power text", "The unit's power as a number, shown as the game's Status Text options show the health."),
 		ufToggle("sparkle", "Sparkle", "Polestar's stars over the health bars, as over its windows' header band."),
 		ufToggle("smooth", "Smooth bars", "Health and power glide to a new value instead of jumping."),
 		ufToggle("trail", "Damage trail", "Health just lost stays red for a moment, then drains away."),
 	} })
-	register({ tab = HUD, section = "Chat", controls = {
+	register({ tab = OWN_TAB.chat, section = "Chat", controls = {
 		{ kind = "toggle", label = "Fade chat when idle", search = "chat fade, chat background, tabs",
 			help = "On: the chat's background, outline, tabs and side buttons fade back when the mouse leaves it. Off: they stay fully shown. Old messages still fade out as the game does them.",
 			get = function() return PolestarUIDB.chatFade and true or false end,
@@ -298,11 +319,16 @@ Polestar.OnLogin(function()
 			get = function() return not PolestarUICharDB.chatNoHistory end,
 			set = function(v) PolestarUICharDB.chatNoHistory = v == false or nil end },
 	} })
+	-- Each element's own look, on its tab: off (the default), the Frames look.
+	for _, e in ipairs(ELEMENTS) do
+		register({ tab = e[2], section = e[2] .. " look", controls = lookControls(e[1], e[3], e) })
+	end
 	register({ tab = ICONS, section = "Icons look", preview = iconsPreview,
 		controls = lookControls("icons", "action and bag buttons, the micro menu, buffs and the cooldown viewer's icons") })
 end)
 
--- Opens our page on the tab holding `key`'s toggle (a window's "..." menu).
+-- Opens our page on `key`'s own tab (chat, damagemeter, unitframes), else on
+-- the tab holding its toggle (a window's "..." menu).
 -- Polestar.UI is absent only where Polestar's UI is not loaded (the preview).
 function ns.ShowSettings(key)
 	local UI = Polestar.UI
@@ -311,5 +337,5 @@ function ns.ShowSettings(key)
 	if Polestar.Hidden() then Polestar.SetHidden(false) end
 	UI.ShowOptions(KEY)
 	local O = UI.Options
-	if O and O.Select then O.Select(KEY, key and tabOf(key) or nil) end
+	if O and O.Select then O.Select(KEY, key and (OWN_TAB[key] or tabOf(key)) or nil) end
 end

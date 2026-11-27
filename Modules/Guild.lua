@@ -478,7 +478,7 @@ local function buildDetail()
 	d.RankPick = W.Button(d, "", function(self)
 		if W.MenuShown(self) then return W.HideMenu() end
 		local m = detailMember()
-		if m then W.ShowMenu(self, rankItems(m), { minWidth = w }) end
+		if m then W.ShowMenu(self, rankItems(m), { minWidth = w, current = true }) end
 	end, { width = w })
 	d.RankPick:SetPoint("TOPLEFT", d.RankLabel, "BOTTOMLEFT", 0, -6)
 	local function note(label, anchor)
@@ -946,7 +946,7 @@ end
 local function build()
 	-- The compact grid, no sidebar: the stock window's tabs are a slim icon
 	-- rail (ns.GameRail); the roster's search and filter sit on the tab row.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 690 + 2 + W.SHELL.rail, height = 520, sidebar = 0, rail = true })
+	f = ns.Shell(NAME, { width = 690 + 2 + W.SHELL.rail, height = 520, sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "guild", optionsItems)
 	ns.Compact(f)

@@ -41,6 +41,11 @@ function M.SetPoint(self, point, rel, relPoint, x, y)
 	end
 	table.insert(self.points, p)
 end
+-- stub_client.lua (loaded before): an edit box takes its width from its anchors.
+if stub.fitEdit then
+	local setPoint = M.SetPoint
+	function M.SetPoint(self, ...) setPoint(self, ...) stub.fitEdit(self) end
+end
 
 function M.SetJustifyH(self, j) self.justifyH = j end
 function M.SetJustifyV(self, j) self.justifyV = j end

@@ -36,7 +36,7 @@ local f, page
 local M = {}
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 720, height = 560 })
+	f = ns.Shell(NAME, { width = 720, height = 560 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "${key}")
 	ns.Compact(f) -- the compact grid: lay content out by f.psPad

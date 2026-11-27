@@ -74,8 +74,8 @@ end
 
 -- A trainer of the player's class, as Polestar knows them (Engine.IsClassTrainer).
 local function classTrainer()
-	local E = Polestar.Engine
-	return not IsTradeskillTrainer() and not petTrainer() and E and E.IsClassTrainer and E.IsClassTrainer(Polestar.Compat.GetNpcID("npc"))
+	local E = Polestar.Engine -- none in the preview (Polestar's Core and Theme only)
+	return not IsTradeskillTrainer() and not petTrainer() and E and E.IsClassTrainer(Polestar.Compat.GetNpcID("npc"))
 end
 
 -- Categories as the stock list's (TrainerUI_UseCategories: never at a pet
@@ -196,7 +196,7 @@ local function filterMenu(anchor)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, searchPlaceholder = "Search", onSearch = function(text)
+	f = ns.Shell(NAME, { width = 560, height = 560, searchPlaceholder = "Search", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then paint() end
 	end })

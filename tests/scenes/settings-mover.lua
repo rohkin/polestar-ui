@@ -25,5 +25,5 @@ local l0, t0 = f:GetLeft(), f:GetTop()
 stub.dragHeader(f, 80, -50)
 p = PolestarUIDB.pos.PolestarUIBags
 local _, rel, _, x, y = f:GetPoint(1)
-assert(rel == UIParent and x == l0 + 80 and y == t0 - 50, "the header did not drag it")
+assert(rel == UIParent and math.abs(x - (l0 + 80 / k)) < 1e-6 and math.abs(y - (t0 - 50 / k)) < 1e-6, "the header did not drag it")
 assert(p and p[1] == x and p[2] == y, "drag not saved")

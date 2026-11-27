@@ -17,7 +17,7 @@ Polestar.Widgets.OnOptionsRegistered(function(spec)
 		in_[spec.section][c.label] = c
 	end
 end)
-for _, s in ipairs({ "Windows/Windows", "Windows/Docking", "HUD/HUD", "HUD/Frames look", "HUD/Plates look", "HUD/Unit frames", "HUD/Chat", "Icons/Icons look" }) do
+for _, s in ipairs({ "Windows/Windows", "Windows/Docking", "HUD/HUD", "HUD/Frames look", "HUD/Plates look", "Unit frames/Unit frames", "Unit frames/Unit frames look", "Chat/Chat", "Chat/Chat look", "Damage meter/Damage meter look", "Icons/Icons look" }) do
 	assert(sections[s], "no section " .. s)
 end
 

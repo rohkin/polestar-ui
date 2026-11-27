@@ -344,7 +344,7 @@ end
 local function build()
 	-- The compact grid, no sidebar: the stock tabs are top tabs, the window as
 	-- wide as the gear's columns and weapon row need.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 540 })
+	f = ns.Shell(NAME, { width = 640, height = 540 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "inspect")
 	f.Search:Hide()

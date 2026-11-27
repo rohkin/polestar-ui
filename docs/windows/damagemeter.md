@@ -2,7 +2,7 @@
 
 The game's own damage meter (Blizzard_DamageMeter, loaded on Forever),
 restyled in place and never rebuilt (`Modules/DamageMeter.lua`), in the
-HUD's look: our HUD ground and hairline, no header band, flat bars in the
+HUD's look: our HUD ground and hairline, Polestar's window head over its header (band, rim), flat bars in the
 theme's accent or class colours, Polestar's faces, outlined, the session
 letter on an accent chip.
 
@@ -30,7 +30,7 @@ faded again each frame). Our art is textures made on the stock frames
 **Parts:**
 | Stock part | Ours | How | Gotcha |
 |---|---|---|---|
-| `Header` (atlas) | faded; a hairline under the header strip | `SetAlpha(0)` (the game never writes its alpha) | HUD rule: no band |
+| `Header` (atlas) | faded; a hairline under the header strip; over the strip the window head (`H.Head`: Polestar's header band and haze, the accent rim and its light), textures of ours on the container, so gone with it when minimized | `SetAlpha(0)` (the game never writes its alpha) | follows Polestar's Header band (`ui.band`) and Rim (`ui.rim`) live (or the meter look's own, `H.Band`/`H.Rim`), and the game's Background Transparency as the ground does (its strength is the ground texture's alpha); the shadow is the ground's (`H.Ground`) |
 | `MinimizeContainer.Background` (alpha written by the game: Background Transparency) | emptied; our HUD ground (`H.Ground`) on the container at that alpha times the HUD's Background opacity (`H.GroundAlpha`) | `SetTexture(nil)` (given back with `SetAtlas("damagemeters-background")`); its `GetAlpha()` read each frame | rule 15's chat lesson: never faded, so its alpha stays live. On the container, as the game's: minimized, it hides with it and only the header's texts stay |
 | `SessionTimer`, `SessionName` (the session letter: "C", "O", a number), `TypeName`, `NotActive` | Polestar's faces, outlined, at the game's size, in theme colours: the type label a title (`heading`, `text`, one size up: with the game's face, a single weight, `heading` and `label` are the same font, so only size marks it), the timer `number` in `textDim`, the session letter a chip's caption (`caption`, `accent`) on our pill, `NotActive` `label` in `textMuted` (the game's colour kept and put back when off); face, size and colour checked each frame and set again if anything changed them | `H.Face`, `SetTextColor`; each frame the font is checked against ours and set again if anything changed it | never read (the timer is secret-derived). Nothing in the source sets their font again (the session dropdown's template restyles its own `Text`, not `SessionName`); the check is a guard |
 | `MinimizeButton` (normal, pushed, highlight atlases; `SetMinimized` swaps them) | faded; our `chevron-up` glyph (`chevron-down` while minimized, read from the container's `IsShown`), a hover wash | `SetAlpha(0)` on the three textures; ours on the button: a glyph (`ARTWORK` 7, `icon` token) and a `HIGHLIGHT`-layer wash, which the client shows on mouse-over (no script) | `SetAtlas` keeps the alpha, so faded once |
@@ -103,7 +103,7 @@ player windows on UIParent, the header, dropdowns, container, ScrollBox of
 pooled rows, the pinned row, the breakdown; rows laid out per Style with the
 game's atlases and alphas set again on each acquire; Edit Mode's settings and
 sample session; secret data in combat), every frame and region guarded.
-Scenes: `damagemeter`, `damagemeter-classcolour`, `damagemeter-combat`,
+Scenes: `damagemeter-head` (the head: band and rim live with Polestar's settings, the Background Transparency, combat, off), `damagemeter`, `damagemeter-classcolour`, `damagemeter-combat`,
 `damagemeter-editmode`, `damagemeter-styles` (Thin, Bordered),
 `damagemeter-window2` (a player's window, a breakdown, window 1 minimized:
 the expand glyph), `damagemeter-menus` (the type menu, MenuStyle1, then
@@ -114,7 +114,11 @@ MenuStyle2), `damagemeter-off` (buttons and menus back).
 through hover, press and an open menu (the game only calls `SetAtlas`); the
 hover wash on each button; the type menu's category submenus restyled too;
 that our ground on the container draws
-under the header's texts and buttons (the container is `useParentLevel`);
+under the header's texts and buttons (the container is `useParentLevel`), the band with it, and that the rim's light (OVERLAY on the container, 10% at most) does not dim them;
 the one-frame flash of a newly acquired row's art; the icon hairline at Bar
 Height under 24; the breakdown's ground; that a Bordered row's art (a frame
 round the bar, offset 6 and 7) is fully covered by fading it. The session pill: that it frames the letter (centred on the button, as the letter is) and a session number ("12") fits it; the fills' 0.55 mix on the in-game accent and class colours.
+
+## Its own look
+
+The windows' grounds, edges, heads and shadows, the header seam, the row tracks, the row icons' hairlines (`H.METER_ICONS`: 2 px at most while following) and the breakdown's ground are painted in the meter's look (`H.METER`, HUD.lua); its own tab on our settings page (`ns.ShowSettings("damagemeter")`) holds "Damage meter look": off (the default), the Frames look (Polestar's Frames settings, or the Frames override); on (`PolestarUIDB.hudLook.damagemeter.override`), its own band, rim, border, shadow and ground, started from what it wore (`H.Seed`), changed live (`Theme.Refresh`). Scene: `settings-looks`. The meter's menus keep the shared Frames look (`ns.MenuLook`).

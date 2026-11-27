@@ -27,7 +27,7 @@ end
 
 function M.Show()
 	if not f then
-		f = W.Shell("PolestarUITestNPC", { scalePath = "ui.menuScale", width = 760, height = 600 })
+		f = PolestarUI.Shell("PolestarUITestNPC", { width = 760, height = 600 })
 		local b = ns.SubjectBlock(f)
 		b.icon:SetTexture(136240)
 		b.name:SetText("Test NPC")

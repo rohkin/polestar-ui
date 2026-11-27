@@ -223,7 +223,7 @@ end
 -- The edge: the threat the player holds on the unit, in the game's threat
 -- colours; the player's own frame in danger while in combat; else the border.
 local function edge(f, unit)
-	local a = H.GroundAlpha()
+	local a = H.GroundAlpha(H.UNITS)
 	if unit == "player" or unit == "vehicle" then
 		if f.spec.unit == "player" and ns.Clean(UnitAffectingCombat("player")) then
 			local r, g, b = Theme.Color("danger")
@@ -301,7 +301,9 @@ local function paint(f, snap)
 	local health = UnitHealth(unit)
 	H.SetValue(f.Health, health, smooth)
 	H.SetTrail(f.Health, health, snap, opt("trail"), max)
-	if f.Health.psSpark then H.PaintSparkle(f.Health, opt("sparkle")) end
+	-- The player's frame as a Polestar window's head: its fill is the band's
+	-- sky, the sparkle its stars (gone with Polestar's band off); the rim: paintHead.
+	if f.Health.psSpark then H.PaintSparkle(f.Health, opt("sparkle") and H.Band(H.UNITS)) end
 	-- Incoming heals: the fill's own colour, lighter, continuing it.
 	local heals, absorbs, over, healAbsorbs, overHeal = prediction(unit)
 	f.Heal:SetStatusBarColor(H.HealColor(r, g, b, 0.7))
@@ -314,8 +316,8 @@ local function paint(f, snap)
 	glow(f.OverAbsorb, over, "text")
 	glow(f.OverHealAbsorb, overHeal, "danger")
 	H.SetBarColor(f.Power, H.PowerColor(unit))
-	H.SetTrack(f.Health, H.GroundAlpha())
-	H.SetTrack(f.Power, H.GroundAlpha())
+	H.SetTrack(f.Health, H.GroundAlpha(H.UNITS))
+	H.SetTrack(f.Power, H.GroundAlpha(H.UNITS))
 	f.Sep:SetVertexColor(Theme.Color("border"))
 	local powerMax = UnitPowerMax(unit)
 	f.Power:SetMinMaxValues(0, powerMax)
@@ -350,6 +352,13 @@ end
 
 local function paintAll(snap)
 	for _, f in ipairs(frames) do paint(f, snap) end
+end
+
+-- The player's window rim (H.Head, build): on a theme change and a new
+-- layout only, never with each health or power event.
+local function paintHead()
+	local f = byUnit.player
+	if f and f.head then H.PaintHead(f.head, true) end
 end
 
 ---------------------------------------------------------------------------
@@ -542,7 +551,8 @@ local function build(spec)
 	ClickCastFrames = ClickCastFrames or {} -- click-casting addons (Clique): the standard registry, either load order
 	ClickCastFrames[f] = true
 	f.Ground = H.Ground(f)
-	if spec.portrait then f.portrait = H.Portrait(f, spec.slim) end
+	f.Ground.look = H.UNITS -- the unit frames' own look (their override, else the Frames look)
+	if spec.portrait then f.portrait = H.Portrait(f, spec.slim, H.UNITS) end
 	if spec.feedback then feedbackText(f) end
 	-- A target of target has no events of its own (UNIT_TARGET only says it
 	-- changed): redrawn five times a second while it shows, as the stock ones
@@ -624,6 +634,14 @@ local function build(spec)
 		if f.levelText then f.levelText:SetPoint("LEFT", f.Health, "LEFT", 4, 0) end
 		f.Name:SetPoint("LEFT", f.levelText or f.Health, f.levelText and "RIGHT" or "LEFT", 4, 0)
 		f.Name:SetPoint("RIGHT", f.healthText or f.Health, f.healthText and "LEFT" or "RIGHT", -4, 0)
+	end
+	if spec.unit == "player" then
+		-- The window rim and its light (H.Head, no band: the health fill is the
+		-- band), on a frame of ours over the bars.
+		local top = CreateFrame("Frame", nil, f)
+		top:SetAllPoints(f)
+		top:SetFrameLevel(f.Health:GetFrameLevel() + 4)
+		f.head = H.Head(top, f, { band = false, size = function() return f:GetSize() end, look = H.UNITS })
 	end
 	f:HookScript("OnEnter", onEnter)
 	f:HookScript("OnLeave", onLeave)
@@ -857,6 +875,7 @@ function M.Apply()
 	if on then
 		place()
 		paintAll()
+		paintHead()
 	end
 end
 
@@ -973,6 +992,7 @@ function M.Enable()
 	if not built then
 		built = true
 		for _, spec in ipairs(SPECS) do build(spec) end
+		paintHead() -- here too: M.Apply waits out a fight
 		driver = CreateFrame("Frame")
 		for _, e in ipairs(UNIT_EVENTS) do driver:RegisterEvent(e) end
 		for _, e in ipairs(ALL_EVENTS) do driver:RegisterEvent(e) end
@@ -993,7 +1013,11 @@ function M.Enable()
 			place()
 			paintAll()
 		end, M)
-		Theme.OnChanged(function() if ns.Enabled(KEY) then paintAll() end end)
+		Theme.OnChanged(function()
+			if not ns.Enabled(KEY) then return end
+			paintAll()
+			paintHead()
+		end)
 	end
 	M.Apply()
 end
@@ -1015,7 +1039,7 @@ end
 M.Option, M.SetOption = opt, setOpt
 
 local function buildOptions()
-	local f = W.Shell(OPTIONS, { scalePath = "ui.menuScale", sidebar = 0, width = 520, height = 360 })
+	local f = ns.Shell(OPTIONS, { sidebar = 0, width = 520, height = 360 })
 	ns.Plain(f)
 	ns.WindowMenu(f, KEY)
 	Polestar.CloseOnEscape(OPTIONS)

@@ -79,7 +79,7 @@ end
 -- against. Read once per paint.
 local function upgradeSlots()
 	local up, Gear = {}, Polestar.Gear
-	if not (Gear and Gear.Bags and Gear.Bags.IsOn() and C_Container) then return up end
+	if not (Gear and Gear.Bags.IsOn() and C_Container) then return up end -- no Gear: the preview
 	for bag = 0, NUM_BAG_SLOTS or 4 do
 		for i = 1, C_Container.GetContainerNumSlots(bag) do
 			local link = C_Container.GetContainerItemLink(bag, i)
@@ -796,7 +796,7 @@ end
 local function build()
 	-- The compact grid, no sidebar: the sections are top tabs, the window as
 	-- wide as its six tabs need (the gear wants 640).
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 700, height = 540 })
+	f = ns.Shell(NAME, { width = 700, height = 540 })
 	ns.Dock(f)
 	-- The window menu's options: the drawer put away and back, for every
 	-- character, on the sections that have it.

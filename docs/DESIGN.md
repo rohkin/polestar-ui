@@ -271,9 +271,12 @@ tooltip, nameplates, objective tracker, error and raid warning text, mirror
 timers. All are high Risk (secure headers, protected positions in combat) except
 the tooltip, XP bar and error text (low).
 
-HUD elements cast no window shadow and carry no band: they sit on the world, so
-they follow Polestar's Transparent guide-window rules (outlined text, faint
-tracks), with a panel ground only where the player turns it on.
+HUD elements sit on the world, so they follow Polestar's Transparent
+guide-window rules (outlined text, faint tracks). The ones that are windows
+in all but name (the chat, the damage meter, the player's frame) wear a shell
+window's head and shadow in the Frames look (`H.Head`, `H.Shadow`: the header
+band, the rim, the window shadow, each following Polestar's own setting); the
+small pieces (buttons, plates, bars) carry no band.
 
 Unit frames replace the stock ones, which stay as Edit Mode's proxies, only
 veiled (CLIENT.md, rule 16). The other built HUD pieces are restyled in place

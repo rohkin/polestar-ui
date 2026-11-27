@@ -499,7 +499,7 @@ end
 
 local function build()
 	-- Three four-column trees side by side, on the compact grid.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 780, height = 650, searchPlaceholder = "Search talents", onSearch = function(text)
+	f = ns.Shell(NAME, { width = 780, height = 650, searchPlaceholder = "Search talents", onSearch = function(text)
 		query = (text or ""):lower()
 		if f:IsShown() then M.Show() end
 	end })

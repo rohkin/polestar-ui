@@ -775,7 +775,7 @@ end
 ---------------------------------------------------------------------------
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 560, height = 560, sidebar = 0 })
+	f = ns.Shell(NAME, { width = 560, height = 560, sidebar = 0 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "mail")
 	ns.Plain(f) -- before the grid: BodyWidth is the compact one

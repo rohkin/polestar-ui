@@ -53,7 +53,9 @@ local function check(n)
 	assert(not fe or not fe[5]:IsShown(), "the window's contact line at the seam")
 	probe:Show()
 	local fx, px = select(3, point(f, "TOPLEFT")), select(3, point(probe, "TOPLEFT"))
-	assert(px == fx + f:GetWidth() + d:GetWidth() + 32, "the dock counts the drawer wrong at " .. n .. " px")
+	-- Offsets in each frame's own units (the windows draw at the Menu scale's base).
+	local s = f:GetScale()
+	assert(math.abs(px * probe:GetScale() - ((fx + f:GetWidth() + d:GetWidth()) * s + 32)) < 1e-6, "the dock counts the drawer wrong at " .. n .. " px")
 	probe:Hide()
 end
 check(4)

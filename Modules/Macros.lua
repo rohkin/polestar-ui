@@ -231,7 +231,7 @@ local function buildPicker()
 				choose(p.psIcon)
 			end }
 		end
-		W.ShowMenu(self, items)
+		W.ShowMenu(self, items, { current = true })
 	end, 14)
 	Theme.Skin(p.Filter, "editbox")
 	p.Filter:SetPoint("RIGHT", p, "RIGHT", -24, 0)
@@ -486,7 +486,7 @@ local function editor(parent, w)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 560 })
+	f = ns.Shell(NAME, { width = 640, height = 560 })
 	ns.Dock(f)
 	ns.WindowMenu(f, "macros")
 	f.Search:Hide() -- the stock window has none

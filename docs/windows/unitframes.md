@@ -68,7 +68,7 @@ words.
 
 **Colours** (from the player's Polestar theme, never fixed):
 - Ground: the scheme's `bg` at the HUD's opacity (`H.GroundAlpha`: Polestar's
-  Background opacity, or the Frames look's own while it overrides Polestar's), edged by Polestar's window border (`H.Edge`: its colour or
+  Background opacity, or the unit frames' look's own: `H.UNITS`, their override on the Unit frames tab, else the Frames look's), edged by Polestar's window border (`H.Edge`: its colour or
   the accent, `windowBorder`; its size 1-4 px, the first pixel inside, the rest outward, as Theme.Border lays a window's; none with the
   border off, a tint still shows). Untinted, Polestar's window shadow round
   it as the window painter lays it (`H.Shadow`: 16 out, dropped 4, at the
@@ -95,6 +95,7 @@ words.
   overhangs the bar's end; ours stay inside it). The client's secret
   "clamped" flags go straight into `SetAlphaFromBoolean`; a client without it
   shows none.
+- The player's frame as a window head: its health fill is the header band's sky and the sparkle its stars, so the stars go with Polestar's Header band off (`H.Band(H.UNITS)`: `Theme.ShowsBand`, or the unit frames' own "Starlit band"), and the accent rim with its thrown light runs along the frame's top over the bars (`H.Head` with `band = false`, on a frame of ours above the health bar, never on the secure button's own regions; Polestar's Rim setting or the unit frames' own "Accent rim", the house style only). A band of its own under the fill would make missing health read as health, so it has none. The rim is painted on a theme change and a new layout only, never with a health or power event. Scene: `unitframes-head`.
 - Sparkle (the "Sparkle" setting, on): Polestar's night-sky stars
   (`Theme.Media("band-stars")`) on the player frame only: the whole constellation (band x 655-945, y 12-76) at the bar's right end, filling its full height, unstretched (cropped from its left if the bar is narrower), its left quarter a second texture fading to clear (`SetGradient`), static, in the `star` token with its alpha (Halo and Hearth have none on their band, so
   none here).
@@ -209,7 +210,7 @@ gives the stock frames their mouse, art and bars back at once.
 a progress-wash track, with `trail` a damage trail under its fill fed by `H.SetTrail(b, v, snap, on, max)`, or `bg` at an alpha with `H.SetTrack`; skin-aware fill), `H.Segment` (a bar continuing
 another's fill, or eating into it from its end; without a token the caller colours it), `H.SetValue(b, v, smooth)`
 (the client's eased fill), `H.Sparkle`/`H.SizeSparkle`/`H.PaintSparkle`
-(Polestar's band stars over a bar), `H.Text` (outlined HUD text, SetFormattedText only),
+(Polestar's band stars over a bar), `H.Head(host, rel, opts)`/`H.PaintHead(h, on, k)` (a shell window's head on a HUD piece: the header band and haze, the accent rim and its light, textures of ours on `host` over `rel`, following `ui.band`, `ui.rim` (or `opts.look`'s own band and rim, `H.Band(look)`/`H.Rim(look)`), the skin; `k` fades it with a ground; chat headers, the damage meter, the player's frame), `H.Text` (outlined HUD text, SetFormattedText only),
 `H.Ground`/`H.PaintGround` (`g.look`: its look group), `H.Edge(look)`/`H.PaintEdge(e, on, look)`/`H.PaintTint(e, on, look, r, g, b, a)` (the group's border on a HUD edge: Polestar's window border, or the group's override; colour, size as a window's, off), `H.ShadowColor(look)`/`H.Shadow(f, rel, out)`/`H.PaintShadow(s, on, ground, look)` (the window shadow round a piece, as the window painter's), `H.GroundAlpha(look)` (the group's ground opacity), `H.Own`/`H.Seed` (a group's override, its start from Polestar's look), `H.Portrait(parent, bare)`/`H.SetPortrait` (square 3D well, framed before it shows: `H.Framed`),
 `H.ClassColor` (secret-safe), `H.UnitColor`, `H.PowerColor`.
 
@@ -268,3 +269,7 @@ The stub's heal calculator (`CreateUnitHealPredictionCalculator`), the
 eased `SetValue` (`bar.interpolation`), `SetAlphaFromBoolean`, `UnitPowerPercent`, `SetRolesets`/`GetRolesetNames`
 (`stub_client.lua`: refused in combat on a protected frame), and a cast
 (`stub.casting`, `stub.spellCosts`).
+
+## Their own look
+
+Every unit frame's ground, edge, shadow, bar tracks and portrait hairline, the player's rim and its stars are painted in the unit frames' look (`H.UNITS`, HUD.lua); its own tab on our settings page (`ns.ShowSettings("unitframes")`) holds "Unit frames look": off (the default), the Frames look (Polestar's Frames settings, or the Frames override); on (`PolestarUIDB.hudLook.unitframes.override`), its own band, rim, border, shadow and ground, started from what it wore (`H.Seed`), changed live (`Theme.Refresh`). Scene: `settings-looks`. Their cast bars keep the shared Frames look. The per-event paint reads the look as before (two table lookups in `H.Own`), nothing more.

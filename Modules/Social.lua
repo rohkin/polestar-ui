@@ -1084,7 +1084,7 @@ local function presenceItems()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 580, height = 560, searchPlaceholder = "Search",
+	f = ns.Shell(NAME, { width = 580, height = 560, searchPlaceholder = "Search",
 		onSearch = function(text)
 			query = (text or ""):lower()
 			if f:IsShown() then M.Show() end

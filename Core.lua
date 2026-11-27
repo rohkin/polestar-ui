@@ -13,10 +13,10 @@ PolestarUI = ns
 
 -- Polestar 0.4.0 or newer (its settings registry, frame movers, coin
 -- symbols); an older one gets a chat line at login and no module. Only a
--- plain release number ("0.3.7") is checked: a dev or test build passes.
+-- plain release number ("0.3.7", "0.3.7.1") is checked: a dev or test build passes.
 local NEEDS = "Polestar: UI needs Polestar 0.4.0 or newer; update Polestar."
 function ns.PolestarTooOld(v)
-	local a, b, c = tostring(v):match("^(%d+)%.(%d+)%.(%d+)$")
+	local a, b, c = tostring(v):match("^(%d+)%.(%d+)%.(%d+)%.?%d*$")
 	if not a then return false end
 	a, b, c = tonumber(a), tonumber(b), tonumber(c)
 	return a * 1e6 + b * 1e3 + c < 4000
@@ -121,6 +121,19 @@ function ns.TooltipHint(text)
 	local r, g, b = Polestar.Theme.Color("textMuted")
 	GameTooltip:AddLine(" ")
 	GameTooltip:AddLine(text, r, g, b, true)
+end
+
+-- W.Shell for our windows: sized by the Menu scale (ui.menuScale), which
+-- Polestar 0.4.3 draws at W.SETTINGS_SCALE_BASE for its settings window (and
+-- migrated saved values by it); ours draw at the same base, so a saved scale
+-- keeps its size (the default 100 % now draws at 92 %, as Polestar's settings
+-- window). 0.4.0 ignores scaleBase/scaleLabel/scaleTip.
+function ns.Shell(name, opts)
+	local W = Polestar.Widgets
+	opts.scalePath, opts.scaleBase = "ui.menuScale", W.SETTINGS_SCALE_BASE
+	opts.scaleLabel = "Menu scale"
+	opts.scaleTip = "Polestar: UI's windows and Polestar's settings window; applies when you let go. Right-click to reset."
+	return W.Shell(name, opts)
 end
 
 -- A shell made with `sidebar = 0` has no sidebar: the main column hangs off the
@@ -276,6 +289,7 @@ function ns.FilterMenu(f, items, opts)
 	for _, it in ipairs(items) do list[#list + 1] = it end
 	opts = opts or {}
 	opts.minWidth = math.max(opts.minWidth or 0, 220)
+	opts.short = true -- every row shown: no list filter beside our search
 	filterHost = f
 	local menu = W.ShowMenu(f.psFilter, list, opts)
 	filterHost = nil
@@ -349,7 +363,7 @@ function ns.GameMenu(owner, generator, show)
 						if r == MenuResponse.Open or r == MenuResponse.Refresh or (r == MenuResponse.Close and depth > 0) then open() end
 					end
 				elseif not kids then
-					it.disabled = true -- a title
+					it.disabled, it.heading = true, true -- a title (disabled: 0.4.0 has no heading)
 				end
 				if kids then
 					local into = { text = (text or "") .. "…", disabled = it.disabled, onClick = function() path[#path + 1] = text; open() end }
@@ -2031,7 +2045,7 @@ function ns.WindowMenu(f, key, options)
 			gameDoor:SetAttribute("macrotext", "/click [nocombat] " .. micro:GetName())
 			gameDoor.psDriver:SetScript("OnUpdate", gameDoor.psTick)
 		end
-		W.ShowMenu(self, items, #items > 1 and { minWidth = 200 } or nil)
+		W.ShowMenu(self, items, { minWidth = #items > 1 and 200 or nil, short = true })
 	end, 14)
 	local t = f.HeaderTools
 	local function place()

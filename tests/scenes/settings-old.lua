@@ -2,8 +2,8 @@
 --@ roots: PolestarUISpellbook
 --@ stubs: stub_spellbook.lua
 local ns = PolestarUI
-assert(ns.PolestarTooOld("0.3.7") and ns.PolestarTooOld("0.3.10"), "0.3.x passes")
-assert(not ns.PolestarTooOld("0.4.0") and not ns.PolestarTooOld("0.4.1") and not ns.PolestarTooOld("1.0.0"), "0.4.0+ refused")
+assert(ns.PolestarTooOld("0.3.7") and ns.PolestarTooOld("0.3.10") and ns.PolestarTooOld("0.3.7.1"), "0.3.x passes")
+assert(not ns.PolestarTooOld("0.4.0") and not ns.PolestarTooOld("0.4.1") and not ns.PolestarTooOld("1.0.0") and not ns.PolestarTooOld("0.4.3.1"), "0.4.0+ refused")
 assert(not ns.PolestarTooOld("dev") and not ns.PolestarTooOld("0.1.0-test"), "a dev or test build refused")
 -- Too old: no switch, no window, one line saying why.
 local said, print0 = 0, print

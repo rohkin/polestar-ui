@@ -2,7 +2,7 @@
 --@ roots: PolestarUITestRail
 -- ns.GameRail with { slim = true }: a 48 rail of the stock tab icons only, from the band's line down, each label in its tooltip; the window narrows by what the rail gave up and the main column hangs off its edge (no sidebar), on the compact grid.
 local ns, W = PolestarUI, Polestar.Widgets
-local f = W.Shell("PolestarUITestRail", { scalePath = "ui.menuScale", rail = true, sidebar = 0, width = 640 + 88, height = 420 })
+local f = PolestarUI.Shell("PolestarUITestRail", { rail = true, sidebar = 0, width = 640 + 88, height = 420 })
 ns.Plain(f, f.psRail)
 ns.Compact(f)
 local picked
@@ -25,7 +25,7 @@ assert(picked == "b", "a rail icon did not select")
 --@ roots: PolestarUITestRail
 local ns, W = PolestarUI, Polestar.Widgets
 Polestar.Set("ui.skin", "forever")
-local f = W.Shell("PolestarUITestRail", { scalePath = "ui.menuScale", rail = true, sidebar = 0, width = 640 + 88, height = 420 })
+local f = PolestarUI.Shell("PolestarUITestRail", { rail = true, sidebar = 0, width = 640 + 88, height = 420 })
 ns.Plain(f, f.psRail)
 ns.Compact(f)
 ns.GameRail(f, { { key = "a", label = "Roster", icon = 136243 }, { key = "b", label = "Guild News", icon = 136244 } }, "b", function() end, { slim = true })

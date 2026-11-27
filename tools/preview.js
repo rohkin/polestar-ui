@@ -18,9 +18,6 @@ const { svg, compose, TextureCache } = require('./preview/render');
 const POLESTAR = path.join(POLESTAR_DIR, 'addon', 'Polestar');
 const GOLDEN = path.join(ROOT, 'tests', 'golden');
 const POLESTAR_FILES = ['Core/Core.xml', 'Theme/Theme.xml'];
-// 0.4.0 moved the game skins into this load-on-demand addon; 0.3.7 has none.
-const LOOKS = path.join(POLESTAR_DIR, 'addon', 'Polestar_Looks');
-const LOOKS_ADDON = fs.existsSync(LOOKS) ? [{ name: 'Polestar_Looks', dir: LOOKS }] : [];
 const FONT_FILES = ['OpenSans-Regular.ttf', 'OpenSans-Bold.ttf', 'Inter-Regular.ttf', 'Inter-Medium.ttf', 'Inter-SemiBold.ttf', 'FiraSans-Regular.ttf', 'FiraSans-Medium.ttf', 'FiraSans-SemiBold.ttf'];
 // The client's own font cannot ship: it is drawn in the nearest Inter weight.
 const FALLBACK = 'Inter-Medium.ttf';
@@ -77,7 +74,7 @@ function dumpPanel(panel, prelude) {
 	const { emitted } = runAddon({
 		stubs: ['stub_ui.lua', 'stub_ui_local.lua', 'stub_client.lua', 'stub_character.lua', 'stub_unitframes.lua', ...panel.stubs],
 		before: `${prelude}\ndofile(${JSON.stringify(path.join(ROOT, 'tools', 'preview', 'stub.lua'))})`,
-		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, ...LOOKS_ADDON, { name: 'PolestarUI', dir: ROOT }],
+		addons: [{ name: 'Polestar', files: POLESTAR_FILES }, { name: 'PolestarUI', dir: ROOT }],
 		saved: panel.saved && { PolestarUI: panel.saved },
 		script: `uistub.install()\nstub.login()\n${panel.script}\nstub.advance(1)\nstub.assertNoErrors()\npreview.emit()`,
 	});

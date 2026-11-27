@@ -413,7 +413,7 @@ local function targetMenu(slot)
 		end
 	end
 	if #items == 0 then items[1] = { text = "Nothing in your bags or gear takes it.", disabled = true } end
-	W.ShowMenu(slot, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 200 })
+	W.ShowMenu(slot, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 200, current = true })
 end
 
 -- The recipe page: the product, what it says, its reagents in two columns,
@@ -859,7 +859,7 @@ end
 local function build()
 	-- The Professions window's size (ns.ProfessionsSize), so the two swap in place.
 	local size = ns.ProfessionsSize
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = size[1] + W.SHELL.rail, height = size[2], rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
+	f = ns.Shell(NAME, { width = size[1] + W.SHELL.rail, height = size[2], rail = true, searchPlaceholder = "Search recipes", onSearch = function(text)
 		query = (text or ""):lower()
 		levelFilter(query)
 		if f and f:IsShown() then refresh() end

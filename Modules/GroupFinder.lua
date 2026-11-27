@@ -104,7 +104,7 @@ local function options(button)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 620, height = 560, sidebar = 0, rail = true })
+	f = ns.Shell(NAME, { width = 620, height = 560, sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "groupfinder", options)
 	ns.Plain(f, f.psRail)

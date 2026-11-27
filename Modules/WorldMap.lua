@@ -205,8 +205,9 @@ end
 
 local function buildCanvas()
 	canvas = CreateFrame("Frame", NAME .. "Canvas", f.Main, "PolestarUIMapCanvasTemplate")
-	-- Polestar draws its map features (nav pins, routes, zone levels) on this canvas too.
-	if Polestar and Polestar.MapCanvas and Polestar.MapCanvas.Add then Polestar.MapCanvas.Add(canvas) end
+	-- Polestar draws its map features (nav pins, routes, zone levels) on this canvas too
+	-- (none in the preview, which loads Polestar's Core and Theme only).
+	if Polestar.MapCanvas then Polestar.MapCanvas.Add(canvas) end
 	-- The template's MEDIUM strata would put the map under its own window.
 	canvas:SetFrameStrata(f:GetFrameStrata())
 	-- Any new size (the window's, the quest log opening): the map refitted.
@@ -585,7 +586,7 @@ function M.SetPinning(on)
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 2 + MAP_W, height = 60 + 36 + 2 + MAP_H, searchPlaceholder = "Search quests",
+	f = ns.Shell(NAME, { width = 2 + MAP_W, height = 60 + 36 + 2 + MAP_H, searchPlaceholder = "Search quests",
 		onSearch = function(text)
 			if not (f and f.psQuests) then return end
 			f.psQuests.SetQuery(text)
@@ -619,7 +620,7 @@ local function build()
 	ns.SearchInFilter(f, function(self)
 		ns.GameMenu(self, f.psQuests.FilterMenu, function(items, depth)
 			if depth == 0 and searchable() then return ns.FilterMenu(f, items) end
-			return W.ShowMenu(self, items, { minWidth = 220 })
+			return W.ShowMenu(self, items, { minWidth = 220, short = true })
 		end)
 	end)
 	f.psQuests.OnFilters = paintFilter

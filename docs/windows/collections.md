@@ -241,7 +241,7 @@ by default (the gamepad radial drives `CollectionsMicroButton`,
 `GamepadRadial.lua`).
 
 ### Shell and page structure
-- `W.Shell("PolestarUICollections", { scalePath = "ui.menuScale", width = 780, height = 600, rail = true })`,
+- `ns.Shell("PolestarUICollections", { width = 780, height = 600, rail = true })`,
   `ns.Dock`, `ns.WindowMenu(f, "collections", options)`, `ns.Compact`,
   `Polestar.CloseOnEscape`.
 - **Page nav: a slim icon rail**, not top tabs. Forever's stock tabs are icon

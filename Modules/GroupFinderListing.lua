@@ -470,7 +470,7 @@ local function roleMenu(self)
 			redraw()
 		end }
 	end
-	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT" })
+	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", current = true })
 end
 
 local function playstyleMenu(self)
@@ -481,7 +481,7 @@ local function playstyleMenu(self)
 			redraw()
 		end }
 	end
-	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT" })
+	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", current = true })
 end
 
 local function voiceMenu(self)
@@ -496,7 +496,7 @@ local function voiceMenu(self)
 			end }
 		end
 	end
-	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT" })
+	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", current = true })
 end
 
 -- The voice mode a new listing starts with: the voice channel the player is in.

@@ -151,7 +151,7 @@ local function categoryMenu(anchor)
 		end
 	end
 	if #items == 0 then items[1] = { text = LFG_TYPE_NONE or "None", disabled = true } end
-	W.ShowMenu(anchor, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 180 })
+	W.ShowMenu(anchor, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 180, current = true })
 end
 
 local function isChosen(id) return tContains(chosen, id) end

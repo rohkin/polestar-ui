@@ -35,7 +35,8 @@ local b = f.footerButtons.right[1]
 assert(b:IsShown() and b:IsEnabled() and b.psGame and b.Label:GetText():find("comment", 1, true), "no game's window button")
 stub.RunScript(b, "OnEnter")
 local g = PolestarUIGroupFinderGame
-assert(g and g:IsShown() and select(2, g:GetPoint(1)) == UIParent and g:GetLeft() == b:GetLeft() and g:GetTop() == b:GetTop(), "no secure button over it")
+local k = b:GetEffectiveScale() / UIParent:GetEffectiveScale() -- the window draws at the Menu scale
+assert(g and g:IsShown() and select(2, g:GetPoint(1)) == UIParent and math.abs(g:GetLeft() - b:GetLeft() * k) < 1e-6 and math.abs(g:GetTop() - b:GetTop() * k) < 1e-6, "no secure button over it")
 assert(g:GetAttribute("type1") == "macro" and g:GetAttribute("macrotext") == "/click [nocombat] LFDMicroButton", "it does not click the micro button")
 stub.RunScript(g, "PreClick", "LeftButton", false)
 LFDMicroButton:Click()

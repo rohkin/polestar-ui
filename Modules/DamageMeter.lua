@@ -9,7 +9,7 @@
 -- written on it and no ScrollBox, Menu or EventRegistry callback registered
 -- on its objects (rule 15; its menus are restyled by tag, Menu.ModifyMenu,
 -- as Chat.lua's). Ours: the header art and buttons' art faded under glyphs
--- of ours, the window ground
+-- of ours and Polestar's window head (band, rim), the window ground
 -- (whose alpha the game writes: Background Transparency) emptied and our HUD
 -- ground in its place at that alpha times the HUD's Background opacity, the
 -- texts in Polestar's faces, and on each row a track and a flat fill whose
@@ -80,7 +80,7 @@ local function dressRow(e, l)
 	l.fill:SetTexture(H.FillTexture())
 	l.color = nil
 	if l.edges then
-		H.PaintEdge(l.edges, on, H.FRAME_ICONS)
+		H.PaintEdge(l.edges, on, H.METER_ICONS)
 	end
 end
 
@@ -119,7 +119,7 @@ local function paintRow(e)
 		local br, bg, bb = Theme.Color("bg")
 		local k = FILL_MIX
 		l.fill:SetVertexColor(r * k + br * (1 - k), g * k + bg * (1 - k), b * k + bb * (1 - k), 1)
-		l.track:SetVertexColor(br, bg, bb, H.GroundAlpha())
+		l.track:SetVertexColor(br, bg, bb, H.GroundAlpha(H.METER))
 	end
 end
 
@@ -132,7 +132,9 @@ local function paintRows(box)
 end
 
 -- A session window: its ground on the minimize container (where the game's
--- is, so it hides with it when minimized), a hairline under the header strip.
+-- is, so it hides with it when minimized), a hairline under the header strip,
+-- and over that strip the window head (H.Head: Polestar's band and rim, as
+-- its settings stand), on the container too. Its shadow is the ground's.
 local function window(w)
 	local l = windows[w]
 	if l then return l end
@@ -141,9 +143,15 @@ local function window(w)
 	local header = rawget(w, "Header")
 	if not (bg and header) then return end
 	l = { c = c, bg = bg, header = header, ground = H.Ground(c) }
+	l.ground.look = H.METER -- the meter's own look (its override, else the Frames look)
 	l.line = white(c, "BORDER", 7)
 	l.line:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, 0)
 	l.line:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", 0, 0)
+	-- Till the head's own frame has a rect: the window's width (window 1 fills the meter), the header bar's 32 (DamageMeterSessionWindow.xml).
+	l.head = H.Head(c, header, { size = function()
+		local width = ns.Clean(w:GetWidth())
+		return width and width > 0 and width or ns.Clean(w:GetParent():GetWidth()), 32
+	end, look = H.METER })
 	windows[w] = l
 	return l
 end
@@ -311,6 +319,7 @@ local function dressWindow(w, l)
 	faceTexts(w, l, true)
 	showGround(l.ground, on)
 	l.line:SetShown(on)
+	if not on then H.PaintHead(l.head, false) end
 	l.alpha = nil
 end
 
@@ -321,12 +330,13 @@ local function paintWindow(w)
 		l.dressed = true
 		dressWindow(w, l)
 	end
-	local a = l.bg:GetAlpha() * H.GroundAlpha()
+	local a = l.bg:GetAlpha() * H.GroundAlpha(H.METER)
 	if a ~= l.alpha then
 		l.alpha = a
 		H.PaintGround(l.ground, a)
-		local _, r, g, b, ba = H.Edge(H.FRAMES) -- the header seam in the Frames look's edge colour
+		local _, r, g, b, ba = H.Edge(H.METER) -- the header seam in the meter look's edge colour
 		ns.PaintHairlines({ l.line }, true, r, g, b, ba)
+		H.PaintHead(l.head, true, l.bg:GetAlpha()) -- with the game's Background Transparency, as the ground
 	end
 	faceTexts(w, l)
 	-- The minimize button's glyph: collapse while the container shows, expand while minimized.
@@ -350,6 +360,7 @@ local function paintWindow(w)
 		local fbg = rawget(sw, "Background")
 		if not fl and fbg then
 			fl = { bg = fbg, ground = H.Ground(sw) }
+			fl.ground.look = H.METER
 			flyouts[sw] = fl
 		end
 		if fl then

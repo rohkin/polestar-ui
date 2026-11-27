@@ -14,7 +14,8 @@ stub.RunScript(s, "OnTextChanged")
 assert(w.Title:GetText() == "Search" and w.psFilter.psActive, "no search")
 stub.RunScript(s, "OnEnterPressed")
 assert(not PolestarMenu:IsShown() and not s:IsShown() and s:GetText() == "fire" and w.psFilter.psActive, "Enter lost the search")
-local function left() return select(4, w:GetPoint(1)) end
+-- In UIParent units (the window draws at the Menu scale), to a thousandth.
+local function left() return math.floor(select(4, w:GetPoint(1)) * w:GetScale() * 1000 + 0.5) / 1000 end
 assert(left() == 16, "not docked: " .. tostring(left()))
 stub.dragHeader(w, 60, -40)
 assert(left() == 16, "docked window drags: " .. tostring(left()))
@@ -29,7 +30,7 @@ assert(w:IsShown() and left() == 16 + 384 + 32, "not beside the stock panel: " .
 p:Hide()
 assert(left() == 16, "did not move back")
 local o = CreateFrame("Frame", nil, UIParent)
-o:SetSize(1100, 600)
+o:SetSize(1200, 600)
 o:Hide()
 PolestarUI.Dock(o)
 o:Show()

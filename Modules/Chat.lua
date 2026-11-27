@@ -37,8 +37,15 @@ local tex = ns.HUD.Tex
 
 local H = ns.HUD
 local hairline, paintLine = ns.Hairlines, ns.PaintHairlines
--- Our edges and grounds wear the HUD Frames look (H.FRAMES: Polestar's Frames settings, or its override).
-local function edge(e, on) H.PaintEdge(e, on, H.FRAMES) end
+-- Our edges, grounds, heads and shadows wear the chat's look (H.CHAT: its own override, else the Frames look).
+local LOOK = H.CHAT
+local function edge(e, on) H.PaintEdge(e, on, LOOK) end
+-- As ns.PaintGround (bg, times `k`), at the chat look's Background opacity.
+local function paintGround(fill, on, k)
+	local r, g, b = Theme.Color("bg")
+	fill:SetVertexColor(r, g, b, H.GroundAlpha(LOOK) * (k or 1))
+	fill:SetShown(on)
+end
 
 -- A frame never restyled has nothing to give back.
 local function look(f, make)
@@ -60,12 +67,12 @@ end
 
 -- The window as one flat Polestar surface: one ground round the message
 -- area and the button strip on its side, its hairline only while warm; the
--- tab header above both (the dock's, below); the edit box hangs below as its
+-- tab header above both (the dock's, or a floating window's own); the edit box hangs below as its
 -- footer (input) while typing. All of it textures of ours, anchored to the
 -- stock grounds: no stock frame moves.
--- Nothing of ours on the window reaches above its ground: the window (frame
--- level 5) draws above the docked tabs, children of GeneralDockManager (LOW
--- strata, a level or two), so a ground of ours there covered the tabs.
+-- Nothing of ours on a docked window reaches above its ground: the window
+-- (frame level 5) draws above the docked tabs, children of GeneralDockManager
+-- (LOW strata, a level or two), so a ground of ours there covered the tabs.
 local HEADER = 32 -- a tab's band: all of its 32 (its whole clickable area), the label centred in it
 local LABEL_LIFT = 5 -- the stock label sits 5 low (CENTER 0,-5: centred in the old 22 band)
 local PAD = 6 -- room left of the text when the button strip is on the right
@@ -82,10 +89,72 @@ local function place(f, l)
 end
 
 -- Polestar's window ground (bg at the Background opacity setting), not the
--- player's chat opacity, and its hairline: REST of them at rest, all of them
--- while warm (the panel keeps a faint outline at rest). The driver eases `l.warm` between 0 and 1.
+-- player's chat opacity, and its hairline; over the tabs the window head and
+-- round it all the window shadow: REST of them at rest, all of them while
+-- warm (the panel keeps a faint outline at rest). The driver eases `l.warm` between 0 and 1.
 local REST = 0.35
 local FADE_IN, FADE_OUT = 0.15, 1 -- seconds: the game's fade-in, a calmer fade-out
+
+-- The warmth `w` (0 at rest, 1 warm) on a ground and its hairline (a
+-- texture's alpha is its vertex colour's: the whole alpha is set here), and
+-- on a header's head and shadow. A window's top edge is its header's foot:
+-- not drawn (the header's own edges carry the outline round both). The
+-- header's foot never is.
+local function paintWarm(l, w)
+	local k = REST + (1 - REST) * w
+	local ground = H.GroundAlpha(LOOK) * k
+	l.fill:SetAlpha(ground)
+	local _, r, g, b, a = H.Edge(LOOK)
+	for i, t in ipairs(l.edges) do
+		local open = i == 1 and l.win or i == 2 and l.dock
+		t:SetVertexColor(r, g, b, open and 0 or (a or 1) * k)
+	end
+	if l.head then
+		H.PaintHead(l.head, true, k)
+		H.PaintShadow(l.shadow, true, ground, LOOK)
+	end
+end
+
+-- A header: HEADER tall over a window's ground `foot`, as wide: our ground and
+-- hairline, the window head (H.Head: Polestar's band and rim, as its
+-- settings stand) and Polestar's window shadow round header and window
+-- together (one hidden texture of ours spans both). Textures on `host`: the
+-- dock for the docked windows (under the tabs, its children), a floating
+-- window itself (its tab, MEDIUM strata, sits above it).
+local function headed(host, foot, f)
+	local l = { dock = true, warm = 0, fill = tex(host, "BACKGROUND", -8) }
+	l.fill:SetPoint("BOTTOMLEFT", foot, "TOPLEFT", 0, 0)
+	l.fill:SetPoint("BOTTOMRIGHT", foot, "TOPRIGHT", 0, 0)
+	l.fill:SetHeight(HEADER)
+	l.edges = hairline(host, l.fill)
+	l.head = H.Head(host, l.fill, { size = function() return f:GetWidth() + f.buttonFrame:GetWidth(), HEADER end, look = LOOK })
+	local span = host:CreateTexture()
+	span:SetPoint("TOPLEFT", l.fill, "TOPLEFT", 0, 0)
+	span:SetPoint("BOTTOMRIGHT", foot, "BOTTOMRIGHT", 0, 0)
+	span:Hide()
+	l.shadow = H.Shadow(host, span)
+	return l
+end
+
+-- A header shown at warmth `w`, or hidden (off; a floating window docked).
+local function paintHeader(l, on, w)
+	paintGround(l.fill, on)
+	edge(l.edges, on)
+	l.paint = nil
+	if on then return paintWarm(l, w) end
+	H.PaintHead(l.head, false)
+	H.PaintShadow(l.shadow, false)
+end
+
+-- A floating window's own header, made the first time it shows floating (the
+-- unused windows, hidden and undocked, get none), hidden while it is docked
+-- (the dock's header is over it then). Called from the driver as the window
+-- floats, shows or docks, and on every repaint.
+local function float(f, l)
+	local on = ns.Enabled("chat") and not f.isDocked and f ~= _G.ChatFrame1 -- the first window's header is always the dock's
+	if on and not l.float and f:IsShown() then l.float = headed(f, l.fill, f) end
+	if l.float then paintHeader(l.float, on, l.warm) end
+end
 
 local function panel(f)
 	local l = look(f, function()
@@ -98,45 +167,20 @@ local function panel(f)
 	bare(f, on)
 	bare(f.buttonFrame, on)
 	place(f, l)
-	ns.PaintGround(l.fill, on)
+	paintGround(l.fill, on)
 	edge(l.edges, on)
 	l.paint = nil -- the driver repaints the warmth
+	float(f, l)
 end
 
--- The warmth `w` (0 at rest, 1 warm) on a window's ground and hairline (a
--- texture's alpha is its vertex colour's: the whole alpha is set here).
--- A docked window's top edge is the header's foot: not drawn (the header's
--- own edges carry the outline round both). The header's foot never is.
-local function paintWarm(l, w)
-	local k = REST + (1 - REST) * w
-	l.fill:SetAlpha(H.GroundAlpha(H.FRAMES) * k)
-	local _, r, g, b, a = H.Edge(H.FRAMES)
-	for i, t in ipairs(l.edges) do
-		local open = i == 1 and l.win and l.win.isDocked or i == 2 and l.dock
-		t:SetVertexColor(r, g, b, open and 0 or (a or 1) * k)
-	end
-end
-
--- The tab header of the docked windows: our ground and hairline on
--- GeneralDockManager, so under the tabs (its children), HEADER tall over the
--- first window's ground, as wide. Warm as the warmest shown docked window.
--- Undocked windows have none: their tab (MEDIUM strata) sits above them.
+-- The tab header of the docked windows (headed): on GeneralDockManager, so
+-- under the tabs (its children), over the first window's ground. Warm as the
+-- warmest shown docked window. A floating window has its own (float).
 local function header()
 	local d, w = _G.GeneralDockManager, looks[_G.ChatFrame1]
 	if not d or not w then return end
-	local l = look(d, function()
-		local l = { dock = true, warm = 0, fill = tex(d, "BACKGROUND", -8) }
-		l.fill:SetPoint("BOTTOMLEFT", w.fill, "TOPLEFT", 0, 0)
-		l.fill:SetPoint("BOTTOMRIGHT", w.fill, "TOPRIGHT", 0, 0)
-		l.fill:SetHeight(HEADER)
-		l.edges = hairline(d, l.fill)
-		return l
-	end)
-	if not l then return end
-	local on = ns.Enabled("chat")
-	ns.PaintGround(l.fill, on)
-	edge(l.edges, on)
-	l.paint = nil
+	local l = look(d, function() return headed(d, w.fill, _G.ChatFrame1) end)
+	if l then paintHeader(l, ns.Enabled("chat"), l.paint or 0) end -- at the warmth the driver last gave it
 end
 
 -- A tab as the Character window's top tabs (Polestar's shell tab): plain
@@ -191,7 +235,8 @@ end
 -- few px off the dock's foot and is stretched to 90 (FCFDock_CalculateTabSize)
 -- with its label centred in it: it sits a little high. So the label, wash
 -- and underline are moved by `dy`, the tab's foot to the dock's, so all sit
--- on the header. Repainted by the driver.
+-- on the header; a floating window's tab the same way onto its own header
+-- (in game it sat some 2px above the window's ground). Repainted by the driver.
 local function placeTab(t, l, dy)
 	l.dy = dy
 	local a = l.at
@@ -264,7 +309,7 @@ local function input(e, f)
 		local p = name and _G[name .. k]
 		if p then p:SetAlpha(on and 0 or 1) end
 	end
-	ns.PaintGround(l.fill, on)
+	paintGround(l.fill, on)
 	l.well:SetVertexColor(Theme.Color("inputBg"))
 	l.well:SetShown(on)
 	local r, g, b = Theme.Accent()
@@ -437,7 +482,7 @@ local function overflow()
 	if not l then return end
 	local on = ns.Enabled("chat")
 	ns.FadeNine(list.NineSlice, on and 0 or 1)
-	ns.PaintGround(l.fill, on)
+	paintGround(l.fill, on)
 	edge(l.edges, on)
 end
 
@@ -471,7 +516,7 @@ local function bubble(f, on)
 	if not l then return end
 	ns.FadeNine(f, on and 0 or 1)
 	f.Tail:SetAlpha(on and 0 or 1)
-	ns.PaintGround(l.fill, on, 0.85)
+	paintGround(l.fill, on, 0.85)
 	edge(l.edges, on)
 end
 
@@ -889,9 +934,15 @@ function M.Enable()
 					or (f == ChatFrame1 and copyButton and copyButton:IsVisible() and copyButton.Button:IsMouseOver())
 				local w = (hot or not fading) and math.min(1, l.warm + elapsed / FADE_IN) or math.max(0, l.warm - elapsed / FADE_OUT)
 				l.warm = w
-				if w ~= l.paint or l.docked ~= f.isDocked then
-					l.paint, l.docked = w, f.isDocked
+				local floats = not f.isDocked and f:IsShown()
+				if l.floats ~= floats then
+					l.floats = floats
+					float(f, l) -- pulled off the dock, shown floating or docked: its own header
+				end
+				if w ~= l.paint then
+					l.paint = w
 					paintWarm(l, w)
+					if l.float and not f.isDocked then paintWarm(l.float, w) end
 				end
 				if f:IsShown() and w > warmest then warmest = w end
 				if f:IsShown() and f.isDocked and w > docked then docked = w end
@@ -928,9 +979,12 @@ function M.Enable()
 				end
 				local win = _G["ChatFrame" .. f:GetID()]
 				local wl = win and looks[win.isDocked and _G.GeneralDockManager or win]
-				-- On the header: a docked tab's foot to the dock's.
-				local dock, bottom = _G.GeneralDockManager, f:GetBottom()
-				local dy = win and win.isDocked and bottom and dock:GetBottom() and math.floor((dock:GetBottom() - bottom) * 10 + 0.5) / 10 or 0
+				-- On the header: a docked tab's foot to the dock's, a floating
+				-- one's to its own header's (the head's frame is its rect).
+				local fl = win and not win.isDocked and looks[win] and looks[win].float
+				local foot = win and win.isDocked and _G.GeneralDockManager or fl and fl.head.sizer
+				local bottom, base = f:GetBottom(), foot and foot:GetBottom()
+				local dy = bottom and base and math.floor((base - bottom) * 10 + 0.5) / 10 or 0
 				if dy ~= l.dy then placeTab(f, l, dy) end
 				local rest = TAB_REST[l.sel and true or false]
 				local w = over and 1 or wl and wl.paint or 0

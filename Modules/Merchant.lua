@@ -344,7 +344,7 @@ end
 local function build()
 	-- The compact grid: the vendor leads the subtitle, the search, filter and
 	-- money share the tab row.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 640, height = 560, searchPlaceholder = "Search",
+	f = ns.Shell(NAME, { width = 640, height = 560, searchPlaceholder = "Search",
 		onSearch = function(text)
 			query = (text or ""):lower()
 			if f:IsShown() then paint() end
@@ -413,11 +413,11 @@ local function currencies()
 	end
 end
 
--- Polestar's Restock (QoL/Restock.lua), when this Polestar exports it: what a
--- press buys here and its total. None while Polestar is hidden, as its own button.
+-- Polestar's Restock (QoL/Restock.lua; not in the preview, which loads Polestar's
+-- Core and Theme only): what a press buys here and its total. None while Polestar is hidden, as its own button.
 local function restock()
 	local R = Polestar.QoL and Polestar.QoL.Restock
-	if not (R and R.Plan and R.Run) or Polestar.Hidden() then return end
+	if not R or Polestar.Hidden() then return end
 	local plan = R.Plan()
 	if #plan == 0 then return end
 	local total, lines = 0, {}

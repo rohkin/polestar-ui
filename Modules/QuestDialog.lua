@@ -23,8 +23,8 @@ local rows, rows2 = {}, {} -- the greeting's lists: current quests, available qu
 -- every verdict is in. -> { [choice index] = { up, coin, best } }
 local function marks()
 	local Q = Polestar.QoL
-	local R = Q and Q.Rewards
-	if not (R and R.ReadChoices and R.Rank and Q.On and Q.On("rewardHighlight")) or Polestar.Hidden() then return {} end
+	local R = Q and Q.Rewards -- none in the preview (Polestar's Core and Theme only)
+	if not (R and Q.On("rewardHighlight")) or Polestar.Hidden() then return {} end
 	local list, complete, priced = R.ReadChoices(false)
 	local best = #list >= 2 and complete and R.Rank(list)[1]
 	local top = 0
@@ -332,7 +332,7 @@ end
 
 local function build()
 	-- The compact grid; BodyWidth and psPad are its own from here on.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 520, height = 540, sidebar = 0 })
+	f = ns.Shell(NAME, { width = 520, height = 540, sidebar = 0 })
 	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "questdialog")

@@ -341,13 +341,40 @@ H.FRAME_ICONS = { group = "frames", cap = 2 } -- an icon on a frame (the damage 
 H.PLATES = { group = "plates", cap = 2 }
 H.ICONS = { group = "icons", cap = 2 }
 H.GROUPS = { "frames", "plates", "icons" }
+-- One element's own look, layered over the Frames group (`base`): its own
+-- override (PolestarUIDB.hudLook[group], Settings.lua: its tab), else the
+-- Frames group's override, else Polestar's. Its override also holds the
+-- window head's `band` and `rim` (H.Band, H.Rim).
+H.CHAT = { group = "chat", base = "frames" }
+H.METER = { group = "damagemeter", base = "frames" }
+H.METER_ICONS = { group = "damagemeter", base = "frames", cap = 2 } -- an icon on a frame (the damage meter's rows)
+H.UNITS = { group = "unitframes", base = "frames" }
+local ELEMENT = { chat = true, damagemeter = true, unitframes = true }
 H.COLORS = { white = { 1, 1, 1 }, black = { 0, 0, 0 }, gold = { 1, 0.82, 0 }, silver = { 0.75, 0.75, 0.78 } }
 
--- The group's own look while it overrides Polestar's, else nil.
+-- The look's own values while it overrides Polestar's (an element's own,
+-- else its base group's), else nil.
 function H.Own(look)
 	local d = PolestarUIDB and PolestarUIDB.hudLook
-	local o = d and d[look and look.group or "frames"]
+	if not d then return nil end
+	local o = d[look and look.group or "frames"]
+	if o and o.override then return o end
+	o = look and look.base and d[look.base]
 	return o and o.override and o or nil
+end
+
+-- Whether a window head's band and rim show (H.PaintHead; the unit frames'
+-- stars): an element's own override's, else Polestar's (ui.band, ui.rim).
+-- Only an element's override holds them (H.Seed).
+function H.Band(look)
+	local o = H.Own(look)
+	if o and o.band ~= nil then return o.band end
+	return Theme.ShowsBand()
+end
+function H.Rim(look)
+	local o = H.Own(look)
+	if o and o.rim ~= nil then return o.rim end
+	return Theme.ShowsRim()
 end
 
 -- What Polestar's window border would be with no colour of the player's:
@@ -362,15 +389,28 @@ end
 
 -- A group's own look as Polestar's settings stand now (an override's start):
 -- the small pieces' size at their cap, so turning it on changes nothing.
+-- An element (chat, damagemeter, unitframes) starts from what it wears now:
+-- the Frames group's override while that is on, with Polestar's band and rim.
 function H.Seed(group)
+	local base = ELEMENT[group] and H.Own(H.FRAMES)
+	if base then
+		local o = {}
+		for k, v in pairs(base) do o[k] = v end
+		if o.ownColor then o.ownColor = { o.ownColor[1], o.ownColor[2], o.ownColor[3] } end
+		o.ground = tonumber(o.ground) or Theme.GroundAlpha()
+		o.band, o.rim = Theme.ShowsBand(), Theme.ShowsRim()
+		return o
+	end
 	local shown, n = Theme.WindowBorder()
 	local own = Polestar.Get("ui.borderColor")
-	local cap = group ~= "frames" and 2 or 4
-	return { override = true, border = shown, borderSize = math.max(1, math.min(n, cap)),
+	local cap = (group == "plates" or group == "icons") and 2 or 4
+	local o = { override = true, border = shown, borderSize = math.max(1, math.min(n, cap)),
 		borderColor = type(own) == "table" and "own" or nil, ownColor = type(own) == "table" and { own[1], own[2], own[3] } or nil,
 		borderAccent = Polestar.Get("ui.borderAccent") and true or false, hairline = 1,
 		shadow = Polestar.Get("ui.shadow") ~= false, shadowStrength = tonumber(Polestar.Get("ui.shadowStrength")) or 1,
 		ground = Theme.GroundAlpha() }
+	if ELEMENT[group] then o.band, o.rim = Theme.ShowsBand(), Theme.ShowsRim() end
+	return o
 end
 
 -- -> shown, r, g, b, a, n (n at least 1: a tint's thickness while it is off)
@@ -471,6 +511,122 @@ function H.PaintShadow(s, on, ground, look)
 	end
 end
 
+-- The window head: what tops a Polestar shell window (W.Shell), on a HUD
+-- piece, over region `rel` (default host): the starlit band (Theme.Band's
+-- sky and stars, cropped 1:1 by Theme.BandCoords) under its haze (W.Haze),
+-- and the accent rim with its thrown light (W.Rim). Each follows Polestar's
+-- own setting as the shell's does: the band ui.band (Theme.ShowsBand, in the
+-- skin's own art, Theme.SkinMedia; the haze in the house style only), the
+-- rim ui.rim (Theme.ShowsRim, the house style only). Textures of ours on
+-- `host`: the band just above its ground (BACKGROUND -7 to -5), the rim in
+-- OVERLAY, both under its child frames. Not Theme.Band, W.Haze or W.Rim
+-- themselves: they set their own alpha and visibility on every repaint, so
+-- nothing could fade them with a ground (`k`) or hide them when switched
+-- off; W.Rim writes a key and a script hook on the frame it is given; and
+-- W.Painter (W.Rim, W.Haze) waits for a hidden ancestor with HookScript on
+-- it, a stock frame when host is one (CLIENT.md, rule 15). The caller
+-- repaints with H.PaintHead (Theme.OnChanged). One frame of ours under host
+-- says when rel's size changes.
+-- opts: { band = false or rim = false (left out), size = function() -> w, h
+-- (rel's size while that frame has no rect), look = the element's look
+-- (H.Band, H.Rim: its own band and rim while it overrides) }.
+local RIM_MID, RIM_HI, RIM_OUTER, THROW_A = 0.18, 0.9, 0.22, 0.1 -- W.Rim's own (Polestar's Widgets.lua)
+
+local function sizeHead(h)
+	local w, ht = ns.Clean(h.sizer:GetWidth()), ns.Clean(h.sizer:GetHeight())
+	if not (w and ht and w > 0 and ht > 0) and h.size then w, ht = h.size() end
+	if not (w and ht and w > 0 and ht > 0) or (w == h.w and ht == h.h) then return end
+	h.w, h.h = w, ht
+	if h.sky then
+		h.sky:SetTexCoord(Theme.BandCoords(w, ht))
+		h.stars:SetTexCoord(Theme.BandCoords(w, ht))
+		h.haze:SetSize(w * 0.9, ht)
+	end
+	if h.rim then
+		local inner = w * (0.5 - RIM_OUTER)
+		h.rim[2]:SetWidth(inner)
+		h.rim[3]:SetWidth(inner)
+		h.throw:SetSize(w * 0.6, ht) -- the light falls no further than the head
+	end
+end
+
+function H.Head(host, rel, opts)
+	rel, opts = rel or host, opts or {}
+	local h = { size = opts.size, look = opts.look }
+	h.sizer = Polestar.CreateFrameUnder("Frame", nil, host)
+	h.sizer:SetAllPoints(rel)
+	h.sizer:SetScript("OnSizeChanged", function() sizeHead(h) end)
+	if opts.band ~= false then
+		h.sky, h.stars, h.haze = H.Tex(host, "BACKGROUND", -7, "band"), H.Tex(host, "BACKGROUND", -6, "band-stars"), H.Tex(host, "BACKGROUND", -5, "glow")
+		h.sky:SetAllPoints(rel)
+		h.stars:SetAllPoints(rel)
+		h.haze:SetTexCoord(0, 1, 0.5, 1) -- the glow's lower half, hung from the top
+		h.haze:SetPoint("TOP", rel, "TOP", 0, 0)
+	end
+	if opts.rim ~= false then
+		h.throw = H.Tex(host, "OVERLAY", 6, "glow")
+		h.throw:SetTexCoord(0, 1, 0.5, 1)
+		h.throw:SetPoint("TOP", rel, "TOP", 0, 0)
+		local p = {}
+		for i = 1, 4 do p[i] = H.Tex(host, "OVERLAY", 7) end
+		p[2]:SetPoint("TOPRIGHT", rel, "TOP", 0, 0)
+		p[3]:SetPoint("TOPLEFT", rel, "TOP", 0, 0)
+		p[1]:SetPoint("TOPLEFT", rel, "TOPLEFT", 0, 0)
+		p[1]:SetPoint("TOPRIGHT", p[2], "TOPLEFT", 0, 0)
+		p[4]:SetPoint("TOPLEFT", p[3], "TOPRIGHT", 0, 0)
+		p[4]:SetPoint("TOPRIGHT", rel, "TOPRIGHT", 0, 0)
+		h.rim = p
+	end
+	H.PaintHead(h, false) -- nothing shows till the caller's first paint
+	return h
+end
+
+-- Head `h` shown while `on`, at `k` of its strength (default 1: a ground
+-- that fades takes its head along), as the settings and the skin stand now.
+function H.PaintHead(h, on, k)
+	k = on and (k or 1) or 0
+	local house = Theme.SkinKey() == "polestar"
+	local band = h.sky and k > 0 and H.Band(h.look) or false
+	local rim = h.rim and k > 0 and house and H.Rim(h.look) or false
+	if h.sky then
+		h.sky:SetShown(band)
+		h.stars:SetShown(band)
+		h.haze:SetShown(band and house)
+	end
+	if h.rim then
+		h.throw:SetShown(rim)
+		for _, t in ipairs(h.rim) do t:SetShown(rim) end
+	end
+	if not (band or rim) then return end
+	sizeHead(h)
+	if band then
+		local sky, stars = Theme.SkinMedia("band") or Theme.Media("band"), Theme.SkinMedia("bandStars") or Theme.Media("band-stars")
+		if h.art ~= sky then
+			h.art = sky
+			h.sky:SetTexture(sky)
+			h.stars:SetTexture(stars)
+		end
+		local r, g, b, a = Theme.Color("sky")
+		h.sky:SetVertexColor(r, g, b, k)
+		r, g, b, a = Theme.Color("star")
+		h.stars:SetVertexColor(r, g, b, (a or 1) * k)
+		r, g, b, a = Theme.Color("haze")
+		h.haze:SetVertexColor(r, g, b, (a or 1) * k)
+	end
+	if rim then
+		local px = Theme.Pixel(h.sizer)
+		local r, g, b = Theme.Accent()
+		local hr, hg, hb = W.AccentHi()
+		local p = h.rim
+		for i = 1, 4 do p[i]:SetHeight(px) end
+		W.Gradient(p[1], r, g, b, 0, r, g, b, RIM_MID * k)
+		W.Gradient(p[2], r, g, b, RIM_MID * k, hr, hg, hb, RIM_HI * k)
+		W.Gradient(p[3], hr, hg, hb, RIM_HI * k, r, g, b, RIM_MID * k)
+		W.Gradient(p[4], r, g, b, RIM_MID * k, r, g, b, 0)
+		h.throw:SetVertexColor(hr, hg, hb, THROW_A * k)
+	end
+end
+
 -- `flat`: a tint without the glow (the player's own combat edge). A tint
 -- shows with the border off; `g.look`: its group and cap (H.Edge).
 -- Untinted, Polestar's window shadow round it (a tint, flat too, has none).
@@ -497,13 +653,13 @@ end
 -- A square portrait well: the unit's 3D model (a PlayerModel framed as the
 -- game frames portraits), or the game's 2D portrait while the unit is out of
 -- sight (a model needs it in view). `bare`: no hairline of its own (the
--- frame's edge frames it). -> well; H.SetPortrait(p, unit).
-function H.Portrait(parent, bare)
+-- frame's edge frames it). `look`: its hairline's look. -> well; H.SetPortrait(p, unit).
+function H.Portrait(parent, bare, look)
 	local p = CreateFrame("Frame", nil, parent)
 	Theme.Skin(p, "inset")
 	if not bare then
 		p.Edges = ns.Hairlines(p, p)
-		W.Painter(p, function(well) H.PaintEdge(well.Edges, true) end)
+		W.Painter(p, function(well) H.PaintEdge(well.Edges, true, look) end)
 	end
 	p.Model = CreateFrame("PlayerModel", nil, p)
 	p.Model:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -1)

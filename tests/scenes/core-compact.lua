@@ -2,7 +2,7 @@
 --@ roots: PolestarUITestCompact
 -- ns.Compact: a 60 band (Display title, its subtitle on one line), 36 tabs (32 in the game's looks), a 44 footer, the pad 8 in from the skin's; the band's art cropped to the band, the body's view and width by those sizes, after every ShellTabs and ShellFooter. ns.TopNav: the page nav as tabs (no sidebar), each keeping a nav row's state (count, dot, locked with its tooltip, a game icon), the search and the filter on the tab row's right end; a locked tab's click does nothing.
 local ns, W = PolestarUI, Polestar.Widgets
-local f = W.Shell("PolestarUITestCompact", { scalePath = "ui.menuScale", width = 640, height = 420, searchPlaceholder = "Search" })
+local f = PolestarUI.Shell("PolestarUITestCompact", { width = 640, height = 420, searchPlaceholder = "Search" })
 ns.Compact(f)
 f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function() end, 14)
 Polestar.Theme.Skin(f.psFilter, "editbox")
@@ -33,7 +33,7 @@ assert(picked == "b", "a tab did not select")
 --@ roots: PolestarUITestCompact
 local ns, W = PolestarUI, Polestar.Widgets
 Polestar.Set("ui.skin", "forever")
-local f = W.Shell("PolestarUITestCompact", { scalePath = "ui.menuScale", width = 640, height = 420, searchPlaceholder = "Search" })
+local f = PolestarUI.Shell("PolestarUITestCompact", { width = 640, height = 420, searchPlaceholder = "Search" })
 ns.WindowMenu(f, "spellbook")
 ns.Compact(f)
 f.psFilter = W.IconButton(f.TabRow, "sliders", 30, "Filter", function() end, 14)

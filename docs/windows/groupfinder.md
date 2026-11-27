@@ -104,8 +104,8 @@ differs, "Built" wins. The live check results end the file.
 **620×560**: a 48px slim rail plus 572 of content, on the compact grid
 (`ns.Compact`). The stock window is 458×535 plus its side tabs. Ours needs the
 width for the browse row (leader, activities, member display, level,
-comment) and the Who columns. The shell is `W.Shell("PolestarUIGroupFinder",
-{ scalePath = "ui.menuScale", width = 620, height = 560, rail = true })`, with
+comment) and the Who columns. The shell is `ns.Shell("PolestarUIGroupFinder",
+{ width = 620, height = 560, rail = true })`, with
 `ns.GameRail`, `ns.Dock`, `ns.WindowMenu` and `Polestar.CloseOnEscape`.
 
 - **Page nav: a slim icon rail.** With `LFGVANILLA_SETTING_MODERN_STYLE = true`,

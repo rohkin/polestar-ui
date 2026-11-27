@@ -1066,7 +1066,7 @@ local function weaponMenu(anchor)
 			items[#items + 1] = { text = (C_TransmogCollection.GetCategoryInfo(c)), checked = c == category, onClick = function() setCategory(c); redraw() end }
 		end
 	end
-	W.ShowMenu(anchor, items, { minWidth = 160 })
+	W.ShowMenu(anchor, items, { minWidth = 160, current = true })
 end
 
 local function slotEnter(b)
@@ -1402,7 +1402,7 @@ local function variantMenu(anchor)
 				onClick = function() selectSet(vs.setID); redraw() end }
 		end
 	end
-	W.ShowMenu(anchor, items, { minWidth = 180 })
+	W.ShowMenu(anchor, items, { minWidth = 180, current = true })
 end
 
 -- A piece's sources, as WardrobeSetsCollectionMixin:RefreshAppearanceTooltip.
@@ -1765,7 +1765,7 @@ local function leave()
 end
 
 local function build()
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 780, height = 540, sidebar = 0, rail = true, searchPlaceholder = "Search", onSearch = function(text)
+	f = ns.Shell(NAME, { width = 780, height = 540, sidebar = 0, rail = true, searchPlaceholder = "Search", onSearch = function(text)
 		text = text or ""
 		local k = page and qkey()
 		if not k or query[k] == text then return end

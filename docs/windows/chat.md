@@ -30,10 +30,31 @@ menus and chat bubbles.
   and a 32px tab header (the tab's whole height, as clickable) above both, no divider. The header's ground and
   hairline are on `GeneralDockManager`, under the docked tabs (its
   children, LOW strata): the chat window (frame level 5) draws above the
-  docked tabs, so nothing of ours on the window may reach above its ground,
-  or it covers them. Undocked windows have no header (their tab, MEDIUM
-  strata, sits above them); with the strip on the right,
-  6px of room left of the text. At rest the ground is 35% of Polestar's
+  docked tabs, so nothing of ours on a docked window may reach above its ground,
+  or it covers them. A window pulled off the dock gets the same header on
+  itself (`float`, made the first time it floats; its tab, MEDIUM strata,
+  sits above it), hidden again when it is docked: the driver sees `isDocked`
+  change. Its tab's label, wash and underline are moved onto that header as a
+  dynamic docked tab's are (in game the tab sat some 2px above the ground).
+  The first window never floats (the dock's header is its own). With the strip on the right,
+  6px of room left of the text.
+- **Its own look (`H.CHAT`, HUD.lua):** every edge, ground, head and shadow
+  of the chat (windows, headers, the edit box, the channel list, bubbles) is
+  painted in the chat's look; its own tab on our settings page (`ns.ShowSettings("chat")`) holds "Chat look": off (the default), the Frames look (Polestar's Frames settings, or the Frames override); on (`PolestarUIDB.hudLook.chat.override`), its own band, rim, border, shadow and ground, started from what it wore (`H.Seed`), changed live (`Theme.Refresh`). Scene: `settings-looks`.
+  The chat's menus keep the shared Frames look (`ns.MenuLook`).
+- **Head and shadow:** each header wears the window head (`H.Head`,
+  HUD.lua): Polestar's header band (sky, stars, haze; cropped 1:1, never
+  stretched) just above the header's ground and the accent rim with its
+  thrown light along its top, as a shell window's, each following Polestar's
+  own setting live (Header band `ui.band`, Rim `ui.rim`, or the chat look's own band and rim, `H.Band`/`H.Rim`; haze and rim in the
+  house style only, the band in the skin's own art). Round header and window
+  together, Polestar's window shadow (`H.Shadow` on one hidden texture of
+  ours spanning both; cut at the edge, so it never darkens the translucent
+  ground; Polestar's Shadow setting, or the chat look's own). Textures of
+  ours on the dock or the floating window, no key written; one frame of ours
+  under the host tells the head its width (`Polestar.CreateFrameUnder`).
+  Head and shadow rest and warm with the ground (`paintWarm`), so "Fade chat
+  when idle" fades them too; switched off, all hidden. At rest the ground is 35% of Polestar's
   (`REST`), warm all of it; its 1px `border` hairline likewise (35% at rest,
   so the panel keeps its outline over the world, as the damage meter). The
   player's chat opacity no longer scales it. All of it our textures on the

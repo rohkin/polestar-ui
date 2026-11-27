@@ -64,7 +64,8 @@ PolestarUI.Switch("social", true) stub.advance(0.1) PolestarUI.modules.social.To
 -- Nothing of ours on a window reaches above its ground (the window, level 5, draws over the docked tabs, the LOW dock's children); the header's ground is the dock's, under the tabs; the social icon takes no mouse.
 assert(ChatFrame1:GetFrameLevel() > ChatFrame1Tab:GetFrameLevel() and ChatFrame1Tab:GetParent() == GeneralDockManager, "the stub lost the client's stacking")
 for _, r in ipairs({ ChatFrame1:GetRegions() }) do if tostring(r.GetTexture and r:GetTexture()):find(W) then for i = 1, r:GetNumPoints() do local pt, rel, _, _, y = r:GetPoint(i) if pt:find("TOP") and (rel == ChatFrame1Background or rel == ChatFrame1ButtonFrameBackground) then assert(y <= 0, "ours on the window reaches over the tabs") end end end end
-assert(ours(GeneralDockManager, "BACKGROUND") == 1 and ours(GeneralDockManager) == 5, "no header ground under the tabs")
+-- On the dock, under the tabs: the header ground, band (sky, stars, haze) and the 16 shadow parts; its 4 hairlines; the rim (4) and its light.
+assert(ours(GeneralDockManager, "BACKGROUND") == 20 and ours(GeneralDockManager, "BORDER") == 4 and ours(GeneralDockManager, "OVERLAY") == 5, "no header ground, head or shadow under the tabs")
 assert(not PolestarUIChatSocialIcon:IsMouseEnabled(), "the social icon takes the mouse")
 assert(select(1, PolestarUIChatSocialIcon:GetSize()) == ChatFrameChannelButton:GetWidth() and PolestarUIChatSocialIcon:GetHeight() == ChatFrameChannelButton:GetHeight() and select(5, PolestarUIChatSocialIcon:GetPoint()) == 2, "the social button not the strip's size and spacing")
 FCF_SetWindowAlpha(ChatFrame1, 0.25)

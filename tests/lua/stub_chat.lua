@@ -715,6 +715,36 @@ function stub.dockDynamic(t, after)
 	t.Text:SetWidth(90 - 20 - (t.sizePadding or 0))
 end
 
+-- A window pulled off the dock (FCF_UnDockFrame, FCFDock_RemoveChatFrame):
+-- isDocked nil, its tab UIParent's again in MEDIUM strata, on the window's
+-- ground 2 in (FCF_SetTabPosition), selected and at full alpha; the window
+-- shown at x, y. And docked again (FCFDock_AddChatFrame): isDocked 1, the
+-- tab the dock's, in line after `after`.
+function stub.undockChat(f, x, y)
+	local t = _G[f:GetName() .. "Tab"]
+	f.isDocked = nil
+	f:ClearAllPoints()
+	f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+	f:Show()
+	t:SetParent(UIParent)
+	t:SetFrameStrata("MEDIUM")
+	t:ClearAllPoints()
+	t:SetPoint("BOTTOMLEFT", f.Background, "TOPLEFT", 2, 0)
+	t.y, t.dynamic = nil, nil
+	t:SetAlpha(1)
+	FCFTab_UpdateColors(t, true)
+end
+
+function stub.dockChat(f, after)
+	local t = _G[f:GetName() .. "Tab"]
+	f.isDocked = 1
+	t:SetParent(dock)
+	t:SetFrameStrata("LOW")
+	t:SetFrameLevel(2)
+	stub.dockDynamic(t, after)
+	FCFTab_UpdateColors(t, false)
+end
+
 -- A whisper in its own window: docked, not selected, the first time a new frame.
 local maxTemp = 11
 function FCF_OpenTemporaryWindow(chatType, chatTarget, source, select)

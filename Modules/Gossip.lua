@@ -109,7 +109,7 @@ end
 
 local function build()
 	-- The compact grid, as wide as the Quest dialog it hands on to.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 520, height = 400, sidebar = 0 })
+	f = ns.Shell(NAME, { width = 520, height = 400, sidebar = 0 })
 	ns.Plain(f)
 	ns.Dock(f)
 	ns.WindowMenu(f, "gossip")

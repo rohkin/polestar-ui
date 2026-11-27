@@ -157,3 +157,77 @@ function stub.preview.Band(parent)
 	Polestar.Widgets.Painter(f, function() if f.psWidth then f:Layout(f.psWidth) end end)
 	return f
 end
+
+-- A frame's size set to a new one runs its OnSizeChanged (its script, then
+-- its hooks) with the new width and height, as the client does: what refits
+-- on it (W.SearchBox's placeholder, hidden below 64 wide) renders at the size
+-- it is drawn at. Not again from inside its own handler. (Polestar's own
+-- preview stub does the same, #3427.) The stub lays nothing out, so an edit
+-- box held by a left and a right anchor on one frame (a search moved into a
+-- dropdown, ns.FilterMenu) takes its width from them, again whenever that
+-- frame is resized.
+do
+	local setSize, setWidth, setHeight, setPoint = M.SetSize, M.SetWidth, M.SetHeight, M.SetPoint
+	local REGION = { FontString = true, Texture = true, Line = true, MaskTexture = true }
+	local edits = setmetatable({}, { __mode = "k" }) -- frame -> { edit box anchored on it }
+	local function side(p) return p:find("LEFT") and 0 or p:find("RIGHT") and 1 or 0.5 end
+	-- A frame's left and right x along its anchors, up to one with no anchor
+	-- (at 0, its own width); nil where they do not say. Scale is ignored.
+	local function edges(f, depth)
+		if depth > 12 then return end
+		local fixed, w = {}, M.GetWidth(f)
+		for _, p in ipairs(f.points or {}) do
+			local rel = p.rel or f.parent
+			local rl, rr
+			if rel then rl, rr = edges(rel, depth + 1) end
+			if rl then fixed[#fixed + 1] = { side(p.point), rl + (rr - rl) * side(p.relPoint) + p.x } end
+		end
+		if #(f.points or {}) == 0 then return 0, w end
+		local a, b = fixed[1], nil
+		for i = 2, #fixed do if fixed[i][1] ~= a[1] then b = fixed[i] end end
+		if a and b then
+			local span = (b[2] - a[2]) / (b[1] - a[1])
+			local l = a[2] - a[1] * span
+			return l, l + span
+		elseif a and w > 0 then
+			return a[2] - a[1] * w, a[2] + (1 - a[1]) * w
+		end
+	end
+	-- An edit box held by a left and a right anchor takes its width from them.
+	local function fit(e)
+		local l, r
+		for _, p in ipairs(e.points) do
+			if p.point:find("LEFT") then l = p elseif p.point:find("RIGHT") then r = p end
+		end
+		if not (l and r) then return end
+		local x0, x1 = edges(e, 0)
+		if x0 and x1 > x0 then M.SetWidth(e, x1 - x0) end
+	end
+	local function resize(set)
+		return function(self, ...)
+			local w0, h0 = M.GetWidth(self), M.GetHeight(self)
+			set(self, ...)
+			local w, h = M.GetWidth(self), M.GetHeight(self)
+			if w == w0 and h == h0 then return end
+			if self.scripts ~= nil and not REGION[self.kind] and not self.psSizing then
+				self.psSizing = true
+				local ok, err = pcall(stub.RunScript, self, "OnSizeChanged", w, h)
+				self.psSizing = nil
+				if not ok then error(err, 0) end
+			end
+			for e in pairs(edits[self] or {}) do fit(e) end
+		end
+	end
+	M.SetSize, M.SetWidth, M.SetHeight = resize(setSize), resize(setWidth), resize(setHeight)
+	-- tools/preview/stub.lua sets its own SetPoint after this file and calls this.
+	function stub.fitEdit(self)
+		if self.kind ~= "EditBox" then return end
+		local rel = self.points[#self.points].rel or self.parent
+		if rel then
+			edits[rel] = edits[rel] or setmetatable({}, { __mode = "k" })
+			edits[rel][self] = true
+		end
+		fit(self)
+	end
+	function M.SetPoint(self, ...) setPoint(self, ...) stub.fitEdit(self) end
+end

@@ -1143,7 +1143,7 @@ local function durationMenu(self)
 			paint()
 		end }
 	end
-	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 140 })
+	W.ShowMenu(self, items, { point = "TOPLEFT", relPoint = "BOTTOMLEFT", minWidth = 140, current = true })
 end
 
 -- The form, two columns: how many, the duration and the deposit on the
@@ -1479,7 +1479,7 @@ local function build()
 	-- The compact grid. The sidebar stays as the category column (content,
 	-- as Crafting's recipe list), its lockup gone; the pages are top tabs,
 	-- the money, search and options on the tab row.
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = 880, height = 600, sidebar = 200, searchPlaceholder = "Search" })
+	f = ns.Shell(NAME, { width = 880, height = 600, sidebar = 200, searchPlaceholder = "Search" })
 	ns.Dock(f)
 	ns.WindowMenu(f, "auction")
 	-- Reparented, not hidden: the shell re-shows its version line on every show.

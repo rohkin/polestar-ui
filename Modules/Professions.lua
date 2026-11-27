@@ -276,7 +276,7 @@ local function build()
 	-- No sidebar: one page, nothing to navigate; the band names the window.
 	-- The slim rail holds the professions; Polestar's emblem stays off it.
 	local size = ns.ProfessionsSize
-	f = W.Shell(NAME, { scalePath = "ui.menuScale", width = size[1] + W.SHELL.rail, height = size[2], sidebar = 0, rail = true })
+	f = ns.Shell(NAME, { width = size[1] + W.SHELL.rail, height = size[2], sidebar = 0, rail = true })
 	ns.Dock(f)
 	ns.WindowMenu(f, "professions")
 	ns.Compact(f)

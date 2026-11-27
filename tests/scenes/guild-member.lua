@@ -47,8 +47,9 @@ for _, n in ipairs({ d.Note, d.Officer }) do
 	assert(n.Edit:IsEnabled() and n.Edit:GetAlpha() == 1, "note edit greyed out of combat")
 	stub.RunScript(n.Edit, "OnEnter")
 	over = PolestarUIGuildNote
+	local k = n.Edit:GetEffectiveScale() / UIParent:GetEffectiveScale() -- the window draws at the Menu scale
 	assert(over and over:IsShown() and over:GetAttribute("type1") == "click" and over:GetAttribute("clickbutton") == GuildMicroButton
-		and over:GetParent() == UIParent and over:GetLeft() == n.Edit:GetLeft() and over:GetTop() == n.Edit:GetTop(), "no door over the note's Edit")
+		and over:GetParent() == UIParent and math.abs(over:GetLeft() - n.Edit:GetLeft() * k) < 1e-6 and math.abs(over:GetTop() - n.Edit:GetTop() * k) < 1e-6, "no door over the note's Edit")
 	stub.RunScript(over, "OnLeave")
 end
 assert(not over:IsShown(), "door left shown")
